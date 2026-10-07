@@ -425,3 +425,70 @@ class TestExplainRedactsSecrets(unittest.TestCase):
         explanation = self.fabric.explain(mid)
         self.assertEqual(explanation.redacted_kinds, [])
         self.assertIn("Prefer email follow-up", explanation.narrative())
+
+
+class TestDuplicateSuppression(FabricTestCase):
+    """Found live: a model called `remember` four times in one run.
+
+    Duplicates inflate apparent consensus the way several agents repeating one
+    source do (SECURITY.md T3), except from a single agent — which the
+    evidence-independence check never looks at.
+    """
+
+    CLAIM = "Fault code E31: broken conductor in pilot cable."
+
+    def test_same_content_in_one_episode_is_suppressed(self) -> None:
+        session = self.fabric.session("agent-a", "task-1")
+        first = session.remember(self.CLAIM)
+        second = session.remember(self.CLAIM)
+        self.assertEqual(first, second)
+        self.assertEqual(len(self.fabric.state.memories), 1)
+        self.assertEqual(self.fabric.state.suppressed_duplicates, 1)
+
+    def test_whitespace_and_case_are_not_new_content(self) -> None:
+        session = self.fabric.session("agent-a", "task-1")
+        first = session.remember(self.CLAIM)
+        again = session.remember("  fault code e31:   BROKEN conductor in pilot cable. ")
+        self.assertEqual(first, again)
+
+    def test_different_content_is_still_written(self) -> None:
+        session = self.fabric.session("agent-a", "task-1")
+        first = session.remember(self.CLAIM)
+        other = session.remember("Fault code E31: loose contactor.")
+        self.assertNotEqual(first, other)
+        self.assertEqual(len(self.fabric.state.memories), 2)
+
+    def test_re_observation_in_a_later_episode_is_evidence(self) -> None:
+        """The scope is deliberate: the same claim seen twice on two occasions
+        genuinely is more evidence, and must not be collapsed."""
+        first = self.fabric.session("agent-a", "task-1").remember(self.CLAIM)
+        later = self.fabric.session("agent-a", "task-2").remember(self.CLAIM)
+        self.assertNotEqual(first, later)
+
+    def test_another_agent_writing_the_same_thing_is_not_suppressed(self) -> None:
+        episode = self.fabric.start_episode("agent-a", "task-1")
+        a = self.fabric.remember("agent-a", self.CLAIM, episode_id=episode.id)
+        b = self.fabric.remember("agent-b", self.CLAIM, episode_id=episode.id)
+        self.assertNotEqual(a, b)
+
+    def test_writes_outside_an_episode_are_not_deduplicated(self) -> None:
+        a = self.fabric.remember("agent-a", self.CLAIM)
+        b = self.fabric.remember("agent-a", self.CLAIM)
+        self.assertNotEqual(a, b)
+
+    def test_the_attempt_is_recorded_not_silently_dropped(self) -> None:
+        session = self.fabric.session("agent-a", "task-1")
+        session.remember(self.CLAIM)
+        session.remember(self.CLAIM)
+        events = [e for e in self.fabric.log.read()
+                  if e.type == "MemoryDuplicateSuppressed"]
+        self.assertEqual(len(events), 1)
+        self.assertEqual(events[0].agent_id, "agent-a")
+
+    def test_suppression_survives_a_rebuild(self) -> None:
+        session = self.fabric.session("agent-a", "task-1")
+        session.remember(self.CLAIM)
+        session.remember(self.CLAIM)
+        self.fabric.rebuild()
+        self.assertEqual(self.fabric.state.suppressed_duplicates, 1)
+        self.assertEqual(len(self.fabric.state.memories), 1)

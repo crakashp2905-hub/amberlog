@@ -1,0 +1,8 @@
+Multi-agent disagreement, live
+observers=['qwen2.5:3b', 'llama3.2:3b', 'qwen2.5:7b']
+reader=qwen2.5:3b  trials=12
+two observers get the wrong lead, one gets the right one -> the majority is wrong
+
+writing observer memories (one model at a time)...
+  qwen2.5:3b     12/12 usable (183s)
+  llama3.2:3b    11/12 usable (336s)

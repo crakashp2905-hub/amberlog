@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.1.0` (draft)
+- **Schema version:** `0.2.0` (draft)
 - **Status:** proposed, not yet implemented
 
 Words in the glossary in [AGENTS.md](AGENTS.md) are used with those meanings.
@@ -105,6 +105,7 @@ Append-only. Every event has `event_id` (ULID), `ts`, `agent_id`, `episode_id?`,
 | `ScopeChanged` | memory_id, from, to, firewall_decision | Federation audit |
 | `ConflictDetected` | memory_ids, detector_id, confidence, hypothesis_set | Contradiction tracking |
 | `ExperimentRun` | hypothesis_set, design, results | Disagreement resolution |
+| `MemoryDuplicateSuppressed` | memory_id, content_digest | An agent wrote the same content twice in one episode |
 
 **Exposure invariant:** for every candidate returned by retrieval, exactly one `ExposureDecided` event is logged, including those *not* exposed. Its propensity must be in (0, 1] for exposed memories, and the probability of *not* exposing must be recorded for withheld ones. A policy that is deterministic in some cells must declare it; estimators treat those cells as having no overlap.
 
@@ -178,6 +179,16 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.2.0 — duplicate suppression
+
+`remember` returns the existing memory, and emits `MemoryDuplicateSuppressed`, when an agent writes content it has already written **in the same episode** (compared after normalising whitespace and case).
+
+Found by running real agents: a model called the `remember` tool four times in one run, producing two distinct memories and two exact duplicates. Duplicates inflate apparent consensus the same way several agents repeating one source do (SECURITY.md T3) — but from a *single* agent, which the evidence-independence check does not examine.
+
+Scoped to one episode deliberately. The same claim recorded in two different episodes is two observations, and that genuinely is more evidence.
+
+Additive: no migration needed. Older logs replay unchanged, and the suppression only affects new writes.
 
 ## 8. Versioning of this spec
 

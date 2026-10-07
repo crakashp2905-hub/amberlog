@@ -12,7 +12,7 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Mapping
 
-SCHEMA_VERSION = "0.1.0"
+SCHEMA_VERSION = "0.2.0"
 
 
 class MemoryType(str, Enum):

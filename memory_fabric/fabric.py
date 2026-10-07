@@ -41,7 +41,7 @@ from .model import (
     ValueEstimate,
     context_key,
 )
-from .projections import Episode, Projection
+from .projections import Episode, Projection, _digest
 from .vectors import MIN_RELEVANCE, Embedder, VectorIndex
 
 
@@ -278,6 +278,30 @@ class MemoryFabric:
         import from another store, for instance — passes False so the store's
         convenience setting cannot silently promote it.
         """
+        # An agent that writes the same thing twice in one episode is looping,
+        # not observing twice. Found live: a model called the `remember` tool
+        # four times in a single run and produced two distinct memories, which
+        # inflates apparent consensus exactly the way several agents parroting
+        # one source does (SECURITY.md T3) — except from a single agent, which
+        # the evidence-independence check does not look at.
+        #
+        # Scoped to one episode on purpose. The same claim recorded in two
+        # different episodes is two observations, and that *is* more evidence.
+        if episode_id:
+            key = (agent_id, episode_id, _digest(content))
+            existing = self.state.written.get(key)
+            if existing is not None:
+                self._emit(
+                    ev.duplicate_suppressed(
+                        ts=self.now(),
+                        agent_id=agent_id,
+                        episode_id=episode_id,
+                        existing_memory_id=existing,
+                        content_digest=key[2],
+                    )
+                )
+                return existing
+
         activate = self.auto_activate if auto_activate is None else auto_activate
         ruling = self.firewall.screen_ingest(content)
         if ruling.decision is FirewallDecision.QUARANTINE:

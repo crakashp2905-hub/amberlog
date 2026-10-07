@@ -27,6 +27,7 @@ class EventType:
     SCOPE_CHANGED = "ScopeChanged"
     CONFLICT_DETECTED = "ConflictDetected"
     EXPERIMENT_RUN = "ExperimentRun"
+    DUPLICATE_SUPPRESSED = "MemoryDuplicateSuppressed"
 
 
 @dataclass(frozen=True)
@@ -246,6 +247,30 @@ def conflict_detected(
             "detector_id": detector_id,
             "confidence": confidence,
             "hypothesis_set": hypothesis_set,
+        },
+    )
+
+
+def duplicate_suppressed(
+    ts: int,
+    agent_id: str,
+    episode_id: str | None,
+    existing_memory_id: str,
+    content_digest: str,
+) -> Event:
+    """An agent wrote the same thing twice within one episode.
+
+    Recorded rather than silently dropped: the attempt is evidence about the
+    agent, and without it the log would show a write that produced no memory.
+    """
+    return Event(
+        type=EventType.DUPLICATE_SUPPRESSED,
+        ts=ts,
+        agent_id=agent_id,
+        episode_id=episode_id,
+        payload={
+            "memory_id": existing_memory_id,
+            "content_digest": content_digest,
         },
     )
 

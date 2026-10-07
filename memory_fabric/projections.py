@@ -7,6 +7,7 @@ nothing but events, and unknown event types are ignored rather than fatal.
 
 from __future__ import annotations
 
+import hashlib
 from dataclasses import dataclass, field
 from typing import Any, Iterable, Mapping
 
@@ -52,6 +53,15 @@ class ExposureRecord:
 
 
 @dataclass
+class DuplicateKey:
+    """Identity of a write within one episode, for suppressing tool-call loops."""
+
+    agent_id: str
+    episode_id: str
+    digest: str
+
+
+@dataclass
 class HypothesisSet:
     """A group of mutually contradictory memories, kept rather than collapsed."""
 
@@ -73,6 +83,9 @@ class ProjectionState:
     hypothesis_sets: dict[str, HypothesisSet] = field(default_factory=dict)
     children: dict[str, set[str]] = field(default_factory=dict)
     parents: dict[str, set[str]] = field(default_factory=dict)
+    # (agent, episode, content digest) -> memory already written for it.
+    written: dict[tuple[str, str, str], str] = field(default_factory=dict)
+    suppressed_duplicates: int = 0
     applied_seq: int = 0
 
     def stats_for(self, memory_id: str) -> MemoryStats:
@@ -143,11 +156,24 @@ def _register_memory(state: ProjectionState, memory: Memory) -> None:
 
 
 def _on_memory_created(state: ProjectionState, event: Event) -> None:
-    _register_memory(state, Memory.from_json(event.payload["memory"]))
+    memory = Memory.from_json(event.payload["memory"])
+    _register_memory(state, memory)
+    if event.episode_id:
+        key = (memory.provenance.created_by, event.episode_id, _digest(memory.content))
+        state.written.setdefault(key, memory.id)
 
 
 def _on_memory_versioned(state: ProjectionState, event: Event) -> None:
     _register_memory(state, Memory.from_json(event.payload["memory"]))
+
+
+def _on_duplicate_suppressed(state: ProjectionState, event: Event) -> None:
+    state.suppressed_duplicates += 1
+
+
+def _digest(content: str) -> str:
+    """Normalised digest: whitespace and case differences are not new content."""
+    return hashlib.sha256(" ".join(content.lower().split()).encode()).hexdigest()
 
 
 def _on_exposure_decided(state: ProjectionState, event: Event) -> None:
@@ -247,4 +273,5 @@ _HANDLERS = {
     EventType.SCOPE_CHANGED: _on_scope_changed,
     EventType.CONFLICT_DETECTED: _on_conflict_detected,
     EventType.EXPERIMENT_RUN: _on_experiment_run,
+    EventType.DUPLICATE_SUPPRESSED: _on_duplicate_suppressed,
 }

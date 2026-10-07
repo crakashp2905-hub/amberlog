@@ -6,7 +6,7 @@ Research prototype for **memory that is valued by its effect on outcomes, not by
 
 ## Status
 
-**All nine milestones closed, and validated against live models.** 384 tests, zero dependencies in the core, Python 3.13 + SQLite. P1–P7 built and measured; P8 and P9 **declined on measurement** rather than deferred — see [ROADMAP.md](ROADMAP.md).
+**All nine milestones closed, and validated against live multi-agent runs.** 392 tests, zero dependencies in the core, Python 3.13 + SQLite. P1–P7 built and measured; P8 and P9 **declined on measurement** rather than deferred — see [ROADMAP.md](ROADMAP.md).
 
 **H1 is supported**: an amortized, propensity-corrected estimator recovers true memory value at ρ=0.76 against a naive baseline's 0.47, on 8% exploration overhead. [Result](research/results/h1-causal-credit.md)
 
@@ -17,6 +17,8 @@ Research prototype for **memory that is valued by its effect on outcomes, not by
 **H4b is supported — the project's founding design principle, finally tested.** "Contradictions stay representable" was an assertion for six milestones. Re-testing contested beliefs instead of collapsing to the majority takes a fully-connected population from P(correct) 0.905 to **1.000**, lifts recovery from 24% to **100%**, and does it at *half* the regret and *faster* consensus. It pays for itself: the fifth of a round spent re-testing buys escape from a mistake that otherwise lasts forever. H4a (the Zollman effect) is inconclusive only because I registered the wrong point on the curve — the effect is an inverted U, strongest at degree 2–4 (+0.080, 84% of headroom), not at the sparsest extreme I tested. [Result](research/results/h4-topology-and-diversity.md)
 
 **Validated against live models.** Three local models through Ollama, on the real path: retrieval found the right memory **100%** of the time, a correct memory took accuracy from 6.7% to **100%**, and a wrong one misled **every model, every time**. The fabric's central simulated parameter turned out to be wrong — compliance is 1.00, not the 0.80 RuleWorld assumed — and an end-to-end governance run (governed writes, provenance across a store boundary, retraction following a memory between stores) passes **15/15**. It also found a security bug 384 unit tests had missed. [Result](research/results/live-ollama-validation.md)
+
+**Tested with multiple agents, and it changed the design.** Three models as independent observer agents, each with its own store, federating into a consolidator where the majority is wrong. Collapsing to the majority made the reader **confidently assert a wrong action in 8 of 10 trials**; preserving the disagreement eliminated that entirely (−0.80 [−1.00, −0.50]). It does not make the reader *right* — it converts confident error into flagged uncertainty. Running it also exposed a product gap: the fabric had no deduplication, and one model wrote the same memory four times in a single run, silently inflating a 2-vs-1 majority into 4-vs-1. [Result](research/results/live-multi-agent.md)
 
 **H5 is unaskable and P9 is declined**, both on measurement. The memory path makes **zero** LLM calls at 0.26 ms/episode, so "replace ≥50% of memory-management LLM calls" has no denominator. And 25× more memories costs 1.7× latency, so no load here needs distributing. Both were cancelled by measurement rather than built on anticipation.
 
@@ -79,6 +81,7 @@ The first is the governance story. The second runs an agent end to end — trans
 | Prompt context with injection defences | [adapters/context.py](memory_fabric/adapters/context.py) |
 | Claude API adapter, transcript ingestion | [adapters/](memory_fabric/adapters/) |
 | Federation across store boundaries | [federation.py](memory_fabric/federation.py) |
+| Local models + real embeddings | [adapters/ollama.py](memory_fabric/adapters/ollama.py) |
 
 ### Not built yet
 

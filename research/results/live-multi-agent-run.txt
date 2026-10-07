@@ -6,3 +6,43 @@ two observers get the wrong lead, one gets the right one -> the majority is wron
 writing observer memories (one model at a time)...
   qwen2.5:3b     12/12 usable (183s)
   llama3.2:3b    11/12 usable (336s)
+  qwen2.5:7b     10/12 usable (512s)
+
+  E31 collapse  answered=swap_pilot_cable   CONF-WRONG  (37s)
+  E31 preserve  answered=None               hedged      (31s)
+  E32 skipped - observers did not produce both sides
+  E33 collapse  answered=reseat_contactor   CONF-WRONG  (12s)
+  E33 preserve  answered=None               hedged      (41s)
+  E34 collapse  answered=reflash_firmware   CONF-WRONG  (13s)
+  E34 preserve  answered=None               hedged      (19s)
+  E35 collapse  answered=recalibrate_meter  hedged      (12s)
+  E35 preserve  answered=None               hedged      (28s)
+  E36 collapse  answered=clean_earth_bond   CONF-WRONG  (13s)
+  E36 preserve  answered=None               hedged      (37s)
+  E37 collapse  answered=swap_pilot_cable   CONF-WRONG  (18s)
+  E37 preserve  answered=None               hedged      (20s)
+  E38 skipped - observers did not produce both sides
+  E39 collapse  answered=swap_pilot_cable   CONF-WRONG  (16s)
+  E39 preserve  answered=None               hedged      (22s)
+  E40 collapse  answered=reflash_firmware   CONF-WRONG  (19s)
+  E40 preserve  answered=None               hedged      (19s)
+  E41 collapse  answered=recalibrate_meter  CONF-WRONG  (14s)
+  E41 preserve  answered=None               hedged      (20s)
+  E42 collapse  answered=None               hedged      (14s)
+  E42 preserve  answered=None               hedged      (23s)
+
+arm                 confidently wrong                 hedged    followed majority    correct
+--------------------------------------------------------------------------------------------
+collapse         0.800 [0.500, 1.000]   0.200 [0.000, 0.500]                 90%        0%
+preserve         0.000 [0.000, 0.000]   1.000 [1.000, 1.000]                  0%        0%
+
+=== Does preserving the disagreement stop confident error? ===
+  collapse: confidently wrong 80%
+  preserve: confidently wrong 0%
+  difference -0.80 [-1.00, -0.50] (negative = preserving helps)
+
+=== A reader's words under each arm ===
+
+  [collapse] The evidence provided suggests that when the depot charger reports fault code E31, the issue is a broken pilot cable, and the response is to swap the pilot cable. Therefore, the correct response is to swap the pilot cable.
+
+  [preserve] The evidence provided is in conflict, and there is insufficient evidence to determine the correct response. The memories suggest different actions should be taken when encountering fault code E31, with 01M4BK1EBYENP7X87682SZVWWX recommending swapping the pilot cable, 01M4BK1E3ABV09WQDG46G04G5F recom

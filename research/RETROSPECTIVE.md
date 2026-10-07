@@ -22,7 +22,9 @@ Two supported, one killed, two inconclusive, one unaskable, one declined. **The 
 
 **1. Value is not relevance — and it is estimable.** H1 is the project's load-bearing result. A memory with *exactly zero* true effect, retrieved mostly on easy tasks, scores 0.84 under naive usage-success and ≈0.00 under a propensity-corrected estimator. The confound is real, it is severe, and it is fixable. Everything else in the design assumed this; H1 is the only reason that assumption survived.
 
-**2. Keep contested beliefs alive and re-test them.** H4b is the strongest single intervention measured anywhere in this project: P(correct) 0.905 → 1.000, recovery 24% → 100%, at *half* the regret and *faster* consensus. Strictly better on every axis. It is also the cheapest thing here — a fifth of a round spent re-testing buys escape from an error that otherwise never corrects.
+**2. Keep contested beliefs alive and re-test them.** Now confirmed on two unrelated substrates. In simulation (H4b) it lifted P(correct) from 0.905 to 1.000 at lower regret. With [real agents disagreeing](results/live-multi-agent.md) it cut confidently-wrong answers from 80% to 0% — though there it buys *uncertainty*, not correctness, because a reader with only conflicting evidence and no way to test it should hedge.
+
+**2a. The original framing of this.** H4b is the strongest single intervention measured anywhere in this project: P(correct) 0.905 → 1.000, recovery 24% → 100%, at *half* the regret and *faster* consensus. Strictly better on every axis. It is also the cheapest thing here — a fifth of a round spent re-testing buys escape from an error that otherwise never corrects.
 
 **3. Provenance, retraction and governance.** Never tested as a hypothesis because they are not performance claims. A poisoned memory can be traced to its source and retracted with every descendant marked contested; secrets never reach a screen; an import cannot be pushed past rules the recipient controls. These shipped and work.
 

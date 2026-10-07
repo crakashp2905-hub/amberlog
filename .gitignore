@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+
+# Stores. The fabric writes SQLite files wherever it is pointed; the demo and
+# the tests create them freely. Results worth keeping live in research/results/
+# as text, not as databases.
+*.db
+*.db-wal
+*.db-shm
+
+# Scratch
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.log
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

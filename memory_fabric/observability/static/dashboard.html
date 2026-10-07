@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Memory Fabric</title>
+<style>
+  :root {
+    --bg: #fbfbfa;
+    --panel: #ffffff;
+    --panel-2: #f4f4f2;
+    --border: #e3e3df;
+    --text: #1d1d1b;
+    --muted: #6e6e68;
+    --faint: #9a9a92;
+    --accent: #2f6f4f;
+    --accent-soft: #e6f0ea;
+    --high: #a33223;
+    --high-soft: #fbeae7;
+    --medium: #8a6220;
+    --medium-soft: #fdf3e2;
+    --low: #4a5c73;
+    --low-soft: #edf1f6;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --radius: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #17181a;
+      --panel: #1f2023;
+      --panel-2: #26282b;
+      --border: #34363a;
+      --text: #e9e9e6;
+      --muted: #a2a29c;
+      --faint: #74746e;
+      --accent: #7dc4a0;
+      --accent-soft: #1e2d26;
+      --high: #e89383;
+      --high-soft: #2f201d;
+      --medium: #d9b471;
+      --medium-soft: #2c2519;
+      --low: #a3b6cd;
+      --low-soft: #1e242c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 14px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  a { color: var(--accent); }
+  code, .mono { font-family: var(--mono); font-size: 0.86em; }
+
+  header {
+    padding: 18px 16px 14px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel);
+  }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 0 16px; }
+  header .wrap { padding: 0; }
+  h1 { margin: 0 0 2px; font-size: 17px; letter-spacing: -0.01em; }
+  .sub { color: var(--muted); font-size: 12px; }
+  .sub .mono { color: var(--faint); }
+
+  .tiles { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+  .tile {
+    background: var(--panel-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    min-width: 92px;
+  }
+  .tile .n { font-size: 19px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .tile .k { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tile.warn .n { color: var(--high); }
+
+  nav { display: flex; gap: 2px; margin-top: 14px; flex-wrap: wrap; }
+  nav button {
+    background: none; border: none; border-bottom: 2px solid transparent;
+    padding: 7px 12px; font: inherit; color: var(--muted); cursor: pointer; border-radius: 4px 4px 0 0;
+  }
+  nav button:hover { background: var(--panel-2); color: var(--text); }
+  nav button[aria-selected="true"] { color: var(--text); border-bottom-color: var(--accent); font-weight: 600; }
+  nav .count { color: var(--faint); font-size: 11px; margin-left: 4px; }
+
+  main { padding: 18px 0 60px; }
+  section[hidden] { display: none; }
+  h2 { font-size: 13px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); margin: 0 0 10px; }
+
+  .note {
+    background: var(--medium-soft); border: 1px solid var(--border);
+    border-left: 3px solid var(--medium);
+    border-radius: var(--radius); padding: 10px 12px; margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .empty { color: var(--faint); padding: 22px 0; font-style: italic; }
+
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 12px 14px; margin-bottom: 8px;
+  }
+  .card.high { border-left: 3px solid var(--high); }
+  .card.medium { border-left: 3px solid var(--medium); }
+  .card.low { border-left: 3px solid var(--low); }
+  .card-head { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; }
+  .card-title { font-weight: 600; }
+  .card-detail { color: var(--muted); margin: 6px 0 8px; white-space: pre-wrap; }
+
+  .badge {
+    display: inline-block; padding: 1px 7px; border-radius: 20px;
+    font-size: 11px; font-weight: 600; letter-spacing: 0.02em;
+    background: var(--panel-2); color: var(--muted); border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .badge.high { background: var(--high-soft); color: var(--high); }
+  .badge.medium { background: var(--medium-soft); color: var(--medium); }
+  .badge.low { background: var(--low-soft); color: var(--low); }
+  .badge.active { background: var(--accent-soft); color: var(--accent); }
+  .badge.quarantined, .badge.deleted { background: var(--high-soft); color: var(--high); }
+  .badge.contested { background: var(--medium-soft); color: var(--medium); }
+  .badge.candidate, .badge.deprecated { background: var(--panel-2); color: var(--muted); }
+
+  .action {
+    display: flex; align-items: center; gap: 8px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 8px;
+  }
+  .action code { flex: 1; overflow-x: auto; white-space: nowrap; }
+  .copy {
+    background: none; border: 1px solid var(--border); color: var(--muted);
+    border-radius: 5px; padding: 2px 8px; font: inherit; font-size: 12px; cursor: pointer;
+  }
+  .copy:hover { color: var(--text); }
+
+  .filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+  select, input[type="search"], input[type="text"] {
+    background: var(--panel); color: var(--text);
+    border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px; font: inherit;
+  }
+  input[type="search"] { min-width: 230px; }
+
+  /* Tables scroll sideways rather than forcing the whole page to, which is what
+     keeps this usable at phone width. */
+  #memories-table, #episodes-table, #search-results { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; background: var(--panel);
+          border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+          min-width: 620px; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); background: var(--panel-2); }
+  tbody tr { cursor: pointer; }
+  tbody tr:hover { background: var(--panel-2); }
+  tbody tr:last-child td { border-bottom: none; }
+  td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .id { font-family: var(--mono); font-size: 11px; color: var(--faint); }
+
+  /* Detail drawer */
+  .drawer-bg {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.38);
+    display: flex; justify-content: flex-end; z-index: 50;
+  }
+  .drawer-bg[hidden] { display: none; }
+  .drawer {
+    background: var(--bg); width: min(760px, 100%); height: 100%;
+    overflow-y: auto; border-left: 1px solid var(--border); padding: 16px 20px 60px;
+  }
+  .drawer-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+  .close { background: none; border: 1px solid var(--border); color: var(--muted);
+           border-radius: 6px; padding: 3px 10px; font: inherit; cursor: pointer; }
+  .drawer h3 { font-size: 15px; margin: 20px 0 8px; }
+  .drawer h3:first-of-type { margin-top: 14px; }
+  .content-quote {
+    background: var(--panel); border: 1px solid var(--border); border-left: 3px solid var(--accent);
+    border-radius: var(--radius); padding: 10px 12px; white-space: pre-wrap;
+  }
+  dl.kv { display: grid; grid-template-columns: max-content 1fr; gap: 3px 14px; margin: 0; }
+  dl.kv dt { color: var(--muted); font-size: 12px; }
+  dl.kv dd { margin: 0; }
+  ul.caveats { margin: 0; padding-left: 18px; }
+  ul.caveats li { margin-bottom: 5px; color: var(--muted); }
+
+  ul.tree, ul.tree ul { list-style: none; margin: 0; padding-left: 0; }
+  ul.tree ul { padding-left: 15px; border-left: 1px solid var(--border); margin-left: 7px; }
+  ul.tree li { padding: 3px 0; }
+  .tree-node { display: flex; gap: 7px; align-items: baseline; flex-wrap: wrap; }
+  .tree-node .link { cursor: pointer; color: var(--accent); text-decoration: underline; text-underline-offset: 2px; }
+  .tree-node .txt { color: var(--muted); }
+  .self > .tree-node .txt { color: var(--text); font-weight: 600; }
+
+  pre.audit {
+    background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 10px 12px; overflow-x: auto; font-family: var(--mono); font-size: 11.5px;
+    line-height: 1.65; margin: 0;
+  }
+  .val-pos { color: var(--accent); }
+  .val-neg { color: var(--high); }
+  .val-none { color: var(--faint); }
+  footer { color: var(--faint); font-size: 12px; padding: 0 0 30px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>Memory Fabric</h1>
+    <div class="sub">
+      <span class="mono" id="store-path">…</span>
+      &nbsp;·&nbsp; read-only
+      &nbsp;·&nbsp; <span id="store-meta"></span>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <nav id="nav">
+      <button data-tab="attention" aria-selected="true">Needs attention<span class="count" id="c-attention"></span></button>
+      <button data-tab="memories" aria-selected="false">Memories<span class="count" id="c-memories"></span></button>
+      <button data-tab="episodes" aria-selected="false">Episodes<span class="count" id="c-episodes"></span></button>
+      <button data-tab="search" aria-selected="false">Search</button>
+    </nav>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="tab-attention">
+    <div id="diagnostics"></div>
+    <h2>Needs attention</h2>
+    <div id="attention-list"></div>
+  </section>
+
+  <section id="tab-memories" hidden>
+    <div class="filters">
+      <input type="search" id="f-q" placeholder="Filter by content or id…" autocomplete="off">
+      <select id="f-state"><option value="">any state</option></select>
+      <select id="f-scope"><option value="">any scope</option></select>
+      <select id="f-type"><option value="">any type</option></select>
+      <select id="f-sort">
+        <option value="created">newest first</option>
+        <option value="exposures">most exposed</option>
+        <option value="value">highest value</option>
+        <option value="state">by state</option>
+      </select>
+    </div>
+    <div id="memories-table"></div>
+  </section>
+
+  <section id="tab-episodes" hidden>
+    <h2>Episodes</h2>
+    <div id="episodes-table"></div>
+  </section>
+
+  <section id="tab-search" hidden>
+    <h2>Search the index</h2>
+    <div class="note">
+      This preview reads the index directly and logs nothing. Browsing here cannot
+      create exposure events, so it cannot affect any value estimate.
+    </div>
+    <div class="filters">
+      <input type="search" id="s-q" placeholder="Query the index…" autocomplete="off">
+      <label><input type="checkbox" id="s-all" checked> include non-retrievable states</label>
+    </div>
+    <div id="search-results"></div>
+  </section>
+
+  <footer id="footer"></footer>
+</main>
+
+<div class="drawer-bg" id="drawer-bg" hidden>
+  <div class="drawer" id="drawer" role="dialog" aria-modal="true" aria-label="Memory detail"></div>
+</div>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+
+async function api(path) {
+  const res = await fetch(path, { headers: { Accept: "application/json" } });
+  const data = await res.json().catch(() => ({ error: `bad response (${res.status})` }));
+  if (!res.ok) throw new Error(data.error || `request failed (${res.status})`);
+  return data;
+}
+
+function fmtValue(row) {
+  if (row.value_mean === null || row.value_mean === undefined) {
+    return '<span class="val-none">—</span>';
+  }
+  const cls = row.value_contrastive ? (row.value_mean > 0 ? "val-pos" : "val-neg") : "val-none";
+  const sign = row.value_contrastive && row.value_mean > 0 ? "+" : "";
+  const mark = row.value_contrastive ? "" : "*";
+  return `<span class="${cls}" title="${esc(row.value_estimator)}${
+    row.value_contrastive ? "" : " (not contrastive: cannot show benefit)"
+  }, n_eff ${row.value_n_eff.toFixed(1)}">${sign}${row.value_mean.toFixed(2)}${mark}</span>`;
+}
+
+function badge(text, cls) {
+  return `<span class="badge ${cls || esc(text)}">${esc(text)}</span>`;
+}
+
+function actionBlock(cmd) {
+  return `<div class="action"><code>${esc(cmd)}</code>
+    <button class="copy" data-copy="${esc(cmd)}">copy</button></div>`;
+}
+
+/* ---------- overview ---------- */
+
+let OVERVIEW = null;
+
+async function loadOverview() {
+  const o = await api("/api/overview");
+  OVERVIEW = o;
+  $("store-path").textContent = o.path;
+  $("store-meta").textContent =
+    `${o.events} events · estimator ${o.estimator} · logged policies: ` +
+    `${o.logged_policies.join(", ") || "none"}`;
+
+  const needsAttention = (o.by_state.quarantined || 0) + (o.by_state.contested || 0);
+  const tiles = [
+    ["memories", o.total_memories, false],
+    ["needs review", needsAttention, needsAttention > 0],
+    ["episodes", o.episodes, false],
+    ["with outcome", o.episodes_with_outcome, false],
+    ["exposed", o.exposures, false],
+    ["withheld", o.withholdings, false],
+    ["no evidence", o.no_value_evidence, false],
+    ["both arms", o.memories_with_both_arms, false],
+  ];
+  $("tiles").innerHTML = tiles
+    .map(([k, n, warn]) => `<div class="tile ${warn ? "warn" : ""}">
+      <div class="n">${n}</div><div class="k">${esc(k)}</div></div>`)
+    .join("");
+
+  $("diagnostics").innerHTML = o.diagnostics.length
+    ? `<h2>What this store can and cannot tell you</h2>` +
+      o.diagnostics.map((d) => `<div class="note">${esc(d)}</div>`).join("")
+    : "";
+
+  $("footer").innerHTML =
+    `Values marked <span class="val-none">*</span> come from a non-contrastive estimator: ` +
+    `they are the average outcome of episodes where a memory was exposed, not the difference ` +
+    `it made, and cannot show that it helped.`;
+}
+
+/* ---------- attention ---------- */
+
+async function loadAttention() {
+  const items = await api("/api/attention");
+  $("c-attention").textContent = items.length ? `(${items.length})` : "";
+  $("attention-list").innerHTML = items.length
+    ? items.map((i) => `
+        <div class="card ${esc(i.severity)}">
+          <div class="card-head">
+            ${badge(i.severity, i.severity)}
+            <span class="card-title">${esc(i.title)}</span>
+            ${i.memory_id ? `<span class="id link-id" data-id="${esc(i.memory_id)}">${esc(i.memory_id)}</span>` : ""}
+          </div>
+          <div class="card-detail">${esc(i.detail)}</div>
+          ${actionBlock(i.action)}
+        </div>`).join("")
+    : `<div class="empty">Nothing needs attention.</div>`;
+}
+
+/* ---------- memories ---------- */
+
+async function loadMemories() {
+  const p = new URLSearchParams();
+  const q = $("f-q").value.trim();
+  if (q) p.set("q", q);
+  for (const [key, el] of [["state", "f-state"], ["scope", "f-scope"], ["type", "f-type"]]) {
+    if ($(el).value) p.set(key, $(el).value);
+  }
+  p.set("sort", $("f-sort").value);
+
+  const rows = await api("/api/memories?" + p.toString());
+  $("c-memories").textContent = `(${rows.length})`;
+  if (!rows.length) {
+    $("memories-table").innerHTML = `<div class="empty">No memories match.</div>`;
+    return;
+  }
+  $("memories-table").innerHTML = `
+    <table><thead><tr>
+      <th>Content</th><th>Type</th><th>State</th><th>Scope</th>
+      <th class="num">Exp</th><th class="num">Wth</th><th class="num">Value</th><th>Created</th>
+    </tr></thead><tbody>
+    ${rows.map((r) => `
+      <tr data-id="${esc(r.id)}">
+        <td>${esc(r.content)}<div class="id">${esc(r.id)}</div></td>
+        <td>${badge(r.type, "low")}</td>
+        <td>${badge(r.lifecycle_state)}</td>
+        <td>${esc(r.scope)}</td>
+        <td class="num">${r.exposures}</td>
+        <td class="num">${r.withholdings}</td>
+        <td class="num">${fmtValue(r)}</td>
+        <td class="id">${esc((r.created_at || "").replace("T", " ").replace("+00:00", ""))}</td>
+      </tr>`).join("")}
+    </tbody></table>`;
+}
+
+/* ---------- episodes ---------- */
+
+async function loadEpisodes() {
+  const rows = await api("/api/episodes");
+  $("c-episodes").textContent = `(${rows.length})`;
+  if (!rows.length) {
+    $("episodes-table").innerHTML = `<div class="empty">No episodes recorded.</div>`;
+    return;
+  }
+  $("episodes-table").innerHTML = `
+    <table><thead><tr>
+      <th>Task</th><th>Agent</th><th>Context</th>
+      <th class="num">Exposed</th><th class="num">Outcome</th><th>Verifier</th><th>Started</th>
+    </tr></thead><tbody>
+    ${rows.map((r) => `
+      <tr style="cursor:default">
+        <td>${esc(r.task_id)}<div class="id">${esc(r.id)}</div></td>
+        <td>${esc(r.agent_id)}</td>
+        <td class="id">${esc(JSON.stringify(r.context))}</td>
+        <td class="num">${r.exposures}</td>
+        <td class="num">${r.outcome === null ? '<span class="val-none">—</span>' : r.outcome.toFixed(2)}</td>
+        <td>${r.verifier_id ? esc(r.verifier_id) : '<span class="val-none">none</span>'}</td>
+        <td class="id">${esc((r.started_at || "").replace("T", " ").replace("+00:00", ""))}</td>
+      </tr>`).join("")}
+    </tbody></table>`;
+}
+
+/* ---------- search ---------- */
+
+async function runSearch() {
+  const q = $("s-q").value.trim();
+  if (!q) { $("search-results").innerHTML = ""; return; }
+  const p = new URLSearchParams({ q, k: "15", all: $("s-all").checked ? "1" : "0" });
+  const hits = await api("/api/search?" + p.toString());
+  $("search-results").innerHTML = hits.length
+    ? `<table><thead><tr><th class="num">Score</th><th>Content</th><th>State</th><th>Retrievable</th></tr></thead><tbody>
+      ${hits.map((h) => `<tr data-id="${esc(h.id)}">
+        <td class="num">${h.relevance.toFixed(3)}</td>
+        <td>${esc(h.content)}<div class="id">${esc(h.id)}</div></td>
+        <td>${badge(h.lifecycle_state)}</td>
+        <td>${h.retrievable ? "yes" : '<span class="val-neg">no</span>'}</td>
+      </tr>`).join("")}</tbody></table>`
+    : `<div class="empty">Nothing above the relevance floor. A query with no shared
+       signal returns nothing rather than the least-bad rows in the store.</div>`;
+}
+
+/* ---------- detail drawer ---------- */
+
+function treeHtml(node, isRoot) {
+  const kids = (node.children || []).map((c) => treeHtml(c, false)).join("");
+  const label = isRoot
+    ? `<span class="txt">${esc(node.content)}</span>`
+    : `<span class="link link-id" data-id="${esc(node.id)}">${esc(node.id.slice(0, 8))}…</span>
+       <span class="txt">${esc(node.content)}</span>`;
+  return `<li class="${isRoot ? "self" : ""}">
+    <div class="tree-node">${badge(node.lifecycle_state)}${label}
+    ${node.truncated ? '<span class="badge low">depth limit</span>' : ""}</div>
+    ${kids ? `<ul>${kids}</ul>` : ""}</li>`;
+}
+
+async function openDetail(id) {
+  const bg = $("drawer-bg");
+  const d = $("drawer");
+  bg.hidden = false;
+  d.innerHTML = `<div class="empty">Loading…</div>`;
+  let detail;
+  try {
+    detail = await api(`/api/memories/${encodeURIComponent(id)}`);
+  } catch (err) {
+    d.innerHTML = `<div class="note">${esc(err.message)}</div>`;
+    return;
+  }
+  const r = detail.row;
+  const e = detail.explanation;
+
+  const hasDesc = (detail.descendants.children || []).length > 0;
+  const hasAnc = (detail.ancestors.children || []).length > 0;
+
+  d.innerHTML = `
+    <div class="drawer-top">
+      <div>
+        <div class="card-head">
+          ${badge(r.lifecycle_state)}${badge(r.type, "low")}
+          ${badge(r.scope, "low")}${badge(r.security_class, "low")}
+        </div>
+        <div class="id" style="margin-top:6px">${esc(r.id)} · v${r.version}</div>
+      </div>
+      <button class="close" id="drawer-close">Close</button>
+    </div>
+
+    <h3>Content</h3>
+    ${detail.redacted_kinds.length ? `<div class="note">Secrets redacted for display:
+      ${esc(detail.redacted_kinds.join(", "))}. The stored value is unchanged; it is simply
+      not shown here, so reviewing it cannot leak it to a screenshot or scrollback.</div>` : ""}
+    <div class="content-quote">${esc(detail.full_content)}</div>
+
+    <h3>Why the system remembers this</h3>
+    <dl class="kv">
+      <dt>Created by</dt><dd>${esc(r.created_by)} <span class="id">(${esc(r.method)})</span></dd>
+      <dt>Created at</dt><dd>${esc(r.created_at || "unknown")}</dd>
+      ${e.source_episodes.length ? `<dt>From episodes</dt><dd class="id">${e.source_episodes.map(esc).join(", ")}</dd>` : ""}
+      ${e.derived_from.length ? `<dt>Derived from</dt><dd>${e.derived_from.map((p) =>
+        `<span class="link link-id" data-id="${esc(p)}">${esc(p)}</span>`).join(", ")}</dd>` : ""}
+      ${e.root_memories.length && !(e.root_memories.length === 1 && e.root_memories[0] === r.id)
+        ? `<dt>Traces back to</dt><dd>${e.root_memories.map((p) =>
+        `<span class="link link-id" data-id="${esc(p)}">${esc(p)}</span>`).join(", ")}</dd>` : ""}
+      <dt>Exposure</dt><dd>exposed ${r.exposures}× · withheld ${r.withholdings}× · cited ${r.citations}×</dd>
+      <dt>Value</dt><dd>${fmtValue(r)} <span class="id">n_eff ${r.value_n_eff.toFixed(1)} ·
+        ${esc(r.value_estimator)}${r.value_contrastive ? " · contrastive" : " · not contrastive"}</span></dd>
+      ${Object.keys(r.context).length ? `<dt>Context</dt><dd class="id">${esc(JSON.stringify(r.context))}</dd>` : ""}
+      ${r.capabilities.length ? `<dt>Capabilities</dt><dd class="id">${r.capabilities.map(esc).join(", ")}</dd>` : ""}
+      ${e.contested_with.length ? `<dt>Contested with</dt><dd>${e.contested_with.map((p) =>
+        `<span class="link link-id" data-id="${esc(p)}">${esc(p)}</span>`).join(", ")}</dd>` : ""}
+    </dl>
+
+    ${e.caveats.length ? `<h3>What this does not establish</h3>
+      <ul class="caveats">${e.caveats.map((c) => `<li>${esc(c)}</li>`).join("")}</ul>` : ""}
+
+    ${hasAnc ? `<h3>Derived from</h3><ul class="tree">${treeHtml(detail.ancestors, true)}</ul>` : ""}
+    ${hasDesc ? `<h3>What depends on this</h3>
+      <div class="sub" style="margin-bottom:6px">Quarantining this memory would contest everything below.</div>
+      <ul class="tree">${treeHtml(detail.descendants, true)}</ul>` : ""}
+
+    ${detail.versions.length > 1 ? `<h3>Versions</h3>
+      <dl class="kv">${detail.versions.map((v) =>
+        `<dt>v${v.version}</dt><dd>${esc(v.content)}</dd>`).join("")}</dl>` : ""}
+
+    <h3>Audit trail</h3>
+    <pre class="audit">${detail.audit.map((a) => {
+      const bits = Object.entries(a.payload)
+        .filter(([k]) => k !== "memory_id")
+        .map(([k, v]) => `${k}=${typeof v === "object" ? JSON.stringify(v) : v}`)
+        .join("  ");
+      return esc(`#${String(a.seq).padStart(4)} ${a.ts}  ${a.type.padEnd(18)} ${bits}`);
+    }).join("\n") || "no events"}</pre>`;
+
+  $("drawer-close").addEventListener("click", closeDetail);
+}
+
+function closeDetail() { $("drawer-bg").hidden = true; }
+
+/* ---------- wiring ---------- */
+
+const TABS = ["attention", "memories", "episodes", "search"];
+const LOADERS = {
+  attention: loadAttention,
+  memories: loadMemories,
+  episodes: loadEpisodes,
+  search: async () => {},
+};
+
+function showTab(name) {
+  for (const t of TABS) {
+    $("tab-" + t).hidden = t !== name;
+  }
+  for (const b of $("nav").querySelectorAll("button")) {
+    b.setAttribute("aria-selected", String(b.dataset.tab === name));
+  }
+  try { localStorage.setItem("mf.tab", name); } catch (_) {}
+  LOADERS[name]().catch(showError);
+}
+
+function showError(err) {
+  const box = document.createElement("div");
+  box.className = "note";
+  box.textContent = err.message || String(err);
+  $("diagnostics").prepend(box);
+}
+
+let searchTimer, filterTimer;
+
+function wire() {
+  $("nav").addEventListener("click", (ev) => {
+    const btn = ev.target.closest("button[data-tab]");
+    if (btn) showTab(btn.dataset.tab);
+  });
+
+  document.body.addEventListener("click", (ev) => {
+    const copy = ev.target.closest(".copy");
+    if (copy) {
+      navigator.clipboard?.writeText(copy.dataset.copy).then(() => {
+        const old = copy.textContent;
+        copy.textContent = "copied";
+        setTimeout(() => { copy.textContent = old; }, 1200);
+      }).catch(() => {});
+      return;
+    }
+    const idEl = ev.target.closest("[data-id]");
+    if (idEl) { ev.stopPropagation(); openDetail(idEl.dataset.id); }
+  });
+
+  $("drawer-bg").addEventListener("click", (ev) => {
+    if (ev.target === $("drawer-bg")) closeDetail();
+  });
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape") closeDetail();
+  });
+
+  for (const id of ["f-state", "f-scope", "f-type", "f-sort"]) {
+    $(id).addEventListener("change", () => loadMemories().catch(showError));
+  }
+  $("f-q").addEventListener("input", () => {
+    clearTimeout(filterTimer);
+    filterTimer = setTimeout(() => loadMemories().catch(showError), 180);
+  });
+  $("s-q").addEventListener("input", () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => runSearch().catch(showError), 220);
+  });
+  $("s-all").addEventListener("change", () => runSearch().catch(showError));
+}
+
+async function fillEnums() {
+  const enums = await api("/api/enums");
+  const pairs = [["f-state", "lifecycle_state"], ["f-scope", "scope"], ["f-type", "type"]];
+  for (const [elId, key] of pairs) {
+    for (const value of enums[key]) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = value;
+      $(elId).append(opt);
+    }
+  }
+}
+
+(async function init() {
+  wire();
+  try {
+    await loadOverview();
+    await fillEnums();
+  } catch (err) {
+    showError(err);
+  }
+  let tab = "attention";
+  try { tab = localStorage.getItem("mf.tab") || tab; } catch (_) {}
+  showTab(TABS.includes(tab) ? tab : "attention");
+  // Counts for the unvisited tabs, so the nav is informative on arrival.
+  api("/api/memories?limit=1000").then((r) => { $("c-memories").textContent = `(${r.length})`; }).catch(() => {});
+  api("/api/episodes?limit=1000").then((r) => { $("c-episodes").textContent = `(${r.length})`; }).catch(() => {});
+})();
+</script>
+</body>
+</html>

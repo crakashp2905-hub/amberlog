@@ -1,0 +1,61 @@
+skipping models not installed: phi4
+Live Ollama run - does the fabric change a real model's answers?
+models=['qwen2.5:3b', 'llama3.2:3b', 'qwen2.5:7b']  trials=15  chance=12.5%
+warming the embedder over the whole corpus...
+  180 texts in 18.6s (1 request(s))
+  cache verified: store builds will not embed live
+
+--- qwen2.5:3b ---
+  no_memory  acc= 6.7%  (69s)
+  correct    acc=100.0%  (71s)
+  wrong      acc= 0.0%  (68s)
+  contested  acc=46.7%  (87s)
+
+--- llama3.2:3b ---
+  no_memory  acc= 6.7%  (63s)
+  correct    acc=100.0%  (72s)
+  wrong      acc= 0.0%  (70s)
+  contested  acc=53.3%  (95s)
+
+--- qwen2.5:7b ---
+  no_memory  acc= 6.7%  (143s)
+  correct    acc=100.0%  (170s)
+  wrong      acc= 0.0%  (169s)
+  contested  acc=33.3%  (213s)
+
+model          arm                    accuracy  unparsed  retrieval  s/call
+----------------------------------------------------------------------------
+qwen2.5:3b     no_memory  0.067 [0.000, 0.200]       0%          —    4.58
+qwen2.5:3b     correct    1.000 [1.000, 1.000]       0%       100%    4.72
+qwen2.5:3b     wrong      0.000 [0.000, 0.000]       0%       100%    4.56
+qwen2.5:3b     contested  0.467 [0.200, 0.733]       0%       100%    5.76
+llama3.2:3b    no_memory  0.067 [0.000, 0.200]       0%          —    4.22
+llama3.2:3b    correct    1.000 [1.000, 1.000]       0%       100%    4.80
+llama3.2:3b    wrong      0.000 [0.000, 0.000]       0%       100%    4.69
+llama3.2:3b    contested  0.533 [0.267, 0.800]       0%       100%    6.33
+qwen2.5:7b     no_memory  0.067 [0.000, 0.200]       0%          —    9.51
+qwen2.5:7b     correct    1.000 [1.000, 1.000]       0%       100%   11.33
+qwen2.5:7b     wrong      0.000 [0.000, 0.000]       0%       100%   11.26
+qwen2.5:7b     contested  0.333 [0.133, 0.600]       0%       100%   14.21
+
+=== What this calibrates ===
+
+qwen2.5:3b
+  compliance (follows a correct memory): 100.0%
+  lift over no memory:                   +93.3%
+  misled by a wrong memory:              100.0% of the time
+  contested vs wrong:                    +46.7%
+
+llama3.2:3b
+  compliance (follows a correct memory): 100.0%
+  lift over no memory:                   +93.3%
+  misled by a wrong memory:              100.0% of the time
+  contested vs wrong:                    +53.3%
+
+qwen2.5:7b
+  compliance (follows a correct memory): 100.0%
+  lift over no memory:                   +93.3%
+  misled by a wrong memory:              100.0% of the time
+  contested vs wrong:                    +33.3%
+
+RuleWorld assumed compliance = 0.80 (experiments/ruleworld.py).

@@ -1,0 +1,49 @@
+
+==========================================================================
+1. An agent writes a memory; it is NOT retrievable yet
+==========================================================================
+  model said: I have recorded a durable lesson: 
+
+"When a depot charger trips its breaker on a cold morning, check for a damp earth bo
+  [PASS] agent wrote a memory - 1 written
+  recorded: When a depot charger trips its breaker on a cold morning, check for a damp earth bond as the cause. 
+  [PASS] arrived as a candidate - candidate
+  [PASS] not retrievable before review
+
+==========================================================================
+2. A reviewer validates it; another agent then uses it
+==========================================================================
+  [PASS] retrieved after review - 1 exposed
+  [PASS] model used the retrieved memory
+  model said: When a depot charger trips its breaker on a cold morning, check for a damp earth bond as the cause, as damp earth bonds trip on the first high-current draw.
+
+==========================================================================
+3. A model that memorises a credential is quarantined on ingest
+==========================================================================
+  [PASS] credential quarantined on ingest - quarantined
+  [PASS] secret redacted in the explanation
+
+==========================================================================
+4. Federation: the depot offers its lesson to the workshop
+==========================================================================
+  [PASS] offer accepted - allow
+  [PASS] import arrives unvalidated
+  [PASS] provenance crossed the boundary - from depot-agent
+  [PASS] second store's agent used the imported memory
+  workshop model said: When a charger trips its breaker on a cold morning, check for a damp earth bond as the cause, as it trips on the first high-current draw.
+
+==========================================================================
+5. The source was wrong - retraction follows it across the boundary
+==========================================================================
+  [PASS] source quarantined
+  [PASS] recipient's copy is findable by origin - 1 found
+  [PASS] recipient's copy retracted
+  [PASS] retracted memory no longer retrievable anywhere
+
+==========================================================================
+Summary
+==========================================================================
+  15/15 checks passed
+  depot store:    2 memories, 11 events
+  workshop store: 1 memories, 7 events
+  embedder calls: 6

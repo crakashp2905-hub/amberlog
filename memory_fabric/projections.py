@@ -1,0 +1,250 @@
+"""Projections: in-memory state derived from the event log.
+
+Rebuilding from seq 0 must always produce identical state (the P1 gate in
+ROADMAP.md). So `apply` is pure with respect to the event stream: it reads
+nothing but events, and unknown event types are ignored rather than fatal.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Iterable, Mapping
+
+from .events import Event, EventType
+from .model import (
+    LifecycleState,
+    Memory,
+    MemoryStats,
+    Scope,
+    ValueEstimate,
+)
+
+
+@dataclass
+class Episode:
+    id: str
+    agent_id: str
+    task_id: str
+    context: Mapping[str, Any]
+    seed: int | None = None
+    started_at: int = 0
+    outcome: float | None = None
+    verifier_id: str | None = None
+    outcome_at: int | None = None
+
+    @property
+    def has_outcome(self) -> bool:
+        return self.outcome is not None
+
+
+@dataclass
+class ExposureRecord:
+    """One logged exposure decision, the atom of causal-credit estimation."""
+
+    episode_id: str | None
+    memory_id: str
+    version: int
+    exposed: bool
+    propensity: float
+    policy_id: str
+    step: int
+    ts: int
+
+
+@dataclass
+class HypothesisSet:
+    """A group of mutually contradictory memories, kept rather than collapsed."""
+
+    id: str
+    memory_ids: set[str] = field(default_factory=set)
+    detector_id: str = ""
+    confidence: float = 0.0
+    resolved: bool = False
+    opened_at: int = 0
+
+
+@dataclass
+class ProjectionState:
+    memories: dict[str, Memory] = field(default_factory=dict)
+    history: dict[str, list[Memory]] = field(default_factory=dict)
+    stats: dict[str, MemoryStats] = field(default_factory=dict)
+    episodes: dict[str, Episode] = field(default_factory=dict)
+    exposures: list[ExposureRecord] = field(default_factory=list)
+    hypothesis_sets: dict[str, HypothesisSet] = field(default_factory=dict)
+    children: dict[str, set[str]] = field(default_factory=dict)
+    parents: dict[str, set[str]] = field(default_factory=dict)
+    applied_seq: int = 0
+
+    def stats_for(self, memory_id: str) -> MemoryStats:
+        if memory_id not in self.stats:
+            self.stats[memory_id] = MemoryStats(memory_id=memory_id)
+        return self.stats[memory_id]
+
+
+class Projection:
+    """Folds the event log into queryable state."""
+
+    def __init__(self) -> None:
+        self.state = ProjectionState()
+
+    def apply(self, event: Event) -> None:
+        handler = _HANDLERS.get(event.type)
+        if handler is not None:
+            handler(self.state, event)
+        # An unknown type is a newer schema writing events we do not model yet.
+        # Ignoring it keeps old readers working (SPEC.md section 8).
+        if event.seq is not None:
+            self.state.applied_seq = max(self.state.applied_seq, event.seq)
+
+    def apply_all(self, events: Iterable[Event]) -> None:
+        for event in events:
+            self.apply(event)
+
+    @classmethod
+    def rebuild(cls, log, since_seq: int = 0) -> "Projection":
+        projection = cls()
+        projection.apply_all(log.read(since_seq=since_seq))
+        return projection
+
+
+# --- handlers ---------------------------------------------------------------
+
+
+def _on_episode_started(state: ProjectionState, event: Event) -> None:
+    episode_id = event.episode_id or event.payload.get("episode_id")
+    if not episode_id:
+        return
+    state.episodes[episode_id] = Episode(
+        id=episode_id,
+        agent_id=event.agent_id or "",
+        task_id=event.payload.get("task_id", ""),
+        context=event.payload.get("context", {}),
+        seed=event.payload.get("seed"),
+        started_at=event.ts,
+    )
+
+
+def _register_memory(state: ProjectionState, memory: Memory) -> None:
+    previous = state.memories.get(memory.id)
+    if previous is not None:
+        state.history.setdefault(memory.id, []).append(previous)
+    state.memories[memory.id] = memory
+    state.stats_for(memory.id)
+    # Derivation edges. Recorded per memory id, not per version: lineage
+    # questions ("what descends from this?") are asked about memories.
+    for parent_id, _version in memory.provenance.parents:
+        state.children.setdefault(parent_id, set()).add(memory.id)
+        state.parents.setdefault(memory.id, set()).add(parent_id)
+    if memory.hypothesis_set:
+        hset = state.hypothesis_sets.setdefault(
+            memory.hypothesis_set, HypothesisSet(id=memory.hypothesis_set)
+        )
+        hset.memory_ids.add(memory.id)
+
+
+def _on_memory_created(state: ProjectionState, event: Event) -> None:
+    _register_memory(state, Memory.from_json(event.payload["memory"]))
+
+
+def _on_memory_versioned(state: ProjectionState, event: Event) -> None:
+    _register_memory(state, Memory.from_json(event.payload["memory"]))
+
+
+def _on_exposure_decided(state: ProjectionState, event: Event) -> None:
+    payload = event.payload
+    record = ExposureRecord(
+        episode_id=event.episode_id,
+        memory_id=payload["memory_id"],
+        version=int(payload["version"]),
+        exposed=bool(payload["exposed"]),
+        propensity=float(payload["propensity"]),
+        policy_id=payload.get("policy_id", ""),
+        step=int(payload.get("step", 0)),
+        ts=event.ts,
+    )
+    state.exposures.append(record)
+    stats = state.stats_for(record.memory_id)
+    if record.exposed:
+        stats.exposures += 1
+        stats.last_exposed_at = event.ts
+    else:
+        stats.withholdings += 1
+
+
+def _on_memory_cited(state: ProjectionState, event: Event) -> None:
+    state.stats_for(event.payload["memory_id"]).citations += 1
+
+
+def _on_outcome_recorded(state: ProjectionState, event: Event) -> None:
+    episode = state.episodes.get(event.episode_id or "")
+    if episode is None:
+        return
+    episode.outcome = float(event.payload["outcome"])
+    episode.verifier_id = event.payload.get("verifier_id")
+    episode.outcome_at = event.ts
+
+
+def _on_value_estimated(state: ProjectionState, event: Event) -> None:
+    payload = event.payload
+    raw = dict(payload["estimate"])
+    raw.setdefault("estimator", payload.get("estimator_id", ""))
+    raw["updated_at"] = event.ts
+    estimate = ValueEstimate.from_json(raw)
+    stats = state.stats_for(payload["memory_id"])
+    key = payload.get("context_key", "*")
+    if key == "*":
+        stats.value_estimate = estimate
+    else:
+        stats.value_by_context[key] = estimate
+
+
+def _on_lifecycle_changed(state: ProjectionState, event: Event) -> None:
+    memory = state.memories.get(event.payload["memory_id"])
+    if memory is None:
+        return
+    state.memories[memory.id] = memory.evolve(
+        lifecycle_state=LifecycleState(event.payload["to"])
+    )
+
+
+def _on_scope_changed(state: ProjectionState, event: Event) -> None:
+    memory = state.memories.get(event.payload["memory_id"])
+    if memory is None:
+        return
+    state.memories[memory.id] = memory.evolve(scope=Scope(event.payload["to"]))
+
+
+def _on_conflict_detected(state: ProjectionState, event: Event) -> None:
+    payload = event.payload
+    set_id = payload["hypothesis_set"]
+    hset = state.hypothesis_sets.setdefault(
+        set_id, HypothesisSet(id=set_id, opened_at=event.ts)
+    )
+    hset.memory_ids.update(payload["memory_ids"])
+    hset.detector_id = payload.get("detector_id", hset.detector_id)
+    hset.confidence = float(payload.get("confidence", hset.confidence))
+    for memory_id in payload["memory_ids"]:
+        memory = state.memories.get(memory_id)
+        if memory is not None and memory.hypothesis_set != set_id:
+            state.memories[memory_id] = memory.evolve(hypothesis_set=set_id)
+
+
+def _on_experiment_run(state: ProjectionState, event: Event) -> None:
+    hset = state.hypothesis_sets.get(event.payload["hypothesis_set"])
+    if hset is not None and event.payload.get("results", {}).get("resolved"):
+        hset.resolved = True
+
+
+_HANDLERS = {
+    EventType.EPISODE_STARTED: _on_episode_started,
+    EventType.MEMORY_CREATED: _on_memory_created,
+    EventType.MEMORY_VERSIONED: _on_memory_versioned,
+    EventType.EXPOSURE_DECIDED: _on_exposure_decided,
+    EventType.MEMORY_CITED: _on_memory_cited,
+    EventType.OUTCOME_RECORDED: _on_outcome_recorded,
+    EventType.VALUE_ESTIMATED: _on_value_estimated,
+    EventType.LIFECYCLE_CHANGED: _on_lifecycle_changed,
+    EventType.SCOPE_CHANGED: _on_scope_changed,
+    EventType.CONFLICT_DETECTED: _on_conflict_detected,
+    EventType.EXPERIMENT_RUN: _on_experiment_run,
+}

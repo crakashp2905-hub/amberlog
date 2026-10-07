@@ -1,0 +1,47 @@
+H4 - topology, premature consensus, and minority hypotheses
+Pre-registration: research/prereg/h4-topology-and-diversity.md
+agents=10  replications=200  rounds=150  p=0.55/0.5
+
+=== Topology x minority preservation ===
+
+      topology  preserve             P(correct)  consensus   recovery   regret
+--------------------------------------------------------------------------------
+      complete     False   0.905 [0.865, 0.945]        9.8        24%    10.9%
+      complete      True   1.000 [1.000, 1.000]        4.6       100%     5.4%
+   small_world     False   0.985 [0.965, 1.000]       25.1        96%     4.9%
+   small_world      True   1.000 [1.000, 1.000]       27.5       100%    11.5%
+          ring     False   0.985 [0.965, 1.000]       40.8        97%     6.5%
+          ring      True   0.995 [0.985, 1.000]       42.0        99%    14.7%
+  cycle_sparse     False   0.935 [0.900, 0.965]       61.8        91%    11.2%
+  cycle_sparse      True   0.945 [0.910, 0.975]       68.8        94%    18.8%
+      isolated     False   0.000 [0.000, 0.000]       14.3         0%    52.8%
+      isolated      True   0.290 [0.230, 0.350]      103.8        26%    29.6%
+
+(P(correct) = all agents end believing the better action [95% CI])
+(consensus = first round of a stable unanimous belief)
+(recovery = of runs wrong at round 20, the share ending correct)
+(regret = share of all pulls spent on the worse action)
+
+=== Headroom ===
+
+ceiling P(correct) = 1.00;  headroom from complete = 0.095
+
+                       arm   P(correct)      gain   headroom captured
+----------------------------------------------------------------------
+         complete+preserve        1.000    +0.095                100%
+               small_world        0.985    +0.080                 84%
+      small_world+preserve        1.000    +0.095                100%
+                      ring        0.985    +0.080                 84%
+             ring+preserve        0.995    +0.090                 95%
+              cycle_sparse        0.935    +0.030                 32%
+     cycle_sparse+preserve        0.945    +0.040                 42%
+                  isolated        0.000    -0.905               -953%
+         isolated+preserve        0.290    -0.615               -647%
+
+==============================================================================
+H4a (Zollman):             INCONCLUSIVE
+  captures 32% of headroom, below 40%; interval [-0.020, +0.080] includes zero; P(correct) is not monotone as degree falls: complete=0.905 -> small_world=0.985 -> ring=0.985 -> cycle_sparse=0.935
+
+H4b (minority preserved):  SUPPORTED
+  captures 100% of headroom (+0.095 [+0.055, +0.135]) and lifts recovery 24% -> 100%
+==============================================================================

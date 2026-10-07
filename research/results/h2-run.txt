@@ -1,0 +1,35 @@
+H2 - credit-driven forgetting
+Pre-registration: research/prereg/h2-credit-driven-retention.md
+seeds=10  budget=40  arms=['random', 'frequency', 'recency_importance', 'naive', 'amortized', 'oracle']
+
+=== Arms ===
+
+                 arm              success    pre-drift   post-drift   recovery   rare kept   harm kept
+----------------------------------------------------------------------------------------------------
+              random 0.352 [0.340, 0.366]        0.372        0.331         93       50.0%       37.6%
+           frequency 0.338 [0.311, 0.368]        0.375        0.302        283        9.3%       52.0%
+  recency_importance 0.375 [0.350, 0.401]        0.422        0.327        347       87.0%       87.0%
+               naive 0.476 [0.455, 0.497]        0.551        0.401      never       61.1%        7.9%
+           amortized 0.464 [0.450, 0.481]        0.532        0.397        217       87.0%       11.6%
+              oracle 0.485 [0.469, 0.502]        0.557        0.413        571      100.0%        0.0%
+
+(success = mean over evaluation episodes [95% bootstrap CI over seeds])
+(rare kept = correct claims about rare symptoms surviving the prune)
+(harm kept = memories with true value < -0.05 surviving the prune)
+
+=== Paired differences ===
+
+                          comparison             difference
+------------------------------------------------------------
+               amortized - frequency   0.126 [0.100, 0.152]
+      amortized - recency_importance   0.090 [0.076, 0.105]
+                   amortized - naive -0.012 [-0.025, 0.002]
+
+(registered bar: >= +0.05 with the interval clear of zero)
+
+==============================================================================
+VERDICT: KILLED
+amortized does not beat the best baseline (naive): -0.012 [-0.025, +0.002]. Per ROADMAP P5, credit-driven retention is not justified.
+==============================================================================
+
+GUARDRAIL (prereg §7): not triggered — amortized retains 87.0% of rare-but-correct memories against recency_importance's 87.0%.

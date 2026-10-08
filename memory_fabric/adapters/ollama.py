@@ -19,6 +19,7 @@ Two things it provides:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import time
 import urllib.error
@@ -41,6 +42,31 @@ class OllamaError(RuntimeError):
     pass
 
 
+@dataclass(frozen=True)
+class CallRecord:
+    """One model call, as AGENTS.md requires every LLM call to be recorded:
+    model, prompt hash, token counts, cost.
+
+    The prompt is hashed rather than stored. A prompt here contains memory
+    content, which may contain exactly what the governance layer exists to keep
+    out of secondary surfaces; a hash is enough to tell two calls apart and to
+    spot a cache-defeating prompt that changes every time.
+
+    Cost is left as tokens. A local model's marginal cash cost is zero, and
+    multiplying by a made-up price would be a number without a run behind it.
+    """
+
+    model: str
+    prompt_sha256: str
+    prompt_tokens: int
+    completion_tokens: int
+    seconds: float
+
+    @property
+    def tokens(self) -> int:
+        return self.prompt_tokens + self.completion_tokens
+
+
 class OllamaClient:
     """Minimal client over Ollama's native API."""
 
@@ -58,6 +84,11 @@ class OllamaClient:
         self.timeout = timeout
         self.keep_alive = keep_alive
         self.retries = retries
+        self.calls: list[CallRecord] = []
+        """Every chat call this client has made. Kept on the client rather than
+        returned per call so that a caller who never looks still accumulates the
+        record — cost is a first-class metric, and one that is easy to forget to
+        collect until the bill arrives."""
 
     def _post(self, path: str, payload: Mapping[str, Any]) -> dict[str, Any]:
         body = json.dumps({**payload, "keep_alive": self.keep_alive}).encode("utf-8")
@@ -121,7 +152,35 @@ class OllamaClient:
         }
         if tools:
             payload["tools"] = list(tools)
-        return self._post("/api/chat", payload)
+
+        started = time.perf_counter()
+        result = self._post("/api/chat", payload)
+        # Ollama reports these on a non-streamed response. Missing counts are
+        # recorded as 0 rather than guessed, so a total is always a floor.
+        self.calls.append(
+            CallRecord(
+                model=model,
+                prompt_sha256=hashlib.sha256(
+                    json.dumps(list(messages), sort_keys=True, default=str).encode("utf-8")
+                ).hexdigest(),
+                prompt_tokens=int(result.get("prompt_eval_count") or 0),
+                completion_tokens=int(result.get("eval_count") or 0),
+                seconds=time.perf_counter() - started,
+            )
+        )
+        return result
+
+    def usage(self, since: int = 0) -> dict[str, float]:
+        """Totals over `self.calls[since:]`, so a caller can bracket one episode
+        by noting `len(client.calls)` before it."""
+        window = self.calls[since:]
+        return {
+            "calls": float(len(window)),
+            "prompt_tokens": float(sum(c.prompt_tokens for c in window)),
+            "completion_tokens": float(sum(c.completion_tokens for c in window)),
+            "tokens": float(sum(c.tokens for c in window)),
+            "seconds": sum(c.seconds for c in window),
+        }
 
     def embed(self, model: str, inputs: Sequence[str]) -> list[list[float]]:
         result = self._post("/api/embed", {"model": model, "input": list(inputs)})

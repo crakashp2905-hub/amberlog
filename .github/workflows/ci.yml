@@ -62,8 +62,10 @@ jobs:
           /tmp/v/bin/pip install --quiet dist/*.whl
           cd /tmp
           /tmp/v/bin/memory-fabric --db /tmp/ci.db demo
-          /tmp/v/bin/memory-fabric --db /tmp/ci.db overview --json > /tmp/out.json
-          python -c "import json;d=json.load(open('/tmp/out.json'));assert d['total_memories']>0;print('overview ok')"
+          # --json is a global flag and goes before the subcommand. CI caught
+          # this the first time it ran, which is the job working as intended.
+          /tmp/v/bin/memory-fabric --db /tmp/ci.db --json overview > /tmp/out.json
+          python -c "import json;d=json.load(open('/tmp/out.json'));assert d['total_memories']>0;assert d['schema_version'];print('overview ok', d['schema_version'])"
 
   docker:
     # The image is a wheel on a slim base and nothing else, so the thing worth

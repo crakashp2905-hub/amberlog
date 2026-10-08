@@ -217,6 +217,107 @@ def imported_from(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any] | No
     return dict(origin) if isinstance(origin, dict) else None
 
 
+@dataclass
+class PropagationResult:
+    """What happened to one importer when a retraction followed a memory."""
+
+    store: str
+    memory_id: str
+    acted: bool
+    state: str
+    reason: str = ""
+
+
+def descendants_of(
+    source: "MemoryFabric", memory_id: str, targets: Sequence["MemoryFabric"]
+) -> list[tuple["MemoryFabric", str]]:
+    """Every import of `memory_id` held by any of `targets`.
+
+    Three conditions, and each one was needed:
+
+    * **The origin store as well as the origin id.** Ids are per-store, so two
+      unrelated stores can mint the same one, and matching on the id alone would
+      withdraw a memory that merely shares an identifier.
+    * **Provenance method `IMPORTED`.** A memory *derived* locally from an
+      import inherits the parent's context, origin record included, so it looks
+      like a second copy of the imported memory. Without this condition a
+      retraction quarantined the recipient's own conclusion directly instead of
+      contesting it — which overstates what the origin's retraction establishes.
+      The origin can say "my observation was wrong"; only the recipient can say
+      what follows for the reasoning it built on top.
+    * **The import itself, not its children.** The children are reached by
+      `quarantine`'s own lineage propagation, which marks them *contested* — the
+      correct weaker claim.
+    """
+    found: list[tuple["MemoryFabric", str]] = []
+    for target in targets:
+        for candidate in target.state.memories:
+            memory = target.get(candidate)
+            if memory.provenance.method != ProvenanceMethod.IMPORTED:
+                continue
+            origin = imported_from(target, candidate)
+            if (
+                origin
+                and origin.get("memory_id") == memory_id
+                and origin.get("store") == source.log.path
+            ):
+                found.append((target, candidate))
+    return found
+
+
+def propagate_retraction(
+    source: "MemoryFabric",
+    memory_id: str,
+    targets: Sequence["MemoryFabric"],
+    actor: str = "federation",
+    reason: str = "retracted at origin",
+) -> list[PropagationResult]:
+    """Carry a retraction to the stores a memory travelled to.
+
+    This is the operation the module docstring promises and the one PRIOR_ART.md
+    identifies as the strongest surviving novelty claim: none of the four
+    adjacent papers carries provenance across a federation boundary, so none can
+    do this at all. It was previously done by hand inside an experiment, which
+    meant the product did not actually have it.
+
+    **Quarantine, not delete.** An importer may have built on the memory, and its
+    descendants need to become contested rather than vanish — which is what
+    `quarantine` does and a deletion cannot. It is also reversible: if the origin
+    turns out to have retracted in error, `release` undoes this, and nothing was
+    thrown away in the meantime.
+
+    The importer's existing state is respected. A memory already quarantined
+    locally is left alone and reported as such, because overwriting the local
+    reason with the remote one would lose the fact that the recipient had
+    independently found the problem — which is exactly the evidence that matters
+    when deciding whether to trust that sender again.
+    """
+    results: list[PropagationResult] = []
+    for target, imported_id in descendants_of(source, memory_id, targets):
+        state = target.get(imported_id).lifecycle_state
+        if state in (LifecycleState.QUARANTINED, LifecycleState.DELETED):
+            results.append(
+                PropagationResult(
+                    store=target.log.path,
+                    memory_id=imported_id,
+                    acted=False,
+                    state=state.value,
+                    reason="already withdrawn locally",
+                )
+            )
+            continue
+        target.quarantine(imported_id, reason=reason, actor=actor)
+        results.append(
+            PropagationResult(
+                store=target.log.path,
+                memory_id=imported_id,
+                acted=True,
+                state=target.get(imported_id).lifecycle_state.value,
+            )
+        )
+    return results
+
+
 def imports(fabric: "MemoryFabric") -> list[str]:
     return [
         memory_id

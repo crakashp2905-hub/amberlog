@@ -18,10 +18,12 @@ from memory_fabric import (
 )
 from memory_fabric.federation import (
     describe,
+    descendants_of,
     imported_from,
     imports,
     offer,
     offer_many,
+    propagate_retraction,
 )
 from memory_fabric.governance.firewall import (
     Firewall,
@@ -269,3 +271,115 @@ class TestValueGateBlocksFederationByDefault(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRetractionFollowsTheMemory(unittest.TestCase):
+    """The claim PRIOR_ART.md says survives the novelty downgrade: a retraction
+    reaches the stores a memory travelled to. None of the four adjacent papers
+    carries provenance across a federation boundary, so none can do this.
+    """
+
+    def setUp(self) -> None:
+        self.origin = store(seed=1)
+        self.first = store(seed=2)
+        self.second = store(seed=3)
+        for fabric in (self.origin, self.first, self.second):
+            self.addCleanup(fabric.close)
+
+        self.memory_id = self.origin.remember(
+            "north", "E01 at coastal sites: swap_pilot_cable."
+        )
+        self.origin.validate(self.memory_id, actor="supervisor")
+        self.offers = [
+            offer(self.origin, self.memory_id, target, recipient_agent=agent)
+            for target, agent in ((self.first, "south"), (self.second, "east"))
+        ]
+        self.assertTrue(all(result.accepted for result in self.offers))
+
+    def test_it_finds_the_imports_by_origin_store_and_id(self) -> None:
+        found = descendants_of(self.origin, self.memory_id, [self.first, self.second])
+        self.assertEqual(len(found), 2)
+
+    def test_an_unrelated_store_sharing_an_id_is_not_touched(self) -> None:
+        """Ids are per-store, so two stores can mint the same one. Matching on
+        the id alone would quarantine a memory that merely shares an identifier."""
+        impostor = store(seed=9)
+        self.addCleanup(impostor.close)
+        native = impostor.remember("west", "unrelated local note")
+        impostor.validate(native, actor="supervisor")
+
+        found = descendants_of(self.origin, native, [impostor])
+        self.assertEqual(found, [])
+
+    def test_quarantine_reaches_both_importers(self) -> None:
+        self.origin.quarantine(self.memory_id, reason="poisoned", actor="north")
+        results = propagate_retraction(
+            self.origin, self.memory_id, [self.first, self.second]
+        )
+        self.assertEqual(len(results), 2)
+        self.assertTrue(all(result.acted for result in results))
+        for target, result in zip((self.first, self.second), self.offers):
+            self.assertEqual(
+                target.get(result.imported_memory_id).lifecycle_state,
+                LifecycleState.QUARANTINED,
+            )
+
+    def test_it_quarantines_rather_than_deletes(self) -> None:
+        """An importer may have built on the memory. Its descendants need to
+        become contested rather than vanish, and the origin may itself turn out
+        to have been wrong — both of which a deletion forecloses."""
+        derived = self.first.derive(
+            "south",
+            "Therefore carry spare pilot cables to coastal sites.",
+            parents=[self.offers[0].imported_memory_id],
+        )
+        self.first.validate(derived, actor="supervisor")
+
+        self.origin.quarantine(self.memory_id, reason="poisoned", actor="north")
+        propagate_retraction(self.origin, self.memory_id, [self.first])
+
+        self.assertEqual(
+            self.first.get(self.offers[0].imported_memory_id).lifecycle_state,
+            LifecycleState.QUARANTINED,
+        )
+        self.assertEqual(
+            self.first.get(derived).lifecycle_state, LifecycleState.CONTESTED
+        )
+
+        # Reversible: the origin can be wrong about being wrong. Release
+        # returns it to *candidate*, not active — a remote retraction that has
+        # been reviewed and rejected still leaves a memory nobody has re-tested
+        # here, so the recipient has to validate it again deliberately.
+        self.first.release(self.offers[0].imported_memory_id, actor="south")
+        self.assertEqual(
+            self.first.get(self.offers[0].imported_memory_id).lifecycle_state,
+            LifecycleState.CANDIDATE,
+        )
+
+    def test_a_local_withdrawal_is_not_overwritten(self) -> None:
+        """The recipient having independently found the problem is exactly the
+        evidence that matters when deciding whether to trust that sender again,
+        and overwriting the local reason with the remote one would lose it."""
+        self.second.quarantine(
+            self.offers[1].imported_memory_id, reason="failed here", actor="east"
+        )
+        self.origin.quarantine(self.memory_id, reason="poisoned", actor="north")
+
+        results = propagate_retraction(self.origin, self.memory_id, [self.second])
+        self.assertEqual(len(results), 1)
+        self.assertFalse(results[0].acted)
+        self.assertIn("already withdrawn", results[0].reason)
+
+        trail = " ".join(
+            event.type for event in self.second.audit_trail(self.offers[1].imported_memory_id)
+        )
+        self.assertTrue(trail)
+
+    def test_propagating_without_a_retraction_still_only_affects_imports(self) -> None:
+        """The function does not check that the origin retracted — a caller may
+        have its own reason. What it must never do is touch native memories."""
+        native = self.first.remember("south", "a local note of our own")
+        self.first.validate(native, actor="supervisor")
+
+        propagate_retraction(self.origin, self.memory_id, [self.first])
+        self.assertEqual(self.first.get(native).lifecycle_state, LifecycleState.ACTIVE)

@@ -35,7 +35,15 @@ from .fabric import (
     PolicyViolation,
     RetrievalResult,
 )
-from .federation import FederationSummary, OfferResult, describe, offer, offer_many
+from .federation import (
+    FederationSummary,
+    OfferResult,
+    PropagationResult,
+    describe,
+    offer,
+    offer_many,
+    propagate_retraction,
+)
 from .governance import Firewall, FirewallRuling, RetentionPolicy, SensitiveDataDetector
 from .lineage import LineageGraph, LineageView
 from .model import (
@@ -112,6 +120,8 @@ __all__ = [
     "describe",
     "OfferResult",
     "FederationSummary",
+    "PropagationResult",
+    "propagate_retraction",
     # provenance
     "LineageGraph",
     "LineageView",

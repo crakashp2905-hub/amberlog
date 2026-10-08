@@ -32,6 +32,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ### Changed
 - Schema `0.1.0` → `0.2.0`. Additive; old logs replay unchanged.
+- **`quarantine` now warns against the policy Phase A killed.** Driving a quarantine from "this memory was in context when an episode failed" cut the rate at which a correct memory reached the prompt from 60% of episodes to 18%: six actions span six fault codes, so the memory that asserted what the agent wrongly said was usually a *correct* memory about a different situation. Agreement with a mistake is not evidence of having caused it. The docstring and the CLI help now say so, because the lifecycle makes withdrawal easy and nothing warned that it destroys more correct memory than wrong.
 
 ## [0.1.0] — 2026-09-27
 

@@ -90,23 +90,53 @@ retrieval into the prompt, the `remember` tool, and governance on what the agent
 python -m unittest discover -s tests -t .
 ```
 
-### What is being measured next
+### Phase A is killed, and it is the most important result here
 
-Everything above is either simulation or a single-mechanism live check. The
-question a buyer asks first — *does any of this beat a vector store for a real
-agent?* — is registered and running:
+Everything above is simulation or a single-mechanism live check. Put on a real
+task against a real baseline — 8 arms, 5 seeds, 960 verified decisions through a
+live model — **this project's governance made the agent worse.**
 
-| Phase | Question | Registration |
+| arm | success |
+|---|---|
+| no memory | 0.075 |
+| pooled vector store | 0.558 |
+| pooled + the fabric's prompt framing, no governance | **0.583** |
+| **governed (contested marking + quarantine on contradiction)** | **0.283** |
+| **governed + causal value selection** | **0.242** |
+| oracle | 0.633 |
+
+Not through cost — retrieval was 1.7 ms and the token gate passed. The mechanism
+is sharper than that. Every arm turned a correct memory into a correct answer
+**95%** of the time and failed **95%** of the time without one; the model was
+never the variable. Governance cut how often a correct memory arrived from 60% of
+episodes to 18%, because **withdrawing the memories blamed for a failure withdrew
+the correct ones.** Six actions span six fault codes, so the memory that asserted
+what the agent wrongly said was usually a *correct* memory about a different
+fault — quarantined for agreeing with a mistake it had nothing to do with.
+
+Principle 1 of [AGENTS.md](AGENTS.md) says value is not relevance. Phase A adds:
+**agreement is not causation.** [Result](research/results/phase-a-real-agent-benchmark.md)
+
+The product consequence is immediate and is not a research note:
+quarantine-on-contradiction should not be recommended, and the attention list
+that invites an operator to withdraw memories needs to say what the evidence
+actually is.
+
+| Phase | Question | State |
 |---|---|---|
-| **A** | Governed memory against an ungoverned vector store, real model, 7 arms | [prereg](research/prereg/phase-a-real-agent-benchmark.md) |
+| **A** | Governed memory against an ungoverned vector store | ❌ **Killed** — [result](research/results/phase-a-real-agent-benchmark.md) · [prereg](research/prereg/phase-a-real-agent-benchmark.md) |
 | **B** | What should cross a federation boundary, and must retraction follow it | [prereg](research/prereg/phase-b-federated-agents.md) |
 | **C** | Can a population learn what should propagate — **gated on B** | [prereg](research/prereg/phase-c-memory-ecology.md) |
 
-The decisive Phase A arm is not a strawman. It is a pooled vector store that
-deletes whatever was in context when an episode failed: one line of code that
-reacts to outcomes. Governance beating a *naive* store would establish nothing,
-and [H2](research/results/h2-credit-driven-retention.md) is the standing
-precedent for the cheap baseline winning.
+Two decisions made before the run are why the result is usable. The decisive
+baseline was not a strawman — a pooled store that deletes what was in context at
+a failure, one line of code that reacts to outcomes, because governance beating a
+*naive* store would establish nothing and
+[H2](research/results/h2-credit-driven-retention.md) is the precedent for the
+cheap baseline winning. And an ablation arm was added when the pilot exposed a
+confound: the fabric arms rendered memories in a provenance-and-caveats framing
+while the vector arms got plain text. That arm won. Without it, a prompt's effect
+would have been scored as governance.
 
 ### What works
 

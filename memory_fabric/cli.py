@@ -587,7 +587,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--actor", default="operator")
     p.add_argument("--reason", required=True)
 
-    p = add("quarantine", cmd_quarantine, "WRITES: quarantine a memory and contest its descendants")
+    p = add("quarantine", cmd_quarantine,
+            "WRITES: quarantine a memory and contest its descendants. Quarantine on "
+            "evidence about the memory, not on it having been in context at a failure "
+            "- Phase A measured that policy making an agent much worse.")
     p.add_argument("id")
     p.add_argument("--reason", required=True)
     p.add_argument("--actor", default="operator")

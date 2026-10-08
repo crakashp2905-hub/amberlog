@@ -566,6 +566,17 @@ class MemoryFabric:
         justification and must be re-examined. Without the propagation, a
         poisoned memory survives its own rollback through its children.
 
+        **Do not drive this from "it was in context when something failed."**
+        Phase A measured that policy and it made an agent substantially worse:
+        it cut the rate at which a correct memory reached the prompt from 60% of
+        episodes to 18%, because the memory that asserted what the agent wrongly
+        said was usually a *correct* memory about a different situation that
+        happened to name the same action. Agreement with a mistake is not
+        evidence of having caused it. Quarantine on evidence about the memory —
+        a sensitive-data finding, a contradiction with a verified fact, a
+        contrastive estimate showing harm — not on co-occurrence with a failure.
+        See research/results/phase-a-real-agent-benchmark.md.
+
         Returns the ids marked contested.
         """
         self._require(memory_id)

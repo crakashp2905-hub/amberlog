@@ -37,8 +37,8 @@ review said so directly, and it was right.
 
 | Phase | Question | Registration | Gate |
 |---|---|---|---|
-| **A** | Does governed memory beat an ungoverned vector store for a real agent? | [prereg](research/prereg/phase-a-real-agent-benchmark.md) | In progress |
-| **B** | What should cross a federation boundary, and does retraction need to follow it? | [prereg](research/prereg/phase-b-federated-agents.md) | After A |
+| **A** | Does governed memory beat an ungoverned vector store for a real agent? | [prereg](research/prereg/phase-a-real-agent-benchmark.md) | ❌ **Killed.** Governed memory lost by 34 points, because withdrawal-on-failure withdrew the *correct* memories. [Result](research/results/phase-a-real-agent-benchmark.md) |
+| **B** | What should cross a federation boundary, and does retraction need to follow it? | [prereg](research/prereg/phase-b-federated-agents.md) | Next. `propagate_retraction` now exists as an API |
 | **C** | Can a population learn what should propagate? | [prereg](research/prereg/phase-c-memory-ecology.md) | **Only if PB1 is supported** |
 
 Three things about this set are deliberate.

@@ -1,0 +1,97 @@
+=== Correct memories reaching the prompt, by third of the run ===
+Over-pruning predicts a fall for the withdrawing arms and a flat line
+for the arms that never withdraw anything.
+
+arm                        1st     2nd     3rd    change  withdraws
+----------------------------------------------------------------------
+no_memory                 0.00    0.00    0.00     +0.00  
+local_rag                 0.30    0.55    0.82     +0.52  
+shared_memory             0.42    0.65    0.88     +0.45  
+shared_memory_framed      0.42    0.65    0.88     +0.45  
+shared_memory_decay       0.12    0.03    0.00     -0.12  yes
+fabric                    0.28    0.17    0.10     -0.18  yes
+fabric_causal             0.12    0.15    0.12     +0.00  yes
+oracle                    0.45    0.70    0.82     +0.37  
+
+=== Wrong memories reaching the prompt, by third ===
+Withdrawal is supposed to remove these. If it removes the correct ones
+faster, it is working against itself.
+
+arm                        1st     2nd     3rd    change
+------------------------------------------------------------
+no_memory                 0.00    0.00    0.00     +0.00
+local_rag                 0.03    0.10    0.05     +0.03
+shared_memory             0.33    0.17    0.17     -0.15
+shared_memory_framed      0.33    0.17    0.17     -0.15
+shared_memory_decay       0.10    0.05    0.12     +0.02
+fabric                    0.23    0.23    0.25     +0.02
+fabric_causal             0.30    0.10    0.25     -0.05
+oracle                    0.00    0.00    0.00     +0.00
+
+=== Memories reaching the prompt at all, by third ===
+The store emptying out is the cruder version of the same story.
+
+arm                        1st     2nd     3rd    change
+------------------------------------------------------------
+no_memory                 0.00    0.00    0.00     +0.00
+local_rag                 2.48    2.92    3.00     +0.52
+shared_memory             3.00    3.00    3.00     +0.00
+shared_memory_framed      3.00    3.00    3.00     +0.00
+shared_memory_decay       1.80    0.53    0.55     -1.25
+fabric                    2.98    2.27    1.45     -1.53
+fabric_causal             2.92    2.10    1.68     -1.25
+oracle                    0.45    0.70    0.82     +0.37
+
+=== Success by third ===
+arm                        1st     2nd     3rd    change
+------------------------------------------------------------
+no_memory                   5%      5%     12%     +7.5%
+local_rag                  40%     50%     78%    +37.5%
+shared_memory              40%     52%     75%    +35.0%
+shared_memory_framed       38%     57%     80%    +42.5%
+shared_memory_decay        25%      5%     10%    -15.0%
+fabric                     38%     30%     18%    -20.0%
+fabric_causal              25%     25%     22%     -2.5%
+oracle                     42%     68%     80%    +37.5%
+
+=== Exception sites versus base sites ===
+The exception site is where a lesson from elsewhere is actively wrong.
+An arm that only wins on base sites has not solved the stated problem.
+
+arm                        base   exception      gap
+----------------------------------------------------
+no_memory                   15%          0%   -15.0%
+local_rag                   57%         55%    -1.7%
+shared_memory               60%         52%    -8.3%
+shared_memory_framed        58%         58%    +0.0%
+shared_memory_decay         17%         10%    -6.7%
+fabric                      25%         32%    +6.7%
+fabric_causal               23%         25%    +1.7%
+oracle                      67%         60%    -6.7%
+
+=== Does a correct memory in context actually get used? ===
+Conditional success given at least one correct memory was shown, and
+given none was. Separates selection failure from the model ignoring it.
+
+arm                      had right     n   had none     n
+----------------------------------------------------------
+no_memory                     nan%     0         8%   120
+local_rag                      93%    67         9%    53
+shared_memory                  92%    72         2%    48
+shared_memory_framed           96%    72         2%    48
+shared_memory_decay           100%     5        10%   115
+fabric                         95%    21        14%    99
+fabric_causal                  93%    15        14%   105
+oracle                         95%    79         2%    41
+
+=== Cost ===
+arm                      tokens   memory ms   model ms
+------------------------------------------------------
+no_memory                   173        0.00       2484
+local_rag                   237        0.81       5019
+shared_memory               241        1.57       4583
+shared_memory_framed        356        1.51       5296
+shared_memory_decay         198        0.33       3808
+fabric                      415        1.08       8912
+fabric_causal               414        1.72       7175
+oracle                      192        0.00       2198

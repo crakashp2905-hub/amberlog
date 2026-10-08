@@ -28,6 +28,40 @@ Two things are built in P1 even though they only pay off at P4, because **they c
 | **P8** | Learned controller (H5) | ❌ **Not built, by measurement.** The memory path makes **zero** LLM calls at 0.26 ms/episode, so H5's denominator is zero and the hypothesis is unaskable. [Decision](research/decisions/2026-10-07-h5-premise-false.md) | Re-registerable once an LLM-dependent memory operation exists |
 | **P9** | Distribution | ❌ **Declined, by measurement.** 25× more memories costs 1.7× latency; 4.39 ms/retrieval at 2,000 memories and 120k events. [Decision](research/decisions/2026-10-07-p9-declined.md) | Gate not met and not close |
 
+## After P9: the live-agent phases
+
+P1–P9 answered whether the mechanisms work. They did not answer the question a
+buyer asks first, because every result was either simulation or a single-mechanism
+live check: **does any of this beat a vector store for a real agent?** An external
+review said so directly, and it was right.
+
+| Phase | Question | Registration | Gate |
+|---|---|---|---|
+| **A** | Does governed memory beat an ungoverned vector store for a real agent? | [prereg](research/prereg/phase-a-real-agent-benchmark.md) | In progress |
+| **B** | What should cross a federation boundary, and does retraction need to follow it? | [prereg](research/prereg/phase-b-federated-agents.md) | After A |
+| **C** | Can a population learn what should propagate? | [prereg](research/prereg/phase-c-memory-ecology.md) | **Only if PB1 is supported** |
+
+Three things about this set are deliberate.
+
+**The baseline is not a strawman.** Phase A's decisive arm is
+`shared_memory_decay` — a pooled vector store that deletes whatever was in
+context when an episode failed. One line of code that reacts to outcomes.
+Governance beating a *naive* vector store would establish nothing; H2 is the
+standing precedent, where a propensity-corrected estimator tied a smoothed
+success rate and the oracle showed the cheap baseline already captured 93% of
+the available gain.
+
+**Every phase builds its oracle first.** H3 registered a margin of +0.030 when
+perfect knowledge could only deliver +0.027, so no method could have passed and
+nobody noticed until the run was over. Principle 8a came from that, and all three
+registrations express thresholds as a share of a measured ceiling.
+
+**Phase C is gated on Phase B, in writing, before anyone is attached to the
+result.** If selective sharing does not beat sharing everything and sharing
+nothing, then "learning what to propagate" is a search over a flat surface and
+the memory-ecology idea does not get built. This is principle 9 applied to the
+project's favourite idea rather than to its least favourite.
+
 **Explicitly parked** (revisit after P7): mutation and reproduction; one-bit / low-bit policy communication; FSDP / ZeRO sharding; Hyperspace or P2P substrate; marketplace and pricing tiers.
 
 ### P5 outcome and the H2b follow-up

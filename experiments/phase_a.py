@@ -307,20 +307,31 @@ def run_vector_arm(
     """
     result = ArmResult(arm)
     deleted: set[int] = set()
+    # One index for the whole run, added to as the corpus is released. Rebuilt
+    # per episode it would have charged this arm a cost no real deployment pays,
+    # and `memory_ms` is a registered cost gate.
+    index_store = VectorIndex(embedder)
+    admitted: set[int] = set()
     for index, episode in enumerate(episodes):
-        available = [
-            (i, lesson)
-            for i, lesson in enumerate(lessons[: schedule[index]])
+        for i, lesson in enumerate(lessons[: schedule[index]]):
+            if i not in admitted:
+                index_store.add(str(i), lesson.content)
+                admitted.add(i)
+        eligible = {
+            str(i)
+            for i in admitted
             if i not in deleted
-            and (arm != "local_rag" or lesson.site == episode.site)
-        ]
+            and (arm != "local_rag" or lessons[i].site == episode.site)
+        }
+        # Timed: retrieval only. Admission is a one-time cost per memory and
+        # falls in a different episode for each arm, so including it would make
+        # the latency comparison a comparison of release schedules.
         started = time.perf_counter()
         hits: list[tuple[int, Lesson]] = []
-        if available:
-            fresh = VectorIndex(embedder)
-            for i, lesson in available:
-                fresh.add(str(i), lesson.content)
-            for key, _score_value in fresh.search(W.recall_query(episode), k=k):
+        if eligible:
+            for key, _score_value in index_store.search(
+                W.recall_query(episode), k=k, restrict_to=eligible
+            ):
                 hits.append((int(key), lessons[int(key)]))
         memory_ms = (time.perf_counter() - started) * 1000.0
 
@@ -330,7 +341,7 @@ def run_vector_arm(
         )
         decision = _score(
             arm, seed, index, episode, shown, text, tokens, memory_ms, model_ms,
-            store_size=len(available),
+            store_size=len(eligible),
         )
         result.decisions.append(decision)
 
@@ -385,8 +396,9 @@ def run_fabric_arm(
         contested: set[str] = set()
 
         for index, episode in enumerate(episodes):
-            started = time.perf_counter()
-            # Admit newly released lessons through the governed write path.
+            # Admission and consolidation are untimed, for the same reason as
+            # the vector arms: they are one-time per memory, and the cost gate
+            # is about what every episode pays.
             for i in range(schedule[index]):
                 if i in ids:
                     continue
@@ -421,6 +433,7 @@ def run_fabric_arm(
                 "engineer-field", f"{arm}-{seed}-{index}",
                 {"site": episode.site, "fault": episode.fault},
             ) as session:
+                started = time.perf_counter()
                 hits = session.recall(W.recall_query(episode), k=k, include_contested=True)
                 exposed = list(hits.exposed)
                 memory_ms = (time.perf_counter() - started) * 1000.0

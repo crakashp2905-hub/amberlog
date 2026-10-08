@@ -533,27 +533,60 @@ def run_simple_arm(
     schedule: Sequence[int],
     client: OllamaClient,
     model: str,
+    embedder: OllamaEmbedder | None = None,
+    k: int = 3,
     verbose: bool = True,
 ) -> ArmResult:
-    """no_memory and oracle. The floor and the ceiling."""
+    """no_memory and oracle. The floor and the ceiling.
+
+    **The oracle is perfect *filtering*, not a single perfect memory.** The
+    first registered run defined it as the one correct lesson shown alone, and
+    `shared_memory` beat it at seed 2 — which by itself proves it was not a
+    ceiling. The cause was an asymmetry built into the arm: every other arm
+    shows up to k memories and the oracle showed one, and three memories of
+    which one is right beats one right memory alone, because the model commits
+    more readily with more context.
+
+    That is the H3 mistake in a new form — a threshold expressed as a share of
+    headroom, against a ceiling that was too low to be one. So the oracle now
+    gets the same retrieval budget as the arms it bounds: top-k by similarity
+    over the released corpus, with every lesson that is *wrong for this episode*
+    removed. It is still bounded by the corpus rather than omniscient, so the
+    ceiling it sets is the one selection could actually reach.
+    """
     result = ArmResult(arm)
+    index_store = VectorIndex(embedder) if arm == "oracle" and embedder else None
+    admitted: set[int] = set()
     for index, episode in enumerate(episodes):
         shown: list[Lesson] = []
         if arm == "oracle":
-            # Perfect selection over the same released corpus: the true lesson
-            # for this fault and site if one has been written, nothing if not.
-            # It is bounded by the corpus, not omniscient, so the ceiling it
-            # sets is the one selection could actually reach.
-            shown = [
-                lesson
-                for lesson in lessons[: schedule[index]]
-                if lesson.right_for(episode)
-            ][:1]
+            eligible_ids = [
+                i
+                for i, lesson in enumerate(lessons[: schedule[index]])
+                if not lesson.wrong_for(episode)
+            ]
+            if index_store is not None:
+                for i in eligible_ids:
+                    if i not in admitted:
+                        index_store.add(str(i), lessons[i].content)
+                        admitted.add(i)
+                hits = index_store.search(
+                    W.recall_query(episode),
+                    k=k,
+                    restrict_to={str(i) for i in eligible_ids},
+                )
+                shown = [lessons[int(key)] for key, _ in hits]
+            else:
+                # No embedder: fall back to the correct lesson first, then fill
+                # the remaining slots in corpus order. Same budget, no ranking.
+                correct = [i for i in eligible_ids if lessons[i].right_for(episode)]
+                rest = [i for i in eligible_ids if i not in correct]
+                shown = [lessons[i] for i in (correct + rest)[:k]]
         memory_text = W.render_plain([lesson.content for lesson in shown])
         text, tokens, model_ms = _ask(client, model, memory_text, episode)
         decision = _score(
             arm, seed, index, episode, shown, text, tokens, 0.0, model_ms,
-            store_size=schedule[index] if arm == "oracle" else 0,
+            store_size=len(admitted) if arm == "oracle" else 0,
         )
         result.decisions.append(decision)
         if verbose:
@@ -609,7 +642,8 @@ def run_seed(
         started = time.perf_counter()
         if arm in ("no_memory", "oracle"):
             out[arm] = run_simple_arm(
-                arm, seed, lessons, evaluation, schedule, client, model, verbose
+                arm, seed, lessons, evaluation, schedule, client, model,
+                embedder=embedder, verbose=verbose,
             )
         elif arm in UNGOVERNED:
             out[arm] = run_vector_arm(

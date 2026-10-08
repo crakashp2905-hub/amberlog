@@ -42,7 +42,7 @@ RuleWorld cannot be used. It has no notion of a lesson being correct in one cont
 | `shared_memory_decay` | every site's lessons, pooled | delete a lesson that was in context when an episode failed | top-3 cosine |
 | `fabric` | every site's lessons | validation gate, contested marking on disagreement, quarantine on contradiction | top-3 relevance |
 | `fabric_causal` | every site's lessons | full | value estimate (amortized) over relevance |
-| `oracle` | the one true lesson for this (fault, site), or nothing | — | perfect |
+| `oracle` | the released corpus with everything wrong-for-here removed | — | perfect filtering, top-3 (corrected by amendment; see below) |
 
 **`shared_memory_decay` is the arm that matters most**, and it is here because of H2. The obvious comparison is governance against a *naive* vector store, and governance would probably win it. The honest comparison is against the cheapest thing that also reacts to failure — delete what was present when you failed. If governance cannot beat one line of code, the machinery is not earning its place, and H2 is precedent that this is not a hypothetical worry.
 
@@ -163,6 +163,45 @@ Failing any of these means the **world** is changed and the change recorded as a
 > the data.** If PA is killed this way, the follow-up is a world where the
 > context label is noisy or absent, registered separately as Phase A′ — not a
 > re-run of this one with the baseline weakened.
+
+> ### Amendment, 2026-10-08 (third) — mid-run, after the ceiling arm was beaten
+>
+> **The oracle was not a ceiling, and the first registered run is void on the two
+> criteria that depend on it.**
+>
+> At seed 2 of the registered run, `shared_memory` scored 67% against the
+> oracle's 62%. An ungoverned baseline beating the oracle is not a surprising
+> result; it is a proof that the arm was mis-specified.
+>
+> The cause is an asymmetry in §3 that neither the pilot nor the §5 sanity
+> conditions could reveal. Every other arm shows up to **three** memories. The
+> oracle showed **one** — the single correct lesson. Three memories of which one
+> is right beats one right memory alone, because the model commits more readily
+> with more context. So the ceiling was depressed by the arm's retrieval budget
+> rather than by the limits of selection, and §6 expresses two of its three
+> criteria as shares of the headroom that ceiling reveals.
+>
+> **This is the H3 mistake in a new form.** H3 registered a margin of +0.030 when
+> perfect knowledge could deliver +0.027, so nothing could pass. Principle 8a was
+> written because of it, this registration quotes that principle, and the
+> registration then violated it anyway — not by setting the bar too high, but by
+> measuring the ceiling with an arm that could not reach it. The pilot showed the
+> oracle at 100% over 12 episodes, which made it look unimpeachable; the flaw only
+> appears once the task is hard enough that one memory is not enough.
+>
+> **The correction, which changes no threshold.** The oracle now gets the same
+> retrieval budget as the arms it bounds: top-3 by similarity over the released
+> corpus, with every lesson that is *wrong for this episode* removed. Perfect
+> filtering at equal k. It remains bounded by the corpus rather than omniscient,
+> so it still measures what selection could actually achieve.
+>
+> **What happens to the first run.** It is reported, not discarded — the
+> comparisons among the seven non-oracle arms are unaffected, as are harm,
+> contamination, degradation and cost. But §6 criteria (1) and (2) are
+> **unevaluable** on it, and are reported as unevaluable rather than as a pass or
+> a fail, because a headroom share against a known-wrong ceiling is worse than no
+> number at all. Criterion (3) does not involve the oracle and stands. The
+> registered verdict comes from the re-run with the corrected ceiling.
 
 ## 6. Ceiling and thresholds
 

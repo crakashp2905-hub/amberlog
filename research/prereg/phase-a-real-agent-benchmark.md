@@ -38,6 +38,7 @@ RuleWorld cannot be used. It has no notion of a lesson being correct in one cont
 | `no_memory` | none | — | — |
 | `local_rag` | only lessons this agent wrote at **this** site | none | top-3 cosine |
 | `shared_memory` | every site's lessons, pooled | none | top-3 cosine |
+| `shared_memory_framed` | every site's lessons, pooled | none — but rendered in the fabric's framing (added by amendment; see below) | top-3 cosine |
 | `shared_memory_decay` | every site's lessons, pooled | delete a lesson that was in context when an episode failed | top-3 cosine |
 | `fabric` | every site's lessons | validation gate, contested marking on disagreement, quarantine on contradiction | top-3 relevance |
 | `fabric_causal` | every site's lessons | full | value estimate (amortized) over relevance |
@@ -118,9 +119,54 @@ Failing any of these means the **world** is changed and the change recorded as a
 >    What remains in the `fabric` arm is the validation gate, contested marking
 >    on disagreement, and quarantine on contradiction.
 
+> ### Amendment, 2026-10-08 (second) — after the §5 pilot, before the registered run
+>
+> **Disclosure first.** §5 sanctions a pilot for checking that the world can
+> measure anything, and this amendment comes out of that pilot, so it is written
+> with the numbers it was prompted by, not without them. The one-seed, 12-episode
+> pilot showed: `no_memory` 25%, `shared_memory` 75%, `shared_memory_decay` 83%,
+> `local_rag` 92%, `fabric` 100%. Those are 12 episodes at one seed and are not a
+> result; they are the reason for the two changes below. **No threshold in §6 is
+> changed.**
+>
+> **1. A new baseline arm: `shared_memory_framed`.** This is a confound the
+> original §3 missed, and the pilot made it visible. The fabric arms render
+> retrieved memories through `adapters.context.build_context`, which delimits
+> them, states that they are evidence rather than instructions, and says what is
+> known about each one's value. The vector arms render plain text, because that
+> is all a vector store has. So `fabric` beating `local_rag` could be the
+> governance or it could be the wrapper, and as registered the two were not
+> separable — the benchmark would have credited the machinery for a prompt.
+>
+> `shared_memory_framed` pools every site's lessons with no governance at all
+> and renders them in the fabric's framing, with every block labelled
+> `unevaluated` — which is exactly what the fabric's own `describe_evidence`
+> returns for a memory with no contrastive evidence, so nothing is invented to
+> flatter or weaken the baseline. It joins `best_ungoverned` in §6. **If it
+> matches the fabric arms, the effect is the framing and the governance earned
+> nothing**, and that is the finding.
+>
+> **2. `local_rag` is a stronger baseline than intended, and is left as
+> registered.** It filters to lessons written at the episode's own site, which in
+> this world is a *perfect* context partition: the lesson from this site is the
+> correct one unless it was poisoned, and nothing contaminating is visible at all.
+> It is therefore close to an oracle by construction, and it is the arm most
+> likely to make PA fail.
+>
+> Leaving it is the right call twice over. It is what §6 asked for — the hardest
+> available baseline — and metadata-filtered retrieval is what a competent team
+> actually deploys, so beating it is the real bar. But it bounds what a null
+> result would mean, and that bound is stated now rather than discovered in the
+> write-up: **a loss to `local_rag` would show that an exact context partition
+> beats governance, not that governance is worthless, because the partition is
+> only available when the hazard is perfectly predictable from a field already in
+> the data.** If PA is killed this way, the follow-up is a world where the
+> context label is noisy or absent, registered separately as Phase A′ — not a
+> re-run of this one with the baseline weakened.
+
 ## 6. Ceiling and thresholds
 
-Let `best_ungoverned = max(local_rag, shared_memory, shared_memory_decay)` on the metric in question, chosen *after* the run — deliberately the hardest baseline available, so the comparison cannot be won by picking a weak one.
+Let `best_ungoverned = max(local_rag, shared_memory, shared_memory_framed, shared_memory_decay)` on the metric in question, chosen *after* the run — deliberately the hardest baseline available, so the comparison cannot be won by picking a weak one.
 
 Headroom on success is `oracle − best_ungoverned`.
 
@@ -138,7 +184,7 @@ Headroom on success is `oracle − best_ungoverned`.
 ## 7. Design
 
 - **Model:** `qwen2.5:3b` for the agent, chosen for speed. `nomic-embed-text` for embeddings.
-- **Seeds:** 5 (0–4). **Evaluation episodes:** 24 per seed per arm. 7 arms → 840 verified decisions.
+- **Seeds:** 5 (0–4). **Evaluation episodes:** 24 per seed per arm. 8 arms → 960 verified decisions.
 - **Statistics:** paired by (seed, episode) across arms, since every arm sees the identical episode sequence and the identical lesson corpus. Bootstrap CIs (10,000 resamples) on paired differences, as in H1–H4.
 - **Verification:** the environment scores the answer. No self-reported outcomes (AGENTS.md).
 - **Parsing:** the same prose-tolerant action parser as the live multi-agent run — "swap the pilot cable" counts as `swap_pilot_cable`. Scoring only the token form would record a confidently wrong answer as no answer, which biases the result in the fabric's favour.

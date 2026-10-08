@@ -38,9 +38,16 @@ from memory_fabric import (
     EpsilonGreedyPolicy,
     LifecycleState,
     MemoryFabric,
+    MemoryType,
     TopKPolicy,
 )
-from memory_fabric.adapters.context import build_context
+from memory_fabric.adapters.context import (
+    CLOSE as CONTEXT_CLOSE,
+    INJECTION_PREAMBLE,
+    OPEN as CONTEXT_OPEN,
+    MemoryBlock,
+    build_context,
+)
 from memory_fabric.adapters.ollama import (
     OllamaClient,
     OllamaEmbedder,
@@ -57,12 +64,22 @@ ARMS = (
     "no_memory",
     "local_rag",
     "shared_memory",
+    "shared_memory_framed",
     "shared_memory_decay",
     "fabric",
     "fabric_causal",
     "oracle",
 )
-UNGOVERNED = ("local_rag", "shared_memory", "shared_memory_decay")
+UNGOVERNED = (
+    "local_rag",
+    "shared_memory",
+    "shared_memory_framed",
+    "shared_memory_decay",
+)
+"""`shared_memory_framed` counts as a baseline, not as a fabric arm. It carries
+the fabric's *presentation* with none of its governance, so if it matches the
+fabric arms then the measured effect is the prompt framing and the machinery
+earned nothing — and the honest baseline to beat is the framing alone."""
 
 SYSTEM = (
     "You are a field maintenance engineer. Answer with exactly one response "
@@ -157,6 +174,38 @@ def release_schedule(count: int, episodes: int) -> list[int]:
         available = start + round((count - start) * (i / max(1, episodes - 1)))
         out.append(min(count, available))
     return out
+
+
+def render_framed(contents: Sequence[str]) -> str:
+    """The fabric's own framing, applied to memories that have no governance
+    behind them.
+
+    This is the ablation the pilot demanded. The fabric arms render through
+    `adapters.context.build_context`, which delimits the memories, labels each
+    one as evidence rather than instruction, and states what is known about its
+    value. The vector arms render as plain text, because that is what a vector
+    store has to give. So a fabric win could be the governance or it could be
+    the wrapper, and the two were not separable.
+
+    Everything here is true of an ungoverned store: the memory has no id worth
+    quoting, no lifecycle, and nothing is known about its effect — so every
+    block says `unevaluated`, which is exactly what `describe_evidence` returns
+    for a memory with no contrastive evidence. Nothing is invented to make the
+    baseline stronger or weaker than it is.
+    """
+    if not contents:
+        return ""
+    blocks = "\n\n".join(
+        MemoryBlock(
+            memory_id=f"note-{i + 1}",
+            content=content,
+            type=MemoryType.SEMANTIC.value,
+            lifecycle_state=LifecycleState.ACTIVE.value,
+            evidence="unevaluated",
+        ).render()
+        for i, content in enumerate(contents)
+    )
+    return f"{INJECTION_PREAMBLE}\n\n{CONTEXT_OPEN}\n{blocks}\n{CONTEXT_CLOSE}"
 
 
 # --- per-episode record -----------------------------------------------------
@@ -336,8 +385,9 @@ def run_vector_arm(
         memory_ms = (time.perf_counter() - started) * 1000.0
 
         shown = [lesson for _, lesson in hits]
+        render = render_framed if arm == "shared_memory_framed" else W.render_plain
         text, tokens, model_ms = _ask(
-            client, model, W.render_plain([lesson.content for lesson in shown]), episode
+            client, model, render([lesson.content for lesson in shown]), episode
         )
         decision = _score(
             arm, seed, index, episode, shown, text, tokens, memory_ms, model_ms,

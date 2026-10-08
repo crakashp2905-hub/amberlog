@@ -90,6 +90,24 @@ retrieval into the prompt, the `remember` tool, and governance on what the agent
 python -m unittest discover -s tests -t .
 ```
 
+### What is being measured next
+
+Everything above is either simulation or a single-mechanism live check. The
+question a buyer asks first — *does any of this beat a vector store for a real
+agent?* — is registered and running:
+
+| Phase | Question | Registration |
+|---|---|---|
+| **A** | Governed memory against an ungoverned vector store, real model, 7 arms | [prereg](research/prereg/phase-a-real-agent-benchmark.md) |
+| **B** | What should cross a federation boundary, and must retraction follow it | [prereg](research/prereg/phase-b-federated-agents.md) |
+| **C** | Can a population learn what should propagate — **gated on B** | [prereg](research/prereg/phase-c-memory-ecology.md) |
+
+The decisive Phase A arm is not a strawman. It is a pooled vector store that
+deletes whatever was in context when an episode failed: one line of code that
+reacts to outcomes. Governance beating a *naive* store would establish nothing,
+and [H2](research/results/h2-credit-driven-retention.md) is the standing
+precedent for the cheap baseline winning.
+
 ### What works
 
 | Capability | Where |

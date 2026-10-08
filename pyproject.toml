@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memory-fabric"
+version = "0.2.0"
+description = "Governed agent memory: valued by effect on outcomes, not similarity to the query."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [{ name = "CR Ramesh" }]
+keywords = ["agent-memory", "llm", "provenance", "governance", "federation"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+
+# The core has no runtime dependencies, and that is a design commitment rather
+# than an accident: it installs anywhere Python does, and nothing in the
+# governance path can break because a transitive dependency moved.
+dependencies = []
+
+[project.optional-dependencies]
+# Adapters only. `ollama` needs nothing — it speaks HTTP over urllib.
+claude = ["anthropic>=0.40"]
+
+[project.scripts]
+memory-fabric = "memory_fabric.cli:main"
+
+[project.urls]
+Repository = "https://github.com/crakashp2905-hub/memory-fabric"
+
+[tool.setuptools.packages.find]
+include = ["memory_fabric*"]
+
+[tool.setuptools.package-data]
+# The dashboard is served from disk at runtime, so it has to ship inside the
+# wheel; without this the web UI 500s on a pip-installed copy.
+"memory_fabric.observability" = ["static/*.html"]

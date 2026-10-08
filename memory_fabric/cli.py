@@ -201,6 +201,9 @@ def cmd_overview(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             ["exposures", f"{data.exposures} exposed / {data.withholdings} withheld"
              f" ({data.randomised_exposures} randomised)"],
             ["estimator", data.estimator],
+            ["schema", f"{data.schema_version} installed"
+             + (f", log written by {', '.join(data.log_schema_versions)}"
+                if data.log_schema_versions != [data.schema_version] else "")],
             ["policies in log", ", ".join(data.logged_policies) or "none"],
             ["policy for new writes", f"{data.configured_policy}"
              f"{'' if data.configured_policy_declares_overlap else ' (deterministic)'}"],

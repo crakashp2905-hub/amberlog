@@ -11,6 +11,7 @@ queries into the data every value estimate is computed from.
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import threading
 import unittest
@@ -18,7 +19,14 @@ import urllib.error
 import urllib.request
 from http import HTTPStatus
 
-from memory_fabric import EpsilonGreedyPolicy, LifecycleState, MemoryFabric, MemoryType, Scope
+from memory_fabric import (
+    SCHEMA_VERSION,
+    EpsilonGreedyPolicy,
+    LifecycleState,
+    MemoryFabric,
+    MemoryType,
+    Scope,
+)
 from memory_fabric.cli import G, _strip, clip, main
 from memory_fabric.observability import report
 from memory_fabric.observability.server import build_server
@@ -688,3 +696,53 @@ class TestCli(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSchemaVersionReporting(unittest.TestCase):
+    """The question a store has to be able to answer is "can this build read my
+    log?", and the answer is a comparison between two facts, not one of them.
+    """
+
+    def test_overview_reports_both_the_package_and_the_log(self) -> None:
+        fabric = populated()
+        self.addCleanup(fabric.close)
+        data = report.overview(fabric)
+        self.assertEqual(data.schema_version, SCHEMA_VERSION)
+        self.assertEqual(data.log_schema_versions, [SCHEMA_VERSION])
+
+    def test_a_log_written_by_a_newer_schema_is_flagged(self) -> None:
+        fabric = populated()
+        self.addCleanup(fabric.close)
+        last = list(fabric.log.read())[-1]
+        fabric.log.append(
+            dataclasses.replace(last, event_id=last.event_id + "Z", schema_version="0.10.0")
+        )
+
+        data = report.overview(fabric)
+        self.assertIn("0.10.0", data.log_schema_versions)
+        self.assertTrue(
+            any("newer than the installed" in note for note in data.diagnostics),
+            f"no diagnostic warned about the newer schema: {data.diagnostics}",
+        )
+
+    def test_versions_compare_numerically_not_as_strings(self) -> None:
+        """"0.10.0" sorts before "0.2.0" as a string, which would tell a reader
+        its log was older than it is and let it act on incomplete figures."""
+        self.assertGreater(report._version("0.10.0"), report._version("0.2.0"))
+        self.assertGreater(report._version("1.0.0"), report._version("0.99.0"))
+        self.assertEqual(report._version("0.2.0rc1"), (0, 2, 1))
+
+    def test_package_version_is_not_behind_the_schema(self) -> None:
+        """VERSIONING.md's one enforced invariant. A build may run ahead of the
+        schema — a release can be packaging-only — but a build advertising an
+        older version than the events it writes would mislead every reader of
+        the log about what it can replay.
+        """
+        import tomllib
+        from pathlib import Path
+
+        pyproject = Path(__file__).resolve().parent.parent / "pyproject.toml"
+        if not pyproject.exists():  # installed copy, not a checkout
+            self.skipTest("no pyproject.toml beside the package")
+        declared = tomllib.loads(pyproject.read_text(encoding="utf-8"))["project"]["version"]
+        self.assertGreaterEqual(report._version(declared), report._version(SCHEMA_VERSION))

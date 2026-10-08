@@ -22,31 +22,54 @@ Research prototype for **memory that is valued by its effect on outcomes, not by
 
 **H5 is unaskable and P9 is declined**, both on measurement. The memory path makes **zero** LLM calls at 0.26 ms/episode, so "replace ≥50% of memory-management LLM calls" has no denominator. And 25× more memories costs 1.7× latency, so no load here needs distributing. Both were cancelled by measurement rather than built on anticipation.
 
+## Install
+
 ```bash
-python -m unittest discover -s tests -t .
+pip install .
 ```
+
+Zero runtime dependencies, Python 3.11–3.13, Linux/macOS/Windows — all four checked in CI with
+nothing installed, because a zero-dependency claim is only true if it is tested that way.
+The adapters are extras: `pip install ".[claude]"`. The Ollama adapter needs nothing, since
+Ollama speaks HTTP.
+
+Installing puts a `memory-fabric` command on the path. Everything below works equally as
+`python -m memory_fabric` from a checkout.
 
 ### Try it
 
-Seed a deliberately messy store — a poisoning and its retraction, an unresolved disagreement, a leaked secret, a rare-but-critical procedure:
+Seed a deliberately messy store — a poisoning and its retraction, an unresolved disagreement,
+a leaked secret, a rare-but-critical procedure:
 
 ```bash
-python -m memory_fabric --db demo.db demo
+memory-fabric --db demo.db --create demo
 ```
 
 Then look at it from either surface:
 
 ```bash
-python -m memory_fabric --db demo.db attention
+memory-fabric --db demo.db attention
 ```
 
 ```bash
-python -m memory_fabric --db demo.db --estimator ips serve
+memory-fabric --db demo.db --estimator ips serve
 ```
 
-`attention` is the triage list — what needs a human, worst first, each finding carrying the command that acts on it. `serve` opens the same information as a local dashboard on 127.0.0.1.
+`attention` is the triage list — what needs a human, worst first, each finding carrying the
+command that acts on it. `serve` opens the same information as a local dashboard on 127.0.0.1.
 
-The dashboard prints a one-time URL that carries a session token. It binds to loopback and refuses to serve unauthenticated on any other address.
+The dashboard prints a one-time URL that carries a session token. It binds to loopback and
+refuses to serve unauthenticated on any other address. `--db` on a path that does not exist is
+an error, not an empty store; `--create` opts in.
+
+In a container:
+
+```bash
+docker build -t memory-fabric . && docker run -p 8765:8765 -v mf-data:/data memory-fabric
+```
+
+The volume matters: the event log is the source of truth, and without it the first
+`docker rm` takes the data with it.
 
 Two scripted walkthroughs, both offline:
 
@@ -58,7 +81,14 @@ python examples/poisoning_and_rollback.py
 python examples/agent_on_the_fabric.py
 ```
 
-The first is the governance story. The second runs an agent end to end — transcript ingestion, retrieval into the prompt, the `remember` tool, and governance on what the agent writes.
+The first is the governance story. The second runs an agent end to end — transcript ingestion,
+retrieval into the prompt, the `remember` tool, and governance on what the agent writes.
+
+### Tests
+
+```bash
+python -m unittest discover -s tests -t .
+```
 
 ### What works
 
@@ -139,6 +169,9 @@ The test that demonstrates the point is `test_naive_is_fooled_by_selection_bias_
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Components, data flow, storage, layout |
 | [ROADMAP.md](ROADMAP.md) | The single roadmap, with gates and kill criteria |
 | [SECURITY.md](SECURITY.md) | Threat model |
+| [VERSIONING.md](VERSIONING.md) | What the version number promises — the schema, not the API |
+| [CHANGELOG.md](CHANGELOG.md) | What changed, and which bugs it fixed |
+| [research/PRIOR_ART.md](research/PRIOR_ART.md) | Verified related work, and what it does to the novelty claims |
 | [CONTRIBUTING.md](CONTRIBUTING.md) | How to add a feature or an experiment |
 
 ## Central question

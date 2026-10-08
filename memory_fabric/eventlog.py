@@ -118,6 +118,20 @@ class EventLog:
         row = self._conn.execute("SELECT COALESCE(MAX(seq), 0) AS s FROM events").fetchone()
         return int(row["s"])
 
+    def schema_versions(self) -> list[str]:
+        """Every schema version that wrote into this log, oldest string first.
+
+        A log is allowed to contain several: events are never rewritten, so a
+        store that has outlived an upgrade carries the version of whatever was
+        running at the time each event was appended. That is the point of
+        keeping it per-event rather than per-store — the reader can tell which
+        parts of the history it understands.
+        """
+        rows = self._conn.execute(
+            "SELECT DISTINCT schema_version AS v FROM events ORDER BY v"
+        )
+        return [str(r["v"]) for r in rows]
+
     def __len__(self) -> int:
         row = self._conn.execute("SELECT COUNT(*) AS c FROM events").fetchone()
         return int(row["c"])

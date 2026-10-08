@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any, Iterable
 from ..governance.sensitive import scrub, scrub_tree, secret_values
 from ..model import (
     BLOCKED_STATES,
+    SCHEMA_VERSION,
     EXPOSABLE_STATES,
     LifecycleState,
     MemoryType,
@@ -164,6 +165,11 @@ class Overview:
     logged_policies: list[str] = field(default_factory=list)
     randomised_exposures: int = 0
     memories_with_both_arms: int = 0
+    # The installed package's schema version, and every version that actually
+    # wrote into this log. They differ whenever a store outlives an upgrade,
+    # and the answer to "can this build read my log?" is the comparison.
+    schema_version: str = SCHEMA_VERSION
+    log_schema_versions: list[str] = field(default_factory=list)
     diagnostics: list[str] = field(default_factory=list)
 
     def to_json(self) -> dict[str, Any]:
@@ -328,10 +334,23 @@ def overview(fabric: "MemoryFabric") -> Overview:
         logged_policies=logged_policies,
         randomised_exposures=randomised,
         memories_with_both_arms=both_arms,
+        schema_version=SCHEMA_VERSION,
+        log_schema_versions=fabric.log.schema_versions(),
         diagnostics=[],
     )
     report.diagnostics = _diagnostics(report)
     return report
+
+
+def _version(text: str) -> tuple[int, ...]:
+    """Compare versions numerically, because "0.10.0" sorts before "0.2.0" as a
+    string and a reader told its log is older than it is would act on the wrong
+    figures. Anything unparseable sorts lowest, which errs toward warning."""
+    parts = []
+    for piece in text.split("."):
+        digits = "".join(c for c in piece if c.isdigit())
+        parts.append(int(digits) if digits else 0)
+    return tuple(parts)
 
 
 def _diagnostics(report: Overview) -> list[str]:
@@ -387,6 +406,14 @@ def _diagnostics(report: Overview) -> list[str]:
         notes.append(
             f"Historic data contains randomised exposures, but this session's policy "
             f"({report.configured_policy}) is deterministic, so new episodes will not add to it."
+        )
+
+    newer = [v for v in report.log_schema_versions if _version(v) > _version(report.schema_version)]
+    if newer:
+        notes.append(
+            f"This log contains events written by schema {', '.join(newer)}, newer than the "
+            f"installed {report.schema_version}. Projections ignore events they do not "
+            "recognise, so the figures above may be incomplete. Upgrade before acting on them."
         )
 
     if report.contrastive_evidence == 0 and report.total_memories > 0:

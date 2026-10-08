@@ -1,0 +1,107 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    # The core claims zero dependencies and support from 3.11. Both are only
+    # true if they are checked on every version claimed, on more than one OS.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        python: ["3.11", "3.12", "3.13"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Tests run with no dependencies installed
+        run: python -m unittest discover -s tests -t .
+
+      - name: Everything compiles
+        run: python -m compileall -q memory_fabric experiments tests examples
+
+  package:
+    # A wheel that builds but omits the dashboard, or whose console script does
+    # not exist, fails only in front of a user. Check it here instead.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - run: python -m pip install --upgrade build
+      - run: python -m build --wheel --outdir dist
+
+      - name: Wheel ships the dashboard and excludes experiments
+        run: |
+          python - <<'EOF'
+          import glob, zipfile, sys
+          names = zipfile.ZipFile(glob.glob("dist/*.whl")[0]).namelist()
+          checks = {
+              "dashboard bundled": any("dashboard.html" in n for n in names),
+              "experiments excluded": not any(n.startswith("experiments/") for n in names),
+              "tests excluded": not any(n.startswith("tests/") for n in names),
+          }
+          for name, ok in checks.items():
+              print(("PASS " if ok else "FAIL ") + name)
+          sys.exit(0 if all(checks.values()) else 1)
+          EOF
+
+      - name: Installs clean and the console script works
+        run: |
+          python -m venv /tmp/v
+          /tmp/v/bin/pip install --quiet dist/*.whl
+          cd /tmp
+          /tmp/v/bin/memory-fabric --db /tmp/ci.db demo
+          /tmp/v/bin/memory-fabric --db /tmp/ci.db overview --json > /tmp/out.json
+          python -c "import json;d=json.load(open('/tmp/out.json'));assert d['total_memories']>0;print('overview ok')"
+
+  docker:
+    # The image is a wheel on a slim base and nothing else, so the thing worth
+    # checking is that it builds and that the server inside it answers over the
+    # published port as a non-root user. Done here because the development
+    # machine has no Docker daemon.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: docker build -t memory-fabric:ci .
+
+      - name: Container serves the dashboard over the published port
+        env:
+          # Supplied rather than scraped from the startup banner, which is also
+          # how an operator should run it: the token never enters the process list.
+          MEMORY_FABRIC_TOKEN: ci-token-for-the-container-check
+        run: |
+          docker run -d --name mf -p 8765:8765 -e MEMORY_FABRIC_TOKEN memory-fabric:ci
+          for i in $(seq 1 30); do
+            curl -fsS -H "Authorization: Bearer $MEMORY_FABRIC_TOKEN" http://localhost:8765/api/overview -o /tmp/ov.json && break
+            sleep 1
+          done
+          python -c "import json; d=json.load(open('/tmp/ov.json')); print('schema', d['schema_version'])"
+          test "$(docker exec mf id -u)" = "10001"
+
+      - name: Unauthenticated requests are refused
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8765/api/overview)
+          test "$code" = "401" || { echo "expected 401, got $code"; exit 1; }
+          docker rm -f mf
+
+  secrets:
+    # The project ships a sensitive-data detector. Pointing it at the repo is
+    # both a smoke test of the detector and a guard on what gets committed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python tools/scan_secrets.py

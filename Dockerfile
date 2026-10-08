@@ -1,0 +1,36 @@
+# The core has no runtime dependencies, so this image is the Python base plus a
+# wheel and nothing else. Built in two stages only to keep the build backend out
+# of the final layer.
+FROM python:3.13-slim AS build
+WORKDIR /src
+COPY pyproject.toml README.md ./
+COPY memory_fabric ./memory_fabric
+RUN pip install --no-cache-dir build && python -m build --wheel --outdir /dist
+
+FROM python:3.13-slim
+LABEL org.opencontainers.image.title="Memory Fabric" \
+      org.opencontainers.image.description="Governed agent memory, valued by effect on outcomes." \
+      org.opencontainers.image.source="https://github.com/crakashp2905-hub/memory-fabric"
+
+COPY --from=build /dist/*.whl /tmp/
+RUN pip install --no-cache-dir /tmp/*.whl && rm /tmp/*.whl
+
+# The store is a SQLite file and the container is disposable: keep them apart,
+# or the first `docker rm` takes the event log with it. The log is the source of
+# truth, so this is the one volume that matters.
+VOLUME /data
+ENV MEMORY_FABRIC_DB=/data/store.db
+
+# Not root: the process only ever needs to read its own package and write one
+# directory, and a governance layer that runs as root is a poor advertisement.
+RUN useradd --create-home --uid 10001 fabric && mkdir -p /data && chown fabric /data
+USER fabric
+
+EXPOSE 8765
+
+# `serve` binds loopback by default and refuses to serve unauthenticated on any
+# other address, which inside a container would mean nothing could reach it. So
+# the published surface is explicit: bind all interfaces, keep token auth on,
+# and let the operator decide what to expose the port to. The token is printed
+# at startup; pass --token to supply your own.
+CMD ["sh", "-c", "memory-fabric --db \"$MEMORY_FABRIC_DB\" --create serve --host 0.0.0.0 --port 8765"]

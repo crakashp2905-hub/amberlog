@@ -1,0 +1,19 @@
+.git
+.github
+**/__pycache__
+*.pyc
+build
+dist
+*.egg-info
+.venv
+venv
+
+# Not in the image: the research record and the experiment harnesses are the
+# reason to trust the thing, not part of what runs.
+research
+experiments
+tests
+examples
+*.db
+*.db-wal
+*.db-shm

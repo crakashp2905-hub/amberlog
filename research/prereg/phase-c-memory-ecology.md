@@ -51,6 +51,41 @@ DepotWorld, 8 agents, territories drawn so that overlap varies continuously rath
 - `rounds_to_stabilise` — when the sharing graph stops changing, or never.
 - `imports` and tokens, as the cost.
 
+> ### Amendment, 2026-10-10 — before the harness was run
+>
+> **The gate now governs reporting, not building.** §0 said Phase C is not built
+> unless PB1 is supported. The project owner has directed that every phase be
+> completed and run, which is their call to make, so the harness is built and the
+> run happens either way. What the gate still decides is what the result is
+> *called*:
+>
+> - **PB1 supported** → Phase C is a registered test of PC against §5.
+> - **PB1 not supported** → Phase C runs as **exploratory**, labelled as such in
+>   its result, and PC is **not** reported as supported or killed. A threshold
+>   applied to a surface already measured to be flat is not a test, and H3 is the
+>   standing lesson about what that produces: a bar nobody could clear, found out
+>   only afterwards.
+>
+> Writing this down now is the point. The gate was a commitment made before any
+> federation number existed, and relabelling it after the fact — rather than
+> quietly dropping it — is the difference between a changed plan and a rewritten
+> one.
+>
+> **Three seeds, sixteen rounds, not five seeds.** §7 registered 5 seeds. A
+> bandit over seven possible recipients cannot learn anything in a handful of
+> rounds, so spending the compute budget on seeds instead of rounds would make PC
+> vacuous by construction — the H3 failure in a new costume. 8 agents × 16 rounds
+> × 3 seeds is **384 decisions per arm**, more than Phase B's 240 and more than
+> Phase A's 120, and it gives the learner sixteen chances to adjust rather than
+> six. The cost is less protection against an unlucky world draw, which is
+> stated here as the trade it is.
+>
+> **`best_fixed` is resolved from Phase B's result, not chosen here.** It is
+> whichever sharing policy actually won there. If Phase B's selective policies
+> all lost to `share_all`, then `best_fixed` *is* `share_all`, and PC is being
+> asked to beat the better of two extremes — which is the honest comparison and
+> a harder one than beating a selective policy that did not work.
+
 ## 5. Ceiling and thresholds
 
 Headroom is `oracle_share − best_fixed` on success. Note what that means: the bar is set against the **best static policy**, not against sharing everything. Setting it against `share_all` would be the H3 mistake inverted — an easy baseline making a weak method look strong.
@@ -64,7 +99,7 @@ Headroom is `oracle_share − best_fixed` on success. Note what that means: the 
 ## 6. Stated limitations (written now)
 
 1. **The outcome channel is assumed.** `learned` requires recipients to report verified outcomes to senders. Many real federations will not, which bounds the applicability of a positive result more tightly than the result itself will suggest.
-2. **8 agents, 5 seeds.** Enough to see a sharing graph form, not enough for population genetics. No claim about scaling follows.
+2. **8 agents, 3 seeds, 16 rounds** (amended). Enough to see a sharing graph form, not enough for population genetics, and fewer seeds than the other phases. No claim about scaling follows.
 3. **Stationary world.** Territories and answer key are fixed. An ecology's interesting behaviour is mostly in non-stationary environments, and that is not what this measures.
 4. **One model throughout**, so agents are more alike than real ones.
 5. **The learner is a bandit over recipients.** It cannot represent "share this *kind* of memory with that agent", which is what the founding document actually describes. A null here does not rule out a richer policy class; it rules out the cheap one, which is the right order to test them in.

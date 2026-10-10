@@ -17,12 +17,13 @@ a live run worth its two hours.
 
 from __future__ import annotations
 
+import math
 import random
 import unittest
 from unittest.mock import patch
 
 from experiments import depotworld as W
-from experiments import phase_a, phase_a_prime, phase_b
+from experiments import phase_a, phase_a_prime, phase_b, phase_c
 from experiments.phase_a import Lesson
 
 
@@ -357,3 +358,105 @@ class TestPhaseBArms(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class TestPhaseCArms(unittest.TestCase):
+    """The population arms, and the two statistics the ecology claim rests on."""
+
+    def setUp(self) -> None:
+        self.rng = random.Random(3)
+        self.truth = W.build_truth(self.rng)
+        self.corpora = {
+            agent: corpus(self.truth, sites=sites, poison_every=4)
+            for agent, sites in phase_c.TERRITORIES.items()
+        }
+        self.episodes = phase_c.agent_episodes(self.truth, self.rng, 6)
+
+    def _realistic(self, client, model, memory_text, episode):
+        """Succeeds when a correct memory is in front of it, fails otherwise —
+        which is what the live runs measured at roughly 95% conversion. A stub
+        that always fails would leave the learner with nothing but failures and
+        no edges to form, so it could not test the learner at all."""
+        shown = memory_text.replace("_", " ")
+        if episode.correct in memory_text or episode.correct.replace("_", " ") in shown:
+            return episode.correct, 10.0, 1.0
+        return next(a for a in W.ACTIONS if a != episode.correct), 10.0, 1.0
+
+    def _run(self, arm):
+        with patch.object(phase_c, "_ask", self._realistic):
+            return phase_c.run_arm(
+                arm, 0, self.corpora, self.episodes, None, None, "stub",
+                verbose=False,
+            )
+
+    def test_isolated_shares_nothing(self) -> None:
+        self.assertEqual(self._run("isolated").imports, 0)
+
+    def test_the_oracle_shares_nothing_wrong(self) -> None:
+        result = self._run("oracle_share")
+        self.assertGreater(result.imports, 0)
+        self.assertEqual(result.imports_wrong, 0)
+
+    def test_imports_reach_prompts(self) -> None:
+        """Phase B's regression, guarded here too: accepting imports that no
+        agent ever retrieves makes every sharing comparison meaningless."""
+        result = self._run("share_all")
+        self.assertGreater(sum(d.shown_imported for d in result.decisions), 0)
+
+    def test_the_learner_forms_a_sharing_graph(self) -> None:
+        result = self._run("learned")
+        edges = sum(len(v) for v in result.learned_edges.values())
+        self.assertGreater(edges, 0, "the learner never learned an edge")
+
+    def test_a_fixed_policy_has_no_learned_graph(self) -> None:
+        self.assertEqual(self._run("share_all").learned_edges, {})
+
+    def test_the_outcome_channel_changes_what_is_learned(self) -> None:
+        """`learned` is fed the recipient's verified outcome; its blind twin is
+        fed only the sender's own. If the two produced identical graphs the
+        channel would be doing nothing and the arm comparison could not detect
+        it."""
+        seeing = self._run("learned").learned_edges
+        blind = self._run("learned_no_feedback").learned_edges
+        self.assertNotEqual(seeing, blind)
+
+    def test_the_bandit_prefers_a_recipient_that_succeeds(self) -> None:
+        bandit = phase_c.RecipientBandit(random.Random(0))
+        for _ in range(10):
+            bandit.record("a1", "a2", True)
+            bandit.record("a1", "a3", False)
+        self.assertGreater(bandit.rate("a1", "a2"), bandit.rate("a1", "a3"))
+        self.assertIn("a2", bandit.edges()["a1"])
+        self.assertNotIn("a3", bandit.edges()["a1"])
+
+    def test_an_untried_recipient_starts_optimistic(self) -> None:
+        """Otherwise the population freezes on whoever it happened to try
+        first, and the learner is measuring its own initialisation."""
+        bandit = phase_c.RecipientBandit(random.Random(0))
+        self.assertEqual(bandit.rate("a1", "a2"), 1.0)
+
+    def test_spearman_handles_ties_and_degenerate_input(self) -> None:
+        self.assertAlmostEqual(phase_c.spearman([1, 2, 3, 4], [1, 2, 3, 4]), 1.0)
+        self.assertAlmostEqual(phase_c.spearman([1, 2, 3, 4], [4, 3, 2, 1]), -1.0)
+        self.assertTrue(math.isnan(phase_c.spearman([1, 1, 1], [5, 5, 5])))
+        self.assertTrue(math.isnan(phase_c.spearman([1], [1])))
+
+    def test_an_undefined_correlation_is_not_reported_as_a_weak_one(self) -> None:
+        """Under `share_all` every memory reaches every store, so spread has no
+        variance and there is nothing for value to correlate with. That is an
+        opposite finding to "no relationship found", and a bare NaN reads as
+        the second."""
+        said = phase_c.describe_rho(float("nan"), 20, [8.0] * 20)
+        self.assertIn("undefined", said)
+        self.assertIn("every store", said)
+
+    def test_the_true_overlap_graph_is_what_the_learner_is_scored_against(self) -> None:
+        self.assertEqual(phase_c.neighbourhood_match(phase_c.overlap_graph()), 1.0)
+        self.assertEqual(
+            phase_c.neighbourhood_match({a: set() for a in phase_c.AGENTS}), 0.0
+        )
+
+    def test_every_agent_only_works_its_own_sites(self) -> None:
+        for agent, sites in phase_c.TERRITORIES.items():
+            for episode in self.episodes[agent]:
+                self.assertIn(episode.site, sites)

@@ -438,6 +438,10 @@ def verdict(pooled: dict[str, ArmRun]) -> None:
     headroom = ceil_v - floor_v
 
     print("\n=== Against the pre-registration ===")
+    stats.report_ceiling(
+        {arm: stats.mean(cell.result.success) for arm, cell in pooled.items()},
+        "oracle",
+    )
     print(f"  baseline (withdraw nothing): {floor_v:.1%}")
     print(f"  ceiling (corrected oracle):  {ceil_v:.1%}")
     print(f"  headroom:                    {headroom:+.1%}")

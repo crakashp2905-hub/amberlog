@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import math
 import random
-from typing import Sequence
+from typing import Mapping, Sequence
 
 
 def rank(values: Sequence[float]) -> list[float]:
@@ -85,3 +85,49 @@ def fmt_ci(values: Sequence[float], seed: int = 0) -> str:
     if math.isnan(low):
         return f"{mean(values):.3f}"
     return f"{mean(values):.3f} [{low:.3f}, {high:.3f}]"
+
+
+def check_ceiling(
+    scores: Mapping[str, float], ceiling: str, tolerance: float = 0.0
+) -> list[str]:
+    """Report any arm that scored above the oracle (AGENTS.md principle 8b).
+
+    An arm above the ceiling is not a surprising result, it is a proof that the
+    ceiling is wrong, and this project has built one wrong three times: H3
+    registered a margin larger than its own ceiling, Phase A's oracle got a
+    smaller retrieval budget than the arms it bounded, and Phase B's shared
+    memories correct at a lesson's own site to recipients working several sites.
+    Every one looked unimpeachable until something beat it.
+
+    So the check is mechanical rather than a matter of remembering. `tolerance`
+    exists because a *small* excess can be sampling noise at a few hundred
+    decisions; it is a reason to look, not a reason to dismiss, which is why the
+    default is zero and the message says which it might be.
+    """
+    if ceiling not in scores:
+        return [f"no ceiling arm named {ceiling!r} in this run"]
+    ceiling_score = scores[ceiling]
+    problems: list[str] = []
+    for arm, score in scores.items():
+        if arm == ceiling:
+            continue
+        if score > ceiling_score + tolerance:
+            problems.append(
+                f"{arm} ({score:.3f}) beat the ceiling {ceiling} "
+                f"({ceiling_score:.3f}) by {score - ceiling_score:+.3f} - either "
+                f"sampling noise or the ceiling is mis-specified; principle 8b "
+                f"says check before reading any headroom share from this run"
+            )
+    return problems
+
+
+def report_ceiling(scores: Mapping[str, float], ceiling: str) -> bool:
+    """Print the 8b check. Returns True when the ceiling held."""
+    problems = check_ceiling(scores, ceiling)
+    if not problems:
+        print(f"  ceiling check: no arm beat {ceiling} (principle 8b)")
+        return True
+    print(f"  CEILING CHECK FAILED (principle 8b):")
+    for problem in problems:
+        print(f"    {problem}")
+    return False

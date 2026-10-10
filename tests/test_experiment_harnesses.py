@@ -23,7 +23,7 @@ import unittest
 from unittest.mock import patch
 
 from experiments import depotworld as W
-from experiments import phase_a, phase_a_prime, phase_b, phase_c
+from experiments import phase_a, phase_a_prime, phase_b, phase_c, stats
 from experiments.phase_a import Lesson
 
 
@@ -495,3 +495,64 @@ class TestPhaseCArms(unittest.TestCase):
         for agent, sites in phase_c.TERRITORIES.items():
             for episode in self.episodes[agent]:
                 self.assertIn(episode.site, sites)
+
+
+class TestCeilingCheckIsMechanical(unittest.TestCase):
+    """AGENTS.md principle 8b, enforced rather than remembered.
+
+    This project built a mis-specified ceiling three times — H3's threshold
+    exceeded its own, Phase A's oracle got a smaller retrieval budget than the
+    arms it bounded, and Phase B's oracle poisoned its own recipients. Principle
+    8a made the ceiling mandatory after the first and did not prevent the next
+    two, because "is the ceiling actually a ceiling?" was left to whoever was
+    reading the output.
+    """
+
+    def test_an_arm_above_the_ceiling_is_reported(self) -> None:
+        problems = stats.check_ceiling(
+            {"baseline": 0.50, "contender": 0.90, "oracle": 0.80}, "oracle"
+        )
+        self.assertEqual(len(problems), 1)
+        self.assertIn("contender", problems[0])
+        self.assertIn("8b", problems[0])
+
+    def test_it_names_both_possibilities(self) -> None:
+        """A small excess can be sampling noise. The message must not assert
+        which it is, because dismissing it was the mistake in Phase B — the
+        ordering looked like noise and the real tell was a contradiction
+        elsewhere."""
+        problems = stats.check_ceiling({"a": 0.81, "oracle": 0.80}, "oracle")
+        self.assertIn("noise", problems[0])
+        self.assertIn("mis-specified", problems[0])
+
+    def test_a_sound_ceiling_passes_quietly(self) -> None:
+        self.assertEqual(
+            stats.check_ceiling({"a": 0.50, "b": 0.79, "oracle": 0.80}, "oracle"), []
+        )
+
+    def test_a_tie_is_not_a_failure(self) -> None:
+        """An arm reaching the ceiling means the ceiling is attainable, which is
+        a finding rather than a fault."""
+        self.assertEqual(
+            stats.check_ceiling({"a": 0.80, "oracle": 0.80}, "oracle"), []
+        )
+
+    def test_a_missing_ceiling_arm_is_itself_a_problem(self) -> None:
+        problems = stats.check_ceiling({"a": 0.5}, "oracle")
+        self.assertEqual(len(problems), 1)
+        self.assertIn("no ceiling arm", problems[0])
+
+    def test_every_phase_runs_the_check(self) -> None:
+        """The point is that it cannot be forgotten. If a phase's verdict stops
+        calling it, this fails."""
+        import inspect
+
+        for module, ceiling in (
+            (phase_a, "oracle"),
+            (phase_a_prime, "oracle"),
+            (phase_b, "oracle_share"),
+            (phase_c, "oracle_share"),
+        ):
+            source = inspect.getsource(module.verdict)
+            self.assertIn("report_ceiling", source, module.__name__)
+            self.assertIn(ceiling, source, module.__name__)

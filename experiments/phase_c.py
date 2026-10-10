@@ -566,6 +566,10 @@ def verdict(pooled: dict[str, CArm], registered: bool) -> None:
     low, high = stats.bootstrap_ci(diffs)
 
     print("\n=== Against the pre-registration ===")
+    stats.report_ceiling(
+        {arm: stats.mean(cell.success()) for arm, cell in pooled.items()},
+        "oracle_share",
+    )
     print(f"  best fixed policy:      {floor_v:.1%}")
     print(f"  ceiling (oracle_share): {ceil_v:.1%}")
     print(f"  headroom:               {headroom:+.1%}")

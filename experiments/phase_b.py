@@ -529,6 +529,10 @@ def verdict(pooled: dict[str, BArm]) -> None:
     headroom = ceil_v - floor_v
 
     print("\n=== Against the pre-registration ===")
+    stats.report_ceiling(
+        {arm: stats.mean(cell.success()) for arm, cell in pooled.items()},
+        "oracle_share",
+    )
     print(f"  best simple policy: {simple} at {floor_v:.1%}")
     print(f"  ceiling (oracle_share): {ceil_v:.1%}")
     print(f"  headroom: {headroom:+.1%}")

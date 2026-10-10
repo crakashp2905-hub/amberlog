@@ -726,6 +726,9 @@ def verdict(results: dict[str, ArmResult]) -> None:
     share = gain / headroom if headroom > 0 else float("nan")
 
     print("\n=== Against the pre-registration ===")
+    stats.report_ceiling(
+        {arm: stats.mean(results[arm].success) for arm in results}, "oracle"
+    )
     print(f"  best ungoverned baseline: {best} at {floor:.0%}")
     print(f"  ceiling (oracle):         {ceiling:.0%}")
     print(f"  headroom:                 {headroom:+.1%}")

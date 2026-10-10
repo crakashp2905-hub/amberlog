@@ -9,9 +9,18 @@
 > the current matrix and `tests/test_retraction_protocol.py` for the crash
 > matrix.
 >
-> **Still true:** there is no *transport*. Both sides remain in one process, so
-> what Phase 1 delivered is durability and idempotency, not distribution.
-> Phase 2 is the network.
+> **Phase 2 (2026-10-10) added the transport.** Authenticated HTTP on its own
+> endpoint — deliberately *not* on the observability server, which stays
+> read-only by test — plus an outbox dispatcher, reconciliation from the
+> recipient's own cursor, and integrity snapshots that name unresolved
+> retractions. Invariant 11 moved to implemented for the federation path.
+> A retraction now crosses a real socket between two stores, is refused when
+> unsigned or signed with the wrong key, and converges after an outage.
+>
+> **Still true:** peer-to-peer, brokers, consensus and multi-tenancy remain
+> deferred, and a recipient still may not re-share an import onward — so an
+> origin always knows its recipients. Lifting that is the measured trigger for
+> P2P work (see §2 of the Phase B result).
 
 - **Audited:** 2026-10-10, commit `597bdcb`, 483 tests passing, secret scan clean.
 - **Method:** read the path from local quarantine through `propagate_retraction()` to recipient lifecycle and retrieval enforcement, then checked each advertised guarantee against the code that would have to implement it.

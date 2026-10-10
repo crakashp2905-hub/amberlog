@@ -25,10 +25,12 @@ from .governance.firewall import Firewall, FirewallRequest, FirewallRuling
 from .governance.retention import RetentionDecision, RetentionPolicy
 from .ids import new_ulid
 from .lineage import LineageGraph, LineageView
+import json
 from datetime import datetime, timezone
 
 from .outbox import Outbox, now_ms as _now_ms
 from .protocol import (
+    PROTOCOL_VERSION,
     Acknowledgement,
     PropagationState,
     ProtocolError,
@@ -38,6 +40,7 @@ from .protocol import (
     new_store_id,
 )
 from .model import (
+    SCHEMA_VERSION,
     BLOCKED_STATES,
     EXPLORATORY_STATES,
     EXPOSABLE_STATES,
@@ -360,6 +363,73 @@ class MemoryFabric:
         #    same projection fold, and `_eligible_ids` reads lifecycle state, so
         #    the version is no longer exposed. Hence `enforced`, not `persisted`.
         return ack(PropagationState.ENFORCED, f"{len(targets)} memory/ies withdrawn")
+
+    def retractions_since(self, sequence: int) -> list[Retraction]:
+        """Every retraction this store has issued above `sequence`.
+
+        What an origin replays when a recipient reconnects and says where it got
+        to. Read from the event log rather than from a cache, because the log is
+        the source of truth and a cache would be one more thing that can be
+        stale after a restore.
+        """
+        out: list[Retraction] = []
+        for event in self.log.read():
+            if event.type != ev.EventType.RETRACTION_REQUESTED:
+                continue
+            payload = event.payload
+            if int(payload.get("origin_sequence", 0)) <= sequence:
+                continue
+            out.append(
+                Retraction(
+                    retraction_id=payload["retraction_id"],
+                    origin_store_id=payload["origin_store_id"],
+                    origin_memory_id=payload["origin_memory_id"],
+                    origin_memory_version=int(payload["origin_memory_version"]),
+                    origin_sequence=int(payload["origin_sequence"]),
+                    reason_code=payload["reason_code"],
+                    requested_by=payload["requested_by"],
+                    issued_at=iso_timestamp(event.ts),
+                    evidence_digest=payload.get("evidence_digest"),
+                )
+            )
+        out.sort(key=lambda r: r.origin_sequence)
+        return out
+
+    def integrity_snapshot(self) -> dict[str, Any]:
+        """The integrity state a backup must not silently omit.
+
+        A restore that dropped pending retractions would reintroduce withdrawn
+        knowledge and nothing downstream could detect it, so the snapshot names
+        the unresolved ones explicitly and carries a checksum over them.
+        """
+        import hashlib
+
+        pending = [
+            {
+                "retraction_id": row.retraction_id,
+                "recipient": row.recipient,
+                "state": row.state.value,
+                "attempts": row.attempts,
+            }
+            for row in self.outbox.pending()
+        ]
+        cursors = {
+            row["origin_store_id"]: row["sequence_seen"]
+            for row in self.log._conn.execute("SELECT * FROM origin_cursor")
+        }
+        material = json.dumps(
+            {"pending": pending, "cursors": cursors}, sort_keys=True
+        ).encode("utf-8")
+        return {
+            "store_id": self.store_id,
+            "schema_version": SCHEMA_VERSION,
+            "protocol_version": PROTOCOL_VERSION,
+            "events": len(self.log),
+            "origin_sequence": self.state.origin_sequence,
+            "origin_cursors": cursors,
+            "unresolved_retractions": pending,
+            "checksum": "sha256:" + hashlib.sha256(material).hexdigest(),
+        }
 
     def _imports_of(self, retraction: Retraction) -> list[str]:
         """Local memories imported from this exact origin memory **version**.

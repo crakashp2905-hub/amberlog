@@ -3,7 +3,7 @@
 The fourteen invariants from the product engineering roadmap §3, each mapped to
 the code that would have to hold it and the test that proves it does.
 
-- **Audited:** 2026-10-10, commit `597bdcb`, 483 tests. **Updated after Phase 1**, 532 tests.
+- **Audited:** 2026-10-10, commit `597bdcb`, 483 tests. **Updated after Phase 1** (532) and **Phase 2** (559 tests).
 - An invariant with no test is **not** an invariant. Rows marked ✗ are
   liabilities, not features, and each names what would have to exist.
 
@@ -19,7 +19,7 @@ the code that would have to hold it and the test that proves it does.
 | **8** | Invalidating one premise does not automatically destroy independently justified knowledge | ⚠️ | `quarantine(propagate=True)` marks descendants `contested` rather than withdrawing them; `LineageGraph.evidence_is_independent()` exists | `test_retraction.py`; `test_federation.py::test_it_quarantines_rather_than_deletes`. **Gap:** support is never *recomputed* — a conclusion with a surviving independent justification is contested identically to one with none |
 | **9** | Offline, pending, unknown, contested and failed states are explicit | ⚠️ | `LifecycleState.CONTESTED` and `QUARANTINED` are explicit and enforced | `test_retraction.py`, `test_withdrawal_basis.py`. **Gap:** `offline`, `pending`, `unknown`, `failed` do not exist, because propagation does not exist |
 | **10** | Projections and indexes can be rebuilt from authoritative events | ✅ | `Projection.apply` fold; `fabric.rebuild()`; index rebuilt on replay | `test_fabric.py`, `test_withdrawal_basis.py::test_it_survives_a_rebuild`, `test_backup.py::test_the_copy_replays_to_the_same_state` |
-| **11** | Consequential operations fail closed when identity or authorization is unknown | ⚠️ | `observability/auth.py`: non-loopback bind requires a token, `Host` validated, cross-origin refused, `hmac.compare_digest`; `record_outcome` refuses a verifier equal to the acting agent; firewall default-denies scope promotion | `test_auth.py` (16 tests), `test_fabric.py` (self-reported outcome rejected), `test_governance.py`. **Gap:** the HTTP surface is read-only, so the federation path has no authentication because it has no transport |
+| **11** | Consequential operations fail closed when identity or authorization is unknown | ✅ | `transport.PeerRegistry` is the authorisation boundary: an unknown peer is neither reachable nor authorised. The federation server authenticates by per-peer HMAC *before* parsing, and refuses with 401; `receive_retraction(sender_authorised=False)` records a `RetractionRejected` event and applies nothing. The observability surface stays read-only. | `test_federation_transport.py::TestHttpTransport` — unsigned and wrong-key retractions are both refused and leave the import `ACTIVE`; reconciliation from an unknown peer is 401; `TestObservabilityStaysReadOnly` asserts the write path was not bolted onto the dashboard |
 | **12** | Append-only audit history does not justify retaining sensitive content indefinitely | ⚠️ | `governance/retention.py` with rare-event protection; `governance/sensitive.scrub` keeps secret values off display surfaces | `test_governance.py`, `test_observability.py`. **Gap:** no crypto-erasure, no content/audit split, no documented interaction between deletion and replay |
 | **13** | Research claims are reproducible and include baselines, seeds, uncertainty, and negative results | ✅ | Four pre-registrations with dated amendments; bootstrap CIs; ≥5 seeds for A/A′/B; raw runs committed; `stats.check_ceiling` enforces principle 8b | `test_experiment_harnesses.py` (36 tests incl. `test_every_phase_runs_the_check`), `test_depotworld.py`, `test_banditworld.py`, `test_h3_harness.py`, `test_retention_arms.py` |
 | **14** | Infrastructure follows measured need | ✅ | P9 declined distribution on measurement (4.39 ms at 2,000 memories); P8 declined on a zero denominator; Phase C gated on PB1 and run as exploratory when the gate failed | [P9 decision](../research/decisions/2026-10-07-p9-declined.md), [H5 decision](../research/decisions/2026-10-07-h5-premise-false.md), `research/prereg/phase-c-memory-ecology.md` |
@@ -28,8 +28,8 @@ the code that would have to hold it and the test that proves it does.
 
 | | count | invariants | was at Phase 0 |
 |---|---|---|---|
-| ✅ implemented and tested | **9** | 1, 2, 3, 4, 5, 7, 10, 13, 14 | 4 |
-| ⚠️ partial, gap named | **5** | 6, 8, 9, 11, 12 | 7 |
+| ✅ implemented and tested | **10** | 1, 2, 3, 4, 5, 7, 10, 11, 13, 14 | 4 |
+| ⚠️ partial, gap named | **4** | 6, 8, 9, 12 | 7 |
 | ✗ missing, no test possible yet | **0** | — | 3 |
 
 Phase 1 closed all three missing invariants and both root causes the Phase 0
@@ -49,8 +49,7 @@ protocol parser rejects path-like strings as identities, with a test enumerating
 
 - **6** — an enforcement boundary so `fabric.get()` cannot bypass lifecycle checks, plus action-time re-verification. Phase 3.
 - **8** — recompute support when a premise is invalidated, instead of contesting every descendant unconditionally. `evidence_is_independent` already exists to support it. Phase 4.
-- **9** — `offline`, `pending` and `failed` now exist as propagation states; what remains is surfacing them in the operator tools. Phase 7.
-- **11** — an authenticated *write* path. The protocol defines signatures and `receive_retraction` takes `sender_authorised`, but there is no transport to authenticate over. Phase 2.
+- **9** — `offline`, `pending`, `failed` and `unknown` now exist as propagation states and are visible through `outbox.pending()` and `DispatchReport`; what remains is surfacing them in the operator tools. Phase 7.
 - **12** — crypto-erasure and a content/audit split. Phase 6.
 
 ## Rules for this file

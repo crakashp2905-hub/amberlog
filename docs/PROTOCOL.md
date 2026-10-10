@@ -1,9 +1,15 @@
 # Memory Fabric federation protocol — v1 (specification)
 
-**Status: specification only. No implementation exists as of commit `597bdcb`.**
-Everything the code does today is the in-process behaviour described in
-[AUDIT.md](AUDIT.md) §3. This document defines what Phase 1 and Phase 2 must
-build, so that the gap is written down rather than inferred.
+**Status: implemented as of Phase 2 (2026-10-10).** §§1–7 are built and tested:
+`protocol.py` (identities, events, acknowledgements, the state machine),
+`outbox.py` (transactional outbox and recipient inbox), `transport.py`
+(authenticated HTTP on its own endpoint), `dispatcher.py` (delivery and
+reconciliation). The crash matrix is `tests/test_retraction_protocol.py`; the
+fault scenarios are `tests/test_federation_transport.py`.
+
+§8 ("what this specification does not cover") still holds in full — transitive
+re-sharing, content distribution, consensus and multi-tenancy are all out of
+scope, and a signature still proves origin rather than truth.
 
 `protocol_version` is `1`. The wire format is JSON. Transport is authenticated
 HTTP; peer-to-peer and brokers are deferred (roadmap §9).

@@ -236,6 +236,7 @@ def _should_share(
 def run_arm(
     arm: str,
     seed: int,
+    truth: W.Truth,
     corpora: dict[str, list[Lesson]],
     episodes: dict[str, list[W.EvalEpisode]],
     client: OllamaClient,
@@ -286,19 +287,32 @@ def run_arm(
                         key = (sender, mid, recipient)
                         if key in shared_already:
                             continue
+                        # The ceiling: share exactly what can never mislead this
+                        # recipient — correct at EVERY site the recipient works,
+                        # not merely at the lesson's own site.
+                        #
+                        # The first version checked one site, which made the
+                        # "oracle" beatable by construction: `north` works
+                        # cold_store and urban, so a lesson correct for
+                        # cold_store was shared and then misled it on urban
+                        # episodes. It scored 85% and 79% against
+                        # share_overlap_propagate's 90% and 81%, and reported
+                        # 10% negative transfer while claiming zero wrong
+                        # imports — which is how the contradiction surfaced.
+                        # §3 of the registration says "correct for the
+                        # recipient's sites", plural, so this is a bug against
+                        # the registration rather than a design choice.
+                        #
+                        # Overlap is deliberately NOT required: a memory that
+                        # cannot mislead this recipient is worth sending whether
+                        # or not its own site is one of theirs, and requiring
+                        # overlap would lower the ceiling for no reason. A
+                        # poisoned lesson fails this test wherever it would do
+                        # harm, so it needs no separate exclusion.
                         correct_here = all(
-                            lesson.asserted
-                            == next(
-                                (
-                                    e.correct
-                                    for e in episodes[recipient]
-                                    if e.fault == lesson.fault and e.site == site
-                                ),
-                                lesson.asserted,
-                            )
-                            for site in (lesson.site,)
-                            if site in TERRITORIES[recipient]
-                        ) and lesson.site in TERRITORIES[recipient] and not lesson.poisoned
+                            lesson.asserted == truth.action(lesson.fault, site)
+                            for site in TERRITORIES[recipient]
+                        )
                         if not _should_share(
                             arm, lesson, recipient, value_ok, correct_here
                         ):
@@ -317,7 +331,18 @@ def run_arm(
                             )
                             imported[recipient][got.imported_memory_id] = lesson
                             result.imports += 1
-                            if lesson.poisoned or lesson.site not in TERRITORIES[recipient]:
+                            # "Wrong" means it would give the wrong answer
+                            # somewhere in this recipient's territory, which is
+                            # the registration's `contamination_imported`. The
+                            # first version used "its own site is not one of
+                            # the recipient's" as a proxy, which is a different
+                            # question: a lesson from elsewhere can be perfectly
+                            # correct here, and one from a shared site can be
+                            # wrong at the recipient's other site.
+                            if any(
+                                lesson.asserted != truth.action(lesson.fault, site)
+                                for site in TERRITORIES[recipient]
+                            ):
                                 result.imports_wrong += 1
 
             # --- the scheduled retraction --------------------------------
@@ -446,7 +471,8 @@ def run_seed(
     for arm in arms:
         started = time.perf_counter()
         out[arm] = run_arm(
-            arm, seed, corpora, episodes, client, embedder, model, verbose=verbose
+            arm, seed, truth, corpora, episodes, client, embedder, model,
+            verbose=verbose,
         )
         cell = out[arm]
         print(f"  seed {seed} {arm:<24} success {stats.mean(cell.success()):>5.0%}  "

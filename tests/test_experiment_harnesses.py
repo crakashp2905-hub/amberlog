@@ -301,8 +301,8 @@ class TestPhaseBArms(unittest.TestCase):
         ask = ask or self.always_wrong
         with patch.object(phase_b, "_ask", ask):
             return phase_b.run_arm(
-                arm, 0, self.corpora, self.episodes, None, None, "stub",
-                verbose=False,
+                arm, 0, self.truth, self.corpora, self.episodes, None, None,
+                "stub", verbose=False,
             )
 
     def test_isolated_shares_nothing(self) -> None:
@@ -329,6 +329,41 @@ class TestPhaseBArms(unittest.TestCase):
         result = self._run("oracle_share")
         self.assertEqual(result.imports_wrong, 0)
         self.assertGreater(result.imports, 0)
+
+    def test_the_oracle_never_shares_what_could_mislead_the_recipient(self) -> None:
+        """The test that was missing, and the bug it would have caught.
+
+        The first version shared a memory that was correct at *its own* site.
+        A recipient works several sites, so a lesson correct for `cold_store`
+        reached `north` and then misled it on every urban episode. The arm was
+        beatable by construction — it scored below `share_overlap_propagate` on
+        both seeds that ran, while reporting zero wrong imports and 10% negative
+        transfer, which cannot both be true.
+
+        A ceiling has to be unbeatable in principle, so the condition is that
+        every memory it sends is correct at *every* site its recipient works.
+        """
+        for recipient, sites in phase_b.TERRITORIES.items():
+            for sender, lessons in self.corpora.items():
+                if sender == recipient:
+                    continue
+                for lesson in lessons:
+                    allowed = phase_b._should_share(
+                        "oracle_share", lesson, recipient, False,
+                        all(
+                            lesson.asserted == self.truth.action(lesson.fault, s)
+                            for s in sites
+                        ),
+                    )
+                    if not allowed:
+                        continue
+                    for site in sites:
+                        self.assertEqual(
+                            lesson.asserted,
+                            self.truth.action(lesson.fault, site),
+                            f"oracle sent {sender}'s {lesson.fault}/{lesson.site} "
+                            f"lesson to {recipient}, where it is wrong at {site}",
+                        )
 
     def test_propagation_acts_and_the_plain_arm_does_not(self) -> None:
         self.assertGreater(self._run("share_all_propagate").propagated, 0)

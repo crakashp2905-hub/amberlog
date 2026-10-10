@@ -44,7 +44,7 @@ Sharing policy, crossed where stated with retraction propagation:
 | `share_overlap` | only to agents whose territory includes the memory's site |
 | `share_valued` | only memories with contrastive value evidence, to any agent |
 | `share_valued_overlap` | both conditions |
-| `oracle_share` | exactly the memories that are correct for the recipient's sites |
+| `oracle_share` | exactly the memories that are correct for **every** site the recipient works (corrected by amendment; see below) |
 
 **Retraction propagation**, crossed with `share_all` and `share_overlap`:
 
@@ -122,6 +122,44 @@ Failing any of these changes the world, recorded as a dated amendment here, befo
 > the memory id, and therefore to creation time, so imports — always newer than
 > natives — could never be exposed. The bug is fixed and the fix is tested. No
 > number from that smoke run carries over, and none of it bears on §6.
+
+> ### Amendment, 2026-10-10 (second) — mid-run, after the ceiling arm was beaten again
+>
+> **`oracle_share` was mis-implemented and the first registered run was
+> abandoned two seeds in.** It shared any memory correct at *its own* site. A
+> recipient works several sites, so a lesson correct for `cold_store` reached
+> `north` and then misled it on every urban episode. §3 says "exactly the
+> memories that are correct for the recipient's **sites**", plural — so this was
+> a bug against the registration, not a design choice.
+>
+> It was beatable by construction, and it was beaten: 85% and 79% against
+> `share_overlap_propagate`'s 90% and 81% on the two seeds that ran. What gave it
+> away was a contradiction rather than the ordering — at seed 1 it reported
+> **zero wrong imports and 10% negative transfer**, which cannot both be true.
+>
+> **This is the third mis-specified ceiling in this project** (H3's threshold
+> exceeded its own, Phase A's oracle had a smaller retrieval budget than the arms
+> it bounded, and now this). Principle 8a was written after the first. The
+> pattern across all three is the same: the oracle was given a *handicap the
+> competing arms did not have*, and in each case it looked unimpeachable until an
+> arm beat it.
+>
+> **Corrected:** the oracle shares exactly what cannot mislead the recipient —
+> correct at **every** site that recipient works. Overlap is deliberately not
+> required, because a memory that cannot mislead is worth sending whether or not
+> its own site is one of theirs, and requiring it would lower the ceiling for no
+> reason.
+>
+> **`imports_wrong` was wrong in the same way** and is corrected with it. It used
+> "the lesson's own site is not one of the recipient's" as a proxy for wrongness,
+> which is a different question: a lesson from elsewhere can be perfectly correct
+> here, and one from a shared site can be wrong at the recipient's other site. It
+> now means what §4 says `contamination_imported` means — the import would give
+> the wrong answer somewhere in this recipient's territory.
+>
+> **The run restarts from seed 0.** No threshold in §6 changes. Nothing from the
+> abandoned run is reported as a result; the per-seed figures quoted above appear
+> only here, as the evidence for the amendment.
 
 ## 6. Ceiling and thresholds
 

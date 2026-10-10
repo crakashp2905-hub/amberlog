@@ -1,5 +1,11 @@
 # Retrospective — what nine milestones actually established
 
+> **Superseded for the overall picture by [SCORECARD.md](SCORECARD.md)**
+> (2026-10-10), which covers the live agent phases and the integrity
+> engineering phases as well. This file remains the account of the *simulated*
+> milestones P1–P9 and is accurate for those. Two of its conclusions have since
+> been tested against real agents and did not hold — see the scorecard.
+
 Written 2026-10-07, after P1–P9 closed. The companion to [CRITICAL_REVIEW.md](CRITICAL_REVIEW.md), which was written before any code existed. This is what the evidence says now.
 
 ---

@@ -219,7 +219,8 @@ The test that demonstrates the point is `test_naive_is_fooled_by_selection_bias_
 | Doc | What it is |
 |---|---|
 | [research/CRITICAL_REVIEW.md](research/CRITICAL_REVIEW.md) | Stress test of the original vision, written before any code |
-| [research/RETROSPECTIVE.md](research/RETROSPECTIVE.md) | **What nine milestones actually established** — the scorecard, and what the measurements killed |
+| [research/SCORECARD.md](research/SCORECARD.md) | **Every registered claim and what the measurements did to it** — simulated, live and deterministic, kept apart on purpose |
+| [research/RETROSPECTIVE.md](research/RETROSPECTIVE.md) | The simulated milestones P1–P9 in detail |
 | [AGENTS.md](AGENTS.md) | Repository constitution and engineering rules (humans and AI agents) |
 | [RESEARCH.md](RESEARCH.md) | Hypotheses, novelty boundary, related work, experiments |
 | [EVALUATION.md](EVALUATION.md) | RuleWorld environment, metrics, baselines, statistics |

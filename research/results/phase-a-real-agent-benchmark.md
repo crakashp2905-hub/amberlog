@@ -185,6 +185,42 @@ small for every arm (`local_rag` −1.7%, `shared_memory_framed` ±0.0%, `oracle
 −6.7%). The hazard the world was built around turned out to matter less than the
 plain availability of a correct memory.
 
+## 6a. Correction, 2026-10-10 — a product bug inflated `fabric_causal`'s loss
+
+Found two days later while building Phase B, and it changes the reading of one
+arm.
+
+`rank_by="value"` ordered candidates by `(-value_mean, memory_id)`, and
+`value_mean` is `0.0` for a memory nothing is known about. So in a store with
+little value evidence every candidate tied at zero and the sort fell through to
+the memory id — which is a ULID, and ULIDs are time-ordered. **"Rank by value"
+was silently "rank by creation time", with relevance discarded entirely.** A
+newly written memory could not be exposed, and value evidence can only be earned
+by exposure; only the epsilon exploration broke the deadlock, weakly. It was
+found because a four-agent federation retrieved *none* of 36 imported memories
+across eight consecutive episodes.
+
+`fabric_causal` is the only arm that used that policy. Its 0.242 and its
+12% correct-memory rate are therefore part exploration cost, as §4 says, and part
+this defect — and the two cannot be separated from this run's data. **That arm's
+number should not be quoted as a measurement of causal value selection.**
+
+What does *not* change:
+
+- **The verdict.** `fabric` used `top_k:relevance` and was unaffected, and it lost to the pooled baseline by 30 points on its own (0.283 against 0.583). §2's kill condition is an arm-to-arm comparison that `fabric` fails without help.
+- **The mechanism.** Over-pruning (§4) was measured on `fabric` as well as `fabric_causal`, and `shared_memory_decay` — no fabric code at all — collapsed hardest of the three.
+- **Every other arm**, none of which ranked on value.
+
+The fix orders an unevaluated candidate by the only signal that exists for it,
+which is relevance, keeping the id solely to make the sort deterministic.
+Measured value still outranks relevance when there is any. `fabric_causal` is
+re-measured in [PA′](../prereg/phase-a-prime-attribution.md) under the fixed
+policy, as `fabric_contrastive`.
+
+The uncomfortable part is why it survived: the ranking had tests, and they all
+passed, because every one of them gave its candidates distinct values. Nothing
+tested the case that dominates a real cold store — no evidence at all.
+
 ## 7. What this does not show
 
 1. **One model, 3B parameters.** Every arm converts a correct memory at ~95% and fails without one at ~95%, so this world may be measuring retrieval coverage and nothing else for a model of this size. A larger model that reasons past a wrong memory would change the harm figures and might change the ordering.

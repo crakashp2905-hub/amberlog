@@ -186,3 +186,80 @@ class TestPolicyRegistry(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestValueRankingFallsBackToRelevance(unittest.TestCase):
+    """Ranking by value must not become ranking by creation time.
+
+    Found while building Phase B. `value_mean` is 0.0 for a memory nothing is
+    known about, so in a store with no value evidence every candidate tied at
+    zero and the sort fell through to the memory id. Ids are ULIDs, which are
+    time-ordered, so the oldest memories were exposed every time and relevance
+    was discarded. A newly written or imported memory could never be exposed,
+    and value evidence can only be earned by exposure — a deadlock that only
+    epsilon exploration broke, weakly. In a four-agent federation with 36
+    imports competing for three slots, not one import was retrieved across
+    eight consecutive episodes.
+    """
+
+    def _candidates(self):
+        # Ids ascending, so a tie-break on id picks `old` first; relevance says
+        # the opposite, and relevance is the only signal that exists here.
+        return [
+            Candidate(memory_id="01AAA", version=1, relevance=0.10, value=None),
+            Candidate(memory_id="01BBB", version=1, relevance=0.90, value=None),
+        ]
+
+    def test_top_k_on_value_prefers_the_relevant_one_when_nothing_is_known(self) -> None:
+        policy = TopKPolicy(rank_by="value")
+        decisions = policy.decide(self._candidates(), 1, random.Random(0))
+        exposed = [d.candidate.memory_id for d in decisions if d.exposed]
+        self.assertEqual(exposed, ["01BBB"])
+
+    def test_epsilon_greedy_on_value_ranks_the_same_way(self) -> None:
+        """Epsilon must be in (0, 1) for the policy to have overlap at all, so
+        the greedy choice is checked through the propensities: the relevant
+        candidate is the one the ranking favours, and its reported P(expose) is
+        the high one."""
+        policy = EpsilonGreedyPolicy(epsilon=0.2, rank_by="value")
+        decisions = policy.decide(self._candidates(), 1, random.Random(0))
+        chance = {
+            d.candidate.memory_id: (
+                d.propensity if d.exposed else 1.0 - d.propensity
+            )
+            for d in decisions
+        }
+        self.assertGreater(chance["01BBB"], chance["01AAA"])
+
+    def test_measured_value_still_wins_over_relevance(self) -> None:
+        """The fallback must not override evidence: a memory measured to help
+        beats a more similar memory nothing is known about."""
+        candidates = [
+            Candidate(
+                memory_id="01AAA", version=1, relevance=0.10,
+                value=ValueEstimate(
+                    mean=0.8, ci_low=0.5, ci_high=1.0,
+                    n_eff=12.0, estimator="test", contrastive=True,
+                ),
+            ),
+            Candidate(memory_id="01BBB", version=1, relevance=0.90, value=None),
+        ]
+        policy = TopKPolicy(rank_by="value")
+        decisions = policy.decide(candidates, 1, random.Random(0))
+        exposed = [d.candidate.memory_id for d in decisions if d.exposed]
+        self.assertEqual(exposed, ["01AAA"])
+
+    def test_an_unevaluated_candidate_is_not_the_same_as_a_measured_zero(self) -> None:
+        """`value_mean` reports 0.0 for both, which is why the ranking needed a
+        separate question."""
+        unknown = Candidate(memory_id="01AAA", version=1, relevance=0.5, value=None)
+        measured = Candidate(
+            memory_id="01BBB", version=1, relevance=0.5,
+            value=ValueEstimate(
+                mean=0.0, ci_low=-0.1, ci_high=0.1,
+                n_eff=20.0, estimator="test", contrastive=True,
+            ),
+        )
+        self.assertEqual(unknown.value_mean, measured.value_mean)
+        self.assertFalse(unknown.has_value_evidence)
+        self.assertTrue(measured.has_value_evidence)

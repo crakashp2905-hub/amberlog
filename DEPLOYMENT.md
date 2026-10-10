@@ -1,0 +1,199 @@
+# Deployment
+
+What it takes to run this for real, and what it is honestly not ready for.
+
+Every number here comes from a run that is cited. Nothing is extrapolated
+without saying so.
+
+---
+
+## 1. The one thing that matters
+
+**The event log is the source of truth.** Memory records, value estimates,
+profiles and both observability surfaces are projections that can be deleted and
+rebuilt from it ([AGENTS.md](AGENTS.md) principle 3). That makes the deployment
+question simpler than it looks:
+
+> Back up the SQLite file. Everything else is derivable.
+
+It also makes one failure mode worse than all the others. A lost event log cannot
+be reconstructed from the projections, because the projections are lossy — they
+hold current state, not how it was arrived at. A quarantine that was propagated,
+a propensity that was logged, the exposure arm a memory was withheld in: those
+exist only in the log, and an unbiased value estimate cannot be computed without
+them ([AGENTS.md](AGENTS.md) principle 4).
+
+### Backup
+
+```bash
+memory-fabric --db store.db backup /backups/store-$(date -u +%Y%m%dT%H%M%SZ).db
+```
+
+Not `cp`. The store runs in WAL mode, so a plain file copy taken mid-write gives
+you a database plus an uncommitted write-ahead log, and whether that restores
+depends on timing. `backup` takes a consistent snapshot while the store is live.
+
+It then **replays the copy** and prints the event and memory counts it found
+there, failing with a non-zero exit if they do not match the source. That check
+is the point: a truncated backup opens perfectly well and reports fewer events,
+and nothing else would tell you.
+
+### Restore
+
+```bash
+memory-fabric --db /backups/store-20261010T0900Z.db overview
+```
+
+A restore is verified the same way a backup is — by folding the whole log. The
+overview reports the event count, the memory count, and the schema versions that
+wrote it.
+
+## 2. Running the server
+
+The dashboard and the JSON API are **read-only**: there is no mutating HTTP
+endpoint at all, and browsing does not write exposure events, because an
+observability tool that logged an operator's queries would feed its own browsing
+into the data every value estimate is computed from.
+
+### Locally
+
+```bash
+memory-fabric --db store.db serve
+```
+
+Binds `127.0.0.1` and prints a one-time URL carrying a session token.
+
+### Behind something
+
+```bash
+MEMORY_FABRIC_TOKEN=... memory-fabric --db store.db serve \
+  --host 0.0.0.0 --allowed-host memory.internal.example.com
+```
+
+Four things are enforced rather than advised, and will refuse to start if you get
+them wrong:
+
+- **A non-loopback bind requires a token.** `--no-auth` on anything but loopback is refused outright, not warned about.
+- **`Host` is validated** against the allowed list, which defeats DNS rebinding. Reaching the server by any name other than `localhost` means adding that name with `--allowed-host`; the refusal says so.
+- **Cross-origin requests are refused.**
+- **The token is compared with `hmac.compare_digest`.**
+
+Pass the token through `MEMORY_FABRIC_TOKEN` rather than `--token`: an argument
+is visible in the process list to every user on the box.
+
+### In a container
+
+```bash
+docker build -t memory-fabric .
+docker run -p 8765:8765 -v mf-data:/data \
+  -e MEMORY_FABRIC_TOKEN=... memory-fabric
+```
+
+Runs as uid 10001, not root. The volume is not optional — without it the first
+`docker rm` takes the event log, and §1 is why that is unrecoverable. CI builds
+this image and checks it answers on the published port and refuses an
+unauthenticated request.
+
+## 3. Capacity, as measured
+
+From the [P9 decision](research/decisions/2026-10-07-p9-declined.md), one laptop,
+pure Python, flat scan, no vector index:
+
+| memories | events | retrieval | store |
+|---|---|---|---|
+| 80 | 11,140 | 2.65 ms | 3.6 MB |
+| 400 | 35,935 | 2.98 ms | 13.0 MB |
+| 2,000 | 120,089 | 4.39 ms | 47.9 MB |
+
+25× the memories costs 1.7× the latency, because a query only scores memories
+that share signal with it. At 4.39 ms one thread serves roughly 230 retrievals
+per second. Storage extrapolates to about 400 MB per million events — that one
+*is* an extrapolation and is the only one here.
+
+The governed write path adds about 0.2 ms per episode over an ungoverned vector
+store ([Phase A](research/results/phase-a-real-agent-benchmark.md)). Governance
+is not where your latency goes.
+
+## 4. Upgrades
+
+The version tracks the **memory schema**, not the Python API
+([VERSIONING.md](VERSIONING.md)). Any event written by a released version
+replays on every later version of the same major series.
+
+```bash
+memory-fabric --db store.db overview   # the `schema` row
+```
+
+It names the installed schema version and, when they differ, every version that
+actually wrote into the log — events are never rewritten, so a store that has
+outlived an upgrade carries both. If the log is *newer* than the installed
+package, the diagnostics say so outright, because a projection folds the events
+it recognises and silently ignores the rest. That is correct behaviour and a bad
+failure mode to hit unannounced.
+
+Upgrade procedure: back up, install, run `overview`, read the diagnostics. There
+is no migration step for a minor version, because additive schema changes need
+none.
+
+## 5. What to watch
+
+`memory-fabric --db store.db attention` is the triage list, worst first, each
+finding carrying the command that acts on it. The ones that need a human:
+
+| Finding | Why it matters |
+|---|---|
+| **Withdrawn on weak evidence** | A memory was withdrawn on co-occurrence with a failure, or on no stated basis. [Phase A](research/results/phase-a-real-agent-benchmark.md) measured that policy cutting the rate at which a *correct* memory reached the prompt from 60% of episodes to 18%. Release it unless there is evidence about the memory itself. |
+| **Quarantined** with a sensitive-data basis | A credential or personal datum reached the ingestion path. The *value* is never displayed — the reviewer sees the kind, which is what the decision needs. Rotate the credential; quarantining the memory does not un-leak it. |
+| **Justification retracted** | An ancestor was withdrawn, so this no longer rests on anything. |
+| **Restricted memory shared** | A scope promotion that should not have happened. |
+| **Open disagreements** | Contested hypothesis sets with no resolution. Left open deliberately, but someone should look. |
+
+`overview`'s diagnostics are the other half, and they answer a question most
+dashboards do not ask: *can this store support a value claim at all?* A new
+deployment's honest answer is "not yet". If every logged exposure was
+deterministic, the diagnostics say that no amount of further data will support a
+causal estimate, because there is no way to tell a memory helping from it being
+retrieved on easier tasks.
+
+## 6. What this is not ready for
+
+Stated plainly, because a list of features is not a deployment plan.
+
+**One writer.** SQLite with WAL. Concurrent readers are fine; concurrent writers
+to one store are not supported and are not tested. The storage seam exists
+([ARCHITECTURE.md](ARCHITECTURE.md) §4) and Postgres belongs with the first
+deployment that actually needs it — adding a driver now would cost the
+zero-dependency property for no measured gain
+([ROADMAP.md](ROADMAP.md)).
+
+**One token, no users.** Auth is a single shared bearer token with no identity,
+roles, expiry or revocation beyond restarting with a new one. There is no audit
+of *who looked*, only of what the store did. For anything multi-tenant, put it
+behind something that has a user model.
+
+**No encryption at rest.** The store is a plain SQLite file, and quarantined
+memories still contain whatever was written into them — the display layer hides
+secret values, the bytes on disk do not. Use an encrypted volume if the content
+warrants it, and rotate any credential that reached the store rather than
+relying on the quarantine.
+
+**Embeddings are a dependency you choose.** The core is zero-dependency and
+ships a hashing embedder that exists so tests are reproducible, not because it
+retrieves well. Anything real wants `OllamaEmbedder` or another model behind the
+`Embedder` protocol — and retrieval quality is most of the outcome: Phase A found
+every arm converting a correct memory into a correct answer about 95% of the time
+and failing about 95% of the time without one.
+
+**The value estimators are not validated for live exposure decisions.**
+[H1](research/results/h1-causal-credit.md) showed the amortized estimator
+recovers true memory value in simulation; [H2](research/results/h2-credit-driven-retention.md)
+found that did not transfer to retention, where a smoothed success rate matched
+it; [Phase A](research/results/phase-a-real-agent-benchmark.md) found it did not
+transfer to live exposure either, and that the exploration it requires was itself
+a cost at a 24-episode horizon. The product default is `naive_usage` for that
+reason. Ranking exposure on estimated value is available and is not recommended
+on current evidence.
+
+**Do not withdraw memories because they were in context when something failed.**
+This is the one deployment rule that comes from a measurement rather than from
+caution, and §5 says what to do instead.

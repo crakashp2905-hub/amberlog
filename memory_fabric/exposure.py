@@ -33,6 +33,42 @@ class Candidate:
     def value_mean(self) -> float:
         return self.value.mean if self.value is not None else 0.0
 
+    @property
+    def has_value_evidence(self) -> bool:
+        """Whether anything is actually known about this memory's effect.
+
+        `value_mean` reports 0.0 for a memory with no estimate, which reads as
+        "measured to have no effect" when the truth is "never measured". The
+        ranking needs to tell those apart: see `_rank_key`.
+        """
+        return self.value is not None and self.value.n_eff > 0.0
+
+
+def _rank_key(candidate: Candidate, rank_by: str) -> tuple[float, float, str]:
+    """Order candidates best-first, with **relevance as the tie-break**.
+
+    This was a bug worth the comment. Ranking by value used
+    `(-value_mean, memory_id)`, and `value_mean` is 0.0 for a memory nothing is
+    known about — so in a store with no value evidence every candidate tied at
+    zero and the decision fell through to the memory id. Ids are ULIDs, which
+    are time-ordered, so "rank by value" silently became "rank by creation
+    time": the oldest memories were exposed every time and relevance was
+    discarded entirely.
+
+    The consequence was worse than an odd ordering. A newly written or newly
+    imported memory has no value evidence, so it could never be exposed; and
+    value evidence can only be earned by being exposed. Only the epsilon
+    exploration broke the deadlock, weakly. In a four-agent federation with 36
+    imports competing for three slots, not one import was retrieved in eight
+    consecutive episodes.
+
+    So an unevaluated candidate is ordered by the only signal that exists for
+    it, which is relevance, and the id remains only to keep the sort
+    deterministic.
+    """
+    score = candidate.relevance if rank_by == "relevance" else candidate.value_mean
+    return (-score, -candidate.relevance, candidate.memory_id)
+
 
 @dataclass(frozen=True)
 class ExposureDecision:
@@ -81,9 +117,8 @@ class TopKPolicy:
         self.id = f"top_k:{rank_by}"
         self.needs_value = rank_by == "value"
 
-    def _key(self, candidate: Candidate) -> tuple[float, str]:
-        score = candidate.relevance if self.rank_by == "relevance" else candidate.value_mean
-        return (-score, candidate.memory_id)
+    def _key(self, candidate: Candidate) -> tuple[float, float, str]:
+        return _rank_key(candidate, self.rank_by)
 
     def decide(
         self, candidates: Sequence[Candidate], k: int, rng: random.Random
@@ -124,11 +159,7 @@ class EpsilonGreedyPolicy:
     def decide(
         self, candidates: Sequence[Candidate], k: int, rng: random.Random
     ) -> list[ExposureDecision]:
-        def key(candidate: Candidate) -> tuple[float, str]:
-            score = candidate.relevance if self.rank_by == "relevance" else candidate.value_mean
-            return (-score, candidate.memory_id)
-
-        ordered = sorted(candidates, key=key)
+        ordered = sorted(candidates, key=lambda c: _rank_key(c, self.rank_by))
         greedy = {c.memory_id for c in ordered[:k]}
         eps = self.epsilon
         decisions: list[ExposureDecision] = []

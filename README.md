@@ -154,7 +154,7 @@ would have been scored as governance.
 | Shared read model, triage list, health diagnostics | [observability/report.py](memory_fabric/observability/report.py) |
 | Read-only HTTP API and web dashboard | [observability/](memory_fabric/observability/) |
 | Token auth, Host validation, cross-origin refusal | [observability/auth.py](memory_fabric/observability/auth.py) |
-| CLI | [cli.py](memory_fabric/cli.py) |
+| CLI, including verified backup | [cli.py](memory_fabric/cli.py) |
 | Capability-scoped agent sessions | [session.py](memory_fabric/session.py) |
 | Prompt context with injection defences | [adapters/context.py](memory_fabric/adapters/context.py) |
 | Claude API adapter, transcript ingestion | [adapters/](memory_fabric/adapters/) |
@@ -217,6 +217,7 @@ The test that demonstrates the point is `test_naive_is_fooled_by_selection_bias_
 | [ARCHITECTURE.md](ARCHITECTURE.md) | Components, data flow, storage, layout |
 | [ROADMAP.md](ROADMAP.md) | The single roadmap, with gates and kill criteria |
 | [SECURITY.md](SECURITY.md) | Threat model |
+| [DEPLOYMENT.md](DEPLOYMENT.md) | **Running it for real** — backup, serving, capacity, upgrades, and what it is not ready for |
 | [VERSIONING.md](VERSIONING.md) | What the version number promises — the schema, not the API |
 | [CHANGELOG.md](CHANGELOG.md) | What changed, and which bugs it fixed |
 | [research/PRIOR_ART.md](research/PRIOR_ART.md) | Verified related work, and what it does to the novelty claims |

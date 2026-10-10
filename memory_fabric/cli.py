@@ -14,6 +14,7 @@ import json
 import os
 import shutil
 import sys
+from pathlib import Path
 from typing import Any, Sequence
 
 from .fabric import MemoryFabric, NotFound, PolicyViolation
@@ -497,6 +498,51 @@ def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Consistent snapshot of the event log while the store is live.
+
+    This exists because the alternative is telling an operator to use the
+    `sqlite3` CLI, and a project that calls the event log its source of truth
+    should not outsource the one operation that protects it. It also avoids the
+    mistake `cp` makes: the store runs in WAL mode, so a plain file copy taken
+    mid-write yields a database plus an uncommitted write-ahead log, and whether
+    that restores depends on timing.
+
+    The backup is verified by replaying it, because an openable file is not the
+    same as a complete one — a truncated backup opens fine and reports fewer
+    events, which nothing else would tell you.
+    """
+    import sqlite3
+
+    target = Path(args.path)
+    if target.exists() and not args.force:
+        print(f"{C.RED}{target} exists. Pass --force to overwrite it.{C.RESET}",
+              file=sys.stderr)
+        return 4
+    target.parent.mkdir(parents=True, exist_ok=True)
+
+    source_events = len(fabric.log)
+    with sqlite3.connect(target) as destination:
+        fabric.log._conn.backup(destination)
+
+    verifier = MemoryFabric(str(target))
+    try:
+        copied = len(verifier.log)
+        memories = len(verifier.state.memories)
+    finally:
+        verifier.close()
+
+    print(f"{fabric.log.path} -> {target}")
+    print(f"  {copied} events, {memories} memories, replayed from the copy")
+    if copied != source_events:
+        print(f"{C.RED}Source had {source_events} events; the copy has {copied}. "
+              f"Do not keep this backup.{C.RESET}", file=sys.stderr)
+        return 5
+    size = target.stat().st_size
+    print(f"  {size / 1_000_000:.1f} MB")
+    return 0
+
+
 def cmd_demo(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Seed a store that exercises every panel, so the surfaces can be looked at."""
     from .demo import seed
@@ -639,6 +685,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="extra Host header value to accept; repeatable. Needed when reaching "
         "the server by a name or address other than localhost.",
     )
+
+    p = add("backup", cmd_backup,
+            "Consistent snapshot of the event log, verified by replaying it")
+    p.add_argument("path", help="where to write the copy")
+    p.add_argument("--force", action="store_true", help="overwrite an existing file")
 
     add("demo", cmd_demo, "WRITES: seed a demonstration store")
     return parser

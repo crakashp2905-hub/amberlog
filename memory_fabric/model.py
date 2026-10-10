@@ -57,7 +57,15 @@ class WithdrawalBasis(str, Enum):
     """It conflicts with something the environment verified."""
 
     CONTRASTIVE_HARM = "contrastive_harm"
-    """Its contrastive value estimate shows harm, interval below zero."""
+    """Its contrastive value estimate shows harm, interval below zero.
+
+    Treated as a strong basis, but on thin evidence: PA' is the only measurement
+    of it, and across 120 episodes it fired **three times** and all three
+    withdrawals were of memories irrelevant to the episode that triggered them.
+    That is too small a sample to move it into `WEAK_BASES` — three events cannot
+    establish a rate — and too poor a showing to leave implying more than it has
+    earned. What it currently supports is "rare", not "accurate".
+    """
 
     RETRACTED_AT_ORIGIN = "retracted_at_origin"
     """An imported memory whose origin store withdrew it."""

@@ -3,7 +3,7 @@
 The fourteen invariants from the product engineering roadmap §3, each mapped to
 the code that would have to hold it and the test that proves it does.
 
-- **Audited:** 2026-10-10, commit `597bdcb`, 483 tests. **Updated after Phase 1** (532) and **Phase 2** (559 tests).
+- **Audited:** 2026-10-10, commit `597bdcb`, 483 tests. **Updated after Phase 1** (532) and **Phase 2** (559) and **Phase 3** (584 tests).
 - An invariant with no test is **not** an invariant. Rows marked ✗ are
   liabilities, not features, and each names what would have to exist.
 
@@ -14,7 +14,7 @@ the code that would have to hold it and the test that proves it does.
 | **3** | A committed retraction cannot disappear because a process crashes before dispatch | ✅ | `outbox.py` shares the event log's SQLite connection, so `request_retraction` commits the `RetractionRequested` event and the outbox rows in one transaction | `test_retraction_protocol.py::TestDurability` - stop before any dispatch, reopen the file, the intent is still `queued` |
 | **4** | Duplicate delivery is idempotent | ✅ | Inbox keyed on `(origin_store_id, retraction_id)`; a replay returns the *first* outcome and does not re-apply | `TestIdempotency` - one event delivered 100 times yields one `RetractionApplied`; a replay after a local release does not re-quarantine; a genuinely distinct second retraction *is* applied |
 | **5** | `received`, `persisted`, `enforced`, `verified` are distinct acknowledgement states | ✅ | `protocol.PropagationState` (8 states), `ALLOWED_TRANSITIONS` as data, `Acknowledgement.overstates_persistence` | `TestAcknowledgements`, `TestStateMachine` - `enforced` cannot regress, nothing leaves `rejected`, an offline recipient is `unknown` not `verified` |
-| **6** | A known-invalid version is never returned as usable memory through supported paths | ⚠️ | `retrieve` -> `_eligible_ids()` as `restrict_to`; `_imports_of` matches origin store **and exact version** | `test_retraction.py`, `test_fabric.py`; live validation §5 ("retracted memory no longer retrievable anywhere"). **Gap remaining:** `fabric.get()` still bypasses enforcement and no boundary is declared - Phase 3 |
+| **6** | A known-invalid version is never returned as usable memory through supported paths | ✅ | **One enforcement layer**: `enforcement.Enforcer.check` resolves lifecycle then decides by `RiskLevel`. `fabric.use()` is the enforced read and returns no memory when the decision refuses; `fabric.get()` is documented and tested as inspection-only. `ExposureToken` binds memory id, version, agent, store and the log's integrity revision, so `verify_before_action` closes the time-of-check/time-of-use gap. Denials are audited via `AccessDenied` **without the content**. | `test_enforcement.py` (25 tests) — a retraction after retrieval blocks the action; a revision invalidates the token; a token is not a bearer credential; a vector hit still matches but cannot be exposed; the audit record excludes the content; `Verdict.UNKNOWN` never reads as permission |
 | **7** | Delayed older corrections cannot blindly invalidate newer independently validated versions | ✅ | Per-origin `origin_sequence` plus a recipient cursor that advances with `MAX` so it never rewinds; a retraction below the cursor is recorded `superseded` and not applied | `TestOrdering` - a stale retraction leaves a revalidated version `ACTIVE`, and the refusal is logged as `RetractionRejected` |
 | **8** | Invalidating one premise does not automatically destroy independently justified knowledge | ⚠️ | `quarantine(propagate=True)` marks descendants `contested` rather than withdrawing them; `LineageGraph.evidence_is_independent()` exists | `test_retraction.py`; `test_federation.py::test_it_quarantines_rather_than_deletes`. **Gap:** support is never *recomputed* — a conclusion with a surviving independent justification is contested identically to one with none |
 | **9** | Offline, pending, unknown, contested and failed states are explicit | ⚠️ | `LifecycleState.CONTESTED` and `QUARANTINED` are explicit and enforced | `test_retraction.py`, `test_withdrawal_basis.py`. **Gap:** `offline`, `pending`, `unknown`, `failed` do not exist, because propagation does not exist |
@@ -28,8 +28,8 @@ the code that would have to hold it and the test that proves it does.
 
 | | count | invariants | was at Phase 0 |
 |---|---|---|---|
-| ✅ implemented and tested | **10** | 1, 2, 3, 4, 5, 7, 10, 11, 13, 14 | 4 |
-| ⚠️ partial, gap named | **4** | 6, 8, 9, 12 | 7 |
+| ✅ implemented and tested | **11** | 1, 2, 3, 4, 5, 6, 7, 10, 11, 13, 14 | 4 |
+| ⚠️ partial, gap named | **3** | 8, 9, 12 | 7 |
 | ✗ missing, no test possible yet | **0** | — | 3 |
 
 Phase 1 closed all three missing invariants and both root causes the Phase 0
@@ -47,7 +47,6 @@ protocol parser rejects path-like strings as identities, with a test enumerating
 
 **What the five remaining partials need:**
 
-- **6** — an enforcement boundary so `fabric.get()` cannot bypass lifecycle checks, plus action-time re-verification. Phase 3.
 - **8** — recompute support when a premise is invalidated, instead of contesting every descendant unconditionally. `evidence_is_independent` already exists to support it. Phase 4.
 - **9** — `offline`, `pending`, `failed` and `unknown` now exist as propagation states and are visible through `outbox.pending()` and `DispatchReport`; what remains is surfacing them in the operator tools. Phase 7.
 - **12** — crypto-erasure and a content/audit split. Phase 6.

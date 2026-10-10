@@ -28,6 +28,14 @@ from .lineage import LineageGraph, LineageView
 import json
 from datetime import datetime, timezone
 
+from .enforcement import (
+    AccessDecision,
+    EnforcedRead,
+    Enforcer,
+    ExposureToken,
+    RiskLevel,
+    Verdict,
+)
 from .outbox import Outbox, now_ms as _now_ms
 from .protocol import (
     PROTOCOL_VERSION,
@@ -155,6 +163,7 @@ class MemoryFabric:
         # a new memory is a candidate until something validates it.
         self.auto_activate = auto_activate
         self._estimator_dirty = True
+        self._enforcer: Enforcer | None = None
         self._replay()
         self.outbox = Outbox(self.log._conn)
         self._ensure_store_identity()
@@ -1150,7 +1159,97 @@ class MemoryFabric:
     # --- inspection ------------------------------------------------------
 
     def get(self, memory_id: str) -> Memory:
+        """**Inspection only. Not an agent-facing read.**
+
+        Returns a memory whatever its lifecycle state, which is correct for an
+        operator tool asking "what is this and why was it withdrawn?" and wrong
+        for anything that will put the content in front of a model. Phase 0's
+        audit found this was the one way to reach past the lifecycle check
+        without knowing it.
+
+        The enforced read is `use()`. Supported adapters must call that; this
+        exists for `explain`, the dashboard and the CLI, none of which hand
+        memories to an agent.
+        """
         return self._require(memory_id)
+
+    @property
+    def enforcer(self) -> "Enforcer":
+        if self._enforcer is None:
+            self._enforcer = Enforcer(self)
+        return self._enforcer
+
+    def use(
+        self,
+        memory_id: str,
+        agent_id: str,
+        risk: "RiskLevel" = RiskLevel.LOW,
+        include_contested: bool = False,
+        audit: bool = True,
+    ) -> "EnforcedRead":
+        """The enforced read: one layer, and a token that can be re-checked.
+
+        Returns the memory only when the decision allows it, so a caller that
+        ignores the decision still cannot act on withdrawn knowledge. A refusal
+        is audited without the content (see `ev.access_denied`).
+        """
+        decision = self.enforcer.check(
+            memory_id, risk=risk, include_contested=include_contested
+        )
+        if not decision.usable:
+            if audit:
+                self._emit(
+                    ev.access_denied(
+                        ts=self.now(),
+                        memory_id=memory_id,
+                        version=decision.version,
+                        agent_id=agent_id,
+                        verdict=decision.verdict.value,
+                        reason_code=decision.reason_code,
+                        risk=risk.value,
+                        detail=decision.detail,
+                    )
+                )
+            return EnforcedRead(decision=decision)
+
+        memory = self.state.memories[memory_id]
+        token = self.enforcer.issue(
+            memory_id, agent_id, decision, policy_id=self.policy.id
+        )
+        warnings = [decision.detail] if decision.verdict is Verdict.WARN and decision.detail else []
+        return EnforcedRead(
+            decision=decision, token=token, memory=memory, warnings=warnings
+        )
+
+    def verify_before_action(
+        self,
+        token: "ExposureToken",
+        agent_id: str,
+        risk: "RiskLevel" = RiskLevel.HIGH,
+        audit: bool = True,
+    ) -> "AccessDecision":
+        """Re-check immediately before a consequential action.
+
+        The time-of-check/time-of-use defence. Retrieval may have been minutes
+        ago and a retraction may have arrived since; re-running the check reads
+        projections and is cheap, and the alternative is acting on knowledge its
+        author has withdrawn.
+        """
+        decision = self.enforcer.verify_at_action(token, agent_id, risk=risk)
+        if not decision.usable and audit:
+            self._emit(
+                ev.access_denied(
+                    ts=self.now(),
+                    memory_id=decision.memory_id,
+                    version=decision.version,
+                    agent_id=agent_id,
+                    verdict=decision.verdict.value,
+                    reason_code=decision.reason_code,
+                    risk=risk.value,
+                    detail=decision.detail,
+                )
+            )
+        return decision
 
     def history(self, memory_id: str) -> list[Memory]:
         self._require(memory_id)

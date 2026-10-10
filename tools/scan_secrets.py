@@ -67,9 +67,31 @@ ALLOWED_LINES = {
 }
 
 
-def is_allowed(path: str, kind: str, raw: str) -> bool:
+# Narrower than ALLOWED_LINES: a (path, kind, substring) triple exempts only
+# lines containing that substring. Added for Phase 3, where `ExposureToken` is
+# a first-class domain object — the roadmap's own term — and the
+# `password_assignment` rule fires on `token: ExposureToken` and
+# `token = self.enforcer.issue(...)`. Exempting `password_assignment` for the
+# whole of fabric.py would leave a real hole in a 1,200-line module, and
+# renaming the concept to dodge a detector would be worse naming for a cosmetic
+# reason.
+ALLOWED_SNIPPETS = {
+    ("memory_fabric/enforcement.py", "password_assignment", "ExposureToken"),
+    ("memory_fabric/enforcement.py", "password_assignment", "token.expired"),
+    ("memory_fabric/fabric.py", "password_assignment", "ExposureToken"),
+    ("memory_fabric/fabric.py", "password_assignment", "self.enforcer.issue"),
+    ("memory_fabric/fabric.py", "password_assignment", "token=token, memory=memory"),
+    ("tests/test_enforcement.py", "password_assignment", "enforcer.issue"),
+    ("memory_fabric/transport.py", "password_assignment", "retraction.sign"),
+}
+
+
+def is_allowed(path: str, kind: str, raw: str, line_text: str = "") -> bool:
     if (path, kind) in ALLOWED_LINES:
         return True
+    for allowed_path, allowed_kind, snippet in ALLOWED_SNIPPETS:
+        if path == allowed_path and kind == allowed_kind and snippet in line_text:
+            return True
     stripped = raw.strip()
     if stripped in ALLOWED_VALUES:
         return True
@@ -107,7 +129,10 @@ def main() -> int:
             line = text[: finding.start].count("\n") + 1
             if args.report:
                 print(f"  {relative}:{line}  {finding.kind}  {finding.excerpt}")
-            if not is_allowed(relative, finding.kind, raw):
+            line_start = text.rfind(chr(10), 0, finding.start) + 1
+            line_end = text.find(chr(10), finding.end)
+            line_text = text[line_start : line_end if line_end != -1 else len(text)]
+            if not is_allowed(relative, finding.kind, raw, line_text):
                 unexpected.append((relative, line, finding.kind, finding.excerpt))
 
     print(f"scanned: {seen} high-severity findings, {len(unexpected)} unexpected")

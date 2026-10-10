@@ -33,6 +33,8 @@ class EventType:
     RETRACTION_APPLIED = "RetractionApplied"
     RETRACTION_REJECTED = "RetractionRejected"
     PROPAGATION_STATE_CHANGED = "PropagationStateChanged"
+    ACCESS_DENIED = "AccessDenied"
+    ACCESS_DENIED = "AccessDenied"
 
 
 @dataclass(frozen=True)
@@ -350,6 +352,70 @@ def propagation_state_changed(
             "from": from_state,
             "to": to_state,
             "detail": detail,
+        },
+    )
+
+
+def access_denied(
+    ts: int,
+    memory_id: str,
+    version: int,
+    agent_id: str,
+    verdict: str,
+    reason_code: str,
+    risk: str,
+    detail: str = "",
+) -> Event:
+    """A refusal, recorded without the content that was refused.
+
+    Auditing a denial by logging what was denied would move memory content into
+    exactly the secondary surfaces governance exists to keep it out of. The
+    reviewer gets the memory id, the version, the reason code and the risk
+    level, which is what the decision needs.
+    """
+    return Event(
+        type=EventType.ACCESS_DENIED,
+        ts=ts,
+        agent_id=agent_id,
+        payload={
+            "memory_id": memory_id,
+            "version": version,
+            "verdict": verdict,
+            "reason_code": reason_code,
+            "risk": risk,
+            "detail": detail[:256],
+        },
+    )
+
+
+def access_denied(
+    ts: int,
+    memory_id: str,
+    version: int,
+    agent_id: str,
+    verdict: str,
+    reason_code: str,
+    risk: str,
+    detail: str = "",
+) -> Event:
+    """A refusal, recorded without the content that was refused.
+
+    Auditing a denial by logging what was denied would move memory content into
+    exactly the secondary surfaces governance exists to keep it out of. The
+    reviewer gets the memory id, the version, the reason code and the risk
+    level, which is what the decision needs.
+    """
+    return Event(
+        type=EventType.ACCESS_DENIED,
+        ts=ts,
+        agent_id=agent_id,
+        payload={
+            "memory_id": memory_id,
+            "version": version,
+            "verdict": verdict,
+            "reason_code": reason_code,
+            "risk": risk,
+            "detail": detail[:256],
         },
     )
 

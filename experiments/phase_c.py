@@ -340,8 +340,11 @@ def run_arm(
                     for recipient in AGENTS:
                         if recipient == sender:
                             continue
-                        token = (sender, mid, recipient)
-                        if token in offered:
+                        # Not named `token`: the project's own secret detector
+                        # reads `token = ...` as a credential assignment, and an
+                        # allowlist entry would weaken the rule for every file.
+                        share_key = (sender, mid, recipient)
+                        if share_key in offered:
                             continue
                         overlap = lesson.site in TERRITORIES[recipient]
                         if arm == "isolated":
@@ -360,7 +363,7 @@ def run_arm(
                             stores[sender], mid, stores[recipient],
                             recipient_agent=recipient,
                         )
-                        offered.add(token)
+                        offered.add(share_key)
                         if got.accepted and got.imported_memory_id:
                             stores[recipient].validate(
                                 got.imported_memory_id, actor=recipient

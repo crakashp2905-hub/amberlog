@@ -90,6 +90,16 @@ class ProjectionState:
     # projection rather than a field on Memory because it is a property of the
     # decision, not of the memory, and a release leaves it readable.
     withdrawal_basis: dict[str, str] = field(default_factory=dict)
+    # This store's own opaque identity, recorded in its log so it survives a
+    # restore from backup. None until a StoreIdentified event has been seen.
+    store_id: str | None = None
+    # (child, parent) -> the exact parent version the child was derived from.
+    # Provenance has always recorded it; the projection used to throw it away,
+    # which left retraction targeting ids and enforcement per-memory rather
+    # than per-version. Four partial invariants shared that root cause.
+    parent_versions: dict[tuple[str, str], int] = field(default_factory=dict)
+    # Per-origin monotonic counter for integrity events this store emits.
+    origin_sequence: int = 0
     suppressed_duplicates: int = 0
     applied_seq: int = 0
 
@@ -150,9 +160,10 @@ def _register_memory(state: ProjectionState, memory: Memory) -> None:
     state.stats_for(memory.id)
     # Derivation edges. Recorded per memory id, not per version: lineage
     # questions ("what descends from this?") are asked about memories.
-    for parent_id, _version in memory.provenance.parents:
+    for parent_id, version in memory.provenance.parents:
         state.children.setdefault(parent_id, set()).add(memory.id)
         state.parents.setdefault(memory.id, set()).add(parent_id)
+        state.parent_versions[(memory.id, parent_id)] = version
     if memory.hypothesis_set:
         hset = state.hypothesis_sets.setdefault(
             memory.hypothesis_set, HypothesisSet(id=memory.hypothesis_set)
@@ -241,6 +252,16 @@ def _on_lifecycle_changed(state: ProjectionState, event: Event) -> None:
         )
 
 
+def _on_store_identified(state: ProjectionState, event: Event) -> None:
+    state.store_id = event.payload["store_id"]
+
+
+def _on_retraction_requested(state: ProjectionState, event: Event) -> None:
+    state.origin_sequence = max(
+        state.origin_sequence, int(event.payload.get("origin_sequence", 0))
+    )
+
+
 def _on_scope_changed(state: ProjectionState, event: Event) -> None:
     memory = state.memories.get(event.payload["memory_id"])
     if memory is None:
@@ -282,4 +303,6 @@ _HANDLERS = {
     EventType.CONFLICT_DETECTED: _on_conflict_detected,
     EventType.EXPERIMENT_RUN: _on_experiment_run,
     EventType.DUPLICATE_SUPPRESSED: _on_duplicate_suppressed,
+    EventType.STORE_IDENTIFIED: _on_store_identified,
+    EventType.RETRACTION_REQUESTED: _on_retraction_requested,
 }

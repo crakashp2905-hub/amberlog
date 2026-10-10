@@ -156,26 +156,43 @@ class TestSchemaMatchesTheCode(unittest.TestCase):
 
 
 class TestTheAuditTellsTheTruth(unittest.TestCase):
-    """The audit's central claim is a claim about this repository, so it is
-    checkable. If an implementation lands, these fail and the audit gets
-    rewritten — which is the intended behaviour."""
+    """The audit's claims about this repository are claims, so they are
+    checkable. Phase 1 landed, so these now assert the *new* state — and the
+    two that previously asserted "there is still no outbox" and
+    "propagate_retraction still takes live objects" failed exactly when they
+    were supposed to, which is why they were written that way.
+    """
 
-    def test_there_is_still_no_outbox(self) -> None:
-        source = (
-            Path(__file__).resolve().parent.parent / "memory_fabric" / "federation.py"
-        ).read_text(encoding="utf-8")
-        for absent in ("outbox", "inbox", "dispatch"):
-            self.assertNotIn(absent, source.lower(), f"{absent} exists; update docs/AUDIT.md")
+    def test_the_outbox_now_exists_and_is_durable(self) -> None:
+        from memory_fabric.outbox import Outbox
 
-    def test_propagate_retraction_still_takes_live_objects(self) -> None:
-        """The audit's headline: this is an in-process call, not a protocol."""
+        self.assertTrue(hasattr(Outbox, "enqueue"))
+        self.assertTrue(hasattr(Outbox, "due"))
+        self.assertTrue(hasattr(Outbox, "record_attempt"))
+
+    def test_the_in_process_call_still_exists_alongside_the_protocol(self) -> None:
+        """`propagate_retraction` is kept deliberately. It is the honest
+        in-process operation Phase B measured, and removing it would invalidate
+        a published result; `request_retraction` is the durable path. Both are
+        documented for what they are in docs/AUDIT.md §3."""
         import inspect
 
         from memory_fabric.federation import propagate_retraction
 
-        signature = inspect.signature(propagate_retraction)
-        self.assertIn("targets", signature.parameters)
-        self.assertIn("Sequence", str(signature.parameters["targets"].annotation))
+        self.assertIn("targets", inspect.signature(propagate_retraction).parameters)
+
+    def test_the_durable_path_does_not_take_live_objects(self) -> None:
+        """The distinction that matters: the protocol path names recipients by
+        opaque store id, so it cannot require them to be in this process."""
+        import inspect
+
+        from memory_fabric.fabric import MemoryFabric
+
+        signature = inspect.signature(MemoryFabric.request_retraction)
+        self.assertIn("recipients", signature.parameters)
+        annotation = str(signature.parameters["recipients"].annotation)
+        self.assertIn("str", annotation)
+        self.assertNotIn("MemoryFabric", annotation)
 
 
 if __name__ == "__main__":  # pragma: no cover

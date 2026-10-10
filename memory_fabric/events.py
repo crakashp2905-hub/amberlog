@@ -28,6 +28,11 @@ class EventType:
     CONFLICT_DETECTED = "ConflictDetected"
     EXPERIMENT_RUN = "ExperimentRun"
     DUPLICATE_SUPPRESSED = "MemoryDuplicateSuppressed"
+    STORE_IDENTIFIED = "StoreIdentified"
+    RETRACTION_REQUESTED = "RetractionRequested"
+    RETRACTION_APPLIED = "RetractionApplied"
+    RETRACTION_REJECTED = "RetractionRejected"
+    PROPAGATION_STATE_CHANGED = "PropagationStateChanged"
 
 
 @dataclass(frozen=True)
@@ -217,6 +222,135 @@ def lifecycle_changed(
         ts=ts,
         agent_id=actor,
         payload=payload,
+    )
+
+
+def store_identified(ts: int, store_id: str, actor: str = "store") -> Event:
+    """A store names itself, once, in its own log.
+
+    The identity has to survive a restore from backup, and the log is the only
+    thing guaranteed to. Deriving it from a config file means a mis-deployed
+    config silently re-identifies a store and every retraction addressed to the
+    old id goes nowhere.
+    """
+    return Event(
+        type=EventType.STORE_IDENTIFIED,
+        ts=ts,
+        agent_id=actor,
+        payload={"store_id": store_id},
+    )
+
+
+def retraction_requested(
+    ts: int,
+    retraction_id: str,
+    origin_store_id: str,
+    origin_memory_id: str,
+    origin_memory_version: int,
+    origin_sequence: int,
+    reason_code: str,
+    recipients: list[str],
+    requested_by: str,
+    evidence_digest: str | None = None,
+) -> Event:
+    """The origin's durable record that a retraction is owed to each recipient.
+
+    Committed in the same transaction as the outbox rows, which is what makes
+    invariant 3 ("a committed retraction cannot disappear because a process
+    crashes before dispatch") expressible at all.
+    """
+    payload: dict[str, Any] = {
+        "retraction_id": retraction_id,
+        "origin_store_id": origin_store_id,
+        "origin_memory_id": origin_memory_id,
+        "origin_memory_version": origin_memory_version,
+        "origin_sequence": origin_sequence,
+        "reason_code": reason_code,
+        "recipients": list(recipients),
+        "requested_by": requested_by,
+    }
+    if evidence_digest is not None:
+        payload["evidence_digest"] = evidence_digest
+    return Event(
+        type=EventType.RETRACTION_REQUESTED,
+        ts=ts,
+        agent_id=requested_by,
+        payload=payload,
+    )
+
+
+def retraction_applied(
+    ts: int,
+    retraction_id: str,
+    origin_store_id: str,
+    origin_memory_id: str,
+    origin_memory_version: int,
+    local_memory_id: str,
+    actor: str,
+) -> Event:
+    """A recipient's record that it applied a retraction locally."""
+    return Event(
+        type=EventType.RETRACTION_APPLIED,
+        ts=ts,
+        agent_id=actor,
+        payload={
+            "retraction_id": retraction_id,
+            "origin_store_id": origin_store_id,
+            "origin_memory_id": origin_memory_id,
+            "origin_memory_version": origin_memory_version,
+            "local_memory_id": local_memory_id,
+        },
+    )
+
+
+def retraction_rejected(
+    ts: int,
+    retraction_id: str,
+    origin_store_id: str,
+    rejection_code: str,
+    detail: str,
+    actor: str,
+) -> Event:
+    """A recipient's record that it refused one. Refusals are auditable too:
+    an unauthorised or superseded retraction that left no trace would be
+    indistinguishable from one that never arrived."""
+    return Event(
+        type=EventType.RETRACTION_REJECTED,
+        ts=ts,
+        agent_id=actor,
+        payload={
+            "retraction_id": retraction_id,
+            "origin_store_id": origin_store_id,
+            "rejection_code": rejection_code,
+            "detail": detail,
+        },
+    )
+
+
+def propagation_state_changed(
+    ts: int,
+    retraction_id: str,
+    recipient_store_id: str,
+    from_state: str,
+    to_state: str,
+    detail: str = "",
+    actor: str = "dispatcher",
+) -> Event:
+    """One (retraction, recipient) pair moving through the propagation state
+    machine. Separate from `lifecycle_changed` because a memory can be
+    retracted at source while one recipient is enforced and another offline;
+    one state cannot represent both."""
+    return Event(
+        type=EventType.PROPAGATION_STATE_CHANGED,
+        ts=ts,
+        agent_id=actor,
+        payload={
+            "retraction_id": retraction_id,
+            "recipient_store_id": recipient_store_id,
+            "from": from_state,
+            "to": to_state,
+            "detail": detail,
+        },
     )
 
 

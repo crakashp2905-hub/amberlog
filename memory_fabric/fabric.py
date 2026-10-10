@@ -25,6 +25,18 @@ from .governance.firewall import Firewall, FirewallRequest, FirewallRuling
 from .governance.retention import RetentionDecision, RetentionPolicy
 from .ids import new_ulid
 from .lineage import LineageGraph, LineageView
+from datetime import datetime, timezone
+
+from .outbox import Outbox, now_ms as _now_ms
+from .protocol import (
+    Acknowledgement,
+    PropagationState,
+    ProtocolError,
+    RejectionCode,
+    Retraction,
+    new_retraction_id,
+    new_store_id,
+)
 from .model import (
     BLOCKED_STATES,
     EXPLORATORY_STATES,
@@ -99,6 +111,19 @@ class HealthReport:
     events: int
 
 
+def iso_timestamp(ms: int) -> str:
+    """RFC3339 UTC, for the protocol's `issued_at` / `at` fields.
+
+    Advisory metadata only: it never decides precedence, because clocks
+    disagree and a sender controls its own (docs/PROTOCOL.md §2).
+    """
+    return (
+        datetime.fromtimestamp(ms / 1000.0, tz=timezone.utc)
+        .isoformat(timespec="milliseconds")
+        .replace("+00:00", "Z")
+    )
+
+
 class MemoryFabric:
     """Single-process memory fabric with a governed write and share path."""
 
@@ -128,6 +153,236 @@ class MemoryFabric:
         self.auto_activate = auto_activate
         self._estimator_dirty = True
         self._replay()
+        self.outbox = Outbox(self.log._conn)
+        self._ensure_store_identity()
+
+    def _ensure_store_identity(self) -> None:
+        """Mint this store's opaque identity once and record it in its own log.
+
+        Recorded as an event rather than read from configuration because the
+        identity has to survive a restore from backup, and the log is the only
+        thing guaranteed to. A mis-deployed config would otherwise silently
+        re-identify a store, and every retraction addressed to the old id would
+        go nowhere.
+
+        Existing logs predate this, so a store without the event mints one on
+        first open — an additive migration, no schema break.
+        """
+        if self.state.store_id is None:
+            self._emit(ev.store_identified(ts=self.now(), store_id=new_store_id()))
+
+    @property
+    def store_id(self) -> str:
+        """This store's identity. Never a path: the old origin record used
+        `log.path`, so two containers each holding `./store.db` were
+        indistinguishable and `:memory:` identified every in-memory store."""
+        assert self.state.store_id is not None, "store identity not minted"
+        return self.state.store_id
+
+    # --- durable retraction protocol -------------------------------------
+
+    def request_retraction(
+        self,
+        memory_id: str,
+        reason: str,
+        recipients: Sequence[str],
+        actor: str = "operator",
+        basis: str | WithdrawalBasis | None = None,
+    ) -> Retraction:
+        """Quarantine locally **and** durably record that the retraction is owed
+        to each recipient — in one transaction.
+
+        This is what `propagate_retraction` could not do. That function
+        committed the local quarantine and then looped over live target objects
+        in the same call, so a crash in between lost the dispatch with no record
+        that it was owed. Here the `RetractionRequested` event and the outbox
+        rows commit together, so a crash leaves the intent recorded and a
+        dispatcher picks it up (invariant 3).
+
+        Returns the `Retraction` for dispatch. It names an **exact version**:
+        matching on the memory id alone would withdraw an import of v3 on a
+        retraction of v1.
+        """
+        memory = self._require(memory_id)
+        retraction = Retraction(
+            retraction_id=new_retraction_id(),
+            origin_store_id=self.store_id,
+            origin_memory_id=memory_id,
+            origin_memory_version=memory.version,
+            origin_sequence=self.state.origin_sequence + 1,
+            reason_code=(
+                basis.value if isinstance(basis, WithdrawalBasis) else basis
+            ) or WithdrawalBasis.UNSTATED.value,
+            requested_by=actor,
+            issued_at=iso_timestamp(self.now()),
+        )
+
+        with self.log._conn:
+            self.quarantine(memory_id, reason=reason, actor=actor, basis=basis)
+            self._emit(
+                ev.retraction_requested(
+                    ts=self.now(),
+                    retraction_id=retraction.retraction_id,
+                    origin_store_id=retraction.origin_store_id,
+                    origin_memory_id=retraction.origin_memory_id,
+                    origin_memory_version=retraction.origin_memory_version,
+                    origin_sequence=retraction.origin_sequence,
+                    reason_code=retraction.reason_code,
+                    recipients=list(recipients),
+                    requested_by=actor,
+                )
+            )
+            self.outbox.enqueue(retraction, recipients, _now_ms())
+        return retraction
+
+    def receive_retraction(
+        self, retraction: Retraction, sender_authorised: bool = True
+    ) -> Acknowledgement:
+        """Apply a retraction arriving from another store, idempotently.
+
+        The order is the one docs/PROTOCOL.md §5 specifies, and the ordering
+        matters: deduplication comes before the version check so a replay gets
+        the *first* outcome rather than a fresh verdict.
+
+        Returns an acknowledgement of **committed** state only. `persisted`
+        after the commit, `enforced` once the projections no longer expose the
+        version. Acknowledging on receipt would be the most damaging lie
+        available here.
+        """
+        at = iso_timestamp(self.now())
+
+        def ack(state: PropagationState, detail: str = "", code: str | None = None):
+            return Acknowledgement(
+                retraction_id=retraction.retraction_id,
+                recipient_store_id=self.store_id,
+                state=state,
+                at=at,
+                state_revision=self.log.head_seq,
+                origin_sequence_seen=self.outbox.cursor_for(retraction.origin_store_id),
+                detail=detail,
+                rejection_code=code,
+            )
+
+        if not sender_authorised:
+            self._emit(
+                ev.retraction_rejected(
+                    ts=self.now(),
+                    retraction_id=retraction.retraction_id,
+                    origin_store_id=retraction.origin_store_id,
+                    rejection_code=RejectionCode.UNAUTHORIZED.value,
+                    detail="sender not authorised for this destination",
+                    actor=self.store_id,
+                )
+            )
+            return ack(
+                PropagationState.REJECTED,
+                "sender not authorised",
+                RejectionCode.UNAUTHORIZED.value,
+            )
+
+        # 4. Deduplicate on event identity, before anything else can change.
+        previous = self.outbox.seen(retraction)
+        if previous is not None:
+            outcome, detail = previous
+            state = {
+                "applied": PropagationState.ENFORCED,
+                "superseded": PropagationState.SUPERSEDED,
+                "unknown_memory": PropagationState.REJECTED,
+            }.get(outcome, PropagationState.REJECTED)
+            return ack(state, f"duplicate: {detail}")
+
+        # 5. Version and cursor rules.
+        cursor = self.outbox.cursor_for(retraction.origin_store_id)
+        if retraction.origin_sequence < cursor:
+            with self.log._conn:
+                self.outbox.record_inbox(
+                    retraction, "superseded", f"below cursor {cursor}", _now_ms()
+                )
+                self._emit(
+                    ev.retraction_rejected(
+                        ts=self.now(),
+                        retraction_id=retraction.retraction_id,
+                        origin_store_id=retraction.origin_store_id,
+                        rejection_code=RejectionCode.VERSION_SUPERSEDED.value,
+                        detail=f"origin_sequence {retraction.origin_sequence} below cursor {cursor}",
+                        actor=self.store_id,
+                    )
+                )
+            return ack(
+                PropagationState.SUPERSEDED,
+                f"below cursor {cursor}",
+                RejectionCode.VERSION_SUPERSEDED.value,
+            )
+
+        targets = self._imports_of(retraction)
+        if not targets:
+            with self.log._conn:
+                self.outbox.record_inbox(retraction, "unknown_memory", "no import held", _now_ms())
+                self.outbox.advance_cursor(
+                    retraction.origin_store_id, retraction.origin_sequence
+                )
+            return ack(
+                PropagationState.REJECTED,
+                "no import of that memory version held here",
+                RejectionCode.UNKNOWN_MEMORY.value,
+            )
+
+        # 6. Persist the event, the inbox record and the lifecycle change in one
+        #    transaction. A crash between them is the window invariant 6 covers.
+        with self.log._conn:
+            for local_id in targets:
+                if self.get(local_id).lifecycle_state is not LifecycleState.QUARANTINED:
+                    self.quarantine(
+                        local_id,
+                        reason=f"retracted at origin ({retraction.reason_code})",
+                        actor=self.store_id,
+                        basis=WithdrawalBasis.RETRACTED_AT_ORIGIN,
+                    )
+                self._emit(
+                    ev.retraction_applied(
+                        ts=self.now(),
+                        retraction_id=retraction.retraction_id,
+                        origin_store_id=retraction.origin_store_id,
+                        origin_memory_id=retraction.origin_memory_id,
+                        origin_memory_version=retraction.origin_memory_version,
+                        local_memory_id=local_id,
+                        actor=self.store_id,
+                    )
+                )
+            self.outbox.record_inbox(
+                retraction, "applied", f"{len(targets)} memory/ies", _now_ms()
+            )
+            self.outbox.advance_cursor(
+                retraction.origin_store_id, retraction.origin_sequence
+            )
+
+        # 7. Projections already reflect it: `quarantine` emitted through the
+        #    same projection fold, and `_eligible_ids` reads lifecycle state, so
+        #    the version is no longer exposed. Hence `enforced`, not `persisted`.
+        return ack(PropagationState.ENFORCED, f"{len(targets)} memory/ies withdrawn")
+
+    def _imports_of(self, retraction: Retraction) -> list[str]:
+        """Local memories imported from this exact origin memory **version**.
+
+        Matching on store and id was the old behaviour; adding the version is
+        what stops a retraction of v1 withdrawing an import of v3.
+        """
+        from .federation import imported_from
+
+        found: list[str] = []
+        for memory_id in self.state.memories:
+            origin = imported_from(self, memory_id)
+            if origin is None:
+                continue
+            if origin.get("store") != retraction.origin_store_id:
+                continue
+            if origin.get("memory_id") != retraction.origin_memory_id:
+                continue
+            version = origin.get("version")
+            if version is not None and int(version) != retraction.origin_memory_version:
+                continue
+            found.append(memory_id)
+        return found
 
     # --- plumbing --------------------------------------------------------
 

@@ -1,4 +1,17 @@
-# Phase 0 — Implementation-vs-spec audit
+# Phase 0 - Implementation-vs-spec audit
+
+> **Superseded in part by Phase 1 (2026-10-10).**
+> The durable retraction protocol now exists: opaque store identity recorded in
+> the log, exact-version targeting, a transactional outbox, a recipient inbox
+> deduplicating on event identity, per-origin cursors, and eight propagation
+> states. Invariants 3, 5 and 7 moved from **missing** to **implemented**, and
+> 2 and 4 from partial to implemented. See [INVARIANTS.md](INVARIANTS.md) for
+> the current matrix and `tests/test_retraction_protocol.py` for the crash
+> matrix.
+>
+> **Still true:** there is no *transport*. Both sides remain in one process, so
+> what Phase 1 delivered is durability and idempotency, not distribution.
+> Phase 2 is the network.
 
 - **Audited:** 2026-10-10, commit `597bdcb`, 483 tests passing, secret scan clean.
 - **Method:** read the path from local quarantine through `propagate_retraction()` to recipient lifecycle and retrieval enforcement, then checked each advertised guarantee against the code that would have to implement it.

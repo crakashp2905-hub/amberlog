@@ -131,7 +131,15 @@ def offer(
     context[ORIGIN_KEY] = {
         "agent": memory.provenance.created_by,
         "memory_id": memory_id,
-        "store": source.log.path,
+        # The store's opaque identity, not its path. `log.path` made two
+        # containers each holding `./store.db` indistinguishable, broke every
+        # provenance match when a database moved, and gave every in-memory
+        # store the identity `:memory:`.
+        "store": source.store_id,
+        # The exact version imported, so a retraction of v1 cannot withdraw an
+        # import of v3. Provenance has always carried versions for parents;
+        # imports did not record one at all.
+        "version": memory.version,
     }
 
     imported_id = target.remember(
@@ -260,7 +268,7 @@ def descendants_of(
             if (
                 origin
                 and origin.get("memory_id") == memory_id
-                and origin.get("store") == source.log.path
+                and origin.get("store") == source.store_id
             ):
                 found.append((target, candidate))
     return found

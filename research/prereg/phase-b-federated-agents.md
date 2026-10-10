@@ -161,6 +161,50 @@ Failing any of these changes the world, recorded as a dated amendment here, befo
 > abandoned run is reported as a result; the per-seed figures quoted above appear
 > only here, as the evidence for the amendment.
 
+> ### Amendment, 2026-10-10 (third) — the corrected ceiling is beaten too, and that is a finding
+>
+> Written with one seed of the restarted run visible and four still to go, so
+> the interpretation is fixed before the verdict is.
+>
+> The corrected `oracle_share` — sharing only memories correct at **every** site
+> the recipient works — was beaten at seed 0 by `share_overlap_propagate`, 83%
+> against 90%. The second amendment fixed a bug; this is not another bug.
+>
+> **No static sharing rule can be a ceiling in this world.** A memory wrong at
+> one of a recipient's sites is still *right* at another. Excluding it avoids
+> harm on some of that recipient's episodes and costs coverage on the rest, and
+> which of those dominates is not knowable at share time. The corrected oracle
+> shares 34 memories where `share_overlap` shares 60, and pays 7 points for the
+> discipline. Any rule that decides per (memory, recipient) is making one choice
+> for a set of episodes that want different ones.
+>
+> This is also the explanation for the result PB1 is likely to produce:
+> `share_overlap` **tied** `share_all` at seed 0 (79% each) rather than beating
+> it, because filtering at share time discards memories useful for some of the
+> recipient's episodes. The decision belongs at exposure time, where the episode
+> is known.
+>
+> **Consequences, fixed now:**
+>
+> 1. **The success headroom in §6 is not quotable from this run**, per principle
+>    8b. The automatic ceiling check will say so, and no percentage-of-headroom
+>    figure from the success metric is reported.
+> 2. **PB1's verdict does not depend on it.** Its selective arms are
+>    `share_overlap`, `share_valued` and `share_valued_overlap`; none includes
+>    propagation. Whether the best of them beats `best_simple` *at all* is an
+>    arm-to-arm comparison that never mentions the oracle, and that is what
+>    decides supported or killed.
+> 3. **PB2 is unaffected.** Its headroom is on "still acting on a memory
+>    retracted at its origin", where the oracle is sound by construction: it
+>    never shares a poisoned memory, so its rate is the true floor.
+> 4. **A future ceiling here must bound the pipeline, not the sharing step** —
+>    share everything, then expose only what is correct for the episode. That
+>    cannot be beaten by any sharing policy, because every policy's exposed set
+>    is a subset of what sharing everything makes available. It is registered
+>    here as the design for any re-run, and deliberately *not* substituted into
+>    this one: swapping a ceiling mid-run after seeing an arm beat it is how a
+>    threshold gets chosen to fit a result.
+
 ## 6. Ceiling and thresholds
 
 Headroom is always `oracle_share − best_simple`, where `best_simple = max(isolated, share_all)` on the metric in question — the two things a team actually does, chosen after the run so the comparison cannot be won against a weak baseline.

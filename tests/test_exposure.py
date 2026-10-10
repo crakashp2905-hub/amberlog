@@ -249,17 +249,67 @@ class TestValueRankingFallsBackToRelevance(unittest.TestCase):
         exposed = [d.candidate.memory_id for d in decisions if d.exposed]
         self.assertEqual(exposed, ["01AAA"])
 
-    def test_an_unevaluated_candidate_is_not_the_same_as_a_measured_zero(self) -> None:
-        """`value_mean` reports 0.0 for both, which is why the ranking needed a
-        separate question."""
+    def test_evidence_means_the_estimate_would_survive_being_acted_on(self) -> None:
+        """`has_value_evidence` asks whether the number is worth acting on, not
+        merely whether a number exists.
+
+        It originally asked only `n_eff > 0`, which let a single observation
+        with an interval spanning zero outrank an unevaluated memory nineteen
+        times more relevant. It now applies the rule the firewall already uses
+        for scope promotion: contrastive, and the interval clear of zero.
+        """
         unknown = Candidate(memory_id="01AAA", version=1, relevance=0.5, value=None)
-        measured = Candidate(
-            memory_id="01BBB", version=1, relevance=0.5,
-            value=ValueEstimate(
-                mean=0.0, ci_low=-0.1, ci_high=0.1,
-                n_eff=20.0, estimator="test", contrastive=True,
-            ),
+
+        def estimate(mean, low, high, n, contrastive=True):
+            return ValueEstimate(
+                mean=mean, ci_low=low, ci_high=high, n_eff=n,
+                estimator="test", contrastive=contrastive,
+            )
+
+        # A measured zero: plenty of evidence, and it says the memory does
+        # nothing. Not grounds to rank it on, because the interval spans zero.
+        measured_zero = Candidate("01BBB", 1, 0.5, estimate(0.0, -0.1, 0.1, 20.0))
+        # Thin and inconclusive.
+        thin = Candidate("01CCC", 1, 0.5, estimate(0.10, -0.40, 0.60, 1.0))
+        # Non-contrastive: an absolute rate cannot show the memory helped.
+        absolute = Candidate(
+            "01DDD", 1, 0.5, estimate(0.8, 0.6, 0.9, 30.0, contrastive=False)
         )
-        self.assertEqual(unknown.value_mean, measured.value_mean)
-        self.assertFalse(unknown.has_value_evidence)
-        self.assertTrue(measured.has_value_evidence)
+        # Real evidence, in both directions.
+        helps = Candidate("01EEE", 1, 0.5, estimate(0.8, 0.5, 1.0, 12.0))
+        harms = Candidate("01FFF", 1, 0.5, estimate(-0.6, -0.9, -0.3, 11.0))
+
+        self.assertEqual(unknown.value_mean, measured_zero.value_mean)
+        for candidate in (unknown, measured_zero, thin, absolute):
+            self.assertFalse(candidate.has_value_evidence, candidate.memory_id)
+        for candidate in (helps, harms):
+            self.assertTrue(candidate.has_value_evidence, candidate.memory_id)
+
+    def test_thin_evidence_does_not_outrank_strong_relevance(self) -> None:
+        """The defect this fix exists for, as a test."""
+        thin = Candidate(
+            "01AAA", 1, 0.05,
+            ValueEstimate(mean=0.10, ci_low=-0.40, ci_high=0.60, n_eff=1.0,
+                          estimator="test", contrastive=True),
+        )
+        relevant = Candidate("01BBB", 1, 0.95, None)
+        decisions = TopKPolicy(rank_by="value").decide(
+            [thin, relevant], 1, random.Random(0)
+        )
+        self.assertEqual(
+            [d.candidate.memory_id for d in decisions if d.exposed], ["01BBB"]
+        )
+
+    def test_a_memory_measured_to_harm_ranks_below_an_unevaluated_one(self) -> None:
+        harms = Candidate(
+            "01AAA", 1, 0.95,
+            ValueEstimate(mean=-0.6, ci_low=-0.9, ci_high=-0.3, n_eff=11.0,
+                          estimator="test", contrastive=True),
+        )
+        unknown = Candidate("01BBB", 1, 0.50, None)
+        decisions = TopKPolicy(rank_by="value").decide(
+            [harms, unknown], 1, random.Random(0)
+        )
+        self.assertEqual(
+            [d.candidate.memory_id for d in decisions if d.exposed], ["01BBB"]
+        )

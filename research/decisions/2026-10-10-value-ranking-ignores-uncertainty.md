@@ -1,7 +1,7 @@
 # Decision — value ranking ignores its own uncertainty; fix after the runs in flight
 
 - **Date:** 2026-10-10
-- **Status:** defect recorded, **fix deliberately deferred** until PA′ and Phase B have both finished.
+- **Status:** **fixed** 2026-10-10, after PA′ and Phase B had both finished and Phase C was on its final seed. Recorded before either verdict; applied after, so no registered run changed semantics mid-flight.
 - **Written before** either verdict, so that neither result can be reinterpreted in light of a fix made afterwards.
 
 ## The defect
@@ -62,10 +62,17 @@ numbers run low.
 correction to `fabric_causal` is already recorded in §6a of
 [its result](../results/phase-a-real-agent-benchmark.md).
 
-## The fix, once both runs are done
+## The fix, as applied
 
-Rank on value only where the estimate supports a claim — contrastive, and the
-interval clear of zero — and fall back to relevance otherwise. This is the rule
+`has_value_evidence` now requires three things: an estimate exists, it is
+**contrastive**, and its interval **clears zero** (`shows_benefit`, or the whole
+interval below zero for measured harm). `_rank_key` ranks on value only for such
+a candidate and falls back to relevance otherwise.
+
+Measured behaviour after the fix: thin evidence (mean +0.10, interval
+[-0.40, 0.60], n=1) now loses to a candidate nineteen times more relevant; solid
+evidence (mean +0.80, interval [0.50, 1.00], n=12) still beats relevance; and a
+memory measured to *harm* ranks below an unevaluated one. All three are tests. This is the rule
 the firewall already applies to scope promotion, so it makes one standard out of
 two. `Candidate.has_value_evidence` exists but currently only checks
 `n_eff > 0`, which is too weak for this; it needs to mean *the estimate would
@@ -106,3 +113,12 @@ candidates values that differed clearly. None gave one a mean with an interval
 spanning zero. The project has a type that carries uncertainty and a principle
 that says to use it, and the tests still only exercised the case where the
 number happens to be trustworthy.
+
+## Afterwards
+
+`fabric_contrastive`'s registered question — does withdrawing on contrastive
+harm beat withdrawing nothing — **has still not been asked** under a ranking
+that respects its own intervals. PA′'s number for that arm stands as a
+measurement of the old configuration and should not be quoted as a measurement
+of contrastive withdrawal. Re-measuring it is a registered follow-up, not a
+re-run of PA′.

@@ -35,13 +35,34 @@ class Candidate:
 
     @property
     def has_value_evidence(self) -> bool:
-        """Whether anything is actually known about this memory's effect.
+        """Whether this estimate **would survive being acted on**.
 
-        `value_mean` reports 0.0 for a memory with no estimate, which reads as
-        "measured to have no effect" when the truth is "never measured". The
-        ranking needs to tell those apart: see `_rank_key`.
+        Three conditions, and each one was needed:
+
+        * an estimate exists at all — `value_mean` reports 0.0 for a memory with
+          no estimate, which reads as "measured to have no effect" when the
+          truth is "never measured";
+        * it is **contrastive** — an absolute success rate over episodes where a
+          memory appeared cannot show the memory helped, which is the
+          value/relevance confusion this project exists to avoid;
+        * its credible interval **clears zero** — a mean of +0.10 on a single
+          observation with an interval of [-0.40, 0.60] is not evidence that a
+          memory helps.
+
+        This is the rule the firewall already applies to scope promotion
+        (`ValueEstimate.shows_benefit`) and retention applies to withdrawal, so
+        it makes one standard out of three rather than inventing a fourth.
+
+        The earlier version checked only `n_eff > 0`, which was too weak to be
+        useful: a candidate with one observation outranked an unevaluated
+        candidate nineteen times more relevant. Recorded at the time in
+        research/decisions/2026-10-10-value-ranking-ignores-uncertainty.md and
+        deliberately left unfixed until the registered runs that depended on
+        the old behaviour had finished.
         """
-        return self.value is not None and self.value.n_eff > 0.0
+        if self.value is None or self.value.n_eff <= 0.0:
+            return False
+        return self.value.shows_benefit or self.value.ci_high < 0.0
 
 
 def _rank_key(candidate: Candidate, rank_by: str) -> tuple[float, float, str]:
@@ -66,8 +87,17 @@ def _rank_key(candidate: Candidate, rank_by: str) -> tuple[float, float, str]:
     it, which is relevance, and the id remains only to keep the sort
     deterministic.
     """
-    score = candidate.relevance if rank_by == "relevance" else candidate.value_mean
-    return (-score, -candidate.relevance, candidate.memory_id)
+    if rank_by == "relevance":
+        return (-candidate.relevance, -candidate.relevance, candidate.memory_id)
+
+    # Rank on value only where the estimate would survive being acted on.
+    # Otherwise fall back to relevance, which is the only signal that exists
+    # for an unevaluated memory. AGENTS.md principle 5 — credit is a
+    # distribution, not a number — and the exposure policy was the one of seven
+    # call sites that read the mean and discarded the rest.
+    if candidate.has_value_evidence:
+        return (-candidate.value_mean, -candidate.relevance, candidate.memory_id)
+    return (0.0, -candidate.relevance, candidate.memory_id)
 
 
 @dataclass(frozen=True)

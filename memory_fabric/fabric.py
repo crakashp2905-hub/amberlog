@@ -452,6 +452,17 @@ class MemoryFabric:
 
         found: list[str] = []
         for memory_id in self.state.memories:
+            # Provenance method, not just the origin record. A memory *derived*
+            # locally from an import inherits the parent's context, origin key
+            # included, so it looks like a second copy of the imported memory.
+            # Without this check a recipient's own conclusions were quarantined
+            # outright instead of having their support recomputed — which is
+            # exactly the "withdrawing unrelated useful knowledge" failure the
+            # project exists to prevent. `descendants_of` carries the same
+            # guard for the same reason; the deterministic fault matrix caught
+            # this one (scenario `derived_conclusion_at_recipient`).
+            if self.state.memories[memory_id].provenance.method is not ProvenanceMethod.IMPORTED:
+                continue
             origin = imported_from(self, memory_id)
             if origin is None:
                 continue

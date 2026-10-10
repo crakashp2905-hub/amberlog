@@ -361,3 +361,85 @@ class TestSafeRecovery(JustificationCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class TestRegressions(JustificationCase):
+    """One deterministic test per bug the fault matrix found (roadmap §5.4)."""
+
+    def test_a_locally_derived_conclusion_is_not_treated_as_an_import(self) -> None:
+        """Found by `faultsim` scenario `derived_conclusion_at_recipient`.
+
+        `derive` inherits the parent's context, origin record included, so a
+        memory derived locally from an import *looked* like a second copy of
+        that import. `_imports_of` matched it and quarantined it outright
+        instead of recomputing its support — the recipient's own conclusions
+        were being withdrawn rather than contested, which is precisely the
+        "withdrawing unrelated useful knowledge" failure the project exists to
+        prevent.
+
+        The guard is the provenance method. `descendants_of` has carried it
+        since Phase B; `_imports_of` was added in Phase 1 without it.
+        """
+        from memory_fabric.dispatcher import Dispatcher
+        from memory_fabric.federation import offer
+        from memory_fabric.governance.firewall import (
+            Firewall,
+            rule_capabilities_must_be_granted,
+            rule_must_be_active,
+            rule_restricted_stays_private,
+        )
+        from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
+
+        permissive = Firewall(
+            rules=(
+                rule_restricted_stays_private,
+                rule_must_be_active,
+                rule_capabilities_must_be_granted,
+            )
+        )
+        origin = MemoryFabric(":memory:", firewall=permissive)
+        recipient = MemoryFabric(":memory:", firewall=permissive)
+        self.addCleanup(origin.close)
+        self.addCleanup(recipient.close)
+
+        fact = origin.remember("ag_n", "Winter pressure is 3.5 bar.")
+        origin.validate(fact, actor="supervisor")
+        result = offer(origin, fact, recipient, recipient_agent="ag_a")
+        recipient.validate(result.imported_memory_id, actor="ag_a")
+
+        plan = recipient.derive(
+            "ag_a", "Inflate the yard tug to 3.5 bar.",
+            parents=[result.imported_memory_id],
+            context=justification_context(
+                [(result.imported_memory_id, JustificationKind.REQUIRED)]
+            ),
+        )
+        recipient.validate(plan, actor="supervisor")
+        unrelated = recipient.remember("ag_a", "The yard gate sticks in frost.")
+        recipient.validate(unrelated, actor="supervisor")
+
+        origin.request_retraction(
+            fact, reason="manufacturer bulletin: 2.8 bar",
+            recipients=[recipient.store_id], actor="ag_n",
+            basis=WithdrawalBasis.CONTRADICTED,
+        )
+        registry = PeerRegistry({origin.store_id: Peer(origin.store_id, "x", b"k")})
+        Dispatcher(
+            origin, InProcessTransport({recipient.store_id: recipient}, registry=registry)
+        ).run_once()
+
+        self.assertEqual(
+            recipient.get(result.imported_memory_id).lifecycle_state,
+            LifecycleState.QUARANTINED,
+            "the import itself should be withdrawn",
+        )
+        self.assertEqual(
+            recipient.get(plan).lifecycle_state,
+            LifecycleState.CONTESTED,
+            "the recipient's own conclusion should be contested, not withdrawn",
+        )
+        self.assertEqual(
+            recipient.get(unrelated).lifecycle_state,
+            LifecycleState.ACTIVE,
+            "unrelated knowledge must be untouched",
+        )

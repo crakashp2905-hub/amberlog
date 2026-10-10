@@ -97,6 +97,20 @@ jobs:
           test "$code" = "401" || { echo "expected 401, got $code"; exit 1; }
           docker rm -f mf
 
+  faults:
+    # The deterministic integrity fault matrix. Not a benchmark: it replays
+    # exact fault schedules and asserts six invariants after every step, so a
+    # failure is a reproducible counterexample rather than an effect size. It
+    # found a real bug on its first run — a recipient's locally derived
+    # conclusions were being quarantined instead of contested.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m experiments.faultsim
+
   secrets:
     # The project ships a sensitive-data detector. Pointing it at the repo is
     # both a smoke test of the detector and a guard on what gets committed.

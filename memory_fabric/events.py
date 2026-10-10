@@ -35,6 +35,7 @@ class EventType:
     PROPAGATION_STATE_CHANGED = "PropagationStateChanged"
     ACCESS_DENIED = "AccessDenied"
     SUPPORT_RECOMPUTED = "SupportRecomputed"
+    CONTENT_ERASED = "ContentErased"
     ACCESS_DENIED = "AccessDenied"
 
 
@@ -450,6 +451,30 @@ def support_recomputed(
             "lost": list(lost),
             "independent_count": independent_count,
             "reason": reason[:256],
+        },
+    )
+
+
+def content_erased(
+    ts: int, memory_id: str, reason: str, actor: str, had_content: bool
+) -> Event:
+    """A memory's content key was destroyed.
+
+    The event records that erasure happened, when, why and by whom — never the
+    content. Everything *about* the memory survives: its provenance, what it
+    was derived from, what was derived from it, that it was retracted. An
+    auditor can still answer "was this handled correctly?" about a memory nobody
+    can read, which is the point. Erasure removes the content, not the
+    accountability.
+    """
+    return Event(
+        type=EventType.CONTENT_ERASED,
+        ts=ts,
+        agent_id=actor,
+        payload={
+            "memory_id": memory_id,
+            "reason": reason[:256],
+            "had_content": had_content,
         },
     )
 

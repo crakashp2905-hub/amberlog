@@ -8,10 +8,11 @@ nothing but events, and unknown event types are ignored rather than fatal.
 from __future__ import annotations
 
 import hashlib
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import Any, Iterable, Mapping
 
 from .events import Event, EventType
+from .governance.erasure import ERASED_MARKER
 from .model import (
     LifecycleState,
     WithdrawalBasis,
@@ -100,6 +101,9 @@ class ProjectionState:
     parent_versions: dict[tuple[str, str], int] = field(default_factory=dict)
     # Per-origin monotonic counter for integrity events this store emits.
     origin_sequence: int = 0
+    # Memories whose content key has been destroyed. Replayed from the log,
+    # so erasure survives a rebuild rather than depending on the key table.
+    erased: set[str] = field(default_factory=set)
     suppressed_duplicates: int = 0
     applied_seq: int = 0
 
@@ -110,12 +114,32 @@ class ProjectionState:
 
 
 class Projection:
-    """Folds the event log into queryable state."""
+    """Folds the event log into queryable state.
 
-    def __init__(self) -> None:
+    `unsealer` is the one seam encryption needs. This is the single place a
+    `Memory` object is built from an event, so unsealing here means every
+    downstream reader of `.content` — thirty call sites across eleven modules —
+    sees plaintext and needs no change. The log holds ciphertext; the projection
+    holds what the caller asked for.
+
+    Defaults to identity so the projection stays independently testable and so
+    a log written before encryption existed replays unchanged.
+    """
+
+    def __init__(self, unsealer=None) -> None:
         self.state = ProjectionState()
+        self._unseal = unsealer or (lambda content, memory_id: content)
 
     def apply(self, event: Event) -> None:
+        if event.type in (EventType.MEMORY_CREATED, EventType.MEMORY_VERSIONED):
+            payload = dict(event.payload)
+            memory = payload.get("memory") or {}
+            content = memory.get("content")
+            if isinstance(content, str):
+                memory = dict(memory)
+                memory["content"] = self._unseal(content, memory.get("id", ""))
+                payload["memory"] = memory
+                event = replace(event, payload=payload)
         handler = _HANDLERS.get(event.type)
         if handler is not None:
             handler(self.state, event)
@@ -129,8 +153,15 @@ class Projection:
             self.apply(event)
 
     @classmethod
-    def rebuild(cls, log, since_seq: int = 0) -> "Projection":
-        projection = cls()
+    def rebuild(cls, log, since_seq: int = 0, unsealer=None) -> "Projection":
+        """Fold a log into fresh state.
+
+        `unsealer` has to be threaded through: a rebuild that dropped it would
+        replace a configured projection with a default one and every memory
+        would read back as ciphertext. `MemoryFabric._replay` calls this, so
+        forgetting it broke reads on the first encrypted write.
+        """
+        projection = cls(unsealer=unsealer)
         projection.apply_all(log.read(since_seq=since_seq))
         return projection
 
@@ -262,6 +293,16 @@ def _on_retraction_requested(state: ProjectionState, event: Event) -> None:
     )
 
 
+def _on_content_erased(state: ProjectionState, event: Event) -> None:
+    memory_id = event.payload["memory_id"]
+    state.erased.add(memory_id)
+    memory = state.memories.get(memory_id)
+    if memory is not None:
+        # Replace the stored text in the projection too. The event log keeps the
+        # ciphertext, which without its key is not content.
+        state.memories[memory_id] = memory.evolve(content=ERASED_MARKER)
+
+
 def _on_scope_changed(state: ProjectionState, event: Event) -> None:
     memory = state.memories.get(event.payload["memory_id"])
     if memory is None:
@@ -305,4 +346,5 @@ _HANDLERS = {
     EventType.DUPLICATE_SUPPRESSED: _on_duplicate_suppressed,
     EventType.STORE_IDENTIFIED: _on_store_identified,
     EventType.RETRACTION_REQUESTED: _on_retraction_requested,
+    EventType.CONTENT_ERASED: _on_content_erased,
 }

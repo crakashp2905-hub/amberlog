@@ -54,9 +54,20 @@ No TLS: the cookie carries no `Secure` flag because that would stop it being sto
 
 This is still scoping inside one process, not authentication: anything holding the raw `MemoryFabric` can write as any agent, which is correct — that is the host.
 
-## Federation (P6)
+## Federation (Phase 2)
 
-Crossing a store boundary is governed on both sides.
+Crossing a store boundary is governed on both sides, and the boundary is now
+authenticated.
+
+| Control | How |
+|---|---|
+| Senders are authenticated | Per-peer HMAC on every retraction, verified **before** the message is parsed. An unknown peer is neither reachable nor authorised: `PeerRegistry` is the authorisation boundary, so a store cannot be made to accept retractions from somewhere it was never configured to trust. |
+| A signature proves origin, not truth | It establishes who sent a retraction and that it was unmodified. Nothing downstream may treat it as evidence that the retracted claim was false. |
+| Evidence is a digest, never the evidence | A retraction carries `evidence_digest` and an optional reference. Shipping the content would move memory text into a second system, which is what the governance layer exists to prevent. |
+| Acknowledgements cannot overstate | A recipient reports `persisted` only after its own commit and `enforced` only once its projections stop exposing the version. The dispatcher refuses a claim with no state revision behind it. |
+| Replays cannot forge | A reconciliation replay carrying another origin's events is dropped, or a compromised peer could retract on someone else's behalf. |
+
+Crossing a store boundary is also governed by the original controls:
 
 | Control | How |
 |---|---|
@@ -67,12 +78,45 @@ Crossing a store boundary is governed on both sides.
 
 **Known gap:** the default firewall's value rule gates federation on value measured in the **sender's** context. H3's premise — confirmed by its result — is that value does not cross a context boundary, so passing the sender's gate says little about whether a memory helps the recipient. The rule is a reasonable floor (it blocks memories with no evidence anywhere) but it is not the right question, and on a store without a contrastive estimator it refuses everything.
 
-## Known gaps at P1
+## Content governance (Phase 6)
 
-- **The sensitive-data detector is pattern-based**, so it misses novel secret formats and flags some harmless strings. It is one control among several, never the only one protecting a restricted memory.
-- **No agent authentication.** `agent_id` and `actor` are caller-supplied strings. `AgentSession` (P3) stops an adapter attributing work to the wrong agent, but a caller holding the fabric can still write as anyone. Real identity needs a service boundary, which arrives at P6.
-- **No encryption at rest.** The SQLite file is plaintext.
-- **The contradiction detector does not exist yet** (P7), so `challenge()` is manual.
+Invariant 12 — *append-only audit history does not justify retaining sensitive
+content indefinitely* — is a real tension, not a wording problem. The event log
+is append-only and enforced by database triggers, and a log you can edit to
+remove embarrassing entries is not an audit trail. But "it is in an immutable
+log" is not an answer to a subject exercising a right to erasure, or to a
+credential that has leaked into a memory.
+
+**Crypto-erasure resolves it.** Memory content is encrypted per memory
+(`governance/erasure.py`), the keys live in their own table rather than in the
+log, and `erase_content` destroys one key. Every event stays byte-identical,
+every projection still replays, lineage and the propagation record are
+untouched, and the text is unrecoverable.
+
+| What is erased | What survives |
+|---|---|
+| The memory's text, in the log, the projection and the vector index | Who wrote it, when, and under what provenance |
+| | What it was derived from and what was derived from it |
+| | That it was retracted, by whom, on what basis |
+| | That it was erased, by whom, when and why |
+
+An auditor can still answer "was this handled correctly?" about a memory nobody
+can read. **Erasure removes the content, not the accountability.**
+
+Four limits, stated rather than implied:
+
+- **The cipher is HMAC-SHA256 in counter mode**, because the core is zero-dependency and the standard library has no AEAD. It gives confidentiality against someone without the key and **no integrity guarantee of its own** — the append-only log provides that. A deployment needing AEAD should install `cryptography` and replace one function; the vault's interface does not change.
+- **The keys are in the same file as the ciphertext.** This is the weakest defensible arrangement: it makes erasure *possible*, and it does nothing against an attacker who has the file. The keys are in their own table so a deployment can move them without re-architecting.
+- **Crypto-erasure cannot reach a backup taken before the key was destroyed.** Backup retention is an operational control; a test pins this behaviour rather than leaving it to be discovered.
+- **This is not encryption at rest.** One destroyed key makes one memory unreadable. The rest of the file is still plaintext SQLite.
+
+## Known gaps
+
+- **The sensitive-data detector is pattern-based**, so it misses novel secret formats and flags some harmless strings. It is one control among several, never the only one protecting a restricted memory. Its false-positive classes are documented in `tools/scan_secrets.py`.
+- **No agent authentication.** `agent_id` and `actor` are caller-supplied strings. `AgentSession` stops an adapter attributing work to the wrong agent, but a caller holding the fabric can still write as anyone. *Store* identity is now real and authenticated across the federation boundary (Phase 2); agent and tenant identity are not.
+- **No tenant isolation.** There is no tenant concept in the core.
+- **No encryption at rest for the database as a whole**, as above.
+- **The contradiction detector does not exist**, so `challenge()` is manual.
 
 ## Principles
 - Default-deny for cross-scope sharing.

@@ -171,11 +171,20 @@ roles, expiry or revocation beyond restarting with a new one. There is no audit
 of *who looked*, only of what the store did. For anything multi-tenant, put it
 behind something that has a user model.
 
-**No encryption at rest.** The store is a plain SQLite file, and quarantined
-memories still contain whatever was written into them — the display layer hides
-secret values, the bytes on disk do not. Use an encrypted volume if the content
-warrants it, and rotate any credential that reached the store rather than
-relying on the quarantine.
+**Content is encrypted; the database is not.** Memory content is sealed per
+memory and `memory-fabric` can destroy a single memory's key, which makes that
+content unrecoverable while leaving the audit trail intact — see
+[SECURITY.md](SECURITY.md) for exactly what erasure does and does not reach. But
+the database as a whole is a plain SQLite file: the keys sit beside the
+ciphertext, which makes erasure *possible* and does nothing against an attacker
+holding the file. Use an encrypted volume if the content warrants it, and rotate
+any credential that reached the store rather than relying on the quarantine.
+
+**Erasure cannot reach an older backup.** Destroying a key makes the content
+unreadable in that store and in every copy taken afterwards. A backup taken
+*before* the erasure still holds the key and the ciphertext, so backup retention
+is an operational control you have to run, not something the store can enforce.
+A test pins both halves of that behaviour.
 
 **Embeddings are a dependency you choose.** The core is zero-dependency and
 ships a hashing embedder that exists so tests are reproducible, not because it

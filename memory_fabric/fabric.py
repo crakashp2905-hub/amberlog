@@ -37,6 +37,7 @@ from .enforcement import (
     RiskLevel,
     Verdict,
 )
+from .governance.erasure import ContentVault, is_sealed, seal, unseal
 from .outbox import Outbox, now_ms as _now_ms
 from .protocol import (
     PROTOCOL_VERSION,
@@ -150,9 +151,14 @@ class MemoryFabric:
         seed: int | None = None,
         clock=None,
         auto_activate: bool = False,
+        encrypt_content: bool = True,
     ) -> None:
         self.log = EventLog(path)
-        self.projection = Projection()
+        # The vault must exist before the replay: the projection unseals as it
+        # folds, so the keys have to be reachable first.
+        self.vault = ContentVault(self.log._conn)
+        self.encrypt_content = encrypt_content
+        self.projection = Projection(unsealer=self._unseal_content)
         self.index = VectorIndex(embedder)
         self.firewall = firewall or Firewall()
         self.retention = retention or RetentionPolicy()
@@ -169,6 +175,31 @@ class MemoryFabric:
         self._replay()
         self.outbox = Outbox(self.log._conn)
         self._ensure_store_identity()
+
+    def _unseal_content(self, content: str, memory_id: str) -> str:
+        """Decrypt on the way out of the log, or report erasure.
+
+        Text written before encryption existed passes through untouched, which
+        is what keeps a 0.2.0 log replayable.
+        """
+        if not is_sealed(content):
+            return content
+        return unseal(content, self.vault.key_for(memory_id, self.now()))
+
+    def _seal_content(self, content: str, memory_id: str) -> str:
+        """Encrypt on the way into the log, when the store is configured to.
+
+        Without this, `erase_content` destroys a key that was never used and the
+        plaintext stays in the event log — which would make erasure cosmetic
+        rather than real. Found by actually erasing something and reading the
+        log back.
+        """
+        if not self.encrypt_content:
+            return content
+        key = self.vault.key_for(memory_id, self.now())
+        if key is None:
+            return content
+        return seal(content, key)
 
     def _ensure_store_identity(self) -> None:
         """Mint this store's opaque identity once and record it in its own log.
@@ -375,6 +406,45 @@ class MemoryFabric:
         #    the version is no longer exposed. Hence `enforced`, not `persisted`.
         return ack(PropagationState.ENFORCED, f"{len(targets)} memory/ies withdrawn")
 
+    def erase_content(
+        self, memory_id: str, reason: str, actor: str = "operator"
+    ) -> bool:
+        """Destroy a memory's content key: crypto-erasure.
+
+        Invariant 12. The event log is append-only and rewriting it to delete a
+        memory's text would destroy the property everything else rests on — and
+        a log you can edit to remove embarrassing entries is not an audit trail.
+        But "it is in an immutable log" is not an answer to a subject asking for
+        erasure, or to a leaked credential.
+
+        So the content is encrypted per memory and the *key* is destroyed. Every
+        event stays exactly as it was, every projection still replays, lineage
+        and the propagation record are untouched, and the text is unrecoverable.
+
+        Irreversible. Returns False when there was nothing to erase, which is
+        recorded too: "we were asked and there was no content" is a different
+        audit answer from silence.
+        """
+        self._require(memory_id)
+        with self.log._conn:
+            had_content = self.vault.erase(memory_id, reason, _now_ms())
+            self._emit(
+                ev.content_erased(
+                    ts=self.now(),
+                    memory_id=memory_id,
+                    reason=reason,
+                    actor=actor,
+                    had_content=had_content,
+                )
+            )
+        # The index holds the plaintext too, so drop it or a search would still
+        # surface the content the caller just erased.
+        self.index.remove(memory_id)
+        return had_content
+
+    def erasure_status(self, memory_id: str):
+        return self.vault.status(memory_id)
+
     def retractions_since(self, sequence: int) -> list[Retraction]:
         """Every retraction this store has issued above `sequence`.
 
@@ -498,7 +568,9 @@ class MemoryFabric:
 
     def _replay(self) -> None:
         """Rebuild all state from the log, including the vector index."""
-        self.projection = Projection.rebuild(self.log)
+        self.projection = Projection.rebuild(
+            self.log, unsealer=self._unseal_content
+        )
         for memory in self.state.memories.values():
             if memory.lifecycle_state is not LifecycleState.DELETED:
                 self.index.add(memory.id, self._index_text(memory))
@@ -679,7 +751,12 @@ class MemoryFabric:
             capabilities=tuple(capabilities),
             created_at=now,
         )
-        emitted = [ev.memory_created(ts=now, memory=memory, episode_id=episode_id)]
+        # Seal on the way into the log. The projection unseals as it folds, so
+        # every reader downstream still sees plaintext; what changes is that the
+        # bytes on disk are ciphertext and destroying the key is therefore real
+        # erasure rather than a cosmetic one.
+        sealed = memory.evolve(content=self._seal_content(memory.content, memory.id))
+        emitted = [ev.memory_created(ts=now, memory=sealed, episode_id=episode_id)]
         if ruling.decision is FirewallDecision.QUARANTINE:
             emitted.append(
                 ev.lifecycle_changed(
@@ -722,7 +799,15 @@ class MemoryFabric:
             created_at=now,
             superseded_at=None,
         )
-        self._emit(ev.memory_versioned(ts=now, memory=revised, reason=reason))
+        self._emit(
+            ev.memory_versioned(
+                ts=now,
+                memory=revised.evolve(
+                    content=self._seal_content(revised.content, revised.id)
+                ),
+                reason=reason,
+            )
+        )
         self.index.add(memory_id, self._index_text(revised))
         return revised
 

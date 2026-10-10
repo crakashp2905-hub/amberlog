@@ -75,6 +75,30 @@ Then re-measure `fabric_contrastive`, since its registered question — does
 withdrawing on contrastive harm beat withdrawing nothing — has not actually been
 asked yet under a ranking that respects its own intervals.
 
+## Audit: this is the only place in the codebase that does it
+
+Every other consumer of a `ValueEstimate` already consults its uncertainty, so
+the standard the fix should apply is not a new one — it is the one the rest of
+the project already keeps.
+
+| Consumer | What it checks | Verdict |
+|---|---|---|
+| `governance/firewall.py` | `n_eff > 0`, `contrastive`, `shows_benefit` (lower bound clears zero) | correct |
+| `governance/retention.py` | withdraws only at `n_eff >= 10` **and** `ci_high < 0` | correct, and stricter than anything else |
+| `adapters/context.py` (`describe_evidence`) | `n_eff`, `contrastive`, `shows_benefit`, `ci_high < 0`; says "unevaluated" or "effect unmeasured" rather than showing a number it cannot justify | correct |
+| `explain.py` | prints the mean only beside its interval | correct |
+| `federation.py` (`describe`) | `mean if n_eff > 0 else None` | correct |
+| `observability/report.py` | `None if n_eff <= 0 else mean` | correct |
+| **`exposure.py` (`Candidate.value_mean`)** | **the mean, and nothing else** | **the defect** |
+
+`retention.py` is worth singling out: it refuses to act below ten effective
+observations *and* requires the whole interval below zero. That is the right
+shape, and it is what the exposure policy should have been doing all along.
+
+So this is not a gap in the project's thinking — the type carries uncertainty,
+six of seven call sites use it, and the firewall's `shows_benefit` already
+encodes the exact rule the fix needs. One call site reached past it.
+
 ## Why it survived
 
 The same reason as the tie-break bug: every test of the ranking gave its

@@ -50,6 +50,10 @@ jobs:
               "dashboard bundled": any("dashboard.html" in n for n in names),
               "experiments excluded": not any(n.startswith("experiments/") for n in names),
               "tests excluded": not any(n.startswith("tests/") for n in names),
+              # PEP 561. Without it the type hints ship and no consuming type
+              # checker reads them.
+              "py.typed marker": "memory_fabric/py.typed" in names,
+              "licence recorded": any("LICENSE" in n for n in names),
           }
           for name, ok in checks.items():
               print(("PASS " if ok else "FAIL ") + name)
@@ -66,6 +70,21 @@ jobs:
           # this the first time it ran, which is the job working as intended.
           /tmp/v/bin/memory-fabric --db /tmp/ci.db --json overview > /tmp/out.json
           python -c "import json;d=json.load(open('/tmp/out.json'));assert d['total_memories']>0;assert d['schema_version'];print('overview ok', d['schema_version'])"
+
+      - name: Doctor reports the installed store sound
+        run: |
+          # The one check that only an installed copy can make: `doctor`
+          # verifies the dashboard asset is present, which is a packaging
+          # failure that otherwise surfaces when an operator opens the page.
+          /tmp/v/bin/memory-fabric --db /tmp/ci.db --json doctor > /tmp/doc.json
+          python - <<'EOF'
+          import json, sys
+          report = json.load(open("/tmp/doc.json"))
+          bad = [f for f in report["findings"] if f["status"] != "ok"]
+          for finding in report["findings"]:
+              print(f"{finding['status']:<4} {finding['name']}: {finding['detail']}")
+          sys.exit(1 if bad or not report["sound"] else 0)
+          EOF
 
   docker:
     # The image is a wheel on a slim base and nothing else, so the thing worth

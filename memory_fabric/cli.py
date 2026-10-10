@@ -12,15 +12,27 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import platform
 import shutil
+import sqlite3
 import sys
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Sequence
 
 from .fabric import MemoryFabric, NotFound, PolicyViolation
-from .model import WithdrawalBasis
+from .governance.erasure import ERASED_MARKER
+from .model import (
+    BLOCKED_STATES,
+    SCHEMA_VERSION,
+    WEAK_BASES,
+    LifecycleState,
+    WithdrawalBasis,
+)
 from .observability import report
 from .observability.auth import ENV_TOKEN
+from .outbox import MAX_ATTEMPTS
+from .protocol import PropagationState
 
 # --- terminal formatting ----------------------------------------------------
 
@@ -574,6 +586,371 @@ def cmd_demo(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+# --- doctor -----------------------------------------------------------------
+#
+# `attention` answers "what should a human look at in this knowledge base?".
+# `doctor` answers a different question: "is this installation sound enough
+# that the answers it gives can be believed?". The two were worth separating,
+# because a store can be perfectly healthy and full of memories needing review,
+# or hold nothing worth reviewing while its append-only triggers are missing.
+#
+# Every check here reports one of three things, and the distinction is the
+# whole point of the command:
+#
+#   ok    — verified, not merely "no error raised"
+#   warn  — a real condition that does not invalidate the store's answers
+#   fail  — the store's answers cannot be relied on until this is fixed
+#
+# A check that cannot run reports `warn` with the reason, never `ok`.
+
+
+@dataclass
+class Finding:
+    status: str  # "ok" | "warn" | "fail"
+    name: str
+    detail: str
+    fix: str = ""
+
+    def to_json(self) -> dict[str, Any]:
+        return {
+            "status": self.status,
+            "name": self.name,
+            "detail": self.detail,
+            "fix": self.fix,
+        }
+
+
+def _check_append_only(fabric: MemoryFabric) -> Finding:
+    """The triggers, not the intention.
+
+    Append-only is enforced by two SQLite triggers. If a restore, a migration
+    or a hand-edit dropped them, every other guarantee in the system becomes a
+    convention — and nothing would raise, because the code never tries to
+    update an event anyway.
+    """
+    rows = {
+        row[0]
+        for row in fabric.log._conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'trigger'"
+        )
+    }
+    missing = {"events_no_update", "events_no_delete"} - rows
+    if missing:
+        return Finding(
+            "fail",
+            "append-only enforcement",
+            f"missing trigger(s): {', '.join(sorted(missing))}. The event log can "
+            "be rewritten, so nothing derived from it can be trusted.",
+            "Restore from a verified backup: memory-fabric --db <path> backup <out>",
+        )
+    # Prove it rather than asserting it. Cheap, and the only form of this check
+    # that distinguishes "triggers present" from "triggers working".
+    #
+    # Rolled back unconditionally. A probe that commits when it *succeeds* would
+    # modify the event log of exactly the store it had just found unprotected,
+    # which is the one store where that is unrecoverable — so the rollback is in
+    # a `finally`, not on the success path.
+    connection = fabric.log._conn
+    probed_through = False
+    try:
+        connection.execute("BEGIN IMMEDIATE")
+        connection.execute("UPDATE events SET ts = ts + 1 WHERE seq = 1")
+        probed_through = True
+    except sqlite3.DatabaseError:
+        pass
+    finally:
+        connection.rollback()
+    if probed_through:
+        return Finding(
+            "fail",
+            "append-only enforcement",
+            "an UPDATE against the event log succeeded (rolled back)",
+            "Do not trust this store. Restore from a verified backup.",
+        )
+    return Finding(
+        "ok", "append-only enforcement", "both triggers present and refusing writes"
+    )
+
+
+def _check_replay(fabric: MemoryFabric) -> Finding:
+    """Rebuild the projections from the log and compare.
+
+    AGENTS.md principle 3: memory records are *projections* of the log. If a
+    rebuild disagrees with the live state, one of them is wrong and an operator
+    has been reading the wrong one.
+    """
+    from .projections import Projection
+
+    try:
+        rebuilt = Projection.rebuild(fabric.log, unsealer=fabric._unseal_content)
+    except Exception as exc:  # pragma: no cover - a replay failure is the finding
+        return Finding(
+            "fail", "replay from the log", f"the log does not replay: {exc}",
+            "Report this with the store attached; a log that will not replay is a bug.",
+        )
+    live = fabric.state
+    mismatches = []
+    if set(rebuilt.state.memories) != set(live.memories):
+        only_live = len(set(live.memories) - set(rebuilt.state.memories))
+        only_replay = len(set(rebuilt.state.memories) - set(live.memories))
+        mismatches.append(f"{only_live} memory/ies only in live state, {only_replay} only in replay")
+    for memory_id in set(rebuilt.state.memories) & set(live.memories):
+        if rebuilt.state.memories[memory_id].lifecycle_state is not live.memories[memory_id].lifecycle_state:
+            mismatches.append(f"{memory_id} lifecycle differs")
+    if mismatches:
+        return Finding(
+            "fail", "replay from the log",
+            "; ".join(mismatches[:5]),
+            "The live projection and the log disagree. The log is authoritative.",
+        )
+    return Finding(
+        "ok", "replay from the log",
+        f"{len(fabric.log)} event(s) replay to the same {len(live.memories)} memory/ies",
+    )
+
+
+def _check_schema(fabric: MemoryFabric) -> Finding:
+    written = fabric.log.schema_versions()
+    if not written:
+        return Finding("warn", "schema version", "the log is empty, so nothing to compare")
+    newer = [
+        v for v in written
+        if report._version(v) > report._version(SCHEMA_VERSION)
+    ]
+    if newer:
+        return Finding(
+            "fail", "schema version",
+            f"written by {', '.join(newer)}, this install is {SCHEMA_VERSION}. "
+            "Events it does not understand are being skipped silently.",
+            "Upgrade: pip install -U memory-fabric",
+        )
+    older = [v for v in written if v != SCHEMA_VERSION]
+    if older:
+        return Finding(
+            "ok", "schema version",
+            f"{SCHEMA_VERSION} installed, log written by {', '.join(sorted(set(written)))} "
+            "(older versions replay unchanged)",
+        )
+    return Finding("ok", "schema version", f"{SCHEMA_VERSION} throughout")
+
+
+def _check_retractions(fabric: MemoryFabric) -> Finding:
+    """The one guarantee the research supported is the one that can rot quietly.
+
+    A retraction stuck retrying is not an error anywhere: the origin's own copy
+    is withdrawn, the local store looks correct, and the recipient goes on
+    exposing knowledge that was withdrawn hours ago. Nothing raises. This is
+    the check that makes it visible.
+    """
+    # `pending()` is everything *not* in a terminal state, and FAILED is
+    # terminal — so a permanent failure, the worst case here, never appears in
+    # it. Found by the test that expected a failure and got a clean bill of
+    # health. Queried directly instead.
+    failed = fabric.log._conn.execute(
+        "SELECT count(*) FROM outbox WHERE state = ?",
+        (PropagationState.FAILED.value,),
+    ).fetchone()[0]
+    pending = fabric.outbox.pending()
+    retrying = [row for row in pending if row.attempts > 0]
+    if failed:
+        return Finding(
+            "fail", "retraction delivery",
+            f"{failed} retraction(s) permanently failed; those recipients are "
+            "still exposing withdrawn knowledge",
+            "Check the route to each recipient, then re-run the dispatcher.",
+        )
+    if retrying:
+        worst = max(row.attempts for row in retrying)
+        return Finding(
+            "warn", "retraction delivery",
+            f"{len(retrying)} retraction(s) retrying (worst: {worst} attempt(s) of "
+            f"{MAX_ATTEMPTS})",
+            "Transient if a recipient is restarting; a route problem if it persists.",
+        )
+    if pending:
+        return Finding(
+            "ok", "retraction delivery",
+            f"{len(pending)} queued, none failing",
+        )
+    return Finding("ok", "retraction delivery", "nothing outstanding")
+
+
+def _check_weak_withdrawals(fabric: MemoryFabric) -> Finding:
+    """PA′ measured this: of naive blame's 87 withdrawals, 57 were about a
+    completely different fault. A withdrawal recorded on a weak basis is more
+    likely to be a mistake than the memory is to be wrong, so it points at
+    *releasing* the memory rather than at reviewing it."""
+    weak = [
+        memory_id
+        for memory_id, basis in fabric.state.withdrawal_basis.items()
+        if basis in {b.value for b in WEAK_BASES}
+        and memory_id in fabric.state.memories
+        and fabric.state.memories[memory_id].lifecycle_state is LifecycleState.QUARANTINED
+    ]
+    if not weak:
+        return Finding("ok", "withdrawal evidence", "no memory is withdrawn on a weak basis")
+    return Finding(
+        "warn", "withdrawal evidence",
+        f"{len(weak)} memory/ies withdrawn on co-occurrence or no stated basis",
+        f"memory-fabric --db {fabric.log.path} attention",
+    )
+
+
+def _check_sealed_content(fabric: MemoryFabric) -> Finding:
+    """A sealed memory whose key is gone reads as erased, which is correct. A
+    sealed memory whose key is gone *and was not erased on purpose* is data
+    loss, and the two are distinguishable only by whether a `ContentErased`
+    event exists."""
+    erased = set(fabric.state.erased)
+    unreadable = []
+    for memory_id in fabric.state.memories:
+        try:
+            content = fabric.state.memories[memory_id].content
+        except Exception:  # pragma: no cover - the exception is the finding
+            unreadable.append(memory_id)
+            continue
+        if content == ERASED_MARKER and memory_id not in erased:
+            unreadable.append(memory_id)
+    if unreadable:
+        return Finding(
+            "fail", "content keys",
+            f"{len(unreadable)} memory/ies have unreadable content with no erasure "
+            "event to explain it",
+            "A key store was lost or replaced. Restore it, or record the erasure.",
+        )
+    if erased:
+        return Finding(
+            "ok", "content keys",
+            f"{len(erased)} memory/ies erased on purpose; every other content readable",
+        )
+    return Finding("ok", "content keys", "all content readable")
+
+
+def _check_blocked_not_exposed(fabric: MemoryFabric) -> Finding:
+    """Invariant 1, checked against this store rather than in a test.
+
+    The enforcement layer is one function and the tests cover it, but a store
+    whose projections were rebuilt by an older version, or restored
+    mid-migration, can hold a blocked memory that the exposure path still
+    considers eligible. Cheap to verify directly.
+    """
+    leaked = [
+        memory_id
+        for memory_id, memory in fabric.state.memories.items()
+        if memory.lifecycle_state in BLOCKED_STATES
+        and fabric.enforcer.check(memory_id).usable
+    ]
+    if leaked:
+        return Finding(
+            "fail", "withdrawn knowledge is not exposed",
+            f"{len(leaked)} blocked memory/ies pass the enforcement check: "
+            f"{', '.join(leaked[:3])}",
+            "Do not use this store for decisions. Report it with the store attached.",
+        )
+    blocked = sum(
+        1 for m in fabric.state.memories.values() if m.lifecycle_state in BLOCKED_STATES
+    )
+    return Finding(
+        "ok", "withdrawn knowledge is not exposed",
+        f"{blocked} blocked memory/ies, none of them usable",
+    )
+
+
+def _check_dashboard_asset(fabric: MemoryFabric) -> Finding:
+    """A packaging failure that only shows up when someone opens the web UI.
+
+    The dashboard is served from disk at runtime, so a wheel built without the
+    `package-data` entry installs cleanly, passes every test, and 500s the
+    first time an operator opens the page. Worth one line here.
+    """
+    from pathlib import Path as _Path
+
+    from .observability import server as _server
+
+    asset = _Path(_server.__file__).parent / "static" / "dashboard.html"
+    if asset.exists():
+        return Finding("ok", "dashboard asset", f"present ({asset.stat().st_size} bytes)")
+    return Finding(
+        "warn", "dashboard asset",
+        "dashboard.html did not ship with this install; `serve` will fail",
+        "Reinstall from a wheel built with the package-data entry.",
+    )
+
+
+DOCTOR_CHECKS = (
+    _check_append_only,
+    _check_replay,
+    _check_schema,
+    _check_retractions,
+    _check_weak_withdrawals,
+    _check_sealed_content,
+    _check_blocked_not_exposed,
+    _check_dashboard_asset,
+)
+
+
+def cmd_doctor(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Is this installation sound enough that its answers can be believed?
+
+    Exit codes are meant for a health check in a script: 0 sound, 1 sound with
+    warnings, 5 not sound.
+    """
+    findings: list[Finding] = []
+    for check in DOCTOR_CHECKS:
+        try:
+            findings.append(check(fabric))
+        except Exception as exc:
+            # A check that cannot run is never reported as ok. The honest
+            # outcome of "I could not tell" is a warning with the reason.
+            findings.append(
+                Finding("warn", getattr(check, "__name__", "check"),
+                        f"this check could not run: {exc!r}")
+            )
+
+    failures = [f for f in findings if f.status == "fail"]
+    warnings = [f for f in findings if f.status == "warn"]
+
+    if args.json:
+        print(json.dumps(
+            {
+                "store": str(fabric.log.path),
+                "store_id": fabric.store_id,
+                "schema_version": SCHEMA_VERSION,
+                "python": platform.python_version(),
+                "sound": not failures,
+                "findings": [f.to_json() for f in findings],
+            },
+            indent=2, allow_nan=False,
+        ))
+        return 5 if failures else (1 if warnings else 0)
+
+    heading("Doctor")
+    print(f"  {C.DIM}{fabric.log.path}  ·  {fabric.store_id}  ·  "
+          f"schema {SCHEMA_VERSION}  ·  Python {platform.python_version()}{C.RESET}\n")
+    marks = {
+        "ok": f"{C.GREEN}ok  {C.RESET}",
+        "warn": f"{C.YELLOW}warn{C.RESET}",
+        "fail": f"{C.RED}FAIL{C.RESET}",
+    }
+    for finding in findings:
+        print(f"  [{marks[finding.status]}] {C.BOLD}{finding.name}{C.RESET}")
+        print(f"         {finding.detail}")
+        if finding.fix and finding.status != "ok":
+            print(f"         {C.DIM}{G.BULLET} {finding.fix}{C.RESET}")
+
+    print()
+    if failures:
+        print(f"  {C.RED}Not sound: {len(failures)} failing check(s).{C.RESET}")
+        print(f"  {C.DIM}Answers from this store should not be used for decisions "
+              f"until they are fixed.{C.RESET}")
+        return 5
+    if warnings:
+        print(f"  {C.YELLOW}Sound, with {len(warnings)} warning(s).{C.RESET}")
+        return 1
+    print(f"  {C.GREEN}Sound. Every check verified, none skipped.{C.RESET}")
+    return 0
+
+
 # --- parser -----------------------------------------------------------------
 
 
@@ -604,6 +981,8 @@ def build_parser() -> argparse.ArgumentParser:
         return sp
 
     add("overview", cmd_overview, "Store health and what it can and cannot tell you")
+    add("doctor", cmd_doctor,
+        "Whether this installation's answers can be believed (exit 0/1/5)")
 
     p = add("attention", cmd_attention, "Triage list: what needs a human, worst first")
     p.add_argument("--severity", choices=["high", "medium", "low"])

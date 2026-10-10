@@ -13,14 +13,14 @@ and they are the most reusable thing here.
 
 | Guarantee | Evidence |
 |---|---|
-| A retraction **follows a memory into other stores** and drives acting-on-withdrawn-knowledge to zero | 17% → **0%** under both sharing policies, 240 decisions per arm ([PB2](research/results/phase-b-federated-agents.md)) |
+| A retraction **follows a memory into other stores**, including ones the origin has never heard of, and drives acting-on-withdrawn-knowledge to zero | 17% → **0%** under both sharing policies, 240 decisions per arm ([PB2](research/results/phase-b-federated-agents.md)); re-shared two hops out, under outage, crash, diamond and cycle ([fault matrix](docs/INVARIANTS.md)) |
 | A premise can be invalidated **without destroying independently justified conclusions** | Lose one of two independent premises and the conclusion stays active; lose both and it is contested, never deleted ([Phase 4](docs/INVARIANTS.md)) |
 | Contradiction is **preserved rather than collapsed**, converting confident error into flagged uncertainty | 80% confidently wrong → **0%** with real disagreeing models ([live](research/results/live-multi-agent.md)); P(correct) 0.905 → 1.000 in simulation ([H4b](research/results/h4-topology-and-diversity.md)) |
 | Content can be **erased while the accountability survives** | Crypto-erasure: the text goes, the provenance, lineage, retraction basis and audit trail stay ([Phase 6](SECURITY.md)) |
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**663 tests**, 12 deterministic multi-store fault scenarios, five testing layers,
+**686 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. All **14 integrity invariants**
@@ -263,6 +263,28 @@ fabric.record_outcome(episode.id, outcome=1.0, verifier_id="env")   # never self
 print(fabric.explain(mid).narrative())
 fabric.share(mid, "team")                          # default-deny; returns a reasoned ruling
 ```
+
+## Is this installation sound?
+
+```bash
+memory-fabric --db memory.db doctor
+```
+
+A different question from `attention`, which asks what in a knowledge base
+needs a human. `doctor` asks whether the installation's answers can be
+believed, and it reports three outcomes rather than two: **ok** (verified, not
+merely "nothing raised"), **warn** (a real condition that does not invalidate
+the answers), **fail** (do not use this store for decisions). Exit codes 0, 1
+and 5, so it runs as a health check in a script.
+
+Eight checks. The one worth naming: a retraction that has permanently failed to
+reach a recipient raises nothing anywhere — the origin's own copy is withdrawn,
+the local store looks correct, and the recipient goes on exposing knowledge
+that was withdrawn hours ago. That is the one guarantee the research supported,
+and it is the one that can rot quietly.
+
+A check that *cannot run* reports a warning with the reason, never `ok`. That
+rule caught a real bug in one of the checks within an hour of being written.
 
 ## Two rules the observability surfaces follow
 

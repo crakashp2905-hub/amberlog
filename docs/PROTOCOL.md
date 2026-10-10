@@ -190,6 +190,50 @@ cursor is the recipient's, not the origin's guess about it.
 retractions. A restore that silently drops pending retractions would reintroduce
 withdrawn knowledge, and nothing downstream could detect it.
 
+## 7a. Forwarding past the first hop
+
+A recipient may re-share what it imported. When it does, the origin cannot
+address the stores two hops out — it has never heard of them — so each hop
+forwards on its own behalf.
+
+**The campaign and the target are different things.** `retraction_id` together
+with `origin_store_id` identifies the *campaign* and never changes along a
+chain. The *target* — `target_store_id`, `target_memory_id`,
+`target_memory_version` — says which copy this hop is about, and is rewritten
+at every hop, because a store two hops out imported from the store one hop out
+and holds no record of the origin at all. All three fields are optional and
+default to the origin fields, so a hop-0 retraction is byte-identical to
+version 0.3.0 on the wire.
+
+**What a store must record.** An accepted offer emits `MemoryShared`
+(`memory_id`, `version`, `recipient_store_id`, `imported_memory_id`). This is
+not derivable after the fact: the recipient's copy is a new memory in the
+recipient's log with its own id. Only an *accepted* offer records one; a
+refusal that wrote a share record would create a permanent delivery obligation
+to a store holding nothing.
+
+**What a store must do on apply.** In the *same transaction* that withdraws its
+own copy, a recipient enqueues the retraction onward to every store it
+re-shared that copy to, retargeted and with `hop` incremented. Committing the
+onward intent separately would leave live copies downstream that nothing in the
+federation was tracking — and nothing would notice, because the upstream
+acknowledgement already said `enforced`, truthfully, about the one copy it was
+asked about.
+
+**Forwarding is asynchronous, and acknowledgements say so.** A recipient
+returns `enforced` once *its own* copy is no longer exposed. It does not wait
+for the hops beyond it; a synchronous cascade would put an unbounded number of
+network calls inside one recipient's transaction. So `enforced` from one hop is
+not a statement about the whole subtree, and an operator asking "has this
+converged?" is asking about the system at rest, which is what
+`OperatorClient.propagation()` and `/api/propagation` report.
+
+**Termination.** Three mechanisms, in order of which one actually does the work:
+
+1. **Deduplication over concrete targets.** A target is a `(store, memory, version)` triple and a federation holds finitely many, so a cycle re-arrives with a triple already recorded and stops.
+2. **Not forwarding back to the sender.** A pure optimisation — deduplication would absorb it — worth one saved round trip per hop.
+3. **`MAX_HOPS` (16).** A backstop, not the defence. Reaching it means something is wrong with the topology or the dedup key, so a store at the limit withdraws its own copy, refuses to forward, and records `RetractionRejected` with `hop_limit` rather than dropping the retraction quietly.
+
 ## 8. What this specification does not cover
 
 - **Transitive re-sharing.** v1 assumes an importer does not re-share onward. Lifting that assumption means the origin no longer knows its recipients, and retraction must flood the provenance graph hop by hop. That is the measured trigger for peer-to-peer work and is deliberately out of scope until the single-hop case is durable.

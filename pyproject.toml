@@ -8,7 +8,7 @@ version = "0.4.0"
 description = "Governed agent memory: valued by effect on outcomes, not similarity to the query."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Proprietary" }
+license = { file = "LICENSE" }
 authors = [{ name = "CR Ramesh" }]
 keywords = ["agent-memory", "llm", "provenance", "governance", "federation"]
 classifiers = [
@@ -40,5 +40,10 @@ include = ["memory_fabric*"]
 
 [tool.setuptools.package-data]
 # The dashboard is served from disk at runtime, so it has to ship inside the
-# wheel; without this the web UI 500s on a pip-installed copy.
+# wheel; without this the web UI 500s on a pip-installed copy. `doctor` checks
+# for it, because that failure only shows up when an operator opens the page.
 "memory_fabric.observability" = ["static/*.html"]
+# PEP 561. The public APIs carry type hints (AGENTS.md requires it), and
+# without this marker no type checker in a consuming project reads them: the
+# hints exist and are invisible, which is the worst of both.
+"memory_fabric" = ["py.typed"]

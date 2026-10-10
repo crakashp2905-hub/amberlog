@@ -49,8 +49,8 @@ reproducible counterexample is a bug rather than a statistic.
 | Invariants partial | 7 | 0 |
 | Invariants with no route to a test | 3 | 0 |
 
-663 unit/integration/property tests, 12 deterministic multi-store fault
-scenarios, five testing layers. Full matrix in
+686 unit/integration/property tests, 17 deterministic multi-store fault
+scenarios, six testing layers. Full matrix in
 [docs/INVARIANTS.md](../docs/INVARIANTS.md).
 
 ---
@@ -77,7 +77,7 @@ which is memory construction and not something this project does.
 measurements that held are all about *correctness of the record* rather than
 quality of the answer:
 
-- A retraction follows a memory across a store boundary and drives acting-on-withdrawn-knowledge to zero (PB2) — and no adjacent paper in [PRIOR_ART.md](PRIOR_ART.md) carries provenance across a boundary at all.
+- A retraction follows a memory across a store boundary and drives acting-on-withdrawn-knowledge to zero (PB2) — and no adjacent paper in [PRIOR_ART.md](PRIOR_ART.md) carries provenance across a boundary at all. It now follows one past the *first* boundary too, to stores the origin has never heard of (Phase D), which PB2 did not test because its recipients never re-shared.
 - Preserving contradiction converts confident error into flagged uncertainty (H4b, live multi-agent).
 - A premise can be invalidated without destroying independently justified conclusions (Phase 4) — the question this project was ultimately asked.
 - Content can be erased while the accountability survives (Phase 6).

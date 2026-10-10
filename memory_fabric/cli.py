@@ -522,8 +522,15 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     target.parent.mkdir(parents=True, exist_ok=True)
 
     source_events = len(fabric.log)
-    with sqlite3.connect(target) as destination:
+    destination = sqlite3.connect(target)
+    try:
         fabric.log._conn.backup(destination)
+        destination.commit()
+    finally:
+        # `with sqlite3.connect(...)` commits but does not close, which leaks
+        # the handle. On Windows that leaves the file locked against the very
+        # next operation, including the verification read below.
+        destination.close()
 
     verifier = MemoryFabric(str(target))
     try:

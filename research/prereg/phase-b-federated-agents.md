@@ -73,6 +73,56 @@ Sharing policy, crossed where stated with retraction propagation:
 
 Failing any of these changes the world, recorded as a dated amendment here, before any registered run.
 
+> ### Amendment, 2026-10-10 — during harness construction, before any registered run
+>
+> Four changes, none of them to a threshold in §6.
+>
+> 1. **12 episodes per agent, not 24.** The registered design is 8 cells × 4
+>    agents × 24 episodes × 5 seeds = 3,840 verified decisions, which at the
+>    measured ~4s per call is over four hours of a single local model. At 12 it
+>    is 1,920 decisions and **240 per cell** — still twice the 120 per arm that
+>    [Phase A](../results/phase-a-real-agent-benchmark.md) ran on, and the
+>    statistics pair by (seed, agent, episode) either way. The cut is to the
+>    horizon, not to the pairing, and it is a cut made for compute rather than
+>    for a result, which is why it is recorded before the run.
+>
+> 2. **Every arm runs the same exposure policy** — epsilon-greedy at 0.2,
+>    ranking on value. `share_valued` needs contrastive value evidence to exist
+>    at all, and a deterministic policy never generates the overlap an unbiased
+>    estimate requires, so under `top_k` that arm would promote nothing and
+>    silently become `isolated` — the same trap Phase A's amendment 4 recorded
+>    for its own `fabric` arm. Holding exposure constant pays the exploration
+>    cost in every arm rather than only where it is needed, which Phase A
+>    measured at a few points of accuracy, but it keeps the arms differing in
+>    exactly one thing. The cost is uniform, so it cannot bias the comparison
+>    between arms; it does lower every number including the ceiling, and the
+>    thresholds are shares of that ceiling's headroom, so that is accounted for.
+>
+> 3. **Retraction is a scheduled environment event.** At the halfway episode
+>    every poisoned lesson is withdrawn at its origin, as a manufacturer's
+>    bulletin would do it. §8.5 already said retraction is triggered by the
+>    environment rather than discovered by an agent; this names the mechanism.
+>    It matters more than it looks: deriving the retraction from "this memory
+>    was in context when something failed" would import the policy
+>    [Phase A killed](../results/phase-a-real-agent-benchmark.md) into the
+>    middle of PB2 and make its result unreadable.
+>
+> 4. **`propagation_lag` is measured per episode, not as one number.** The
+>    metric is the share of post-retraction episodes in which a memory withdrawn
+>    at its origin was still active at an importer *and still in its context*.
+>    A single mean lag cannot represent an arm that never stops acting on a
+>    retracted memory — there is no lag to average, the behaviour simply
+>    continues — and that is the case PB2 exists to detect.
+>
+> **Disclosure.** A 4-round, 4-cell smoke run preceded this amendment and is what
+> produced change 2. It showed every arm at 25-31% success with zero negative
+> transfer and zero imports reaching any prompt, despite 126 accepted imports.
+> That was not a property of the sharing policies: it was a
+> [product bug](../../CHANGELOG.md) in which ranking on value fell through to
+> the memory id, and therefore to creation time, so imports — always newer than
+> natives — could never be exposed. The bug is fixed and the fix is tested. No
+> number from that smoke run carries over, and none of it bears on §6.
+
 ## 6. Ceiling and thresholds
 
 Headroom is always `oracle_share − best_simple`, where `best_simple = max(isolated, share_all)` on the metric in question — the two things a team actually does, chosen after the run so the comparison cannot be won against a weak baseline.
@@ -88,7 +138,7 @@ Headroom is always `oracle_share − best_simple`, where `best_simple = max(isol
 ## 7. Design
 
 - **Model:** `qwen2.5:3b`, as Phase A, so the two are comparable.
-- **Agents:** 4. **Seeds:** 5. **Episodes:** 24 per agent, interleaved round-robin so sharing happens between episodes rather than in a batch at the end.
+- **Agents:** 4. **Seeds:** 5. **Episodes:** 12 per agent (amended; see below), interleaved round-robin so sharing happens between episodes rather than in a batch at the end.
 - **Sharing:** through `memory_fabric.federation.offer`, with each agent's own firewall deciding. Imports arrive unvalidated and provenance crosses with them. No arm is permitted to bypass the recipient's firewall — if a policy needs that, the policy is wrong and gets recorded as such.
 - **Statistics:** paired by (seed, agent, episode). Bootstrap CIs, 10,000 resamples.
 - **Verification:** the environment. No self-reported outcomes.

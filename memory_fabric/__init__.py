@@ -34,6 +34,7 @@ from .fabric import (
     NotFound,
     PolicyViolation,
     RetrievalResult,
+    TenantView,
 )
 from .federation import (
     FederationSummary,
@@ -43,6 +44,17 @@ from .federation import (
     offer,
     offer_many,
     propagate_retraction,
+)
+from .identity import (
+    DEFAULT_TENANT,
+    ROLE_AGENT,
+    ROLE_AUDITOR,
+    ROLE_OPERATOR,
+    Credential,
+    IdentityError,
+    Principal,
+    PrincipalRegistry,
+    new_tenant_id,
 )
 from .governance import Firewall, FirewallRuling, RetentionPolicy, SensitiveDataDetector
 from .lineage import LineageGraph, LineageView
@@ -65,9 +77,19 @@ from .projections import Episode, Projection
 from .session import AgentSession, SessionClosed
 from .vectors import Embedder, HashingEmbedder, VectorIndex
 
-__version__ = "0.1.0"
+__version__ = "0.5.0"
 
 __all__ = [
+    "new_tenant_id",
+    "ROLE_AUDITOR",
+    "ROLE_OPERATOR",
+    "ROLE_AGENT",
+    "DEFAULT_TENANT",
+    "PrincipalRegistry",
+    "Principal",
+    "IdentityError",
+    "Credential",
+    "TenantView",
     "SCHEMA_VERSION",
     "WithdrawalBasis",
     "WEAK_BASES",

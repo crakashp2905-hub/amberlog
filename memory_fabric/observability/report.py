@@ -93,6 +93,7 @@ class MemoryRow:
     type: str
     lifecycle_state: str
     scope: str
+    tenant_id: str
     security_class: str
     content: str
     created_at: str | None
@@ -230,6 +231,7 @@ def _row(fabric: "MemoryFabric", memory_id: str) -> MemoryRow:
         type=memory.type.value,
         lifecycle_state=memory.lifecycle_state.value,
         scope=memory.scope.value,
+        tenant_id=memory.tenant_id,
         security_class=memory.security_class.value,
         content=preview(content),
         redacted_kinds=redacted,
@@ -261,6 +263,7 @@ def memory_rows(
     query: str | None = None,
     limit: int | None = None,
     sort: str = "created",
+    tenant: str | None = None,
 ) -> list[MemoryRow]:
     """Filtered listing. `query` is a substring match on content, not retrieval:
     listing must never depend on the embedder or touch the exposure log."""
@@ -270,6 +273,8 @@ def memory_rows(
         rows = [r for r in rows if r.lifecycle_state == state]
     if scope:
         rows = [r for r in rows if r.scope == scope]
+    if tenant:
+        rows = [r for r in rows if r.tenant_id == tenant]
     if type:
         rows = [r for r in rows if r.type == type]
     if query:

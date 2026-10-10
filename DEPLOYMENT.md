@@ -166,10 +166,28 @@ deployment that actually needs it — adding a driver now would cost the
 zero-dependency property for no measured gain
 ([ROADMAP.md](ROADMAP.md)).
 
-**One token, no users.** Auth is a single shared bearer token with no identity,
-roles, expiry or revocation beyond restarting with a new one. There is no audit
-of *who looked*, only of what the store did. For anything multi-tenant, put it
-behind something that has a user model.
+**One token, no users — on the HTTP surface.** The observability server's auth
+is a single shared bearer token with no identity, roles, expiry or revocation
+beyond restarting with a new one. There is no audit of *who looked*, only of
+what the store did. Put it behind something with a user model.
+
+That is separate from the library's own identity, which does have one:
+`PrincipalRegistry` issues signed, expiring per-agent credentials and
+`fabric.as_principal` returns a handle bound to the verified principal. The two
+have not been joined up — the dashboard does not know about principals — so a
+multi-tenant HTTP deployment still needs a front end that does.
+
+**Choosing between one store per tenant and one store for several.** Per-tenant
+authorisation is enforced on every read path, so several tenants in one store
+is safe against a bug in a ranking policy, an index query or a federation
+import. It is not safe against anything that can read the file: one database is
+one blast radius, and the content keys sit beside the ciphertext. Pick one
+store per tenant when isolation has to survive a compromised process, a
+mis-scoped backup or a support engineer with shell access; pick one store when
+the tenants are teams inside one trust boundary and the operational cost of N
+databases is the real constraint. `memory-fabric tenants` says which
+arrangement a store is actually in, and `doctor` reports a multi-tenant store
+as a warning rather than as a clean bill of health.
 
 **Content is encrypted; the database is not.** Memory content is sealed per
 memory and `memory-fabric` can destroy a single memory's key, which makes that

@@ -50,6 +50,13 @@ from .protocol import (
     new_retraction_id,
     new_store_id,
 )
+from .identity import (
+    DEFAULT_TENANT,
+    Credential,
+    IdentityError,
+    Principal,
+    PrincipalRegistry,
+)
 from .model import (
     SCHEMA_VERSION,
     BLOCKED_STATES,
@@ -172,6 +179,7 @@ class MemoryFabric:
         self.auto_activate = auto_activate
         self._estimator_dirty = True
         self._enforcer: Enforcer | None = None
+        self._principals: PrincipalRegistry | None = None
         self._justifications: JustificationGraph | None = None
         self._replay()
         self.outbox = Outbox(self.log._conn)
@@ -805,6 +813,7 @@ class MemoryFabric:
         scope: str | Scope = Scope.PRIVATE,
         episode_id: str | None = None,
         auto_activate: bool | None = None,
+        tenant_id: str = DEFAULT_TENANT,
     ) -> str:
         """Store a new memory. Runs the ingest screen before anything is stored.
 
@@ -865,6 +874,7 @@ class MemoryFabric:
             context=dict(context or {}),
             structured=dict(structured) if structured else None,
             scope=Scope(scope),
+            tenant_id=tenant_id,
             lifecycle_state=lifecycle,
             security_class=SecurityClass(security_class),
             capabilities=tuple(capabilities),
@@ -950,14 +960,32 @@ class MemoryFabric:
         type: str | MemoryType = MemoryType.SEMANTIC,
         method: str | ProvenanceMethod = ProvenanceMethod.CONSOLIDATED,
         context: Mapping[str, Any] | None = None,
+        tenant_id: str | None = None,
     ) -> str:
         """Create a memory derived from existing ones, recording the edges.
 
         These edges are what makes retraction work, so deriving through this
         method rather than writing a fresh memory is the difference between a
         rollback that holds and one that leaks (SECURITY.md T5).
+
+        `tenant_id` None inherits the parents' tenant, and the parents must
+        agree. Defaulting to the *store's* default instead was the first
+        version, and it was an isolation hole: a tenant's conclusion landed in
+        `tn_default` where any agent scoped to that tenant could read it, even
+        though both the acting agent and every premise were elsewhere. Found by
+        the test for the ordinary within-tenant case, not by the test for the
+        attack.
         """
         parent_versions = [(pid, self._require(pid).version) for pid in parents]
+        if tenant_id is None:
+            tenants = {self._require(pid).tenant_id for pid in parents}
+            if len(tenants) > 1:
+                raise PolicyViolation(
+                    "cannot derive from premises in different tenants: "
+                    f"{sorted(tenants)}. Name the tenant explicitly if this is "
+                    "deliberate."
+                )
+            tenant_id = tenants.pop() if tenants else DEFAULT_TENANT
         inherited: dict[str, Any] = {}
         for pid in parents:
             inherited.update(self._require(pid).context)
@@ -969,6 +997,7 @@ class MemoryFabric:
             context=inherited,
             parents=parent_versions,
             method=method,
+            tenant_id=tenant_id,
         )
 
     # --- retrieval -------------------------------------------------------
@@ -984,14 +1013,22 @@ class MemoryFabric:
         include_contested: bool = False,
         step: int = 0,
         min_relevance: float = MIN_RELEVANCE,
+        tenant_id: str | None = None,
     ) -> RetrievalResult:
         """Retrieve, decide exposure, log both, return what was exposed.
 
         Candidates below `min_relevance` are not considered at all, so a query
         with nothing to match returns nothing rather than the least-bad rows in
         the store.
+
+        `tenant_id` None searches every tenant, which is the operator view and
+        the behaviour every single-tenant store has always had. A caller acting
+        for one tenant should not be passing it by hand at all — use
+        `for_tenant` or `as_principal`, which cannot be forgotten.
         """
-        eligible = self._eligible_ids(include_contested=include_contested)
+        eligible = self._eligible_ids(
+            include_contested=include_contested, tenant_id=tenant_id
+        )
         pool_size = pool if pool is not None else max(k * 4, k)
         hits = self.index.search(
             query, k=pool_size, restrict_to=eligible, min_relevance=min_relevance
@@ -1051,7 +1088,18 @@ class MemoryFabric:
         self._emit(*emitted)
         return result
 
-    def _eligible_ids(self, include_contested: bool = False) -> set[str]:
+    def _eligible_ids(
+        self, include_contested: bool = False, tenant_id: str | None = None
+    ) -> set[str]:
+        """The one chokepoint every retrieval narrows through.
+
+        The tenant filter belongs here rather than after ranking, for the same
+        reason the lifecycle filter does: a memory excluded *before* the index
+        is queried cannot be ranked, cannot be scored, cannot appear in a
+        `RetrievalPerformed` event and cannot leak through a bug in a policy.
+        Filtering afterwards would put the boundary downstream of the code most
+        likely to be wrong.
+        """
         allowed = set(EXPOSABLE_STATES)
         if include_contested:
             allowed |= EXPLORATORY_STATES
@@ -1060,6 +1108,7 @@ class MemoryFabric:
             for memory_id, memory in self.state.memories.items()
             if memory.lifecycle_state in allowed
             and memory.lifecycle_state not in BLOCKED_STATES
+            and (tenant_id is None or memory.tenant_id == tenant_id)
         }
 
     def cite(self, agent_id: str, episode_id: str, memory_id: str, step: int = 0) -> None:
@@ -1447,6 +1496,56 @@ class MemoryFabric:
         """
         return self._require(memory_id)
 
+    # --- identity --------------------------------------------------------
+
+    @property
+    def principals(self) -> PrincipalRegistry:
+        """Who this store will act as. The authorisation boundary for agents,
+        the way `PeerRegistry` is for stores."""
+        if self._principals is None:
+            self._principals = PrincipalRegistry()
+        return self._principals
+
+    def for_tenant(self, tenant_id: str, agent_id: str) -> "TenantView":
+        """A handle that can only see and write one tenant's memories.
+
+        The operator path: the caller asserts the tenant and nothing verifies
+        the assertion, which is honest because a caller holding the fabric
+        could act on any tenant anyway. What this buys is that code written
+        against the view *cannot forget* to scope a read — the boundary is in
+        the handle rather than in a keyword argument at every call site.
+
+        `as_principal` is the same handle with the assertion checked.
+        """
+        return TenantView(
+            self, Principal(agent_id=agent_id, tenant_id=tenant_id), verified=False
+        )
+
+    def as_principal(self, credential: Credential) -> "TenantView":
+        """Verify a credential and return a handle bound to that principal.
+
+        Raises `IdentityError` rather than returning an empty view: a caller
+        whose credential does not verify has not asked a question that has an
+        answer, and silently scoping them to nothing would look like "this
+        tenant has no memories".
+        """
+        principal = self.principals.verify(credential, self.now())
+        return TenantView(self, principal, verified=True)
+
+    def tenant_of(self, memory_id: str) -> str:
+        return self._require(memory_id).tenant_id
+
+    def tenants(self) -> dict[str, int]:
+        """Which tenants this store holds, and how many memories each has.
+
+        An operator view. It is also the thing a `doctor` check needs in order
+        to notice that a store believed to be single-tenant is not.
+        """
+        counts: dict[str, int] = {}
+        for memory in self.state.memories.values():
+            counts[memory.tenant_id] = counts.get(memory.tenant_id, 0) + 1
+        return dict(sorted(counts.items()))
+
     @property
     def justifications(self) -> "JustificationGraph":
         if self._justifications is None:
@@ -1466,6 +1565,7 @@ class MemoryFabric:
         risk: "RiskLevel" = RiskLevel.LOW,
         include_contested: bool = False,
         audit: bool = True,
+        tenant_id: str | None = None,
     ) -> "EnforcedRead":
         """The enforced read: one layer, and a token that can be re-checked.
 
@@ -1474,7 +1574,8 @@ class MemoryFabric:
         is audited without the content (see `ev.access_denied`).
         """
         decision = self.enforcer.check(
-            memory_id, risk=risk, include_contested=include_contested
+            memory_id, risk=risk, include_contested=include_contested,
+            tenant_id=tenant_id,
         )
         if not decision.usable:
             if audit:
@@ -1494,7 +1595,8 @@ class MemoryFabric:
 
         memory = self.state.memories[memory_id]
         token = self.enforcer.issue(
-            memory_id, agent_id, decision, policy_id=self.policy.id
+            memory_id, agent_id, decision, policy_id=self.policy.id,
+            tenant_id=tenant_id,
         )
         warnings = [decision.detail] if decision.verdict is Verdict.WARN and decision.detail else []
         return EnforcedRead(
@@ -1636,4 +1738,97 @@ class MemoryFabric:
 
 
 # Re-exported for typing convenience at the bottom to avoid a circular import.
-from .explain import Explanation  # noqa: E402
+from .explain import Explanation  # noqa: E402\n
+
+@dataclass
+class TenantView:
+    """One tenant's slice of a store, bound to one acting agent.
+
+    Not a security perimeter against a caller holding the `MemoryFabric` — that
+    perimeter does not exist inside a library and `identity.py` says so. What
+    this is, is the shape that makes the boundary unforgettable: the methods
+    here take no `tenant_id`, so there is no call site at which someone can
+    omit it, and `agent_id` is supplied once rather than typed again at every
+    write.
+
+    `verified` records which door the handle came through. `as_principal`
+    checked a signature; `for_tenant` took the caller's word. Keeping the two
+    distinguishable matters because an audit question — "was this write made by
+    an authenticated principal?" — has a different answer in each case, and a
+    view that forgot could only answer it by guessing.
+    """
+
+    fabric: "MemoryFabric"
+    principal: Principal
+    verified: bool = False
+
+    @property
+    def tenant_id(self) -> str:
+        return self.principal.tenant_id
+
+    @property
+    def agent_id(self) -> str:
+        return self.principal.agent_id
+
+    # --- writes ----------------------------------------------------------
+
+    def remember(self, content: str, **kwargs: Any) -> str:
+        kwargs.pop("tenant_id", None)
+        kwargs.pop("agent_id", None)
+        return self.fabric.remember(
+            agent_id=self.agent_id, content=content, tenant_id=self.tenant_id, **kwargs
+        )
+
+    def derive(self, content: str, parents: Sequence[str], **kwargs: Any) -> str:
+        """Derive within the tenant, refusing to inherit from outside it.
+
+        Checked rather than assumed: `derive` copies its parents' context, and
+        a conclusion drawn from another tenant's premise would carry that
+        tenant's provenance into this one. The memory would be labelled with
+        this tenant and justified by a memory nobody here may read.
+        """
+        for parent in parents:
+            if self.fabric.tenant_of(parent) != self.tenant_id:
+                raise IdentityError(
+                    f"{parent} belongs to another tenant; a conclusion cannot "
+                    "be justified by a premise this tenant may not read"
+                )
+        kwargs.pop("agent_id", None)
+        kwargs.pop("tenant_id", None)
+        return self.fabric.derive(
+            agent_id=self.agent_id, content=content, parents=parents,
+            tenant_id=self.tenant_id, **kwargs
+        )
+
+    # --- reads -----------------------------------------------------------
+
+    def retrieve(self, query: str, **kwargs: Any) -> "RetrievalResult":
+        kwargs.pop("tenant_id", None)
+        kwargs.pop("agent_id", None)
+        return self.fabric.retrieve(
+            agent_id=self.agent_id, query=query, tenant_id=self.tenant_id, **kwargs
+        )
+
+    def use(self, memory_id: str, **kwargs: Any) -> "EnforcedRead":
+        kwargs.pop("tenant_id", None)
+        kwargs.pop("agent_id", None)
+        return self.fabric.use(
+            memory_id, agent_id=self.agent_id, tenant_id=self.tenant_id, **kwargs
+        )
+
+    def verify_before_action(self, token: "ExposureToken", **kwargs: Any):
+        kwargs.pop("agent_id", None)
+        return self.fabric.verify_before_action(token, self.agent_id, **kwargs)
+
+    def memory_ids(self) -> list[str]:
+        """Every memory in this tenant, whatever its lifecycle state.
+
+        Deliberately *not* filtered by lifecycle: this is the inventory, and an
+        operator asking what a tenant holds needs the quarantined ones too.
+        Reading one still goes through `use`.
+        """
+        return sorted(
+            memory_id
+            for memory_id, memory in self.fabric.state.memories.items()
+            if memory.tenant_id == self.tenant_id
+        )

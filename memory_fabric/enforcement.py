@@ -118,6 +118,12 @@ class ExposureToken:
     origin_store_id: str | None = None
     expires_at_ms: int | None = None
     policy_id: str = ""
+    tenant_id: str | None = None
+    """The tenant the decision was made for, so the re-check at action time is
+    scoped the same way the retrieval was. Without it a token issued inside a
+    tenant would be re-verified unscoped, and the time-of-use check would be
+    weaker than the time-of-check one — which is the gap this class exists to
+    close."""
 
     def expired(self, now_ms: int) -> bool:
         return self.expires_at_ms is not None and now_ms >= self.expires_at_ms
@@ -128,6 +134,7 @@ class ExposureToken:
             "version": self.version,
             "agent_id": self.agent_id,
             "store_id": self.store_id,
+            "tenant_id": self.tenant_id,
             "origin_store_id": self.origin_store_id,
             "verdict": self.verdict.value,
             "integrity_revision": self.integrity_revision,
@@ -150,6 +157,7 @@ TOKEN_EXPIRED = "token_expired"
 INTEGRITY_MOVED = "integrity_moved"
 WRONG_AGENT = "wrong_agent"
 WRONG_STORE = "wrong_store"
+WRONG_TENANT = "wrong_tenant"
 
 
 class Enforcer:
@@ -166,13 +174,23 @@ class Enforcer:
         memory_id: str,
         risk: RiskLevel = RiskLevel.LOW,
         include_contested: bool = False,
+        tenant_id: str | None = None,
     ) -> AccessDecision:
-        """Resolve lifecycle, then decide by risk.
+        """Resolve tenant, then lifecycle, then decide by risk.
 
         The order is deliberate: establish what is *known* about the memory
         before asking what the caller intends to do with it, so the same facts
         produce the same `reason_code` at every risk level and only the verdict
         moves.
+
+        The tenant comes first within that, and before the lifecycle, because a
+        cross-tenant request must not be answered with a fact about the other
+        tenant's memory. "Withdrawn on weak evidence" is a true and useful
+        reason code and it is also a statement that the memory exists and what
+        was done to it, which a caller from another tenant has no business
+        learning. `tenant_id` None means the caller is not tenant-scoped at all
+        — the operator path — and is not the same as matching every tenant by
+        accident.
         """
         state = self.fabric.state
         memory = state.memories.get(memory_id)
@@ -182,6 +200,16 @@ class Enforcer:
             return AccessDecision(
                 memory_id=memory_id, version=0, verdict=Verdict.DENY,
                 reason_code=NOT_FOUND, risk=risk, integrity_revision=revision,
+            )
+
+        if tenant_id is not None and memory.tenant_id != tenant_id:
+            # No `detail`, and the version is reported as 0: the refusal says
+            # only "not yours", which is all a caller in another tenant may
+            # learn. A reason code naming the owning tenant would turn this
+            # check into an enumeration oracle.
+            return AccessDecision(
+                memory_id=memory_id, version=0, verdict=Verdict.DENY,
+                reason_code=WRONG_TENANT, risk=risk, integrity_revision=revision,
             )
 
         lifecycle = memory.lifecycle_state
@@ -251,6 +279,7 @@ class Enforcer:
         agent_id: str,
         decision: AccessDecision,
         policy_id: str = "",
+        tenant_id: str | None = None,
     ) -> ExposureToken:
         from .federation import imported_from
 
@@ -261,6 +290,7 @@ class Enforcer:
             version=decision.version,
             agent_id=agent_id,
             store_id=self.fabric.store_id,
+            tenant_id=tenant_id,
             origin_store_id=None if origin is None else origin.get("store"),
             verdict=decision.verdict,
             integrity_revision=decision.integrity_revision,
@@ -307,7 +337,14 @@ class Enforcer:
                 detail="exposure token has expired; retrieve again",
             )
 
-        decision = self.check(token.memory_id, risk=risk)
+        decision = self.check(token.memory_id, risk=risk, tenant_id=token.tenant_id)
+        if decision.reason_code == WRONG_TENANT:
+            # Return the tenant refusal as it stands. The version comparison
+            # below would otherwise fire first and report `version_moved`,
+            # because a cross-tenant check deliberately reports version 0 — so
+            # the refusal would be correct and its stated reason would be a
+            # fiction, which is the worse of the two failures in an audit.
+            return decision
         if decision.version != token.version:
             # The memory was revised. The token's decision was about a different
             # version, so it says nothing about this one.

@@ -99,12 +99,21 @@ def offer(
     recipient_agent: str,
     granted_capabilities: Iterable[str] = (),
     activate: bool = False,
+    tenant_id: str | None = None,
 ) -> OfferResult:
     """Offer one memory across a store boundary.
 
     `activate=False` (the default) leaves the import as a candidate, which is
     the honest state for knowledge that has never been tested here. Passing
     True is the "trust the sender" mode and should be a deliberate choice.
+
+    `tenant_id` names the tenant the import lands in **at the recipient**, and
+    defaults to the source memory's. That default is right for a single-tenant
+    federation and is the only thing it can be, because a tenant id is local to
+    a store: nothing in the protocol makes `tn_acme` at one store the same
+    customer as `tn_acme` at another, and pretending otherwise would turn a
+    naming coincidence into a cross-customer disclosure. A multi-tenant
+    recipient should pass its own id explicitly.
     """
     memory = source.get(memory_id)
 
@@ -156,6 +165,7 @@ def offer(
         # guarantee this function exists to make. An import is not a trusted
         # local observation, whatever the recipient's convenience setting says.
         auto_activate=activate,
+        tenant_id=memory.tenant_id if tenant_id is None else tenant_id,
     )
 
     # Record the share on the *sender* side. Without it the sender has no idea

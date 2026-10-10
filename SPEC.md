@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.4.0`
+- **Schema version:** `0.5.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,36 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.5.0 — tenant identity
+
+`Memory` gains `tenant_id`, defaulting to `tn_default`. Additive: a store
+written before this replays into the default tenant with no migration and
+identical behaviour, which is why the default is a real id rather than `None` —
+a nullable boundary is one every comparison has to remember to handle, and the
+first place that forgot would be a cross-tenant read.
+
+Enforced at two points, both chosen because they are chokepoints rather than
+conveniences:
+
+- `_eligible_ids` filters by tenant **before the index is queried**, so an excluded memory cannot be ranked, scored, logged in a `RetrievalPerformed` event or leaked by a bug in a policy.
+- `Enforcer.check` refuses a cross-tenant request **before resolving the lifecycle**, and reports only `wrong_tenant` with version 0 and no detail. "Withdrawn on weak evidence" is a true and useful reason code and also a statement that the memory exists and what was done to it, which a caller from another tenant may not learn.
+
+`ExposureToken` carries the tenant, so the time-of-use re-check is scoped the
+same way the time-of-check was. `derive` inherits its parents' tenant and
+refuses premises from two different ones; defaulting to the store's default
+instead was the first version and was an isolation hole, found by the test for
+the ordinary within-tenant case rather than by the test for the attack.
+
+`offer` takes the recipient's tenant explicitly. A tenant id is local to a
+store: nothing makes `tn_acme` at one store the same customer as `tn_acme` at
+another, and letting a matching string decide would turn a naming coincidence
+into a cross-customer disclosure.
+
+Agent identity is **not** part of the schema. `identity.PrincipalRegistry` and
+`Credential` live beside the store rather than in the log, because identity can
+only be enforced at a boundary and a caller holding the fabric is inside it.
+SECURITY.md states the limits; `fabric.as_principal` is the enforcing handle.
 
 ### 0.4.0 — the share record, and a per-hop retraction target
 

@@ -27,7 +27,7 @@ provenance match.
 | Identity | Form | Assigned by | Notes |
 |---|---|---|---|
 | `store_id` | `st_` + 26-char ULID | the store, once, at creation | Written into the event log as a `StoreIdentified` event so it is recoverable by replay. Never derived from a path, hostname or port. |
-| `tenant_id` | `tn_` + 26-char ULID | the operator | Absent today. Every memory, event and acknowledgement carries one. |
+| `tenant_id` | `tn_` + 26-char ULID | the operator | Every memory carries one (0.5.0), defaulting to `tn_default`. **Local to a store**: nothing here makes `tn_acme` at two stores the same customer, so `offer` takes the recipient's tenant explicitly rather than copying the sender's. |
 | `agent_id` | `ag_` + 26-char ULID | the operator | Today a free-form string. Must be bound to a credential to be authorisable. |
 | `memory_id` | 26-char ULID | the store | **Local to a store.** Never globally unique. A cross-store reference is always the pair `(origin_store_id, origin_memory_id)`. |
 | `memory_version` | monotonically increasing `int` from 1 | the store | Already exists on `Memory`. |

@@ -245,6 +245,56 @@ class DoctorTests(unittest.TestCase):
         )
         self.assertEqual(len(report["findings"]), len(cli.DOCTOR_CHECKS))
 
+    def test_a_multi_tenant_store_is_a_warning_even_when_the_boundary_holds(self) -> None:
+        """One SQLite file holding several tenants is one blast radius.
+
+        Reported as a warning rather than `ok` on purpose: the labels are
+        enforced and the enforcement works, and an operator who believes that
+        amounts to isolation against a compromised process should read it here
+        rather than in an incident.
+        """
+        fabric = MemoryFabric(self.path, auto_activate=True)
+        try:
+            fabric.remember(
+                agent_id="b", content="the east gate closes at 1800",
+                type=MemoryType.SEMANTIC, tenant_id="tn_other",
+            )
+        finally:
+            fabric.close()
+
+        code, report = self._run()
+        self.assertEqual(code, 1)
+        self.assertTrue(report["sound"])
+        self.assertEqual(self._status(report, "tenant isolation"), "warn")
+
+    def test_a_cross_tenant_leak_is_a_failure(self) -> None:
+        """The check itself, against an enforcement layer that does leak.
+
+        Driven with a stubbed decision because the real one does not leak, and
+        an untested branch in a health check is a branch that reports the wrong
+        thing when it finally fires. The same reasoning as the missing-trigger
+        case.
+        """
+        from memory_fabric.cli import _check_tenant_isolation
+        from memory_fabric.enforcement import ACTIVE, AccessDecision, RiskLevel, Verdict
+
+        fabric = MemoryFabric(self.path, auto_activate=True)
+        try:
+            fabric.remember(
+                agent_id="b", content="the east gate closes at 1800",
+                type=MemoryType.SEMANTIC, tenant_id="tn_other",
+            )
+            permissive = lambda memory_id, **kwargs: AccessDecision(  # noqa: E731
+                memory_id=memory_id, version=1, verdict=Verdict.USABLE,
+                reason_code=ACTIVE, risk=RiskLevel.LOW, integrity_revision=0,
+            )
+            with patch.object(fabric.enforcer, "check", permissive):
+                finding = _check_tenant_isolation(fabric)
+            self.assertEqual(finding.status, "fail")
+            self.assertIn("readable from", finding.detail)
+        finally:
+            fabric.close()
+
     def test_a_check_that_cannot_run_is_never_reported_as_ok(self) -> None:
         """The honest outcome of "I could not tell" is a warning with the reason."""
         from memory_fabric import cli

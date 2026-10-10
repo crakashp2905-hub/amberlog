@@ -12,7 +12,10 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Mapping
 
-SCHEMA_VERSION = "0.4.0"
+# `identity` imports only `ids`, so this direction carries no cycle.
+from .identity import DEFAULT_TENANT
+
+SCHEMA_VERSION = "0.5.0"
 
 
 class MemoryType(str, Enum):
@@ -180,6 +183,13 @@ class Memory:
     structured: Mapping[str, Any] | None = None
     embedding_ref: str | None = None
     scope: Scope = Scope.PRIVATE
+    tenant_id: str = DEFAULT_TENANT
+    """Whose data this is. An authorisation boundary, not a physical one:
+    `_eligible_ids` and `Enforcer.check` refuse to cross it, so no ranking
+    policy, index query or federation import can surface one tenant's knowledge
+    to another. It does not isolate against a caller holding the file — see
+    `identity.py` and DEPLOYMENT.md. Independent of `scope`, which says how far
+    a memory may travel *within* a tenant."""
     lifecycle_state: LifecycleState = LifecycleState.CANDIDATE
     hypothesis_set: str | None = None
     security_class: SecurityClass = SecurityClass.INTERNAL
@@ -203,6 +213,7 @@ class Memory:
             "structured": dict(self.structured) if self.structured is not None else None,
             "embedding_ref": self.embedding_ref,
             "scope": self.scope.value,
+            "tenant_id": self.tenant_id,
             "lifecycle_state": self.lifecycle_state.value,
             "hypothesis_set": self.hypothesis_set,
             "security_class": self.security_class.value,
@@ -224,6 +235,10 @@ class Memory:
             structured=dict(data["structured"]) if data.get("structured") else None,
             embedding_ref=data.get("embedding_ref"),
             scope=Scope(data.get("scope", "private")),
+            # A store written before tenancy existed replays into the default
+            # tenant, so an existing single-tenant deployment needs no
+            # migration and behaves identically.
+            tenant_id=data.get("tenant_id") or DEFAULT_TENANT,
             lifecycle_state=LifecycleState(data.get("lifecycle_state", "candidate")),
             hypothesis_set=data.get("hypothesis_set"),
             security_class=SecurityClass(data.get("security_class", "internal")),

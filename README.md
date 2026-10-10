@@ -20,7 +20,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**686 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**711 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. All **14 integrity invariants**
@@ -263,6 +263,30 @@ fabric.record_outcome(episode.id, outcome=1.0, verifier_id="env")   # never self
 print(fabric.explain(mid).narrative())
 fabric.share(mid, "team")                          # default-deny; returns a reasoned ruling
 ```
+
+## One store, several customers
+
+```python
+fabric.principals.register("agent-acme", key=ACME_KEY, tenant_id="tn_acme")
+acme = fabric.as_principal(credential)      # verified: signed, unexpired, registered
+acme.remember("valve 7 is upstream of the pump")
+acme.retrieve("valve")                      # cannot be asked to read outside tn_acme
+```
+
+The methods on that handle take no `tenant_id`, so there is no call site at
+which someone can omit it. The filter sits **before the index is queried** and
+the enforcement check refuses **before resolving the lifecycle**, so a
+cross-tenant refusal says only "not yours" — not the version, not that the
+memory was withdrawn on weak evidence, each of which is a true statement about
+another customer's data.
+
+**What this is not.** It is an authorisation boundary, not a physical one. It
+holds against a bug in a ranking policy, an index query or a federation import;
+it holds against nothing that can read the file, and a caller holding the
+`MemoryFabric` can still act as any agent. That is not a patch waiting to
+happen — the check and the bypass would be on the same side of that boundary —
+and [SECURITY.md](SECURITY.md) says so plainly. `memory-fabric tenants` says
+which arrangement a store is actually in.
 
 ## Is this installation sound?
 

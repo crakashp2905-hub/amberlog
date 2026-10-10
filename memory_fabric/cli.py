@@ -22,6 +22,7 @@ from typing import Any, Sequence
 
 from .fabric import MemoryFabric, NotFound, PolicyViolation
 from .governance.erasure import ERASED_MARKER
+from .identity import DEFAULT_TENANT
 from .model import (
     BLOCKED_STATES,
     SCHEMA_VERSION,
@@ -272,6 +273,35 @@ def cmd_attention(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 1 if any(i.severity == "high" for i in items) else 0
 
 
+def cmd_tenants(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Which tenants this store holds, and how many memories each has.
+
+    The first question about a store someone inherited, and the one a store
+    believed to be single-tenant can answer surprisingly. `doctor` reports the
+    same fact as a warning; this prints it plainly.
+    """
+    counts = fabric.tenants()
+    if args.json:
+        print(json.dumps({"tenants": counts, "store_id": fabric.store_id}, indent=2))
+        return 0
+    heading(f"Tenants ({len(counts)})")
+    if not counts:
+        print("  no memories yet")
+        return 0
+    table(
+        ["TENANT", "MEMORIES"],
+        [[tenant, str(count)] for tenant, count in counts.items()],
+    )
+    if len(counts) > 1:
+        print(
+            f"\n  {C.YELLOW}{G.BULLET}{C.RESET} Several tenants in one store. The "
+            "boundary is enforced on every read, but one file is one blast "
+            "radius; prefer one store per tenant where the isolation has to "
+            "survive a compromised process."
+        )
+    return 0
+
+
 def cmd_list(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     rows = report.memory_rows(
         fabric,
@@ -281,6 +311,7 @@ def cmd_list(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         query=args.query,
         limit=args.limit,
         sort=args.sort,
+        tenant=getattr(args, "tenant", None),
     )
     if args.json:
         print(json.dumps(report.jsonable([r.to_json() for r in rows]), indent=2, allow_nan=False))
@@ -856,6 +887,52 @@ def _check_blocked_not_exposed(fabric: MemoryFabric) -> Finding:
     )
 
 
+def _check_tenant_isolation(fabric: MemoryFabric) -> Finding:
+    """Can any tenant's agent reach another tenant's memory?
+
+    Driven against the store rather than asserted from the code, because the
+    boundary is only as good as the data behind it: a memory created before
+    tenancy existed, imported by a federation call that did not name a tenant,
+    or restored from a mixed backup all end up labelled `tn_default`, and a
+    store whose operator believes it is partitioned would then be serving one
+    label to everyone.
+
+    Reported as a *warning* when the store is multi-tenant and everything
+    holds, not as `ok`: one SQLite file holding several tenants is one blast
+    radius whatever the labels say, and an operator who thinks otherwise should
+    read it here rather than in an incident. See `identity.py`.
+    """
+    counts = fabric.tenants()
+    if len(counts) <= 1:
+        only = next(iter(counts), DEFAULT_TENANT)
+        return Finding(
+            "ok", "tenant isolation",
+            f"single-tenant store ({only}); nothing to cross",
+        )
+
+    leaks = []
+    for memory_id, memory in fabric.state.memories.items():
+        for tenant in counts:
+            if tenant == memory.tenant_id:
+                continue
+            if fabric.enforcer.check(memory_id, tenant_id=tenant).usable:
+                leaks.append(f"{memory_id} readable from {tenant}")
+                break
+    if leaks:
+        return Finding(
+            "fail", "tenant isolation",
+            f"{len(leaks)} memory/ies readable from another tenant: {leaks[0]}",
+            "Stop serving this store. Report it with the store attached.",
+        )
+    return Finding(
+        "warn", "tenant isolation",
+        f"{len(counts)} tenants in one store ({', '.join(f'{t}:{n}' for t, n in counts.items())}); "
+        "the boundary holds, but one file is one blast radius",
+        "Prefer one store per tenant where the isolation has to survive a "
+        "compromised process. See DEPLOYMENT.md.",
+    )
+
+
 def _check_dashboard_asset(fabric: MemoryFabric) -> Finding:
     """A packaging failure that only shows up when someone opens the web UI.
 
@@ -885,6 +962,7 @@ DOCTOR_CHECKS = (
     _check_weak_withdrawals,
     _check_sealed_content,
     _check_blocked_not_exposed,
+    _check_tenant_isolation,
     _check_dashboard_asset,
 )
 
@@ -981,6 +1059,7 @@ def build_parser() -> argparse.ArgumentParser:
         return sp
 
     add("overview", cmd_overview, "Store health and what it can and cannot tell you")
+    add("tenants", cmd_tenants, "Which tenants this store holds")
     add("doctor", cmd_doctor,
         "Whether this installation's answers can be believed (exit 0/1/5)")
 
@@ -990,6 +1069,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = add("list", cmd_list, "List memories")
     p.add_argument("--state")
     p.add_argument("--scope")
+    p.add_argument("--tenant", help="only memories belonging to this tenant")
     p.add_argument("--type")
     p.add_argument("-q", "--query", help="substring of content or id")
     p.add_argument("--limit", type=int, default=50)

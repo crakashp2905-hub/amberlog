@@ -114,8 +114,10 @@ Four limits, stated rather than implied:
 ## Known gaps
 
 - **The sensitive-data detector is pattern-based**, so it misses novel secret formats and flags some harmless strings. It is one control among several, never the only one protecting a restricted memory. Its false-positive classes are documented in `tools/scan_secrets.py`.
-- **No agent authentication.** `agent_id` and `actor` are caller-supplied strings. `AgentSession` stops an adapter attributing work to the wrong agent, but a caller holding the fabric can still write as anyone. *Store* identity is now real and authenticated across the federation boundary (Phase 2); agent and tenant identity are not.
-- **No tenant isolation.** There is no tenant concept in the core.
+- **Agent authentication exists at a handle, not inside the store.** `identity.PrincipalRegistry` issues HMAC-signed, expiring credentials and `fabric.as_principal` returns a handle bound to the verified principal. A caller holding the `MemoryFabric` itself can still act as anyone, and that is not a bug awaiting a patch: the check and the bypass would be on the same side of the boundary. Put the fabric behind a process that holds credentials, and hand agents views.
+- **Credentials are bearer tokens and there is no revocation list.** A leaked credential is usable until it expires, so lifetimes should be short. Rotating the agent's key in the registry invalidates every credential signed with it, which is the available revocation mechanism and a blunt one.
+- **Tenancy is an authorisation boundary, not a physical one.** Memories carry a `tenant_id` that the exposure path and the enforcement layer refuse to cross, which holds against a bug in a ranking policy, an index query or a federation import. It holds against nothing that can read the file: one SQLite database holding several tenants is one blast radius. Where isolation has to survive a compromised process, run one store per tenant — `memory-fabric tenants` and `doctor` both say which arrangement a store is actually in.
+- **A tenant id is local to a store.** Nothing in the federation protocol makes `tn_acme` at one store the same customer as `tn_acme` at another, so `offer` takes the recipient's tenant explicitly. Letting a matching string decide would turn a naming coincidence into a cross-customer disclosure.
 - **No encryption at rest for the database as a whole**, as above.
 - **The contradiction detector does not exist**, so `challenge()` is manual.
 

@@ -17,10 +17,30 @@
 > A retraction now crosses a real socket between two stores, is refused when
 > unsigned or signed with the wrong key, and converges after an outage.
 >
-> **Still true:** peer-to-peer, brokers, consensus and multi-tenancy remain
-> deferred, and a recipient still may not re-share an import onward — so an
-> origin always knows its recipients. Lifting that is the measured trigger for
-> P2P work (see §2 of the Phase B result).
+> **Phase D (2026-10-11) lifted the one-hop restriction.** An accepted offer
+> records the recipient *store* (`MemoryShared`), a retraction carries a
+> per-hop target alongside an unchanging campaign identity, and a recipient
+> commits what it owes downstream inside the transaction that withdraws its own
+> copy. Five fault scenarios cover chain, outage, crash-before-forwarding,
+> diamond and cycle. "Federation where an importer re-shares onward" moved from
+> **unsupported** to supported.
+>
+> **Tenant and agent identity (2026-10-11).** Memories carry a `tenant_id`;
+> `_eligible_ids` and `Enforcer.check` refuse to cross it, so no ranking
+> policy, index query or federation import can surface one tenant's knowledge
+> to another. `PrincipalRegistry` issues signed, expiring credentials and
+> `fabric.as_principal` returns a handle that cannot be asked to read outside
+> its tenant. Two rows below move: **tenant identity** from missing to
+> implemented-as-authorisation, **agent identity** from partial to implemented
+> at the handle. What has *not* changed: a caller holding the `MemoryFabric`
+> can still act as anyone, because the check and the bypass would be on the
+> same side of that boundary. See `identity.py`.
+>
+> **Still true:** peer-to-peer discovery, brokers and consensus remain
+> deferred. Multi-tenancy is now an *authorisation* boundary and not a physical
+> one — one SQLite file holding several tenants is one blast radius whatever
+> the labels say, and `doctor` reports a multi-tenant store as a warning for
+> that reason.
 
 - **Audited:** 2026-10-10, commit `597bdcb`, 483 tests passing, secret scan clean.
 - **Method:** read the path from local quarantine through `propagate_retraction()` to recipient lifecycle and retrieval enforcement, then checked each advertised guarantee against the code that would have to implement it.
@@ -66,8 +86,8 @@ propagation.*
 | Every persistent memory retains origin provenance | **implemented** | `Provenance(created_by, source_episodes, parents, method)` on every memory; `tests/test_federation.py` asserts it crosses an import. |
 | Dependency edges identify the exact parent **version** | **partial** | `Provenance.parents` is `tuple[tuple[str, int], ...]` — id *and* version, so the data is recorded. But `projections.py:153` discards it: `for parent_id, _version in memory.provenance.parents`. The lineage graph is version-blind, so §4.1 of the roadmap is half-done: recorded, not used. |
 | Stable store identity | **missing** | `federation.py:134` writes `"store": source.log.path` — a **local filesystem path**. Two stores at the same relative path are indistinguishable; moving a database file silently breaks every provenance match. The roadmap names this explicitly ("stable ID, not a local file path"). |
-| Stable agent identity | **partial** | `agent_id` is a free-form string with no registry, no authentication, and no binding to a credential. |
-| Tenant identity | **missing** | No tenant concept anywhere in `memory_fabric/`. |
+| Stable agent identity | **implemented at the handle** | `identity.PrincipalRegistry` registers an agent against a tenant, roles and a key; `issue`/`verify` mint and check HMAC-signed credentials with an expiry, signature before expiry, and roles that may only narrow a registration. `fabric.as_principal(credential)` returns a bound handle. The raw fabric remains unauthenticated by construction and `test_identity.py::test_the_raw_fabric_is_still_unauthenticated` pins that rather than implying a perimeter. |
+| Tenant identity | **implemented as authorisation** | `Memory.tenant_id`, filtered in `_eligible_ids` *before* the index is queried and refused in `Enforcer.check` *before* the lifecycle is resolved, so a cross-tenant refusal leaks nothing about the memory. `ExposureToken` carries the tenant so the time-of-use check is not weaker than the time-of-check. `derive` refuses a premise from another tenant and inherits its parents' tenant. Not physical isolation: see the header. |
 | Immutable versions | **implemented** | `revise()` creates a new version; history retained; `tests/test_fabric.py`. |
 | Versioned event schema | **partial** | Every event carries `schema_version`; additive changes replay (test in `test_withdrawal_basis.py`); `overview` reports installed-vs-log versions. But there is **no machine-readable schema registry** and no compatibility policy per event type. |
 
@@ -128,14 +148,14 @@ Stated so they can be refused rather than discovered.
 |---|---|---|
 | Multiple concurrent writers to one store | **unsupported** | SQLite single-writer; untested under concurrent writes. |
 | Federation between stores in different processes or hosts | **unsupported** | `propagate_retraction` requires live objects in one process. |
-| Federation where an importer re-shares onward | **unsupported** | The origin tracks recipients by direct reference; transitive copies are invisible to it, so a retraction would not reach them. |
-| Multi-tenant deployment | **unsupported** | No tenant identity, no per-tenant authorisation. |
+| Federation where an importer re-shares onward | **supported** | Phase D. `MemoryShared` records each accepted offer's recipient store; a retraction is retargeted per hop under one campaign identity and forwarded inside the transaction that applies it. Terminates by deduplication over concrete targets, with `MAX_HOPS` as an auditable backstop. Five fault scenarios; disabling forwarding fails all five. |
+| Multi-tenant deployment | **supported as authorisation, not as isolation** | Per-tenant authorisation on every read path, tested one test per path. One file is still one blast radius against a caller holding it; prefer one store per tenant where isolation must survive a compromised process. |
 | Untrusted recipients or senders | **unsupported** | No authentication on the federation path. |
 | Storing data requiring encryption at rest | **unsupported** | Plain SQLite file; quarantined memories still contain their content on disk. |
 | Serving agents over a network | **unsupported for writes** | The HTTP surface is read-only by design and has one shared bearer token with no identity, roles, expiry, or revocation. |
 | Relying on value-ranked exposure | **not recommended** | Three live attempts lost to cheap baselines ([Phase A](../research/results/phase-a-real-agent-benchmark.md), [PA′](../research/results/phase-a-prime-attribution.md)), and the ranking has a [known defect](../research/decisions/2026-10-10-value-ranking-ignores-uncertainty.md). |
 
-**Supported today:** one process, one writer, loopback or trusted-network read-only observability, trusted agents, non-transitive federation between stores the caller holds references to.
+**Supported today:** one process, one writer, loopback or trusted-network read-only observability, authenticated agents at a handle, per-tenant authorisation within one store, and transitive federation over authenticated HTTP.
 
 ---
 

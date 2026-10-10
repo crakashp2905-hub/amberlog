@@ -296,8 +296,27 @@ def main() -> int:
         rule("8. The event log survives a backup, and the backup is verified")
 
         with tempfile.TemporaryDirectory() as tmp:
+            # A file-backed store, because an in-memory one cannot be backed up
+            # by path and the command now says so. The first version of this
+            # section pointed it at `:memory:` and got a green tick for a
+            # backup of nothing, which is how that bug was found.
+            on_disk_path = str(Path(tmp) / "depot-on-disk.db")
+            on_disk = MemoryFabric(on_disk_path)
+            try:
+                for event in depot.log.read():
+                    on_disk.log.append(event)
+                on_disk.rebuild()
+            finally:
+                on_disk.close()
+
+            passed.append(check(
+                "an in-memory store is refused, not silently copied",
+                cli_main(["--db", ":memory:", "backup",
+                          str(Path(tmp) / "nope.db")]) != 0,
+            ))
+
             copy_path = str(Path(tmp) / "depot-backup.db")
-            code = cli_main(["--db", depot.log.path, "backup", copy_path])
+            code = cli_main(["--db", on_disk_path, "backup", copy_path])
             passed.append(check("backup reported success", code == 0))
             restored = MemoryFabric(copy_path)
             try:

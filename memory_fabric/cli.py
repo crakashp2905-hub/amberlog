@@ -514,6 +514,18 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """
     import sqlite3
 
+    # An in-memory store cannot be backed up by path. `--db :memory:` opens a
+    # *fresh, empty* store, so without this the command copied its zero events,
+    # compared zero against zero, and reported success — handing the operator a
+    # verified-looking backup of nothing. A command whose only job is protecting
+    # the event log must not do that. Found by the live validation, which asked
+    # for a backup of an in-memory store and got a green tick.
+    if fabric.log.path == ":memory:":
+        print(f"{C.RED}This store is in memory, so there is nothing on disk to "
+              f"copy and --db :memory: opens an empty one. Point --db at a file."
+              f"{C.RESET}", file=sys.stderr)
+        return 6
+
     target = Path(args.path)
     if target.exists() and not args.force:
         print(f"{C.RED}{target} exists. Pass --force to overwrite it.{C.RESET}",

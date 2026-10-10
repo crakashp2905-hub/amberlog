@@ -149,3 +149,27 @@ class TestBackup(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class TestInMemoryStoreIsRefused(unittest.TestCase):
+    """`--db :memory:` opens a fresh, empty store.
+
+    Before this check the command copied that store's zero events, compared
+    zero against zero, and reported success — handing back a verified-looking
+    backup of nothing. The live validation found it by asking for a backup of an
+    in-memory store and getting a green tick. A command whose only job is
+    protecting the event log must fail loudly here.
+    """
+
+    def test_it_refuses_rather_than_copying_nothing(self) -> None:
+        with TemporaryDirectory() as tmp:
+            target = Path(tmp) / "copy.db"
+            self.assertNotEqual(main(["--db", ":memory:", "backup", str(target)]), 0)
+
+    def test_it_does_not_leave_a_misleading_file_behind(self) -> None:
+        """An empty file beside a non-zero exit would still read as a backup to
+        anything that only checks for the path existing."""
+        with TemporaryDirectory() as tmp:
+            target = Path(tmp) / "copy.db"
+            main(["--db", ":memory:", "backup", str(target)])
+            self.assertFalse(target.exists())

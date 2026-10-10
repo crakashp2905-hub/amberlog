@@ -36,7 +36,7 @@ Real models, real episodes, pre-registered thresholds, ≥5 seeds for A, A′ an
 | **PB1** | Selective sharing beats sharing all or none | ❌ **killed** — +0.008 [−0.042, +0.058], and the worst agent *fell* |
 | **PB2** | Retraction propagation helps, under both sharing policies | ✅ **supported** — acting on origin-retracted memory 17% → **0%** under both, with no measurable change in task success |
 | **PB3** | Reputation weighting beats uniform | ⚠️ **inconclusive** — not implemented; the data would have supported it |
-| **PC** | A population learns what to propagate | 🔬 **exploratory only** — the PB1 gate did not pass, so no verdict is reported against its thresholds |
+| **PC** | A population learns what to propagate | 🔬 **exploratory only** — the PB1 gate did not pass, so no verdict is reported. Descriptively: the learner did not beat the fixed policy, and the outcome channel the design requires made the population **worse** (−0.042 [−0.081, −0.005]) rather than merely inert |
 
 ## 3. Integrity engineering (roadmap phases 0–7)
 
@@ -82,6 +82,12 @@ quality of the answer:
 - A premise can be invalidated without destroying independently justified conclusions (Phase 4) — the question this project was ultimately asked.
 - Content can be erased while the accountability survives (Phase 6).
 - None of it costs anything measurable: 0.2 ms per episode and 1.16× tokens.
+
+**And one metaphor did not survive either.** Phase C measured whether propagation
+tracks a memory's value — the "memories selected for, inherited, going extinct"
+picture from the founding document. It does not: the correlation is ~0 wherever
+it is computable and undefined elsewhere, because both learners converged on
+sharing with everyone. Whatever those populations do, it is not selection.
 
 ## Three things that went wrong in the method, and what fixed them
 

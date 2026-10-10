@@ -1,0 +1,89 @@
+Phase C: can a population learn what should propagate?
+model=qwen2.5:3b  seeds=[0, 1, 2]  rounds=16  agents=8
+best_fixed=share_overlap  EXPLORATORY (PB1 gate not passed)
+prereg: research/prereg/phase-c-memory-ecology.md
+
+  seed 0: writing 8 agent corpora...
+    a1  12 lessons (2 poisoned) ('cold_store', 'urban')
+    a2  12 lessons (3 poisoned) ('coastal', 'urban')
+    a3  12 lessons (0 poisoned) ('cold_store', 'coastal')
+    a4   6 lessons (2 poisoned) ('urban',)
+    a5   6 lessons (1 poisoned) ('cold_store',)
+    a6   6 lessons (1 poisoned) ('coastal',)
+    a7  18 lessons (4 poisoned) ('cold_store', 'coastal', 'urban')
+    a8  12 lessons (6 poisoned) ('urban', 'coastal')
+  seed 0 isolated             success   62%  worst   38%  imports    0 (0 wrong)  (1321s)
+  seed 0 share_all            success   79%  worst   62%  imports  588 (349 wrong)  (1393s)
+  seed 0 best_fixed           success   80%  worst   69%  imports  312 (73 wrong)  (1365s)
+  seed 0 learned              success   75%  worst   62%  imports  588 (349 wrong)  (1447s)
+  seed 0 learned_no_feedback  success   77%  worst   69%  imports  588 (349 wrong)  (1412s)
+  seed 0 oracle_share         success   90%  worst   75%  imports  239 (0 wrong)  (1546s)
+  seed 1: writing 8 agent corpora...
+    a1  12 lessons (2 poisoned) ('cold_store', 'urban')
+    a2  12 lessons (0 poisoned) ('coastal', 'urban')
+    a3  12 lessons (2 poisoned) ('cold_store', 'coastal')
+    a4   6 lessons (2 poisoned) ('urban',)
+    a5   6 lessons (1 poisoned) ('cold_store',)
+    a6   6 lessons (2 poisoned) ('coastal',)
+    a7  18 lessons (5 poisoned) ('cold_store', 'coastal', 'urban')
+    a8  12 lessons (4 poisoned) ('urban', 'coastal')
+  seed 1 isolated             success   56%  worst   38%  imports    0 (0 wrong)  (1441s)
+  seed 1 share_all            success   74%  worst   56%  imports  588 (342 wrong)  (1564s)
+  seed 1 best_fixed           success   75%  worst   62%  imports  312 (66 wrong)  (1743s)
+  seed 1 learned              success   70%  worst   56%  imports  588 (342 wrong)  (1798s)
+  seed 1 learned_no_feedback  success   73%  worst   62%  imports  588 (342 wrong)  (1764s)
+  seed 1 oracle_share         success   77%  worst   62%  imports  246 (0 wrong)  (1796s)
+  seed 2: writing 8 agent corpora...
+    a1  12 lessons (1 poisoned) ('cold_store', 'urban')
+    a2  12 lessons (1 poisoned) ('coastal', 'urban')
+    a3  12 lessons (3 poisoned) ('cold_store', 'coastal')
+    a4   6 lessons (2 poisoned) ('urban',)
+    a5   6 lessons (3 poisoned) ('cold_store',)
+    a6   6 lessons (3 poisoned) ('coastal',)
+    a7  18 lessons (6 poisoned) ('cold_store', 'coastal', 'urban')
+    a8  12 lessons (6 poisoned) ('urban', 'coastal')
+  seed 2 isolated             success   44%  worst   19%  imports    0 (0 wrong)  (1572s)
+  seed 2 share_all            success   65%  worst   25%  imports  588 (369 wrong)  (1658s)
+  seed 2 best_fixed           success   63%  worst   31%  imports  312 (93 wrong)  (1773s)
+  seed 2 learned              success   66%  worst   31%  imports  588 (369 wrong)  (1702s)
+  seed 2 learned_no_feedback  success   70%  worst   38%  imports  588 (369 wrong)  (1632s)
+  seed 2 oracle_share         success   72%  worst   44%  imports  219 (0 wrong)  (1657s)
+
+arm                             success   worst  spread  imports  wrong  val~spread  graph match
+----------------------------------------------------------------------------------------------------
+isolated             0.544 [0.495, 0.594]    38%    33%        0      0 undefined (spread is constant: everything reached every store)      nan
+share_all            0.724 [0.680, 0.768]    56%    31%     1764   1060 undefined (spread is constant: everything reached every store)      nan
+best_fixed           0.727 [0.682, 0.771]    58%    35%      936    232                 -0.005 (n=142)      nan
+learned              0.703 [0.659, 0.750]    56%    27%     1764   1060 undefined (spread is constant: everything reached every store)    0.753
+learned_no_feedback  0.745 [0.703, 0.786]    60%    25%     1764   1060 undefined (spread is constant: everything reached every store)    0.679
+oracle_share         0.797 [0.755, 0.839]    58%    33%      704      0                 +0.048 (n=150)      nan
+
+=== Against the pre-registration ===
+  ceiling check: no arm beat oracle_share (principle 8b)
+  best fixed policy:      72.7%
+  ceiling (oracle_share): 79.7%
+  headroom:               +7.0%
+
+  PC learned captures -33% of headroom (needs >= 30%), paired diff -0.023 [-0.060, +0.013]
+     worst agent 56.2% against 58.3% (must not fall)
+
+  The outcome channel: learned vs learned_no_feedback -0.042 [-0.081, -0.005]
+
+  Ecology claim, judged separately: value~spread rho = nan on 146 memories (needs > 0.3)
+     Propagation is not tracking measured value: this is drift, not
+     selection. A population can still improve by learning sharing
+     rules, which is a different claim and judged above.
+
+  learned sharing graph vs true overlap: 0.753
+
+  PC: NOT REPORTED — exploratory run.
+  Phase B's PB1 was not supported, so the gate in the registration
+  holds: a threshold applied to a surface already measured to be
+  flat is not a test. The numbers above describe; they do not judge.
+
+2556 model calls, 1093202 tokens, 29671s wall
+wrote research/results/phase-c-decisions.json
+umbers above describe; they do not judge.
+
+2556 model calls, 1092922 tokens, 29660s wall
+wrote research/results/phase-c-decisions.json

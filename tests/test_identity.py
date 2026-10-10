@@ -280,6 +280,72 @@ def _permissive():
     )
 
 
+class SdkTenancyTests(unittest.TestCase):
+    """The SDK is the recommended adapter surface, so it is the one that matters.
+
+    A tenant-blind client would mean the enforcement built into the engine was
+    reachable only by callers who knew to ask for it — which is the opposite of
+    how a boundary should fail.
+    """
+
+    def setUp(self) -> None:
+        self._tmp = TemporaryDirectory()
+        self.fabric = MemoryFabric(
+            Path(self._tmp.name) / "s.db", auto_activate=True
+        )
+        self.fabric.principals.register("a", key=b"ka", tenant_id="tn_a")
+        self.fabric.principals.register("b", key=b"kb", tenant_id="tn_b")
+
+    def tearDown(self) -> None:
+        self.fabric.close()
+        self._tmp.cleanup()
+
+    def test_a_verified_client_is_bound_to_its_principals_tenant(self) -> None:
+        from memory_fabric.sdk import agent_for
+
+        client_a = agent_for(
+            self.fabric, self.fabric.principals.issue("a", now=self.fabric.now())
+        )
+        client_b = agent_for(
+            self.fabric, self.fabric.principals.issue("b", now=self.fabric.now())
+        )
+        self.assertEqual(client_a.tenant_id, "tn_a")
+
+        client_a.remember("valve 7 is upstream of the pump")
+        self.assertEqual(len(client_a.recall("valve")), 1)
+        self.assertEqual(client_b.recall("valve"), [])
+
+    def test_a_verified_client_cannot_fetch_across_a_tenant(self) -> None:
+        from memory_fabric.sdk import NotUsable, agent_for
+
+        client_a = agent_for(
+            self.fabric, self.fabric.principals.issue("a", now=self.fabric.now())
+        )
+        client_b = agent_for(
+            self.fabric, self.fabric.principals.issue("b", now=self.fabric.now())
+        )
+        memory_id = client_a.remember("valve 7 is upstream of the pump")
+        with self.assertRaises(NotUsable):
+            client_b.fetch(memory_id)
+
+    def test_an_unverifiable_credential_raises_rather_than_scoping_to_nothing(self) -> None:
+        from memory_fabric.sdk import agent_for
+
+        issued = self.fabric.principals.issue("a", now=self.fabric.now())
+        with self.assertRaises(IdentityError):
+            agent_for(self.fabric, replace(issued, signature="00" * 32))
+
+    def test_the_default_client_is_single_tenant_and_unchanged(self) -> None:
+        """Every existing caller keeps working, which is the only acceptable
+        answer for a boundary added to a shipped API."""
+        from memory_fabric.sdk import agent
+
+        client = agent(self.fabric, "legacy")
+        self.assertEqual(client.tenant_id, DEFAULT_TENANT)
+        client.remember("the east gate closes at 1800")
+        self.assertEqual(len(client.recall("gate")), 1)
+
+
 class FederationTenancyTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()

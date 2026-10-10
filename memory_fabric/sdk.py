@@ -28,6 +28,7 @@ from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Sequence
 
 from .enforcement import AccessDecision, EnforcedRead, ExposureToken, RiskLevel, Verdict
+from .identity import DEFAULT_TENANT, Credential
 from .model import LifecycleState, Memory, MemoryType, Scope
 from .protocol import Acknowledgement, PropagationState, Retraction
 
@@ -84,17 +85,32 @@ class UsableMemory:
 class AgentClient:
     """What an adapter is given. Deliberately narrow.
 
-    Bound to one agent id, so an adapter cannot attribute work to another agent
-    — the same guarantee `AgentSession` gives for writes, extended to reads.
+    Bound to one agent id **and one tenant**, so an adapter cannot attribute
+    work to another agent or read another customer's knowledge — the same
+    guarantee `AgentSession` gives for writes, extended to reads and to the
+    tenant boundary.
+
+    The tenant is a constructor argument rather than a parameter on `recall`
+    for the same reason scope is not a parameter on `remember`: a boundary that
+    can be passed per call is a boundary that can be omitted per call. Use
+    `agent_for(fabric, credential)` where the binding should be *verified*
+    rather than asserted.
     """
 
-    def __init__(self, fabric: Any, agent_id: str) -> None:
+    def __init__(
+        self, fabric: Any, agent_id: str, tenant_id: str = DEFAULT_TENANT
+    ) -> None:
         self._fabric = fabric
         self._agent_id = agent_id
+        self._tenant_id = tenant_id
 
     @property
     def agent_id(self) -> str:
         return self._agent_id
+
+    @property
+    def tenant_id(self) -> str:
+        return self._tenant_id
 
     @property
     def store_id(self) -> str:
@@ -125,6 +141,7 @@ class AgentClient:
             k=k,
             episode_id=episode_id,
             include_contested=include_contested,
+            tenant_id=self._tenant_id,
         )
         out: list[UsableMemory] = []
         for memory in hits.exposed:
@@ -134,6 +151,7 @@ class AgentClient:
                 risk=RiskLevel.LOW,
                 include_contested=include_contested,
                 audit=False,
+                tenant_id=self._tenant_id,
             )
             if read.usable:
                 out.append(self._wrap(read))
@@ -148,7 +166,9 @@ class AgentClient:
         withdrawn memory to an operator tool, and an adapter holding that method
         is one autocomplete away from serving retracted knowledge to a model.
         """
-        read: EnforcedRead = self._fabric.use(memory_id, self._agent_id, risk=risk)
+        read: EnforcedRead = self._fabric.use(
+            memory_id, self._agent_id, risk=risk, tenant_id=self._tenant_id
+        )
         if not read.usable:
             raise NotUsable(read.decision)
         return self._wrap(read)
@@ -198,6 +218,7 @@ class AgentClient:
             source_episodes=source_episodes,
             episode_id=episode_id,
             scope=Scope.PRIVATE,
+            tenant_id=self._tenant_id,
         )
 
     def episode(self, task_id: str, context: Mapping[str, Any] | None = None):
@@ -345,8 +366,27 @@ class OperatorClient:
         return self._fabric.resolve(*args, **kwargs)
 
 
-def agent(fabric: Any, agent_id: str) -> AgentClient:
-    return AgentClient(fabric, agent_id)
+def agent(
+    fabric: Any, agent_id: str, tenant_id: str = DEFAULT_TENANT
+) -> AgentClient:
+    """A client bound to an agent and tenant the caller *asserts*.
+
+    Right for a single-tenant store and for a process that has already
+    authenticated its callers some other way. Where the binding should be
+    checked, use `agent_for`.
+    """
+    return AgentClient(fabric, agent_id, tenant_id)
+
+
+def agent_for(fabric: Any, credential: "Credential") -> AgentClient:
+    """A client bound to a **verified** principal.
+
+    Raises `IdentityError` rather than returning a client scoped to nothing: an
+    adapter whose credential does not verify has not asked a question that has
+    an answer, and an empty client would read as "this tenant knows nothing".
+    """
+    principal = fabric.principals.verify(credential, fabric.now())
+    return AgentClient(fabric, principal.agent_id, principal.tenant_id)
 
 
 def operator(fabric: Any, actor: str) -> OperatorClient:

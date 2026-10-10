@@ -20,10 +20,11 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**711 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**715 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
-is only true if it is tested that way. All **14 integrity invariants**
+is only true if it is tested that way. What was run and what it showed, including
+the checks that are not automated: [docs/VALIDATION.md](docs/VALIDATION.md). All **14 integrity invariants**
 implemented and tested ([matrix](docs/INVARIANTS.md)), up from 4.
 
 ## The accuracy claim failed, and that is the useful part

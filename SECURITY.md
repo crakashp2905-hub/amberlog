@@ -107,6 +107,7 @@ Four limits, stated rather than implied:
 
 - **The cipher is HMAC-SHA256 in counter mode**, because the core is zero-dependency and the standard library has no AEAD. It gives confidentiality against someone without the key and **no integrity guarantee of its own** — the append-only log provides that. A deployment needing AEAD should install `cryptography` and replace one function; the vault's interface does not change.
 - **The keys are in the same file as the ciphertext.** This is the weakest defensible arrangement: it makes erasure *possible*, and it does nothing against an attacker who has the file. The keys are in their own table so a deployment can move them without re-architecting.
+- **Erasure is terminal for a memory's content.** `revise` is refused once content has been erased: writing a new version under the same id would make it readable again and defeat the erasure record. Record new information as a new memory. Found by a property-based walk, which hit the sequence (erase, then revise) and stored the new text in *plaintext*, because the destroyed key made the sealer fall back silently.
 - **Crypto-erasure cannot reach a backup taken before the key was destroyed.** Backup retention is an operational control; a test pins this behaviour rather than leaving it to be discovered.
 - **This is not encryption at rest.** One destroyed key makes one memory unreadable. The rest of the file is still plaintext SQLite.
 

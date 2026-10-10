@@ -198,7 +198,13 @@ class MemoryFabric:
             return content
         key = self.vault.key_for(memory_id, self.now())
         if key is None:
-            return content
+            # The key was destroyed. Falling back to plaintext here would store
+            # readable content for a memory whose content was erased — and
+            # unsealed, so a later erasure could not reach it either. Refuse.
+            raise PolicyViolation(
+                f"{memory_id} has been content-erased; its content cannot be "
+                "written again. Record new information as a new memory."
+            )
         return seal(content, key)
 
     def _ensure_store_identity(self) -> None:
@@ -784,8 +790,20 @@ class MemoryFabric:
         reason: str,
         method: str | ProvenanceMethod = ProvenanceMethod.CONSOLIDATED,
     ) -> Memory:
-        """Create the next version of a memory. The old version stays in history."""
+        """Create the next version of a memory. The old version stays in history.
+
+        Refused once the content has been erased. Erasure is terminal for a
+        memory's content: writing a new version under the same id would make it
+        readable again and would defeat the erasure record. A property-based
+        walk found the sequence (erase, then revise) and it stored the new text
+        in plaintext, because the destroyed key made the sealer fall back.
+        """
         current = self._require(memory_id)
+        if memory_id in self.state.erased:
+            raise PolicyViolation(
+                f"{memory_id} has been content-erased; record new information "
+                "as a new memory rather than a new version"
+            )
         now = self.now()
         revised = current.evolve(
             version=current.version + 1,

@@ -48,6 +48,25 @@ protocol parser rejects path-like strings as identities, with a test enumerating
 **What the five remaining partials need:**
 
 
+## Testing layers (roadmap §8)
+
+| Layer | Where | Count |
+|---|---|---|
+| Unit | `test_fabric`, `test_model`-adjacent, `test_estimators`, `test_vectors`, `test_governance`, `test_exposure` | — |
+| **Property-based** | `test_properties.py` — seeded random walks over event sequences, eight properties checked after **every** operation | 7 |
+| Integration | `test_retraction_protocol`, `test_federation_transport`, `test_backup`, `test_erasure` | 87 |
+| System | `experiments/faultsim.py` — 12 deterministic multi-store fault scenarios, 6 invariant checks per step | 12 |
+| Regression | one deterministic test per discovered bug, e.g. `test_justification.py::TestRegressions` | — |
+
+Property-based tests use a seeded random walk rather than Hypothesis, because
+the core is zero-dependency and a test-only dependency would break the CI job
+that runs the suite with **nothing installed** — which is what keeps the
+zero-dependency claim honest. The cost is no shrinking, so a failure prints the
+whole sequence and its seed; enough to reproduce, which is what §5.4 asks of a
+counterexample. One walk test asserts the walks actually reach the states the
+properties are about, because a property suite that silently stopped exercising
+anything would still pass.
+
 ## Rules for this file
 
 1. A new guarantee in a doc, README or changelog requires a row here and a named test, in the same commit.

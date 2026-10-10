@@ -431,6 +431,36 @@ def _diagnostics(report: Overview) -> list[str]:
     return notes
 
 
+def propagation_rows(fabric: "MemoryFabric") -> list[dict[str, Any]]:
+    """Retractions still in flight, with the state of each recipient.
+
+    Invariant 9 requires offline, pending, unknown and failed to be *explicit*.
+    The rows carry the state verbatim from the outbox rather than collapsing it
+    to a health colour, because "we have not heard from this recipient" and
+    "this recipient confirmed enforcement" are the two answers an operator most
+    needs to keep apart.
+    """
+    rows: list[dict[str, Any]] = []
+    for row in fabric.outbox.pending():
+        acks = fabric.outbox.acknowledgements(row.retraction_id)
+        ack = acks.get(row.recipient)
+        rows.append(
+            {
+                "retraction_id": row.retraction_id,
+                "recipient": row.recipient,
+                "state": row.state.value,
+                "attempts": row.attempts,
+                "last_error": row.last_error,
+                "origin_memory_id": row.retraction.origin_memory_id,
+                "origin_memory_version": row.retraction.origin_memory_version,
+                "reason_code": row.retraction.reason_code,
+                "acknowledged_state": None if ack is None else ack.state.value,
+                "acknowledged_at": None if ack is None else ack.at,
+            }
+        )
+    return rows
+
+
 def attention(fabric: "MemoryFabric") -> list[AttentionItem]:
     """The triage list: what needs a human, worst first."""
     items: list[AttentionItem] = []

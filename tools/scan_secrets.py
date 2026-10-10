@@ -83,6 +83,8 @@ ALLOWED_SNIPPETS = {
     ("memory_fabric/fabric.py", "password_assignment", "token=token, memory=memory"),
     ("tests/test_enforcement.py", "password_assignment", "enforcer.issue"),
     ("memory_fabric/transport.py", "password_assignment", "retraction.sign"),
+    ("memory_fabric/sdk.py", "password_assignment", "ExposureToken"),
+    ("memory_fabric/sdk.py", "password_assignment", "read.token"),
 }
 
 

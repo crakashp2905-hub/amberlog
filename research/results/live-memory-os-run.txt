@@ -30,20 +30,47 @@
   [PASS] import arrives unvalidated
   [PASS] provenance crossed the boundary - from depot-agent
   [PASS] second store's agent used the imported memory
-  workshop model said: When a charger trips its breaker on a cold morning, check for a damp earth bond as the cause, as it trips on the first high-current draw.
+  workshop model said: When a charger trips its breaker on a cold morning, check for a damp earth bond as the cause, as damp earth bonds trip on the first high-current draw.
 
 ==========================================================================
 5. The source was wrong - retraction follows it across the boundary
 ==========================================================================
   [PASS] source quarantined
+  [PASS] the basis is recorded, not assumed - contradicted
   [PASS] recipient's copy is findable by origin - 1 found
   [PASS] recipient's copy retracted
+  [PASS] the importer knows it was someone else's finding
   [PASS] retracted memory no longer retrievable anywhere
+
+==========================================================================
+6. A withdrawal on weak evidence is itself flagged for a human
+==========================================================================
+  [PASS] the withdrawal becomes the finding - withdrawn_on_weak_evidence
+  [PASS] it says why the basis is not enough
+  [PASS] it offers to undo rather than to inspect
+
+==========================================================================
+7. A newly imported memory is actually retrievable
+==========================================================================
+  [PASS] the import was accepted
+  [PASS] the newest, most relevant memory is exposed - 3 exposed
+
+==========================================================================
+8. The event log survives a backup, and the backup is verified
+==========================================================================
+This store is in memory, so there is nothing on disk to copy and --db :memory: opens an empty one. Point --db at a file.
+  [PASS] an in-memory store is refused, not silently copied
+C:\Users\CRRAME~1\AppData\Local\Temp\tmp23ycsapz\depot-on-disk.db -> C:\Users\CRRAME~1\AppData\Local\Temp\tmp23ycsapz\depot-backup.db
+  18 events, 4 memories, replayed from the copy
+  0.1 MB
+  [PASS] backup reported success
+  [PASS] the copy replays to the same event count - 18 vs 18
+  [PASS] projections that live only in the log survive
 
 ==========================================================================
 Summary
 ==========================================================================
-  15/15 checks passed
-  depot store:    2 memories, 11 events
-  workshop store: 1 memories, 7 events
-  embedder calls: 6
+  26/26 checks passed
+  depot store:    4 memories, 17 events
+  workshop store: 1 memories, 8 events
+  embedder calls: 14

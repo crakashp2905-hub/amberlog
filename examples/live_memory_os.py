@@ -306,6 +306,12 @@ def main() -> int:
                 for event in depot.log.read():
                     on_disk.log.append(event)
                 on_disk.rebuild()
+                # Its own count, not the depot's. A fresh store mints a
+                # StoreIdentified event of its own before any copied events
+                # arrive, so it holds one more than the log it was fed —
+                # which the first version of this check compared against and
+                # reported as a failing backup.
+                on_disk_events = len(on_disk.log)
             finally:
                 on_disk.close()
 
@@ -322,8 +328,8 @@ def main() -> int:
             try:
                 passed.append(check(
                     "the copy replays to the same event count",
-                    len(restored.log) == len(depot.log),
-                    f"{len(restored.log)} vs {len(depot.log)}",
+                    len(restored.log) == on_disk_events,
+                    f"{len(restored.log)} vs {on_disk_events}",
                 ))
                 passed.append(check(
                     "projections that live only in the log survive",

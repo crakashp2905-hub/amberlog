@@ -1,26 +1,91 @@
 # Memory Fabric (working name)
 
-Research prototype for **memory that is valued by its effect on outcomes, not by its similarity to the query**, and for sharing that memory selectively across agents.
+**Agent memory you can audit, retract across stores, and federate without
+silently poisoning your weakest agent.**
+
+Not "memory that makes agents smarter". That claim was pre-registered, tested
+against real models at five seeds, and **failed** — the measurements are below
+and they are the most reusable thing here.
 
 > Working name only. "MemOS" and "MemoryOS" are taken by 2025 projects; see [research/CRITICAL_REVIEW.md](research/CRITICAL_REVIEW.md) §1.
 
-## Status
+## What this does, and what it costs
 
-**All nine milestones closed, and validated against live multi-agent runs.** 392 tests, zero dependencies in the core, Python 3.13 + SQLite. P1–P7 built and measured; P8 and P9 **declined on measurement** rather than deferred — see [ROADMAP.md](ROADMAP.md).
+| Guarantee | Evidence |
+|---|---|
+| A retraction **follows a memory into other stores** and drives acting-on-withdrawn-knowledge to zero | 17% → **0%** under both sharing policies, 240 decisions per arm ([PB2](research/results/phase-b-federated-agents.md)) |
+| A premise can be invalidated **without destroying independently justified conclusions** | Lose one of two independent premises and the conclusion stays active; lose both and it is contested, never deleted ([Phase 4](docs/INVARIANTS.md)) |
+| Contradiction is **preserved rather than collapsed**, converting confident error into flagged uncertainty | 80% confidently wrong → **0%** with real disagreeing models ([live](research/results/live-multi-agent.md)); P(correct) 0.905 → 1.000 in simulation ([H4b](research/results/h4-topology-and-diversity.md)) |
+| Content can be **erased while the accountability survives** | Crypto-erasure: the text goes, the provenance, lineage, retraction basis and audit trail stay ([Phase 6](SECURITY.md)) |
+| A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
+| **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**H1 is supported**: an amortized, propensity-corrected estimator recovers true memory value at ρ=0.76 against a naive baseline's 0.47, on 8% exploration overhead. [Result](research/results/h1-causal-credit.md)
+**663 tests**, 12 deterministic multi-store fault scenarios, five testing layers,
+zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
+the suite runs in CI with **nothing installed**, because a zero-dependency claim
+is only true if it is tested that way. All **14 integrity invariants**
+implemented and tested ([matrix](docs/INVARIANTS.md)), up from 4.
 
-**H2 is killed**: that accuracy did *not* transfer to deciding what to forget — at the registered memory budget the same estimator loses to a smoothed success rate, which captures 93% of what perfect knowledge could achieve. An exploratory sweep found the ordering reverses once the budget actually binds, which reconciles the two results: the estimator's advantage lives in telling *valuable* from merely *harmless*, and a loose budget never asks that. [Result](research/results/h2-credit-driven-retention.md)
+## The accuracy claim failed, and that is the useful part
 
-**H3 is inconclusive**, and instructively so. The predicted federation crossover curve held cleanly — sharing everything costs 2.6 points when contexts don't overlap, sharing nothing costs 2.7 when they fully do — but the registered margin of +0.030 turned out to exceed the +0.027 that *perfect* knowledge could achieve, so no method could have passed. The threshold was set without first establishing a ceiling. [Result](research/results/h3-selective-federation.md)
+Five live phases, pre-registered thresholds, real models, ≥5 seeds for three of
+them. Full detail in [research/SCORECARD.md](research/SCORECARD.md).
 
-**H4b is supported — the project's founding design principle, finally tested.** "Contradictions stay representable" was an assertion for six milestones. Re-testing contested beliefs instead of collapsing to the majority takes a fully-connected population from P(correct) 0.905 to **1.000**, lifts recovery from 24% to **100%**, and does it at *half* the regret and *faster* consensus. It pays for itself: the fifth of a round spent re-testing buys escape from a mistake that otherwise lasts forever. H4a (the Zollman effect) is inconclusive only because I registered the wrong point on the curve — the effect is an inverted U, strongest at degree 2–4 (+0.080, 84% of headroom), not at the sparsest extreme I tested. [Result](research/results/h4-topology-and-diversity.md)
+| | claim | outcome |
+|---|---|---|
+| **A** | Governed memory beats an ungoverned vector store | ❌ **killed** — 0.283 against 0.583 |
+| **A′1** | Some withdrawal policy beats withdrawing nothing | ❌ **killed**, as registered in advance |
+| **A′2** | Leave-one-out attribution recovers most of naive blame's damage | ✅ supported — 71% of the gap, at 2.55 model calls per episode |
+| **B1** | Selective sharing beats sharing all or none | ❌ **killed** — +0.008 [−0.042, +0.058], and the worst agent *fell* |
+| **B2** | Retraction propagation works, under both policies | ✅ **supported** — 17% → 0% |
+| **C** | A population learns what to propagate | 🔬 exploratory; the outcome channel made it **worse**, −0.042 [−0.081, −0.005] |
 
-**Validated against live models.** Three local models through Ollama, on the real path: retrieval found the right memory **100%** of the time, a correct memory took accuracy from 6.7% to **100%**, and a wrong one misled **every model, every time**. The fabric's central simulated parameter turned out to be wrong — compliance is 1.00, not the 0.80 RuleWorld assumed — and an end-to-end governance run (governed writes, provenance across a store boundary, retraction following a memory between stores) passes **15/15**. It also found a security bug 384 unit tests had missed. [Result](research/results/live-ollama-validation.md)
+**One measurement explains nearly all of it.** Success tracked a single
+quantity: whether a correct memory reached the prompt. Conversion given one was
+**93–98% in every arm**, and coverage-to-success correlated at **+0.975** across
+arms. Everything the memory layer does — ranking, governance, lifecycle — can
+only move the outcome through that one channel, and **every withdrawal policy
+moved it downwards**. Perfect selection over the corpus was worth **+5 points**;
+the rest of the gap is corpus *coverage*, which is memory construction and not
+something this project does.
 
-**Tested with multiple agents, and it changed the design.** Three models as independent observer agents, each with its own store, federating into a consolidator where the majority is wrong. Collapsing to the majority made the reader **confidently assert a wrong action in 8 of 10 trials**; preserving the disagreement eliminated that entirely (−0.80 [−1.00, −0.50]). It does not make the reader *right* — it converts confident error into flagged uncertainty. Running it also exposed a product gap: the fabric had no deduplication, and one model wrote the same memory four times in a single run, silently inflating a 2-vs-1 majority into 4-vs-1. [Result](research/results/live-multi-agent.md)
+Three consequences, all acted on in the product rather than left in a paper:
 
-**H5 is unaskable and P9 is declined**, both on measurement. The memory path makes **zero** LLM calls at 0.26 ms/episode, so "replace ≥50% of memory-management LLM calls" has no denominator. And 25× more memories costs 1.7× latency, so no load here needs distributing. Both were cancelled by measurement rather than built on anticipation.
+1. **Do not withdraw memories because they were in context when something failed.** Of naive blame's 87 withdrawals, **57 were memories about a completely different fault**. `quarantine` now records *why*, and the attention list flags a withdrawal made on weak evidence as the finding — pointing an operator at releasing it rather than at the memory.
+2. **Do not filter at share time.** A memory wrong at one of a recipient's contexts is right at another, and which dominates is not knowable before the episode. Perfect sharing scored five points *below* sharing everything indiscriminately.
+3. **The value gate the default firewall ships is not a safety feature here.** It reduced federation to 42 imports of a possible 630, scored identically to isolation, and left the weakest agent worse than if it had never joined.
+
+## What simulation established
+
+**H1 supported** — a propensity-corrected estimator recovers true memory value
+at ρ=0.76 against a naive baseline's 0.47, on 8% exploration overhead
+([result](research/results/h1-causal-credit.md)). The confound is real and
+severe: a memory with *exactly zero* true effect scores 0.84 under naive
+usage-success and ≈0.00 under the corrected estimator.
+
+**H2 killed, H3 and H4a inconclusive, H5 unaskable, P9 declined on
+measurement.** The estimator's accuracy did not transfer to retention (H2),
+and three further live attempts to use it — exposure, withdrawal, sharing —
+each lost to a cheap baseline. **The product default is `naive_usage` for that
+reason, and value-ranked exposure is not recommended on current evidence.**
+
+H3's threshold exceeded its own ceiling and H4a tested the wrong point on an
+inverted-U curve; both are recorded as method failures rather than as results.
+That happened three times in this project, which is why
+[AGENTS.md](AGENTS.md) principle 8b now requires the oracle to carry no handicap
+the competing arms lack, and why `stats.check_ceiling` runs that check
+automatically in every phase verdict.
+
+## Novelty, checked rather than claimed
+
+[research/PRIOR_ART.md](research/PRIOR_ART.md) verified four papers that each
+remove one claim: learned value scoring, lifecycle management, causal
+attribution for clearance, and attributed memory construction are **not novel**.
+
+What survives, and is now measured rather than asserted: **provenance and
+retraction that cross a store boundary.** None of the four carries provenance
+across a boundary at all, so none can retract across one. Plus contradiction
+preservation, and the negative results themselves.
 
 ## Install
 

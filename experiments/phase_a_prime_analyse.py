@@ -118,6 +118,45 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"{arm:<22} {first:>6.0%} {middle:>6.0%} {last:>6.0%} "
               f"{last - first:>+8.1%}")
 
+    print("\n=== Decomposing success into coverage and guessing ===")
+    print("Each arm's success is P(a correct memory arrived) x P(right | it did)")
+    print("plus P(none arrived) x P(right | none). The second term is the model")
+    print("guessing from six options, and it is why a stripped store still scores")
+    print("above zero - so success does NOT track coverage one-for-one, and the")
+    print("plain ratio of the two is misleading for exactly the arms that strip the")
+    print("store. The column that matters is `from memory`: the share of an arm's")
+    print("success that a memory actually supplied.\n")
+    print(f"{'arm':<22} {'success':>8} {'coverage':>9} {'P|right':>8} "
+          f"{'P|none':>7} {'from memory':>12}")
+    print("-" * 72)
+    pairs: list[tuple[float, float]] = []
+    for arm in sorted(per_arm):
+        rows = per_arm[arm]
+        success = stats.mean([1.0 if r["success"] else 0.0 for r in rows])
+        with_right = [1.0 if r["success"] else 0.0 for r in rows if r["shown_right"] > 0]
+        without = [1.0 if r["success"] else 0.0 for r in rows if r["shown_right"] == 0]
+        coverage = len(with_right) / len(rows) if rows else 0.0
+        p_right = stats.mean(with_right) if with_right else float("nan")
+        p_none = stats.mean(without) if without else float("nan")
+        from_memory = (
+            (coverage * p_right) / success if success > 0 and with_right else 0.0
+        )
+        pairs.append((coverage, success))
+        right_cell = f"{p_right:>8.0%} " if with_right else f"{'n/a':>8} "
+        none_cell = f"{p_none:>7.0%} " if without else f"{'n/a':>7} "
+        print(f"{arm:<22} {success:>8.0%} {coverage:>9.0%} "
+              + right_cell + none_cell + f"{from_memory:>12.0%}")
+
+    usable = [(c, s) for c, s in pairs if c > 0]
+    if len(usable) >= 3:
+        from .phase_c import spearman
+
+        rho = spearman([c for c, _ in usable], [s for _, s in usable])
+        print(f"\n  coverage vs success, rank correlation across arms: "
+              f"{rho:+.3f} on {len(usable)} arms")
+        print("  High means the arms are ordered by coverage and by nothing else,")
+        print("  which is the claim worth stating precisely rather than loosely.")
+
     print("\n=== Conditional on a correct memory being present ===")
     print(f"{'arm':<22} {'had right':>11} {'n':>5} {'had none':>10} {'n':>5}")
     print("-" * 58)

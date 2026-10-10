@@ -12,7 +12,7 @@ from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Mapping
 
-SCHEMA_VERSION = "0.2.0"
+SCHEMA_VERSION = "0.3.0"
 
 
 class MemoryType(str, Enum):
@@ -31,6 +31,51 @@ class Scope(str, Enum):
     @property
     def rank(self) -> int:
         return {"private": 0, "team": 1, "federated": 2}[self.value]
+
+
+class WithdrawalBasis(str, Enum):
+    """Why a memory was taken out of circulation.
+
+    This exists because of a measurement. Phase A put the obvious rule — withdraw
+    whatever was in context when an episode failed — on a real task and found it
+    cut the rate at which a *correct* memory reached the prompt from 60% of
+    episodes to 18%: actions are shared between situations, so the memory that
+    asserted what the agent wrongly said was usually a correct memory about a
+    different situation. Agreement with a mistake is not evidence of having
+    caused it.
+
+    So the basis is recorded rather than assumed, and `WEAK_BASES` names the ones
+    that are known not to support a withdrawal on their own. The product does not
+    refuse them — an operator may have reasons the store cannot see — but it
+    stops presenting them as equivalent to evidence about the memory itself.
+    """
+
+    SENSITIVE_DATA = "sensitive_data"
+    """A governance detector found a credential or personal data in it."""
+
+    CONTRADICTED = "contradicted"
+    """It conflicts with something the environment verified."""
+
+    CONTRASTIVE_HARM = "contrastive_harm"
+    """Its contrastive value estimate shows harm, interval below zero."""
+
+    RETRACTED_AT_ORIGIN = "retracted_at_origin"
+    """An imported memory whose origin store withdrew it."""
+
+    OPERATOR_JUDGEMENT = "operator_judgement"
+    """A human decided, for reasons outside the store."""
+
+    CO_OCCURRENCE = "co_occurrence"
+    """It was present when something went wrong. Measured to be harmful as a
+    withdrawal rule; see Phase A."""
+
+    UNSTATED = "unstated"
+    """No basis was given. Recorded as its own value rather than left empty, so
+    that a store can tell "nobody said" from "nobody was asked"."""
+
+
+WEAK_BASES = frozenset({WithdrawalBasis.CO_OCCURRENCE, WithdrawalBasis.UNSTATED})
+"""Bases that do not, on their own, support withdrawing a memory."""
 
 
 class LifecycleState(str, Enum):

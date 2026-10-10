@@ -38,6 +38,7 @@ from .model import (
     ProvenanceMethod,
     Scope,
     SecurityClass,
+    WithdrawalBasis,
     ValueEstimate,
     context_key,
 )
@@ -341,6 +342,10 @@ class MemoryFabric:
                     to_state=LifecycleState.QUARANTINED.value,
                     reason="; ".join(ruling.reasons),
                     actor=self.firewall.id,
+                    # The firewall quarantines on a finding about the memory
+                    # itself, which is the strong case and the one worth
+                    # distinguishing from "it was present when something failed".
+                    basis=WithdrawalBasis.SENSITIVE_DATA.value,
                 )
             )
         self._emit(*emitted)
@@ -534,7 +539,12 @@ class MemoryFabric:
     # --- lifecycle -------------------------------------------------------
 
     def _transition(
-        self, memory_id: str, to_state: LifecycleState, reason: str, actor: str
+        self,
+        memory_id: str,
+        to_state: LifecycleState,
+        reason: str,
+        actor: str,
+        basis: str | None = None,
     ) -> ev.Event:
         memory = self._require(memory_id)
         return ev.lifecycle_changed(
@@ -544,6 +554,7 @@ class MemoryFabric:
             to_state=to_state.value,
             reason=reason,
             actor=actor,
+            basis=basis,
         )
 
     def validate(self, memory_id: str, actor: str, reason: str = "validated") -> Memory:
@@ -557,7 +568,12 @@ class MemoryFabric:
         return self.state.memories[memory_id]
 
     def quarantine(
-        self, memory_id: str, reason: str, actor: str = "operator", propagate: bool = True
+        self,
+        memory_id: str,
+        reason: str,
+        actor: str = "operator",
+        propagate: bool = True,
+        basis: str | WithdrawalBasis | None = None,
     ) -> list[str]:
         """Quarantine a memory and contest everything derived from it.
 
@@ -577,11 +593,22 @@ class MemoryFabric:
         contrastive estimate showing harm — not on co-occurrence with a failure.
         See research/results/phase-a-real-agent-benchmark.md.
 
+        `basis` says *what kind of evidence* this rests on
+        (`WithdrawalBasis`). It is optional so that existing callers keep
+        working, and an omitted basis is recorded as `unstated` — which the
+        attention list then surfaces, because "nobody said" is exactly the case
+        worth a second look.
+
         Returns the ids marked contested.
         """
         self._require(memory_id)
+        basis_value = (
+            basis.value if isinstance(basis, WithdrawalBasis) else basis
+        ) or WithdrawalBasis.UNSTATED.value
         emitted = [
-            self._transition(memory_id, LifecycleState.QUARANTINED, reason, actor)
+            self._transition(
+                memory_id, LifecycleState.QUARANTINED, reason, actor, basis_value
+            )
         ]
         contested: list[str] = []
         if propagate:
@@ -789,6 +816,7 @@ class MemoryFabric:
                         LifecycleState.QUARANTINED,
                         "; ".join(ruling.reasons),
                         self.firewall.id,
+                        WithdrawalBasis.SENSITIVE_DATA.value,
                     )
                 )
         self._emit(*emitted)

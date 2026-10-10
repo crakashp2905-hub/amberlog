@@ -4,6 +4,14 @@ Two jobs at once: it guards what gets committed, and it is a standing smoke
 test of the detector against a large body of real text. Both of the false
 positives in the allowlist below were found that way.
 
+It found a third, worth recording because it is a property of the detector
+rather than of this repository: the `credit_card` rule fires on long digit runs
+that satisfy the Luhn check, and full-precision float repr produces them freely
+— `173.18333333333334` is a fourteen-digit run. A saved experiment record
+tripped it 110 times. The fix was to round the floats on the way in rather than
+to exempt the file, because a blanket exemption on a results directory would
+also stop the scanner finding a real key in one.
+
     python tools/scan_secrets.py            # fail on anything unexpected
     python tools/scan_secrets.py --report   # list everything it sees
 """

@@ -59,6 +59,24 @@ from memory_fabric.vectors import VectorIndex
 from . import stats
 from . import depotworld as W
 
+def _round(value):
+    """Round floats on the way into the saved record.
+
+    Not cosmetic. Full-precision repr turns a mean of 173.18333333333334 into a
+    fourteen-digit run, and the project's own secret scanner reads long digit
+    runs that satisfy the Luhn check as card numbers — 110 of them in Phase A's
+    first saved record. Sixteen significant digits of a latency measurement was
+    never information in the first place.
+    """
+    if isinstance(value, float):
+        return round(value, 4)
+    if isinstance(value, dict):
+        return {k: _round(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_round(v) for v in value]
+    return value
+
+
 AGENT_MODEL = "qwen2.5:3b"
 ARMS = (
     "no_memory",
@@ -837,6 +855,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.out:
         Path(args.out).write_text(
             json.dumps(
+                _round(
                 {
                     "model": model,
                     "seeds": seeds,
@@ -844,7 +863,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "summary": summary,
                     "usage": total,
                     "decisions": [asdict(d) for cell in pooled.values() for d in cell.decisions],
-                },
+                }),
                 indent=2,
             ),
             encoding="utf-8",

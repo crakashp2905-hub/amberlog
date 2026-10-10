@@ -14,7 +14,7 @@ from typing import Any
 
 from .exposure import EpsilonGreedyPolicy, TopKPolicy
 from .fabric import MemoryFabric
-from .model import MemoryType
+from .model import MemoryType, WithdrawalBasis
 
 DAY_MS = 86_400_000
 
@@ -98,6 +98,11 @@ def seed(fabric: MemoryFabric) -> dict[str, Any]:
             observation,
             reason="source test rig was misconfigured; readings invalid",
             actor="safety-team",
+            # Evidence about the memory itself, which is the only kind that
+            # supports a withdrawal. The demo states it because the attention
+            # list flags a withdrawal that does not, and the showcase should
+            # model the practice rather than trip the warning.
+            basis=WithdrawalBasis.CONTRADICTED,
         )
 
         # --- an unresolved disagreement -------------------------------------

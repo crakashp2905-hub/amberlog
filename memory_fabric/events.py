@@ -190,19 +190,33 @@ def value_estimated(ts: int, memory_id: str, context_key: str, estimate: Mapping
 
 
 def lifecycle_changed(
-    ts: int, memory_id: str, from_state: str, to_state: str, reason: str, actor: str
+    ts: int,
+    memory_id: str,
+    from_state: str,
+    to_state: str,
+    reason: str,
+    actor: str,
+    basis: str | None = None,
 ) -> Event:
+    """`basis` is additive and optional, so logs written by 0.2.0 replay
+    unchanged (VERSIONING.md). It is omitted from the payload when absent rather
+    than written as a placeholder: an event that never carried a basis and one
+    that carried "unstated" are different facts about what the caller knew.
+    """
+    payload = {
+        "memory_id": memory_id,
+        "from": from_state,
+        "to": to_state,
+        "reason": reason,
+        "actor": actor,
+    }
+    if basis is not None:
+        payload["basis"] = basis
     return Event(
         type=EventType.LIFECYCLE_CHANGED,
         ts=ts,
         agent_id=actor,
-        payload={
-            "memory_id": memory_id,
-            "from": from_state,
-            "to": to_state,
-            "reason": reason,
-            "actor": actor,
-        },
+        payload=payload,
     )
 
 

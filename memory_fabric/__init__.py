@@ -48,6 +48,7 @@ from .governance import Firewall, FirewallRuling, RetentionPolicy, SensitiveData
 from .lineage import LineageGraph, LineageView
 from .model import (
     SCHEMA_VERSION,
+    WEAK_BASES,
     FirewallDecision,
     LifecycleState,
     Memory,
@@ -58,6 +59,7 @@ from .model import (
     Scope,
     SecurityClass,
     ValueEstimate,
+    WithdrawalBasis,
 )
 from .projections import Episode, Projection
 from .session import AgentSession, SessionClosed
@@ -67,6 +69,8 @@ __version__ = "0.1.0"
 
 __all__ = [
     "SCHEMA_VERSION",
+    "WithdrawalBasis",
+    "WEAK_BASES",
     "__version__",
     # facade
     "MemoryFabric",

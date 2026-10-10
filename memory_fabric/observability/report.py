@@ -23,6 +23,8 @@ from ..model import (
     MemoryType,
     Scope,
     SecurityClass,
+    WEAK_BASES,
+    WithdrawalBasis,
 )
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -110,6 +112,10 @@ class MemoryRow:
     context: dict[str, Any]
     capabilities: list[str]
     redacted_kinds: list[str] = field(default_factory=list)
+    # What kind of evidence the last withdrawal rested on, or None if this
+    # memory has never been withdrawn. Both surfaces read it from here, so the
+    # CLI and the dashboard cannot tell different stories about it.
+    withdrawal_basis: str | None = None
 
     def to_json(self) -> dict[str, Any]:
         return asdict(self)
@@ -241,6 +247,7 @@ def _row(fabric: "MemoryFabric", memory_id: str) -> MemoryRow:
         parents=len(state.parents.get(memory.id, ())),
         children=len(state.children.get(memory.id, ())),
         hypothesis_set=memory.hypothesis_set,
+        withdrawal_basis=state.withdrawal_basis.get(memory.id),
         context=dict(memory.context),
         capabilities=list(memory.capabilities),
     )
@@ -436,13 +443,42 @@ def attention(fabric: "MemoryFabric") -> list[AttentionItem]:
             short += f"\nContains {', '.join(redacted)}; the value is hidden here."
 
         if memory.lifecycle_state is LifecycleState.QUARANTINED:
+            basis = fabric.state.withdrawal_basis.get(
+                memory.id, WithdrawalBasis.UNSTATED.value
+            )
+            weak = basis in {b.value for b in WEAK_BASES}
+            detail = (
+                f"{short}\nNot exposed to any agent. Review, then release or forget it."
+                f"\nWithdrawn on: {basis}."
+            )
+            if weak:
+                # The withdrawal is the thing under suspicion here, not the
+                # memory. Phase A measured this basis cutting the rate at which
+                # a *correct* memory reached the prompt from 60% of episodes to
+                # 18%, because actions are shared between situations and the
+                # memory that agreed with a mistake usually had nothing to do
+                # with causing it.
+                detail += (
+                    "\nThat basis does not support a withdrawal on its own: being "
+                    "present when something failed is agreement, not causation, and "
+                    "this rule was measured removing more correct memory than wrong. "
+                    "Release it unless there is evidence about the memory itself."
+                )
             items.append(
                 AttentionItem(
                     severity="high",
-                    kind="quarantined",
-                    title="Quarantined, pending review",
-                    detail=f"{short}\nNot exposed to any agent. Review, then release or forget it.",
-                    action=f"memory-fabric show {memory.id}",
+                    kind="withdrawn_on_weak_evidence" if weak else "quarantined",
+                    title=(
+                        "Withdrawn on weak evidence"
+                        if weak
+                        else "Quarantined, pending review"
+                    ),
+                    detail=detail,
+                    action=(
+                        f"memory-fabric release {memory.id} --actor you"
+                        if weak
+                        else f"memory-fabric show {memory.id}"
+                    ),
                     memory_id=memory.id,
                 )
             )

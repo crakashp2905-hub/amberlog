@@ -28,6 +28,7 @@ from typing import TYPE_CHECKING, Any, Iterable, Sequence
 from .model import (
     FirewallDecision,
     LifecycleState,
+    WithdrawalBasis,
     Memory,
     ProvenanceMethod,
     Scope,
@@ -306,7 +307,16 @@ def propagate_retraction(
                 )
             )
             continue
-        target.quarantine(imported_id, reason=reason, actor=actor)
+        target.quarantine(
+            imported_id,
+            reason=reason,
+            actor=actor,
+            # Not a local finding: the origin store withdrew it. Recorded as its
+            # own basis so an importer can tell "we found a problem" from
+            # "someone else did", which is what decides whether to trust that
+            # sender next time.
+            basis=WithdrawalBasis.RETRACTED_AT_ORIGIN,
+        )
         results.append(
             PropagationResult(
                 store=target.log.path,

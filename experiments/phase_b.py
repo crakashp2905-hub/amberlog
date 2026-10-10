@@ -60,6 +60,24 @@ from . import depotworld as W
 from . import stats
 from .phase_a import AGENT_MODEL, Lesson, _ask, write_corpus
 
+def _round(value):
+    """Round floats on the way into the saved record.
+
+    Not cosmetic. Full-precision repr turns a mean of 173.18333333333334 into a
+    fourteen-digit run, and the project's own secret scanner reads long digit
+    runs that satisfy the Luhn check as card numbers — 110 of them in Phase A's
+    first saved record. Sixteen significant digits of a latency measurement was
+    never information in the first place.
+    """
+    if isinstance(value, float):
+        return round(value, 4)
+    if isinstance(value, dict):
+        return {k: _round(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_round(v) for v in value]
+    return value
+
+
 TERRITORIES = {
     "north": ("cold_store", "urban"),
     "south": ("coastal", "urban"),
@@ -599,6 +617,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.out:
         Path(args.out).write_text(
             json.dumps(
+                _round(
                 {
                     "model": model, "seeds": seeds, "rounds": rounds,
                     "territories": {a: list(s) for a, s in TERRITORIES.items()},
@@ -606,7 +625,7 @@ def main(argv: Sequence[str] | None = None) -> int:
                     "decisions": [
                         asdict(d) for cell in pooled.values() for d in cell.decisions
                     ],
-                },
+                }),
                 indent=2,
             ),
             encoding="utf-8",

@@ -17,6 +17,7 @@ import sys
 from typing import Any, Sequence
 
 from .fabric import MemoryFabric, NotFound, PolicyViolation
+from .model import WithdrawalBasis
 from .observability import report
 from .observability.auth import ENV_TOKEN
 
@@ -461,9 +462,13 @@ def cmd_forget(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 
 def cmd_quarantine(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     contested = fabric.quarantine(
-        args.id, reason=args.reason, actor=args.actor, propagate=not args.no_propagate
+        args.id, reason=args.reason, actor=args.actor,
+        propagate=not args.no_propagate, basis=args.basis,
     )
     print(f"{args.id} quarantined.")
+    if not args.basis:
+        print(f"{C.YELLOW}No --basis given, so this is recorded as 'unstated' and "
+              f"will show in `attention` as a withdrawal on weak evidence.{C.RESET}")
     if contested:
         print(f"{len(contested)} derived memory/ies contested, their justification retracted:")
         for memory_id in contested:
@@ -594,6 +599,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("id")
     p.add_argument("--reason", required=True)
     p.add_argument("--actor", default="operator")
+    p.add_argument(
+        "--basis",
+        choices=[b.value for b in WithdrawalBasis],
+        help="what kind of evidence this rests on. Omitted is recorded as "
+        "'unstated', which the attention list then flags - as it does "
+        "'co_occurrence', because being present when something failed is "
+        "agreement, not causation.",
+    )
     p.add_argument(
         "--no-propagate",
         action="store_true",

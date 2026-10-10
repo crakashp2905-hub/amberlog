@@ -14,6 +14,7 @@ from typing import Any, Iterable, Mapping
 from .events import Event, EventType
 from .model import (
     LifecycleState,
+    WithdrawalBasis,
     Memory,
     MemoryStats,
     Scope,
@@ -85,6 +86,10 @@ class ProjectionState:
     parents: dict[str, set[str]] = field(default_factory=dict)
     # (agent, episode, content digest) -> memory already written for it.
     written: dict[tuple[str, str, str], str] = field(default_factory=dict)
+    # memory id -> the basis given the last time it was withdrawn. Kept as a
+    # projection rather than a field on Memory because it is a property of the
+    # decision, not of the memory, and a release leaves it readable.
+    withdrawal_basis: dict[str, str] = field(default_factory=dict)
     suppressed_duplicates: int = 0
     applied_seq: int = 0
 
@@ -228,9 +233,12 @@ def _on_lifecycle_changed(state: ProjectionState, event: Event) -> None:
     memory = state.memories.get(event.payload["memory_id"])
     if memory is None:
         return
-    state.memories[memory.id] = memory.evolve(
-        lifecycle_state=LifecycleState(event.payload["to"])
-    )
+    to_state = LifecycleState(event.payload["to"])
+    state.memories[memory.id] = memory.evolve(lifecycle_state=to_state)
+    if to_state in (LifecycleState.QUARANTINED, LifecycleState.DEPRECATED):
+        state.withdrawal_basis[memory.id] = event.payload.get(
+            "basis", WithdrawalBasis.UNSTATED.value
+        )
 
 
 def _on_scope_changed(state: ProjectionState, event: Event) -> None:

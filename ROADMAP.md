@@ -38,7 +38,8 @@ review said so directly, and it was right.
 | Phase | Question | Registration | Gate |
 |---|---|---|---|
 | **A** | Does governed memory beat an ungoverned vector store for a real agent? | [prereg](research/prereg/phase-a-real-agent-benchmark.md) | ❌ **Killed.** Governed memory lost by 34 points, because withdrawal-on-failure withdrew the *correct* memories. [Result](research/results/phase-a-real-agent-benchmark.md) |
-| **B** | What should cross a federation boundary, and does retraction need to follow it? | [prereg](research/prereg/phase-b-federated-agents.md) | Next. `propagate_retraction` now exists as an API |
+| **A′** | If not blame, then what? Leave-one-out and contrastive attribution | [prereg](research/prereg/phase-a-prime-attribution.md) | ❌ **PA′1 killed**, ✅ **PA′2 supported.** Real attribution recovers 71% of blame's damage and still loses to withdrawing nothing. [Result](research/results/phase-a-prime-attribution.md) |
+| **B** | What should cross a federation boundary, and does retraction need to follow it? | [prereg](research/prereg/phase-b-federated-agents.md) | Running |
 | **C** | Can a population learn what should propagate? | [prereg](research/prereg/phase-c-memory-ecology.md) | **Only if PB1 is supported** |
 
 Three things about this set are deliberate.

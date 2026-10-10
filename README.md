@@ -117,6 +117,15 @@ fault — quarantined for agreeing with a mistake it had nothing to do with.
 Principle 1 of [AGENTS.md](AGENTS.md) says value is not relevance. Phase A adds:
 **agreement is not causation.** [Result](research/results/phase-a-real-agent-benchmark.md)
 
+**PA′ then asked what to do instead, and the answer is nothing.** Real
+counterfactual attribution — re-asking without each memory — withdraws a quarter
+as much as naive blame and recovers 71% of the lost accuracy, at 2.55 model calls
+per episode, and **still loses to withdrawing nothing**. Two thirds of what naive
+blame destroyed was about a completely different fault. Perfect selection over
+the corpus was worth only +5 points, so the binding constraint is whether a
+correct memory *exists* yet — a coverage problem, not a governance one.
+[Result](research/results/phase-a-prime-attribution.md)
+
 The product consequence is immediate and is not a research note:
 quarantine-on-contradiction should not be recommended, and the attention list
 that invites an operator to withdraw memories needs to say what the evidence
@@ -125,6 +134,7 @@ actually is.
 | Phase | Question | State |
 |---|---|---|
 | **A** | Governed memory against an ungoverned vector store | ❌ **Killed** — [result](research/results/phase-a-real-agent-benchmark.md) · [prereg](research/prereg/phase-a-real-agent-benchmark.md) |
+| **A′** | If not blame, then what? | ❌ **PA′1 killed**, ✅ **PA′2 supported** — [result](research/results/phase-a-prime-attribution.md) · [prereg](research/prereg/phase-a-prime-attribution.md) |
 | **B** | What should cross a federation boundary, and must retraction follow it | [prereg](research/prereg/phase-b-federated-agents.md) |
 | **C** | Can a population learn what should propagate — **gated on B** | [prereg](research/prereg/phase-c-memory-ecology.md) |
 

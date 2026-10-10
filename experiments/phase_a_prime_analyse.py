@@ -51,16 +51,19 @@ def main(argv: Sequence[str] | None = None) -> int:
         by_arm[w["arm"]].append(w)
 
     print("=== What each policy withdrew ===")
-    print("`poisoned` was wrong even at its own site: withdrawing it is a clean win.")
-    print("`misleading here` was right where written and wrong in the episode that")
-    print("triggered the withdrawal: defensible. `true here` was right for that very")
-    print("episode: pure loss, and the number that matters.\n")
-    print(f"{'arm':<22} {'withdrew':>9} {'poisoned':>9} {'misleading':>11} "
-          f"{'true here':>10} {'unmatched':>10}")
-    print("-" * 76)
+    print("Four categories, and the distinction between the middle two is the whole")
+    print("point. `poisoned` was wrong even at its own site: a clean win.")
+    print("`misled` was about the same fault and gave the wrong answer for this")
+    print("episode, so the memory really did mislead and withdrawing it is")
+    print("defensible. `irrelevant` was about a DIFFERENT fault and never applied:")
+    print("collateral, and still knowledge about its own fault that the store has")
+    print("now lost. `true here` was right for this very episode: pure loss.\n")
+    print(f"{'arm':<22} {'withdrew':>9} {'poisoned':>9} {'misled':>8} "
+          f"{'irrelevant':>11} {'true here':>10} {'unmatched':>10}")
+    print("-" * 84)
     summary: dict[str, dict[str, int]] = {}
     for arm in sorted(by_arm):
-        poisoned = misleading = true_here = unmatched = 0
+        poisoned = misled = irrelevant = true_here = unmatched = 0
         for w in by_arm[arm]:
             if not w["was_correct"]:
                 poisoned += 1
@@ -68,33 +71,40 @@ def main(argv: Sequence[str] | None = None) -> int:
             episode = episode_of.get((w["arm"], w["seed"], w["index"]))
             if episode is None:
                 unmatched += 1
+            elif w["fault"] != episode["fault"]:
+                # Not even about the fault being worked. The first version of
+                # this analyser compared only actions, not faults, so these
+                # counted as justified and every rule scored 100%.
+                irrelevant += 1
             elif w["asserted"] != episode["correct"]:
-                misleading += 1
+                misled += 1
             else:
                 true_here += 1
         total = len(by_arm[arm])
-        print(f"{arm:<22} {total:>9} {poisoned:>9} {misleading:>11} "
-              f"{true_here:>10} {unmatched:>10}")
+        print(f"{arm:<22} {total:>9} {poisoned:>9} {misled:>8} "
+              f"{irrelevant:>11} {true_here:>10} {unmatched:>10}")
         summary[arm] = {
             "withdrew": total,
             "poisoned": poisoned,
-            "misleading_here": misleading,
+            "misled_here": misled,
+            "irrelevant": irrelevant,
             "true_here": true_here,
             "unmatched": unmatched,
         }
 
     print("\n=== Precision of each withdrawal rule ===")
-    print("Share of withdrawals that removed something genuinely unhelpful in the")
-    print("episode that triggered them. This is the question attribution exists to")
-    print("answer, and the one `was_correct` alone cannot.\n")
+    print("Justified = poisoned, or it really did mislead this episode.")
+    print("Unjustified = irrelevant to the episode, or correct for it.\n")
     for arm, counts in summary.items():
         total = counts["withdrew"]
         if not total:
             print(f"  {arm:<22} withdrew nothing")
             continue
-        justified = counts["poisoned"] + counts["misleading_here"]
+        justified = counts["poisoned"] + counts["misled_here"]
+        unjustified = counts["irrelevant"] + counts["true_here"]
         print(f"  {arm:<22} {justified}/{total} = {justified / total:.0%} justified, "
-              f"{counts['true_here']} pure losses")
+              f"{unjustified} unjustified "
+              f"({counts['irrelevant']} irrelevant, {counts['true_here']} true here)")
 
     print("\n=== Correct memory reaching the prompt, by third ===")
     per_arm: dict[str, list[dict]] = defaultdict(list)

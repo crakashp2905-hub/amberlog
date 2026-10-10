@@ -1,0 +1,78 @@
+PA': if not blame, then what?
+model=qwen2.5:3b  seeds=[0, 1, 2, 3, 4]  episodes=24  arms=['no_memory', 'shared_memory', 'fabric_blame', 'fabric_loo', 'fabric_contrastive', 'oracle']
+prereg: research/prereg/phase-a-prime-attribution.md
+
+  seed 0: writing 18 lessons (2 poisoned)...
+  seed 0: 18/18 usable lessons; 2 assert a wrong action for their own site
+  seed 0 no_memory            success   29%  right-memory    0%  withdrew  0 (0 correct)  (44s)
+  seed 0 shared_memory        success   71%  right-memory   75%  withdrew  0 (0 correct)  (76s)
+  seed 0 fabric_blame         success   12%  right-memory   12%  withdrew 18 (16 correct)  (115s)
+  seed 0 fabric_loo           success   50%  right-memory   54%  withdrew  3 (3 correct)  (234s)
+  seed 0 fabric_contrastive   success   33%  right-memory   33%  withdrew  2 (2 correct)  (151s)
+  seed 0 oracle               success   71%  right-memory   75%  withdrew  0 (0 correct)  (61s)
+  seed 1: writing 18 lessons (3 poisoned)...
+  seed 1: 18/18 usable lessons; 3 assert a wrong action for their own site
+  seed 1 no_memory            success    4%  right-memory    0%  withdrew  0 (0 correct)  (33s)
+  seed 1 shared_memory        success   33%  right-memory   38%  withdrew  0 (0 correct)  (69s)
+  seed 1 fabric_blame         success   17%  right-memory   12%  withdrew 17 (14 correct)  (121s)
+  seed 1 fabric_loo           success   29%  right-memory   33%  withdrew  5 (3 correct)  (242s)
+  seed 1 fabric_contrastive   success   12%  right-memory   12%  withdrew  0 (0 correct)  (143s)
+  seed 1 oracle               success   46%  right-memory   38%  withdrew  0 (0 correct)  (50s)
+  seed 2: writing 18 lessons (2 poisoned)...
+  seed 2: 18/18 usable lessons; 2 assert a wrong action for their own site
+  seed 2 no_memory            success    0%  right-memory    0%  withdrew  0 (0 correct)  (23s)
+  seed 2 shared_memory        success   62%  right-memory   58%  withdrew  0 (0 correct)  (61s)
+  seed 2 fabric_blame         success   12%  right-memory    4%  withdrew 17 (15 correct)  (119s)
+  seed 2 fabric_loo           success   54%  right-memory   54%  withdrew  2 (1 correct)  (230s)
+  seed 2 fabric_contrastive   success   42%  right-memory   38%  withdrew  1 (1 correct)  (176s)
+  seed 2 oracle               success   62%  right-memory   58%  withdrew  0 (0 correct)  (62s)
+  seed 3: writing 18 lessons (4 poisoned)...
+  seed 3: 18/18 usable lessons; 4 assert a wrong action for their own site
+  seed 3 no_memory            success    4%  right-memory    0%  withdrew  0 (0 correct)  (21s)
+  seed 3 shared_memory        success   75%  right-memory   62%  withdrew  0 (0 correct)  (57s)
+  seed 3 fabric_blame         success   21%  right-memory   17%  withdrew 17 (14 correct)  (85s)
+  seed 3 fabric_loo           success   46%  right-memory   46%  withdrew 10 (8 correct)  (259s)
+  seed 3 fabric_contrastive   success   50%  right-memory   46%  withdrew  0 (0 correct)  (156s)
+  seed 3 oracle               success   83%  right-memory   62%  withdrew  0 (0 correct)  (39s)
+  seed 4: writing 18 lessons (3 poisoned)...
+  seed 4: 18/18 usable lessons; 3 assert a wrong action for their own site
+  seed 4 no_memory            success    8%  right-memory    0%  withdrew  0 (0 correct)  (12s)
+  seed 4 shared_memory        success   62%  right-memory   67%  withdrew  0 (0 correct)  (58s)
+  seed 4 fabric_blame         success   29%  right-memory   29%  withdrew 18 (15 correct)  (99s)
+  seed 4 fabric_loo           success   62%  right-memory   67%  withdrew  3 (3 correct)  (200s)
+  seed 4 fabric_contrastive   success   38%  right-memory   38%  withdrew  0 (0 correct)  (137s)
+  seed 4 oracle               success   67%  right-memory   67%  withdrew  0 (0 correct)  (53s)
+
+arm                             success       right memory  withdrew  of those ok   tokens  calls/ep
+------------------------------------------------------------------------------------------------------
+no_memory            0.092 [0.042, 0.142] 0.000 [0.000, 0.000]         0            0      173      1.00
+shared_memory        0.608 [0.525, 0.692] 0.600 [0.517, 0.692]         0            0      246      1.00
+fabric_blame         0.183 [0.117, 0.258] 0.150 [0.092, 0.225]        87           74      398      1.00
+fabric_loo           0.483 [0.400, 0.567] 0.508 [0.425, 0.600]        23           18      842      2.55
+fabric_contrastive   0.350 [0.267, 0.433] 0.333 [0.250, 0.417]         3            3      537      1.00
+oracle               0.658 [0.575, 0.742] 0.600 [0.517, 0.692]         0            0      246      1.00
+
+=== Against the pre-registration ===
+  baseline (withdraw nothing): 60.8%
+  ceiling (corrected oracle):  65.8%
+  headroom:                    +5.0%
+
+  PA'1 best withdrawal arm: fabric_loo at 48.3%
+       headroom captured -250% (needs >= 30%), paired diff -0.125 [-0.200, -0.050]
+
+  PA'2 leave-one-out vs naive blame:
+       gap to close +42.5%, recovered +30.0% = 71% (needs >= 50%)
+       paired diff +0.300 [+0.200, +0.400]
+       correct memories withdrawn: blame 74, loo 18 (loo must be fewer)
+
+  cost of attribution: 2.55 model calls per episode against 1.00 for the baseline (186 counterfactual calls in all)
+
+  replication check: fabric_blame 0.183 [0.117, 0.258] against Phase A's fabric 0.283 [0.208, 0.367]
+
+  PA'1: KILLED
+  PA'2: SUPPORTED
+
+  Product conclusion: do not withdraw memories on outcome evidence at this hazard rate.
+
+996 model calls, 306390 tokens, 3406s wall
+wrote research/results/phase-a-prime-decisions.json

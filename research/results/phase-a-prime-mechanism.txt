@@ -1,0 +1,64 @@
+=== What each policy withdrew ===
+Four categories, and the distinction between the middle two is the whole
+point. `poisoned` was wrong even at its own site: a clean win.
+`misled` was about the same fault and gave the wrong answer for this
+episode, so the memory really did mislead and withdrawing it is
+defensible. `irrelevant` was about a DIFFERENT fault and never applied:
+collateral, and still knowledge about its own fault that the store has
+now lost. `true here` was right for this very episode: pure loss.
+
+arm                     withdrew  poisoned   misled  irrelevant  true here  unmatched
+------------------------------------------------------------------------------------
+fabric_blame                  87        13       17          57          0          0
+fabric_contrastive             3         0        0           3          0          0
+fabric_loo                    23         5        5          13          0          0
+
+=== Precision of each withdrawal rule ===
+Justified = poisoned, or it really did mislead this episode.
+Unjustified = irrelevant to the episode, or correct for it.
+
+  fabric_blame           30/87 = 34% justified, 57 unjustified (57 irrelevant, 0 true here)
+  fabric_contrastive     0/3 = 0% justified, 3 unjustified (3 irrelevant, 0 true here)
+  fabric_loo             10/23 = 43% justified, 13 unjustified (13 irrelevant, 0 true here)
+
+=== Correct memory reaching the prompt, by third ===
+arm                        1st     2nd     3rd    change
+------------------------------------------------------------
+fabric_blame              25%    15%     5%   -20.0%
+fabric_contrastive        40%    38%    22%   -17.5%
+fabric_loo                40%    40%    72%   +32.5%
+no_memory                  0%     0%     0%    +0.0%
+oracle                    42%    57%    80%   +37.5%
+shared_memory             42%    57%    80%   +37.5%
+
+=== Decomposing success into coverage and guessing ===
+Each arm's success is P(a correct memory arrived) x P(right | it did)
+plus P(none arrived) x P(right | none). The second term is the model
+guessing from six options, and it is why a stripped store still scores
+above zero - so success does NOT track coverage one-for-one, and the
+plain ratio of the two is misleading for exactly the arms that strip the
+store. The column that matters is `from memory`: the share of an arm's
+success that a memory actually supplied.
+
+arm                     success  coverage  P|right  P|none  from memory
+------------------------------------------------------------------------
+fabric_blame                18%       15%      72%      9%          59%
+fabric_contrastive          35%       33%      98%      4%          93%
+fabric_loo                  48%       51%      93%      2%          98%
+no_memory                    9%        0%      n/a      9%           0%
+oracle                      66%       60%      94%     23%          86%
+shared_memory               61%       60%      93%     12%          92%
+
+  coverage vs success, rank correlation across arms: +0.975 on 5 arms
+  High means the arms are ordered by coverage and by nothing else,
+  which is the claim worth stating precisely rather than loosely.
+
+=== Conditional on a correct memory being present ===
+arm                      had right     n   had none     n
+----------------------------------------------------------
+fabric_blame                   72%    18         9%   102
+fabric_contrastive             98%    40         4%    80
+fabric_loo                     93%    61         2%    59
+no_memory                     nan%     0         9%   120
+oracle                         94%    72        23%    48
+shared_memory                  93%    72        12%    48

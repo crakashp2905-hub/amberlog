@@ -1,0 +1,51 @@
+# Invariant-to-test matrix
+
+The fourteen invariants from the product engineering roadmap §3, each mapped to
+the code that would have to hold it and the test that proves it does.
+
+- **Audited:** 2026-10-10, commit `597bdcb`, 483 tests.
+- An invariant with no test is **not** an invariant. Rows marked ✗ are
+  liabilities, not features, and each names what would have to exist.
+
+| | Invariant | State | Implementation | Test |
+|---|---|---|---|---|
+| **1** | History is never silently rewritten; corrections are attributable events | ✅ | `eventlog.py` `events_no_update` / `events_no_delete` triggers; every change is an appended event | `test_eventlog.py` (update and delete both raise `IntegrityError`); `test_backup.py::test_the_copy_is_append_only_too` (survives a backup) |
+| **2** | Every persistent memory retains origin and version provenance | ⚠️ | `model.Provenance(created_by, source_episodes, parents, method)`; `parents` carries `(id, version)` | `test_fabric.py`, `test_federation.py::test_provenance_crosses`. **Gap:** `projections.py:153` discards the version, so the lineage graph is version-blind |
+| **3** | A committed retraction cannot disappear because a process crashes before dispatch | ✗ | **Nothing.** `propagate_retraction` dispatches synchronously in the same call that commits | **None possible.** Needs a transactional outbox (Phase 1.3) |
+| **4** | Duplicate delivery is idempotent | ⚠️ | `propagate_retraction` skips an import already quarantined | `test_federation.py::test_a_local_withdrawal_is_not_overwritten`. **Gap:** convergence by state, not deduplication by event identity — a replay and a distinct second retraction are indistinguishable |
+| **5** | `received`, `persisted`, `enforced`, `verified` are distinct acknowledgement states | ✗ | **Nothing.** `PropagationResult` has `acted: bool` | **None possible.** Needs the propagation state machine (Phase 1.2) |
+| **6** | A known-invalid version is never returned as usable memory through supported paths | ⚠️ | `fabric.retrieve` → `_eligible_ids()` = `EXPOSABLE_STATES` passed as `restrict_to` to the index | `test_retraction.py`, `test_fabric.py`; live validation §5 ("retracted memory no longer retrievable anywhere"). **Gap:** per memory id, not per version; `fabric.get()` bypasses it and no enforcement boundary is declared |
+| **7** | Delayed older corrections cannot blindly invalidate newer independently validated versions | ✗ | **Nothing.** No ordering model, no `origin_sequence` | **None possible.** Needs version semantics (Phase 1.5) |
+| **8** | Invalidating one premise does not automatically destroy independently justified knowledge | ⚠️ | `quarantine(propagate=True)` marks descendants `contested` rather than withdrawing them; `LineageGraph.evidence_is_independent()` exists | `test_retraction.py`; `test_federation.py::test_it_quarantines_rather_than_deletes`. **Gap:** support is never *recomputed* — a conclusion with a surviving independent justification is contested identically to one with none |
+| **9** | Offline, pending, unknown, contested and failed states are explicit | ⚠️ | `LifecycleState.CONTESTED` and `QUARANTINED` are explicit and enforced | `test_retraction.py`, `test_withdrawal_basis.py`. **Gap:** `offline`, `pending`, `unknown`, `failed` do not exist, because propagation does not exist |
+| **10** | Projections and indexes can be rebuilt from authoritative events | ✅ | `Projection.apply` fold; `fabric.rebuild()`; index rebuilt on replay | `test_fabric.py`, `test_withdrawal_basis.py::test_it_survives_a_rebuild`, `test_backup.py::test_the_copy_replays_to_the_same_state` |
+| **11** | Consequential operations fail closed when identity or authorization is unknown | ⚠️ | `observability/auth.py`: non-loopback bind requires a token, `Host` validated, cross-origin refused, `hmac.compare_digest`; `record_outcome` refuses a verifier equal to the acting agent; firewall default-denies scope promotion | `test_auth.py` (16 tests), `test_fabric.py` (self-reported outcome rejected), `test_governance.py`. **Gap:** the HTTP surface is read-only, so the federation path has no authentication because it has no transport |
+| **12** | Append-only audit history does not justify retaining sensitive content indefinitely | ⚠️ | `governance/retention.py` with rare-event protection; `governance/sensitive.scrub` keeps secret values off display surfaces | `test_governance.py`, `test_observability.py`. **Gap:** no crypto-erasure, no content/audit split, no documented interaction between deletion and replay |
+| **13** | Research claims are reproducible and include baselines, seeds, uncertainty, and negative results | ✅ | Four pre-registrations with dated amendments; bootstrap CIs; ≥5 seeds for A/A′/B; raw runs committed; `stats.check_ceiling` enforces principle 8b | `test_experiment_harnesses.py` (36 tests incl. `test_every_phase_runs_the_check`), `test_depotworld.py`, `test_banditworld.py`, `test_h3_harness.py`, `test_retention_arms.py` |
+| **14** | Infrastructure follows measured need | ✅ | P9 declined distribution on measurement (4.39 ms at 2,000 memories); P8 declined on a zero denominator; Phase C gated on PB1 and run as exploratory when the gate failed | [P9 decision](../research/decisions/2026-10-07-p9-declined.md), [H5 decision](../research/decisions/2026-10-07-h5-premise-false.md), `research/prereg/phase-c-memory-ecology.md` |
+
+## Tally
+
+| | count | invariants |
+|---|---|---|
+| ✅ implemented and tested | 4 | 1, 10, 13, 14 |
+| ⚠️ partial, gap named | 7 | 2, 4, 6, 8, 9, 11, 12 |
+| ✗ missing, no test possible yet | 3 | 3, 5, 7 |
+
+The three missing ones are all the same missing thing: **there is no durable
+propagation protocol.** Crash-safe retraction intent (3), acknowledgement states
+(5) and causal ordering (7) cannot be tested because nothing dispatches, nothing
+acknowledges and nothing orders. That is Phase 1's whole subject.
+
+Of the seven partials, four share a single root cause as well — **version
+blindness**. Provenance records `(parent_id, version)` and the projection throws
+the version away, so retraction targets ids (2, 6, 7) and enforcement is
+per-memory rather than per-version. Restoring the version through the lineage
+graph fixes a quarter of this table.
+
+## Rules for this file
+
+1. A new guarantee in a doc, README or changelog requires a row here and a named test, in the same commit.
+2. A row may not be marked ✅ without a test that fails when the invariant is broken — not merely one that exercises the happy path.
+3. ⚠️ must name the gap in the same cell. "Partial" without a gap is an unaudited claim.
+4. ✗ must name what would have to exist. An invariant with no route to a test is a specification, and the audit says so.

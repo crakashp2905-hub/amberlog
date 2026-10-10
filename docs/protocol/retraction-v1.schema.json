@@ -1,0 +1,95 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-fabric.dev/protocol/retraction-v1.schema.json",
+  "title": "Memory Fabric retraction event, protocol v1",
+  "description": "A retraction issued by an origin store for one exact memory version. Specification only; no implementation exists as of commit 597bdcb. See docs/PROTOCOL.md and docs/AUDIT.md.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "protocol_version",
+    "event_id",
+    "retraction_id",
+    "origin_store_id",
+    "tenant_id",
+    "origin_memory_id",
+    "origin_memory_version",
+    "origin_sequence",
+    "reason_code",
+    "requested_by",
+    "issued_at"
+  ],
+  "properties": {
+    "protocol_version": { "const": 1 },
+    "event_id": { "$ref": "#/$defs/ulid" },
+    "retraction_id": {
+      "type": "string",
+      "pattern": "^rt_[0-9A-HJKMNP-TV-Z]{26}$",
+      "description": "Stable across retries. With origin_store_id, this is the deduplication key."
+    },
+    "origin_store_id": {
+      "$ref": "#/$defs/store_id",
+      "description": "Stable opaque id, never a filesystem path, hostname or port."
+    },
+    "tenant_id": { "$ref": "#/$defs/tenant_id" },
+    "origin_memory_id": {
+      "$ref": "#/$defs/ulid",
+      "description": "Local to the origin store. Only meaningful paired with origin_store_id."
+    },
+    "origin_memory_version": {
+      "type": "integer",
+      "minimum": 1,
+      "description": "The exact version retracted. A retraction never applies to a greater version."
+    },
+    "origin_sequence": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Per-origin monotonic counter. Not a global clock and not comparable across origins."
+    },
+    "reason_code": {
+      "enum": [
+        "sensitive_data",
+        "contradicted",
+        "contrastive_harm",
+        "retracted_at_origin",
+        "operator_judgement",
+        "co_occurrence",
+        "unstated"
+      ],
+      "description": "Drawn from memory_fabric.model.WithdrawalBasis. co_occurrence and unstated are measured-weak: see research/results/phase-a-prime-attribution.md."
+    },
+    "evidence_digest": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Hash of the evidence, not the evidence. Memory content may contain exactly what governance exists to keep out of secondary surfaces."
+    },
+    "evidence_reference": {
+      "type": "string",
+      "format": "uri",
+      "description": "Dereferenceable by a recipient that is authorised to follow it. May be refused."
+    },
+    "requested_by": { "$ref": "#/$defs/agent_id" },
+    "issued_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Advisory only. Never decides precedence: clocks disagree and a sender controls its own."
+    },
+    "signature": { "$ref": "#/$defs/signature" }
+  },
+  "$defs": {
+    "ulid": { "type": "string", "pattern": "^[0-9A-HJKMNP-TV-Z]{26}$" },
+    "store_id": { "type": "string", "pattern": "^st_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "tenant_id": { "type": "string", "pattern": "^tn_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "agent_id": { "type": "string", "pattern": "^ag_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "key_id", "value"],
+      "description": "Proves origin and integrity. Proves nothing about whether the retracted claim was false.",
+      "properties": {
+        "alg": { "enum": ["hmac-sha256", "ed25519"] },
+        "key_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "value": { "type": "string", "contentEncoding": "base64" }
+      }
+    }
+  }
+}

@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://memory-fabric.dev/protocol/acknowledgement-v1.schema.json",
+  "title": "Memory Fabric retraction acknowledgement, protocol v1",
+  "description": "A recipient's statement of committed state. Specification only. A recipient may report `persisted` only after its own commit and `enforced` only after its projections no longer expose the version.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["protocol_version", "retraction_id", "recipient_store_id", "state", "at"],
+  "properties": {
+    "protocol_version": { "const": 1 },
+    "retraction_id": { "type": "string", "pattern": "^rt_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "recipient_store_id": { "type": "string", "pattern": "^st_[0-9A-HJKMNP-TV-Z]{26}$" },
+    "state": {
+      "enum": [
+        "received",
+        "persisted",
+        "enforced",
+        "verified",
+        "rejected",
+        "superseded",
+        "pending_review",
+        "unknown"
+      ],
+      "description": "An offline recipient is `unknown`, never `verified`. `received` makes no durability claim at all."
+    },
+    "state_revision": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Lets the origin detect a recipient restored from a backup that has regressed."
+    },
+    "origin_sequence_seen": { "type": "integer", "minimum": 0 },
+    "at": { "type": "string", "format": "date-time" },
+    "detail": {
+      "type": "string",
+      "maxLength": 512,
+      "description": "Operator-facing. Must not contain memory content."
+    },
+    "rejection_code": {
+      "enum": [
+        "unauthenticated",
+        "unauthorized",
+        "schema_unsupported",
+        "protocol_version_unsupported",
+        "unknown_memory",
+        "version_superseded",
+        "malformed"
+      ]
+    },
+    "signature": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["alg", "key_id", "value"],
+      "properties": {
+        "alg": { "enum": ["hmac-sha256", "ed25519"] },
+        "key_id": { "type": "string", "minLength": 1, "maxLength": 64 },
+        "value": { "type": "string", "contentEncoding": "base64" }
+      }
+    }
+  }
+}

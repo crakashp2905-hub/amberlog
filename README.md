@@ -228,6 +228,9 @@ The test that demonstrates the point is `test_naive_is_fooled_by_selection_bias_
 | [ROADMAP.md](ROADMAP.md) | The single roadmap, with gates and kill criteria |
 | [SECURITY.md](SECURITY.md) | Threat model |
 | [DEPLOYMENT.md](DEPLOYMENT.md) | **Running it for real** — backup, serving, capacity, upgrades, and what it is not ready for |
+| [docs/AUDIT.md](docs/AUDIT.md) | **Which guarantees are actually implemented** — and which are specification only |
+| [docs/INVARIANTS.md](docs/INVARIANTS.md) | Every invariant mapped to the test that proves it, or to the gap |
+| [docs/PROTOCOL.md](docs/PROTOCOL.md) | The federation protocol v1 — **specification, not implementation** |
 | [VERSIONING.md](VERSIONING.md) | What the version number promises — the schema, not the API |
 | [CHANGELOG.md](CHANGELOG.md) | What changed, and which bugs it fixed |
 | [research/PRIOR_ART.md](research/PRIOR_ART.md) | Verified related work, and what it does to the novelty claims |

@@ -12,6 +12,16 @@ change task success. Those two findings together are the whole result.
 - **Raw:** [phase-b-run.txt](phase-b-run.txt) · [phase-b-decisions.json](phase-b-decisions.json) · [the abandoned first run](phase-b-abandoned-run.txt)
 - 4 agents, partially overlapping territories, 12 episodes each, 5 seeds → **240 verified decisions per arm**.
 
+> **Scope correction, 2026-10-10 (added after the Phase 0 audit).** PB2's result
+> is about **lifecycle and enforcement semantics, not distributed delivery.** The
+> four stores were four event logs in one Python process, and
+> `propagate_retraction` was called with live references to them. Nothing in this
+> run crossed a network, survived a restart, or was acknowledged. The measurement
+> stands as stated — acting on origin-retracted memory fell from 17% to 0% — but
+> "retraction crosses a store boundary" must not be read as durable distributed
+> propagation. See [docs/AUDIT.md](../../docs/AUDIT.md) §0 and
+> [docs/PROTOCOL.md](../../docs/PROTOCOL.md) for what a protocol would require.
+
 ---
 
 ## 1. The table

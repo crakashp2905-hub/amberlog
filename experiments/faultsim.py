@@ -166,6 +166,53 @@ def check_independent_knowledge_survives(world: "World") -> list[str]:
     return violations
 
 
+def check_onward_obligations_are_recorded(world: "World") -> list[str]:
+    """Invariant 3, one hop out. A store that applied a retraction to a memory
+    it had re-shared must have the onward delivery recorded — not merely
+    intend it.
+
+    This is the transitive form of the gap `request_retraction` closed at the
+    origin. A store that withdrew its own copy and then crashed before writing
+    down what it owed would leave live copies downstream that nothing in the
+    federation was tracking, and no check anywhere would notice: the upstream
+    acknowledgement already said "enforced", truthfully, about the one copy it
+    was asked about.
+
+    Note what this does *not* assert. It does not require the downstream copy
+    to be withdrawn yet. Forwarding is asynchronous by construction — a
+    synchronous cascade would put an unbounded number of network calls inside
+    one recipient's transaction — so convergence is a property of the system at
+    rest and belongs in an explicit end-of-schedule expectation, not in a check
+    that runs between every pair of steps.
+    """
+    violations = []
+    for name, store in world.stores.items():
+        for event in store.log.read():
+            if event.type != "RetractionApplied":
+                continue
+            local_id = event.payload.get("local_memory_id")
+            if local_id is None:
+                continue
+            downstream = store.shared_with(local_id)
+            if not downstream:
+                continue
+            for recipient in downstream:
+                owed = [
+                    row
+                    for row in store.log._conn.execute(
+                        "SELECT recipient, state FROM outbox WHERE recipient = ?",
+                        (recipient,),
+                    )
+                ]
+                if not owed:
+                    violations.append(
+                        f"{name}: applied a retraction to {local_id}, which it "
+                        f"had re-shared to {world.name_of(recipient)}, with no "
+                        "onward delivery recorded"
+                    )
+    return violations
+
+
 CHECKS: tuple[Callable[["World"], list[str]], ...] = (
     check_history_is_append_only,
     check_no_blocked_memory_is_retrievable,
@@ -173,6 +220,7 @@ CHECKS: tuple[Callable[["World"], list[str]], ...] = (
     check_no_acknowledgement_overstates,
     check_committed_retractions_are_still_owed,
     check_independent_knowledge_survives,
+    check_onward_obligations_are_recorded,
 )
 
 
@@ -304,6 +352,35 @@ def dispatch(origin: str, times: int = 1) -> Callable[[World], None]:
             fabric.log._conn.commit()
             dispatcher.run_once()
         world.log.append(f"{origin}: dispatched x{times}")
+
+    return step
+
+
+def settle(max_rounds: int = 8) -> Callable[[World], None]:
+    """Dispatch every store until nothing moves.
+
+    Needed as soon as the graph is deeper than one hop: `dispatch("origin")`
+    cannot deliver what the origin does not know about. A store one hop out
+    commits its own onward obligation and returns, so the second hop travels on
+    *that* store's dispatcher.
+
+    Bounded, and the bound is an assertion rather than a convenience: a
+    federation that will not settle in `max_rounds` is a failure to report, not
+    a loop to keep turning.
+    """
+
+    def step(world: World) -> None:
+        for round_number in range(max_rounds):
+            moved = 0
+            transport = world.transport()
+            for store in list(world.stores.values()):
+                store.log._conn.execute("UPDATE outbox SET next_attempt_ms = 0")
+                store.log._conn.commit()
+                moved += Dispatcher(store, transport).drain().attempted
+            if moved == 0:
+                world.log.append(f"settled after {round_number} round(s)")
+                return
+        raise AssertionError(f"federation did not settle in {max_rounds} rounds")
 
     return step
 
@@ -562,6 +639,90 @@ SCENARIOS: list[Scenario] = [
             retract("origin", "mine", ["alice"]),
             dispatch("origin"),
             expect("theirs", LifecycleState.ACTIVE, "alice"),
+        ],
+    ),
+    (
+        "transitive_chain",
+        "A retraction reaches a store the origin has never heard of.",
+        [
+            observe("origin", "ag-n", "Valve 7 is upstream of the pump.", "fact"),
+            share("origin", "fact", "alice", "fact@alice"),
+            share("alice", "fact@alice", "bob", "fact@bob"),
+            retract("origin", "fact", ["alice"]),
+            settle(),
+            expect("fact@alice", LifecycleState.QUARANTINED, "alice"),
+            # The origin named only alice. Bob is reachable at all because
+            # alice recorded that she had passed the memory on.
+            expect("fact@bob", LifecycleState.QUARANTINED, "bob"),
+        ],
+    ),
+    (
+        "transitive_chain_with_outage",
+        "The second hop is offline when the first hop forwards.",
+        [
+            observe("origin", "ag-n", "Valve 7 is upstream of the pump.", "fact"),
+            share("origin", "fact", "alice", "fact@alice"),
+            share("alice", "fact@alice", "bob", "fact@bob"),
+            go_offline("bob"),
+            retract("origin", "fact", ["alice"]),
+            dispatch("origin", times=2),
+            dispatch("alice", times=2),
+            # Still live at bob, and that is correct rather than a failure:
+            # what must not happen is the obligation disappearing.
+            expect("fact@bob", LifecycleState.ACTIVE, "bob"),
+            come_online("bob"),
+            settle(),
+            expect("fact@bob", LifecycleState.QUARANTINED, "bob"),
+        ],
+    ),
+    (
+        "transitive_crash_before_forwarding",
+        "The middle store crashes between applying and forwarding.",
+        [
+            observe("origin", "ag-n", "Valve 7 is upstream of the pump.", "fact"),
+            share("origin", "fact", "alice", "fact@alice"),
+            share("alice", "fact@alice", "bob", "fact@bob"),
+            retract("origin", "fact", ["alice"]),
+            dispatch("origin", times=2),
+            # Alice has withdrawn her copy and owes bob one. The crash lands in
+            # exactly that window, which is the window the obligation had to be
+            # committed inside a transaction to survive.
+            crash("alice"),
+            settle(),
+            expect("fact@alice", LifecycleState.QUARANTINED, "alice"),
+            expect("fact@bob", LifecycleState.QUARANTINED, "bob"),
+        ],
+    ),
+    (
+        "diamond_both_copies",
+        "Two paths to the same store withdraw both of its copies.",
+        [
+            observe("origin", "ag-n", "Valve 7 is upstream of the pump.", "fact"),
+            share("origin", "fact", "alice", "fact@alice"),
+            share("alice", "fact@alice", "bob", "via-alice@bob"),
+            share("origin", "fact", "bob", "direct@bob"),
+            retract("origin", "fact", ["alice", "bob"]),
+            settle(),
+            # Deduplicating on the campaign alone answered the second arrival
+            # "already handled" and left one copy live.
+            expect("via-alice@bob", LifecycleState.QUARANTINED, "bob"),
+            expect("direct@bob", LifecycleState.QUARANTINED, "bob"),
+        ],
+    ),
+    (
+        "cycle_terminates",
+        "A re-import back to the origin converges without a hop limit.",
+        [
+            observe("origin", "ag-n", "Valve 7 is upstream of the pump.", "fact"),
+            share("origin", "fact", "alice", "fact@alice"),
+            share("alice", "fact@alice", "bob", "fact@bob"),
+            share("bob", "fact@bob", "origin", "round-trip@origin"),
+            retract("origin", "fact", ["alice"]),
+            # `settle` raises if the federation will not come to rest, so the
+            # schedule itself is the termination assertion.
+            settle(),
+            expect("fact@bob", LifecycleState.QUARANTINED, "bob"),
+            expect("round-trip@origin", LifecycleState.QUARANTINED, "origin"),
         ],
     ),
     (

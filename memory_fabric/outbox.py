@@ -42,24 +42,30 @@ CREATE TABLE IF NOT EXISTS outbox (
     retraction_id   TEXT    NOT NULL,
     recipient       TEXT    NOT NULL,
     payload         TEXT    NOT NULL,
+    target_key      TEXT    NOT NULL DEFAULT '',
     state           TEXT    NOT NULL,
     attempts        INTEGER NOT NULL DEFAULT 0,
     last_attempt_ms INTEGER,
     next_attempt_ms INTEGER NOT NULL DEFAULT 0,
     last_error      TEXT,
     updated_ms      INTEGER NOT NULL,
-    UNIQUE (retraction_id, recipient)
+    -- One row per campaign, recipient and hop target. A store that holds
+    -- two copies of the same origin memory owes its peers a retraction
+    -- for each, and they are different deliveries.
+    UNIQUE (retraction_id, recipient, target_key)
 );
 CREATE INDEX IF NOT EXISTS outbox_due ON outbox (state, next_attempt_ms);
 
 CREATE TABLE IF NOT EXISTS inbox (
     origin_store_id TEXT    NOT NULL,
     retraction_id   TEXT    NOT NULL,
+    -- Which copy this row is the outcome for: see Retraction.dedupe_key.
+    target_key      TEXT    NOT NULL DEFAULT '',
     origin_sequence INTEGER NOT NULL,
     outcome         TEXT    NOT NULL,
     detail          TEXT    NOT NULL DEFAULT '',
     received_ms     INTEGER NOT NULL,
-    PRIMARY KEY (origin_store_id, retraction_id)
+    PRIMARY KEY (origin_store_id, retraction_id, target_key)
 );
 
 CREATE TABLE IF NOT EXISTS origin_cursor (
@@ -88,6 +94,7 @@ class OutboxRow:
     retraction_id: str
     recipient: str
     retraction: Retraction
+    target_key: str
     state: PropagationState
     attempts: int
     next_attempt_ms: int
@@ -104,7 +111,53 @@ class Outbox:
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._conn = conn
         with self._conn:
+            self._migrate_target_key("inbox")
+            self._migrate_target_key("outbox")
             self._conn.executescript(_SCHEMA)
+
+    def _migrate_target_key(self, table: str) -> None:
+        """Widen a table's key to include the per-hop retraction target.
+
+        Schema 0.3.0 keyed the inbox on `(origin_store_id, retraction_id)`.
+        Transitive forwarding needs the target as well (see
+        `Retraction.dedupe_key`), and a primary key cannot be widened in place
+        in SQLite, so the table is rebuilt.
+
+        Existing rows migrate with `target_key = ''`. That is correct rather
+        than merely convenient: every row written under 0.3.0 was a hop-0
+        retraction whose target *was* the origin, and leaving the key empty
+        keeps those rows deduplicating exactly as they did. A re-delivery of
+        one of them arrives with no target fields either, so it computes the
+        same empty key and still matches.
+        """
+        tables = {
+            row[0]
+            for row in self._conn.execute(
+                "SELECT name FROM sqlite_master WHERE type = 'table'"
+            )
+        }
+        if table not in tables:
+            return  # fresh store: _SCHEMA creates it in the new shape
+        columns = [row[1] for row in self._conn.execute(f"PRAGMA table_info({table})")]
+        if "target_key" in columns:
+            return
+        old = f"{table}_pre_0_4_0"
+        carried = ", ".join(columns)
+        self._conn.execute(f"ALTER TABLE {table} RENAME TO {old}")
+        # Indexes follow a rename, and would then collide with the ones
+        # `_SCHEMA` recreates. Drop them before rebuilding.
+        for (name,) in self._conn.execute(
+            "SELECT name FROM sqlite_master WHERE type = 'index' AND tbl_name = ?"
+            " AND name NOT LIKE 'sqlite_%'",
+            (old,),
+        ).fetchall():
+            self._conn.execute(f"DROP INDEX IF EXISTS {name}")
+        self._conn.executescript(_SCHEMA)
+        self._conn.execute(
+            f"INSERT INTO {table} ({carried}, target_key) "
+            f"SELECT {carried}, '' FROM {old}"
+        )
+        self._conn.execute(f"DROP TABLE {old}")
 
     # --- origin side -----------------------------------------------------
 
@@ -128,11 +181,12 @@ class Outbox:
         for recipient in recipients:
             cursor = self._conn.execute(
                 "INSERT OR IGNORE INTO outbox "
-                "(retraction_id, recipient, payload, state, next_attempt_ms, updated_ms) "
-                "VALUES (?, ?, ?, ?, ?, ?)",
+                "(retraction_id, recipient, target_key, payload, state, "
+                "next_attempt_ms, updated_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 (
                     retraction.retraction_id,
                     recipient,
+                    retraction.dedupe_key[2],
                     payload,
                     PropagationState.QUEUED.value,
                     now_ms,
@@ -163,12 +217,27 @@ class Outbox:
         rows = self._conn.execute("SELECT * FROM outbox ORDER BY id").fetchall()
         return [self._row(row) for row in rows if row["state"] not in terminal]
 
-    def state_of(self, retraction_id: str, recipient: str) -> PropagationState:
-        row = self._conn.execute(
-            "SELECT state FROM outbox WHERE retraction_id = ? AND recipient = ?",
-            (retraction_id, recipient),
-        ).fetchone()
-        return PropagationState(row["state"]) if row else PropagationState.UNKNOWN
+    def state_of(
+        self,
+        retraction_id: str,
+        recipient: str,
+        target_key: str | None = None,
+    ) -> PropagationState:
+        """The state of one delivery.
+
+        With `target_key` None and several hop targets outstanding for the pair,
+        the *least* advanced is returned, so a caller asking "is this settled?"
+        is not told yes while a sibling target is still queued.
+        """
+        clause, params = _target_clause(target_key)
+        rows = self._conn.execute(
+            f"SELECT state FROM outbox WHERE retraction_id = ? AND recipient = ?{clause}",
+            (retraction_id, recipient, *params),
+        ).fetchall()
+        if not rows:
+            return PropagationState.UNKNOWN
+        states = [PropagationState(row["state"]) for row in rows]
+        return min(states, key=lambda state: _PROGRESS.index(state))
 
     def advance(
         self,
@@ -177,22 +246,28 @@ class Outbox:
         target: PropagationState,
         now_ms: int,
         error: str = "",
+        target_key: str | None = None,
     ) -> bool:
         """Move one pair through the state machine, refusing illegal moves.
 
         Returns False rather than raising when the transition is not allowed, so
         a duplicate acknowledgement arriving late cannot drag an `enforced` pair
         back to `persisted`.
+
+        `target_key` left as None addresses every hop target for the pair, which
+        is the whole row set whenever a campaign has one target — the only case
+        that existed before transitive forwarding.
         """
-        current = self.state_of(retraction_id, recipient)
+        current = self.state_of(retraction_id, recipient, target_key)
         if current == target:
             return True
         if not can_transition(current, target):
             return False
+        clause, params = _target_clause(target_key)
         self._conn.execute(
             "UPDATE outbox SET state = ?, last_error = ?, updated_ms = ? "
-            "WHERE retraction_id = ? AND recipient = ?",
-            (target.value, error, now_ms, retraction_id, recipient),
+            f"WHERE retraction_id = ? AND recipient = ?{clause}",
+            (target.value, error, now_ms, retraction_id, recipient, *params),
         )
         return True
 
@@ -279,7 +354,7 @@ class Outbox:
     # --- recipient side --------------------------------------------------
 
     def seen(self, retraction: Retraction) -> tuple[str, str] | None:
-        """The first outcome for this `(origin, retraction_id)`, if any.
+        """The first outcome for this `(origin, retraction_id, target)`, if any.
 
         A second copy returns the **first** outcome; it does not re-apply. That
         is deduplication by event identity, which — unlike skipping an
@@ -287,7 +362,8 @@ class Outbox:
         retraction of the same memory.
         """
         row = self._conn.execute(
-            "SELECT outcome, detail FROM inbox WHERE origin_store_id = ? AND retraction_id = ?",
+            "SELECT outcome, detail FROM inbox "
+            "WHERE origin_store_id = ? AND retraction_id = ? AND target_key = ?",
             retraction.dedupe_key,
         ).fetchone()
         return (row["outcome"], row["detail"]) if row else None
@@ -298,10 +374,10 @@ class Outbox:
         """Must be in the same transaction as the lifecycle change it records."""
         self._conn.execute(
             "INSERT OR IGNORE INTO inbox (origin_store_id, retraction_id, "
-            "origin_sequence, outcome, detail, received_ms) VALUES (?, ?, ?, ?, ?, ?)",
+            "target_key, origin_sequence, outcome, detail, received_ms) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
-                retraction.origin_store_id,
-                retraction.retraction_id,
+                *retraction.dedupe_key,
                 retraction.origin_sequence,
                 outcome,
                 detail,
@@ -342,11 +418,36 @@ class Outbox:
             retraction_id=row["retraction_id"],
             recipient=row["recipient"],
             retraction=Retraction.from_json(json.loads(row["payload"])),
+            target_key=row["target_key"] or "",
             state=PropagationState(row["state"]),
             attempts=row["attempts"],
             next_attempt_ms=row["next_attempt_ms"],
             last_error=row["last_error"] or "",
         )
+
+
+def _target_clause(target_key: str | None) -> tuple[str, tuple[str, ...]]:
+    """An optional `AND target_key = ?`, so one query serves both callers."""
+    if target_key is None:
+        return "", ()
+    return " AND target_key = ?", (target_key,)
+
+
+_PROGRESS = (
+    PropagationState.UNKNOWN,
+    PropagationState.REQUESTED,
+    PropagationState.QUEUED,
+    PropagationState.RETRYING,
+    PropagationState.DELIVERED,
+    PropagationState.PERSISTED,
+    PropagationState.ENFORCED,
+    PropagationState.VERIFIED,
+    PropagationState.SUPERSEDED,
+    PropagationState.REJECTED,
+    PropagationState.FAILED,
+)
+"""How far along each state is, for `state_of` over several hop targets. Only
+an ordering; the legal moves live in `ALLOWED_TRANSITIONS`."""
 
 
 def now_ms() -> int:

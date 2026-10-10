@@ -149,7 +149,7 @@ class TestSchemaMatchesTheCode(unittest.TestCase):
         """They answer different questions — "can you read my log?" versus "can
         you talk to me?" — and conflating them would force a wire break on every
         additive event change."""
-        self.assertEqual(SCHEMA_VERSION, "0.3.0")
+        self.assertEqual(SCHEMA_VERSION, "0.4.0")
         self.assertEqual(
             load("retraction-v1.schema.json")["properties"]["protocol_version"]["const"], 1
         )

@@ -158,6 +158,16 @@ def offer(
         auto_activate=activate,
     )
 
+    # Record the share on the *sender* side. Without it the sender has no idea
+    # who holds a copy, and a retraction cannot follow a memory it cannot find
+    # — which is what stopped retraction at one hop before Phase D.
+    source.record_share(
+        memory_id=memory_id,
+        recipient_store_id=target.store_id,
+        imported_memory_id=imported_id,
+        actor=recipient_agent,
+    )
+
     return OfferResult(
         source_memory_id=memory_id,
         accepted=True,

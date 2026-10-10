@@ -104,6 +104,9 @@ class ProjectionState:
     # Memories whose content key has been destroyed. Replayed from the log,
     # so erasure survives a rebuild rather than depending on the key table.
     erased: set[str] = field(default_factory=set)
+    # local memory id -> the stores this one sent it to, and the id each gave
+    # it. The forwarding table a transitive retraction walks.
+    shared_to: dict[str, dict[str, str]] = field(default_factory=dict)
     suppressed_duplicates: int = 0
     applied_seq: int = 0
 
@@ -293,6 +296,12 @@ def _on_retraction_requested(state: ProjectionState, event: Event) -> None:
     )
 
 
+def _on_memory_shared(state: ProjectionState, event: Event) -> None:
+    state.shared_to.setdefault(event.payload["memory_id"], {})[
+        event.payload["recipient_store_id"]
+    ] = event.payload["imported_memory_id"]
+
+
 def _on_content_erased(state: ProjectionState, event: Event) -> None:
     memory_id = event.payload["memory_id"]
     state.erased.add(memory_id)
@@ -347,4 +356,5 @@ _HANDLERS = {
     EventType.STORE_IDENTIFIED: _on_store_identified,
     EventType.RETRACTION_REQUESTED: _on_retraction_requested,
     EventType.CONTENT_ERASED: _on_content_erased,
+    EventType.MEMORY_SHARED: _on_memory_shared,
 }

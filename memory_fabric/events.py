@@ -36,7 +36,7 @@ class EventType:
     ACCESS_DENIED = "AccessDenied"
     SUPPORT_RECOMPUTED = "SupportRecomputed"
     CONTENT_ERASED = "ContentErased"
-    ACCESS_DENIED = "AccessDenied"
+    MEMORY_SHARED = "MemoryShared"
 
 
 @dataclass(frozen=True)
@@ -475,6 +475,35 @@ def content_erased(
             "memory_id": memory_id,
             "reason": reason[:256],
             "had_content": had_content,
+        },
+    )
+
+
+def memory_shared(
+    ts: int,
+    memory_id: str,
+    version: int,
+    recipient_store_id: str,
+    imported_memory_id: str,
+    actor: str,
+) -> Event:
+    """This store sent a memory to another store.
+
+    Recorded because without it a sender has no idea who holds a copy, and a
+    retraction cannot follow a memory it cannot find. Phase B worked only
+    because an importer never re-shared, so the origin was always one hop from
+    every copy; the moment re-sharing is allowed, each hop has to know its own
+    recipients.
+    """
+    return Event(
+        type=EventType.MEMORY_SHARED,
+        ts=ts,
+        agent_id=actor,
+        payload={
+            "memory_id": memory_id,
+            "version": version,
+            "recipient_store_id": recipient_store_id,
+            "imported_memory_id": imported_memory_id,
         },
     )
 

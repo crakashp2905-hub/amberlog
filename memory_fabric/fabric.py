@@ -40,6 +40,7 @@ from .enforcement import (
 from .governance.erasure import ContentVault, is_sealed, seal, unseal
 from .outbox import Outbox, now_ms as _now_ms
 from .protocol import (
+    MAX_HOPS,
     PROTOCOL_VERSION,
     Acknowledgement,
     PropagationState,
@@ -286,6 +287,41 @@ class MemoryFabric:
             self.outbox.enqueue(retraction, recipients, _now_ms())
         return retraction
 
+    def record_share(
+        self,
+        memory_id: str,
+        recipient_store_id: str,
+        imported_memory_id: str,
+        actor: str = "federation",
+    ) -> None:
+        """Record that `memory_id` left this store for `recipient_store_id`.
+
+        The forwarding table a transitive retraction walks. `federation.offer`
+        calls this on every accepted offer, so a store that re-shares an import
+        knows who else now holds it.
+
+        Not derivable after the fact: the recipient's copy is a new memory in
+        the recipient's log with its own id, and nothing in the sender's log
+        mentioned it until this event existed. Phase B worked without it only
+        because its recipients never re-shared, which made the origin exactly
+        one hop from every copy in the federation.
+        """
+        memory = self._require(memory_id)
+        self._emit(
+            ev.memory_shared(
+                ts=self.now(),
+                memory_id=memory_id,
+                version=memory.version,
+                recipient_store_id=recipient_store_id,
+                imported_memory_id=imported_memory_id,
+                actor=actor,
+            )
+        )
+
+    def shared_with(self, memory_id: str) -> dict[str, str]:
+        """Which stores hold a copy of this memory, and what they call it."""
+        return dict(self.state.shared_to.get(memory_id, {}))
+
     def receive_retraction(
         self, retraction: Retraction, sender_authorised: bool = True
     ) -> Acknowledgement:
@@ -400,6 +436,7 @@ class MemoryFabric:
                         actor=self.store_id,
                     )
                 )
+            forwarded = self._forward_retraction(retraction, targets)
             self.outbox.record_inbox(
                 retraction, "applied", f"{len(targets)} memory/ies", _now_ms()
             )
@@ -410,7 +447,77 @@ class MemoryFabric:
         # 7. Projections already reflect it: `quarantine` emitted through the
         #    same projection fold, and `_eligible_ids` reads lifecycle state, so
         #    the version is no longer exposed. Hence `enforced`, not `persisted`.
-        return ack(PropagationState.ENFORCED, f"{len(targets)} memory/ies withdrawn")
+        detail = f"{len(targets)} memory/ies withdrawn"
+        if forwarded:
+            detail += f"; forwarded to {forwarded} peer(s)"
+        return ack(PropagationState.ENFORCED, detail)
+
+    def _forward_retraction(
+        self, retraction: Retraction, targets: Sequence[str]
+    ) -> int:
+        """Owe the same retraction onward to everyone this store re-shared to.
+
+        **Called inside the caller's transaction**, so the onward intent commits
+        with the local withdrawal. A store that applied a retraction and then
+        crashed before recording what it owed would leave copies downstream that
+        nothing was tracking — the same gap `request_retraction` closed at the
+        origin, one hop out.
+
+        Three things keep this terminating, and each is load-bearing:
+
+        * the campaign identity `(origin_store_id, retraction_id)` is preserved,
+          so a recipient recognises a copy it has already handled;
+        * the *target* is retargeted per hop, so the inbox deduplicates per copy
+          rather than per campaign, and a finite federation holds finitely many
+          copies;
+        * `MAX_HOPS` is a backstop, not the defence. Reaching it is a bug, so it
+          records a rejection rather than failing quietly.
+        """
+        if retraction.hop >= MAX_HOPS:
+            self._emit(
+                ev.retraction_rejected(
+                    ts=self.now(),
+                    retraction_id=retraction.retraction_id,
+                    origin_store_id=retraction.origin_store_id,
+                    rejection_code=RejectionCode.HOP_LIMIT.value,
+                    detail=f"hop limit {MAX_HOPS} reached; not forwarding further",
+                    actor=self.store_id,
+                )
+            )
+            return 0
+
+        count = 0
+        for local_id in targets:
+            recipients = [
+                store
+                for store in self.state.shared_to.get(local_id, {})
+                # Never back to the store that just told us. Not a correctness
+                # requirement — dedup would absorb it — but one pointless round
+                # trip per hop, per peer, is worth not making.
+                if store != (retraction.forwarded_by or retraction.origin_store_id)
+            ]
+            if not recipients:
+                continue
+            onward = retraction.forward(
+                from_store_id=self.store_id,
+                local_memory_id=local_id,
+                local_version=self.get(local_id).version,
+            )
+            self._emit(
+                ev.retraction_requested(
+                    ts=self.now(),
+                    retraction_id=onward.retraction_id,
+                    origin_store_id=onward.origin_store_id,
+                    origin_memory_id=onward.origin_memory_id,
+                    origin_memory_version=onward.origin_memory_version,
+                    origin_sequence=onward.origin_sequence,
+                    reason_code=onward.reason_code,
+                    recipients=recipients,
+                    requested_by=self.store_id,
+                )
+            )
+            count += self.outbox.enqueue(onward, recipients, _now_ms())
+        return count
 
     def erase_content(
         self, memory_id: str, reason: str, actor: str = "operator"
@@ -519,10 +626,16 @@ class MemoryFabric:
         }
 
     def _imports_of(self, retraction: Retraction) -> list[str]:
-        """Local memories imported from this exact origin memory **version**.
+        """Local memories imported from the retraction's **target** version.
 
         Matching on store and id was the old behaviour; adding the version is
         what stops a retraction of v1 withdrawing an import of v3.
+
+        The target is the *hop's* target, which for a direct retraction is the
+        origin and for a forwarded one is the store that passed it on. A store
+        two hops from the origin never imported from the origin, so matching on
+        the origin fields would find nothing and the retraction would stop one
+        hop short — silently, with an acknowledgement saying "no import held".
         """
         from .federation import imported_from
 
@@ -542,12 +655,12 @@ class MemoryFabric:
             origin = imported_from(self, memory_id)
             if origin is None:
                 continue
-            if origin.get("store") != retraction.origin_store_id:
+            if origin.get("store") != retraction.applies_to_store:
                 continue
-            if origin.get("memory_id") != retraction.origin_memory_id:
+            if origin.get("memory_id") != retraction.applies_to_memory:
                 continue
             version = origin.get("version")
-            if version is not None and int(version) != retraction.origin_memory_version:
+            if version is not None and int(version) != retraction.applies_to_version:
                 continue
             found.append(memory_id)
         return found

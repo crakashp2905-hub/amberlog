@@ -27,13 +27,18 @@ import hashlib
 import hmac
 import json
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from typing import Any, Mapping
 
 from .ids import new_ulid
 
 PROTOCOL_VERSION = 1
+
+MAX_HOPS = 16
+"""A safety net, not the loop defence — deduplication on the campaign
+identity is what terminates cycles. This bounds a pathological topology
+that keeps finding new stores, and a refusal at the limit is auditable."""
 
 STORE_ID_RE = re.compile(r"^st_[0-9A-HJKMNP-TV-Z]{26}$")
 RETRACTION_ID_RE = re.compile(r"^rt_[0-9A-HJKMNP-TV-Z]{26}$")
@@ -166,6 +171,10 @@ class RejectionCode(str, Enum):
     UNKNOWN_MEMORY = "unknown_memory"
     VERSION_SUPERSEDED = "version_superseded"
     MALFORMED = "malformed"
+    HOP_LIMIT = "hop_limit"
+    """A forwarded retraction reached MAX_HOPS. Recorded rather than dropped:
+    the loop defence is deduplication on the campaign identity, so reaching the
+    backstop means something is wrong with the topology or the dedup key."""
 
 
 class ProtocolError(ValueError):
@@ -195,6 +204,61 @@ class Retraction:
     evidence_reference: str | None = None
     protocol_version: int = PROTOCOL_VERSION
 
+    # --- transitive forwarding (Phase D) ---------------------------------
+    #
+    # `retraction_id` + `origin_store_id` identify the **campaign** and never
+    # change along a chain, which is what makes a cycle terminate: a store that
+    # has already seen the pair returns its first outcome instead of applying
+    # again.
+    #
+    # The *target* is per hop. A store two hops out imported from the store one
+    # hop out, so its provenance points there, not at the origin. These default
+    # to the origin fields, so a direct retraction is byte-identical to before
+    # and a 0.3.0 peer that ignores them still behaves correctly.
+    target_store_id: str | None = None
+    target_memory_id: str | None = None
+    target_memory_version: int | None = None
+    hop: int = 0
+    forwarded_by: str | None = None
+
+    @property
+    def applies_to_store(self) -> str:
+        return self.target_store_id or self.origin_store_id
+
+    @property
+    def applies_to_memory(self) -> str:
+        return self.target_memory_id or self.origin_memory_id
+
+    @property
+    def applies_to_version(self) -> int:
+        return (
+            self.target_memory_version
+            if self.target_memory_version is not None
+            else self.origin_memory_version
+        )
+
+    def forward(
+        self,
+        from_store_id: str,
+        local_memory_id: str,
+        local_version: int,
+    ) -> "Retraction":
+        """The same campaign, retargeted for the next hop.
+
+        The campaign identity is preserved deliberately. Minting a fresh
+        `retraction_id` per hop would make every hop a distinct event, so a
+        cycle would never deduplicate and a diamond-shaped topology would apply
+        the same withdrawal twice.
+        """
+        return replace(
+            self,
+            target_store_id=from_store_id,
+            target_memory_id=local_memory_id,
+            target_memory_version=local_version,
+            hop=self.hop + 1,
+            forwarded_by=from_store_id,
+        )
+
     def to_json(self) -> dict[str, Any]:
         payload: dict[str, Any] = {
             "protocol_version": self.protocol_version,
@@ -207,10 +271,20 @@ class Retraction:
             "requested_by": self.requested_by,
             "issued_at": self.issued_at,
         }
-        for key in ("tenant_id", "evidence_digest", "evidence_reference"):
+        for key in (
+            "tenant_id",
+            "evidence_digest",
+            "evidence_reference",
+            "target_store_id",
+            "target_memory_id",
+            "target_memory_version",
+            "forwarded_by",
+        ):
             value = getattr(self, key)
             if value is not None:
                 payload[key] = value
+        if self.hop:
+            payload["hop"] = self.hop
         return payload
 
     def canonical(self) -> bytes:
@@ -301,16 +375,46 @@ class Retraction:
             tenant_id=None if tenant is None else str(tenant),
             evidence_digest=_optional_str(payload.get("evidence_digest")),
             evidence_reference=_optional_str(payload.get("evidence_reference")),
+            target_store_id=_optional_str(payload.get("target_store_id")),
+            target_memory_id=_optional_str(payload.get("target_memory_id")),
+            target_memory_version=(
+                None
+                if payload.get("target_memory_version") is None
+                else int(payload["target_memory_version"])
+            ),
+            hop=int(payload.get("hop", 0)),
+            forwarded_by=_optional_str(payload.get("forwarded_by")),
         )
 
     @property
-    def dedupe_key(self) -> tuple[str, str]:
-        """`(origin_store_id, retraction_id)`.
+    def dedupe_key(self) -> tuple[str, str, str]:
+        """`(origin_store_id, retraction_id, target_key)`.
 
-        Not the memory id: a replay and a genuinely new second retraction of the
-        same memory are different events, and state convergence cannot tell them
-        apart."""
-        return (self.origin_store_id, self.retraction_id)
+        The campaign identity, plus **which copy this hop is about**.
+
+        Not the memory id alone: a replay and a genuinely new second retraction
+        of the same memory are different events, and state convergence cannot
+        tell them apart.
+
+        Not the campaign alone either, which it was before transitive
+        forwarding existed. A diamond — origin A reaching store C both directly
+        and through B — delivers the same campaign twice with *different*
+        targets, because C's copy from A and C's copy from B have different
+        provenance. Keyed on the campaign alone, whichever arrived first
+        recorded its outcome for both: a forwarded hop that found nothing would
+        make the direct retraction return "unknown memory" and C would keep
+        acting on knowledge the origin had withdrawn. That is the exact failure
+        PB2 measured away in the one-hop case.
+
+        Termination still holds, which is the thing this key had to not break.
+        A target is a concrete `(store, memory, version)` triple and a
+        federation holds finitely many, so a cycle re-arrives with a triple
+        already recorded and stops there."""
+        return (
+            self.origin_store_id,
+            self.retraction_id,
+            f"{self.applies_to_store}/{self.applies_to_memory}@{self.applies_to_version}",
+        )
 
 
 @dataclass(frozen=True)

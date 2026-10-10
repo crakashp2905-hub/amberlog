@@ -1,7 +1,8 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.2.0` (draft)
-- **Status:** proposed, not yet implemented
+- **Schema version:** `0.4.0`
+- **Status:** implemented. Where this document and `memory_fabric/` disagree,
+  the code is authoritative and the disagreement is a bug in this file.
 
 Words in the glossary in [AGENTS.md](AGENTS.md) are used with those meanings.
 
@@ -179,6 +180,63 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.4.0 — the share record, and a per-hop retraction target
+
+Two additive changes to the event schema, plus one storage migration.
+
+**`MemoryShared`.** A sender now records that a memory left for a named
+recipient store, and what that store called its copy:
+
+```
+{"memory_id", "version", "recipient_store_id", "imported_memory_id"}
+```
+
+Not derivable after the fact. The recipient's copy is a new memory in the
+recipient's log with its own id, and until this event existed nothing in the
+sender's log mentioned it. Retraction therefore stopped at one hop: an origin
+could address the stores it had shared with, and no store anywhere could answer
+"who did I pass this on to?". `offer` emits it on every accepted offer — and
+only on an accepted one, or a refusal would create a permanent delivery
+obligation to a store that never held anything.
+
+**A retraction carries a per-hop target.** `Retraction` gains
+`target_store_id`, `target_memory_id`, `target_memory_version`, `hop` and
+`forwarded_by`, all optional and all defaulting to the origin fields. Hop 0 is
+byte-identical to 0.3.0 on the wire, and a 0.3.0 peer that ignores the new
+fields behaves correctly because every retraction it can receive is hop 0.
+
+`retraction_id` + `origin_store_id` identify the **campaign** and never change
+along a chain; the target is what each hop can actually find, because a store
+two hops out imported from the store one hop out and not from the origin.
+
+**Migration (storage, not the log).** The `inbox` and `outbox` tables gain
+`target_key`, which enters both primary keys. SQLite cannot widen a primary key
+in place, so `Outbox.__init__` rebuilds each table once and carries existing
+rows with `target_key = ''`. That value is correct and not merely convenient:
+every row written under 0.3.0 was a hop-0 retraction whose target *was* the
+origin, so a re-delivery of one computes the same empty key and still
+deduplicates. The event log itself is untouched, so the projections rebuild
+from it unchanged.
+
+Widening that key was a correctness fix rather than a convenience. Keyed on the
+campaign alone, a store reached by two paths recorded the first arrival's
+outcome for both, so the second — a real retraction of a real second copy — was
+answered "already handled" and the copy stayed live. `diamond_both_copies` in
+the fault matrix fails in exactly that way when the key is narrowed back.
+
+### 0.3.0 — withdrawal basis, store identity, retraction protocol
+
+Recorded here after the fact; it shipped across roadmap phases 0–7 without a
+changelog entry, which this file should not have allowed.
+
+- `LifecycleChanged` carries a `basis` (`WithdrawalBasis`, 7 values), so a withdrawal records *why*. `CO_OCCURRENCE` and `UNSTATED` are marked weak, and the observability attention list reports a withdrawal made on a weak basis as the finding.
+- `StoreIdentified` gives each store an opaque `store_id`, replacing the database path as federation identity. The path made two containers each holding `./store.db` indistinguishable, broke every provenance match when a database moved, and gave every in-memory store the identity `:memory:`.
+- A federation origin record carries the exact `version` imported, so a retraction of v1 cannot withdraw an import of v3.
+- New event types: `RetractionRequested`, `RetractionApplied`, `RetractionRejected`, `PropagationStateChanged`, `AccessDenied`, `SupportRecomputed`, `ContentErased`.
+- Memory content may be sealed per memory (`encrypt_content`), with keys outside the log, so destroying a key erases content while the provenance, lineage, retraction basis and audit trail survive.
+
+Additive throughout: a 0.2.0 log replays unchanged.
 
 ### 0.2.0 — duplicate suppression
 

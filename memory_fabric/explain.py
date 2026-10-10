@@ -15,7 +15,13 @@ from typing import TYPE_CHECKING, Any
 
 from .events import EventType
 from .governance.sensitive import scrub, secret_values
-from .model import LifecycleState, Memory, ValueEstimate
+from .model import (
+    WEAK_BASES,
+    LifecycleState,
+    Memory,
+    ValueEstimate,
+    WithdrawalBasis,
+)
 
 if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
@@ -281,7 +287,24 @@ def _build_caveats(
                 "so its justification no longer holds and it needs re-checking."
             )
     if memory.lifecycle_state is LifecycleState.QUARANTINED:
-        caveats.append("Quarantined: not exposed to agents, pending review.")
+        basis = fabric.state.withdrawal_basis.get(
+            memory.id, WithdrawalBasis.UNSTATED.value
+        )
+        caveats.append(
+            f"Quarantined on '{basis}': not exposed to agents, pending review."
+        )
+        if basis in {b.value for b in WEAK_BASES}:
+            # "Why does the system remember this?" has to be answerable about a
+            # withdrawal too, and the honest answer here is that the withdrawal
+            # may be the error. Phase A measured this basis cutting the rate at
+            # which a correct memory reached the prompt from 60% of episodes to
+            # 18%.
+            caveats.append(
+                "That basis does not support a withdrawal on its own: presence at a "
+                "failure is agreement, not causation, and the rule was measured "
+                "removing more correct memory than wrong. This memory may have been "
+                "withdrawn in error."
+            )
 
     episodes_without_outcome = sum(
         1 for e in fabric.state.episodes.values() if not e.has_outcome

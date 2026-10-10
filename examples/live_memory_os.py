@@ -14,17 +14,29 @@ What it checks, in order:
 3. A model that tries to memorise a credential is **quarantined** on ingest.
 4. Two agents with separate stores **federate**, and the recipient decides.
 5. The source turns out to be wrong, and the retraction follows the memory
-   **across the store boundary**.
+   **across the store boundary**, carried by `propagate_retraction`.
+6. A withdrawal made on weak evidence is itself **flagged for a human**, because
+   Phase A measured that rule destroying more correct memory than wrong.
+7. A newly imported memory is **actually retrievable** — the regression that
+   made value-ranking fall through to creation time.
+8. The event log survives a **backup**, and the backup verifies itself by
+   replaying.
 """
 
 from __future__ import annotations
 
 import sys
+import tempfile
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric import (
+    EpsilonGreedyPolicy,
+    LifecycleState,
+    MemoryFabric,
+    WithdrawalBasis,
+)
 from memory_fabric.adapters.ollama import (
     OllamaClient,
     OllamaEmbedder,
@@ -32,7 +44,14 @@ from memory_fabric.adapters.ollama import (
     OllamaMemoryAgent,
 )
 from memory_fabric.cli import configure_output
-from memory_fabric.federation import imported_from, offer
+from memory_fabric.cli import main as cli_main
+from memory_fabric.observability import report
+from memory_fabric.federation import (
+    descendants_of,
+    imported_from,
+    offer,
+    propagate_retraction,
+)
 from memory_fabric.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
@@ -184,29 +203,116 @@ def main() -> int:
         rule("5. The source was wrong - retraction follows it across the boundary")
 
         depot.quarantine(memory_id, reason="root cause was a faulty RCD, not the bond",
-                         actor="safety-team")
+                         actor="safety-team", basis=WithdrawalBasis.CONTRADICTED)
         passed.append(check("source quarantined",
                             depot.get(memory_id).lifecycle_state is LifecycleState.QUARANTINED))
+        passed.append(check(
+            "the basis is recorded, not assumed",
+            depot.state.withdrawal_basis.get(memory_id)
+            == WithdrawalBasis.CONTRADICTED.value,
+            depot.state.withdrawal_basis.get(memory_id, "none"),
+        ))
 
         # The recipient holds an independent copy, so retraction does not
         # propagate automatically — it has to be carried. Provenance is what
-        # makes that possible at all.
-        stale = [
-            mid for mid in workshop.state.memories
-            if (o := imported_from(workshop, mid)) and o["memory_id"] == memory_id
-        ]
+        # makes that possible at all, and `propagate_retraction` is the API that
+        # does it; this used to be hand-written here, which meant the product
+        # did not actually have the feature it claimed.
+        stale = descendants_of(depot, memory_id, [workshop])
         passed.append(check("recipient's copy is findable by origin", bool(stale),
                             f"{len(stale)} found"))
-        for mid in stale:
-            workshop.quarantine(mid, reason=f"origin {memory_id} retracted at source",
-                                actor="federation")
+        results = propagate_retraction(depot, memory_id, [workshop])
         passed.append(check(
             "recipient's copy retracted",
-            all(workshop.get(m).lifecycle_state is LifecycleState.QUARANTINED for m in stale),
+            bool(results) and all(r.acted for r in results),
+        ))
+        passed.append(check(
+            "the importer knows it was someone else's finding",
+            all(
+                workshop.state.withdrawal_basis.get(mid)
+                == WithdrawalBasis.RETRACTED_AT_ORIGIN.value
+                for _, mid in stale
+            ),
         ))
         after = workshop.retrieve("workshop-agent", "cold morning breaker trip", k=3)
         passed.append(check("retracted memory no longer retrievable anywhere",
                             len(after.exposed) == 0))
+
+        rule("6. A withdrawal on weak evidence is itself flagged for a human")
+
+        # Phase A measured "withdraw whatever was in context when something
+        # failed" cutting the rate at which a correct memory reached the prompt
+        # from 60% of episodes to 18%. The store cannot refuse the rule, but it
+        # refuses to present it as evidence.
+        weak = depot.remember("depot-agent", "Chargers at bay 4 trip more often.")
+        depot.validate(weak, actor="supervisor")
+        depot.quarantine(weak, reason="was in context when an episode failed",
+                         actor="automation", basis=WithdrawalBasis.CO_OCCURRENCE)
+        flagged = [i for i in report.attention(depot) if i.memory_id == weak]
+        passed.append(check("the withdrawal becomes the finding", bool(flagged),
+                            flagged[0].kind if flagged else "nothing"))
+        passed.append(check(
+            "it says why the basis is not enough",
+            bool(flagged) and "agreement, not causation" in flagged[0].detail,
+        ))
+        passed.append(check(
+            "it offers to undo rather than to inspect",
+            bool(flagged) and "release" in flagged[0].action,
+        ))
+
+        rule("7. A newly imported memory is actually retrievable")
+
+        # The regression this guards is subtle and was live for two days:
+        # ranking on value fell through to the memory id, hence to creation
+        # time, so an import — always newer than what the recipient already
+        # held — could never be exposed, and value evidence can only be earned
+        # by exposure.
+        fresh = MemoryFabric(
+            embedder=embedder, firewall=federating_firewall(),
+            estimator="amortized",
+            exposure_policy=EpsilonGreedyPolicy(epsilon=0.2, rank_by="value"),
+        )
+        try:
+            for i in range(4):
+                old_id = fresh.remember("fresh-agent", f"Unrelated note number {i}.")
+                fresh.validate(old_id, actor="supervisor")
+            donor = depot.remember(
+                "depot-agent",
+                "Tyre pressure on the yard tug should be 3.5 bar in winter.",
+            )
+            depot.validate(donor, actor="supervisor")
+            handed = offer(depot, donor, fresh, recipient_agent="fresh-agent")
+            passed.append(check("the import was accepted", handed.accepted))
+            fresh.validate(handed.imported_memory_id, actor="fresh-agent")
+            found = fresh.retrieve("fresh-agent", "yard tug tyre pressure in winter", k=3)
+            passed.append(check(
+                "the newest, most relevant memory is exposed",
+                any(m.id == handed.imported_memory_id for m in found.exposed),
+                f"{len(found.exposed)} exposed",
+            ))
+        finally:
+            fresh.close()
+
+        rule("8. The event log survives a backup, and the backup is verified")
+
+        with tempfile.TemporaryDirectory() as tmp:
+            copy_path = str(Path(tmp) / "depot-backup.db")
+            code = cli_main(["--db", depot.log.path, "backup", copy_path])
+            passed.append(check("backup reported success", code == 0))
+            restored = MemoryFabric(copy_path)
+            try:
+                passed.append(check(
+                    "the copy replays to the same event count",
+                    len(restored.log) == len(depot.log),
+                    f"{len(restored.log)} vs {len(depot.log)}",
+                ))
+                passed.append(check(
+                    "projections that live only in the log survive",
+                    restored.state.withdrawal_basis.get(memory_id)
+                    == WithdrawalBasis.CONTRADICTED.value,
+                ))
+            finally:
+                restored.close()
 
         rule("Summary")
         print(f"  {sum(passed)}/{len(passed)} checks passed")

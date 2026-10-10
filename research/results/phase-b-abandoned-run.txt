@@ -1,0 +1,32 @@
+Phase B: what should cross a federation boundary?
+model=qwen2.5:3b  seeds=[0, 1, 2, 3, 4]  rounds=12  arms=['isolated', 'share_all', 'share_all_propagate', 'share_overlap', 'share_overlap_propagate', 'share_valued', 'share_valued_overlap', 'oracle_share']
+territories={'north': ('cold_store', 'urban'), 'south': ('coastal', 'urban'), 'east': ('cold_store', 'coastal'), 'west': ('urban',)}
+prereg: research/prereg/phase-b-federated-agents.md
+
+  seed 0: writing each agent's own corpus...
+    north  12 lessons (2 poisoned), sites ('cold_store', 'urban')
+    south  12 lessons (3 poisoned), sites ('coastal', 'urban')
+    east   12 lessons (0 poisoned), sites ('cold_store', 'coastal')
+    west   6 lessons (2 poisoned), sites ('urban',)
+  seed 0 isolated                 success   67%  neg-transfer    0%  imports   0 (0 wrong)  propagated   0  (257s)
+  seed 0 share_all                success   79%  neg-transfer   10%  imports 126 (77 wrong)  propagated   0  (244s)
+  seed 0 share_all_propagate      success   81%  neg-transfer    6%  imports 126 (77 wrong)  propagated  21  (271s)
+  seed 0 share_overlap            success   83%  neg-transfer    8%  imports  60 (11 wrong)  propagated   0  (320s)
+  seed 0 share_overlap_propagate  success   90%  neg-transfer    2%  imports  60 (11 wrong)  propagated  11  (260s)
+  seed 0 share_valued             success   65%  neg-transfer    2%  imports   6 (2 wrong)  propagated   0  (251s)
+  seed 0 share_valued_overlap     success   69%  neg-transfer    0%  imports   6 (0 wrong)  propagated   0  (252s)
+  seed 0 oracle_share             success   85%  neg-transfer    2%  imports  49 (0 wrong)  propagated   0  (271s)
+  seed 1: writing each agent's own corpus...
+    north  12 lessons (2 poisoned), sites ('cold_store', 'urban')
+    south  12 lessons (0 poisoned), sites ('coastal', 'urban')
+    east   12 lessons (2 poisoned), sites ('cold_store', 'coastal')
+    west   6 lessons (2 poisoned), sites ('urban',)
+  seed 1 isolated                 success   71%  neg-transfer    0%  imports   0 (0 wrong)  propagated   0  (271s)
+  seed 1 share_all                success   77%  neg-transfer   12%  imports 126 (74 wrong)  propagated   0  (275s)
+  seed 1 share_all_propagate      success   81%  neg-transfer   12%  imports 126 (74 wrong)  propagated  18  (275s)
+  seed 1 share_overlap            success   75%  neg-transfer   17%  imports  60 (8 wrong)  propagated   0  (280s)
+  seed 1 share_overlap_propagate  success   81%  neg-transfer    6%  imports  60 (8 wrong)  propagated   8  (276s)
+  seed 1 share_valued             success   73%  neg-transfer    2%  imports  12 (7 wrong)  propagated   0  (274s)
+  seed 1 share_valued_overlap     success   71%  neg-transfer    0%  imports   4 (0 wrong)  propagated   0  (281s)
+  seed 1 oracle_share             success   79%  neg-transfer   10%  imports  52 (0 wrong)  propagated   0  (280s)
+  seed 2: writing each agent's own corpus...

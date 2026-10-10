@@ -135,7 +135,7 @@ actually is.
 |---|---|---|
 | **A** | Governed memory against an ungoverned vector store | ❌ **Killed** — [result](research/results/phase-a-real-agent-benchmark.md) · [prereg](research/prereg/phase-a-real-agent-benchmark.md) |
 | **A′** | If not blame, then what? | ❌ **PA′1 killed**, ✅ **PA′2 supported** — [result](research/results/phase-a-prime-attribution.md) · [prereg](research/prereg/phase-a-prime-attribution.md) |
-| **B** | What should cross a federation boundary, and must retraction follow it | [prereg](research/prereg/phase-b-federated-agents.md) |
+| **B** | What should cross a federation boundary, and must retraction follow it | ❌ **PB1 killed** · ✅ **PB2 supported** — [result](research/results/phase-b-federated-agents.md) · [prereg](research/prereg/phase-b-federated-agents.md) |
 | **C** | Can a population learn what should propagate — **gated on B** | [prereg](research/prereg/phase-c-memory-ecology.md) |
 
 Two decisions made before the run are why the result is usable. The decisive

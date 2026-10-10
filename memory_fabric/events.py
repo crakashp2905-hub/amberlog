@@ -34,6 +34,7 @@ class EventType:
     RETRACTION_REJECTED = "RetractionRejected"
     PROPAGATION_STATE_CHANGED = "PropagationStateChanged"
     ACCESS_DENIED = "AccessDenied"
+    SUPPORT_RECOMPUTED = "SupportRecomputed"
     ACCESS_DENIED = "AccessDenied"
 
 
@@ -416,6 +417,39 @@ def access_denied(
             "reason_code": reason_code,
             "risk": risk,
             "detail": detail[:256],
+        },
+    )
+
+
+def support_recomputed(
+    ts: int,
+    memory_id: str,
+    trigger_memory_id: str,
+    verdict: str,
+    surviving: list[str],
+    lost: list[str],
+    independent_count: int,
+    reason: str,
+    actor: str,
+) -> Event:
+    """A conclusion's support was recomputed after a premise was invalidated.
+
+    Emitted whether or not the conclusion survived, because "we checked and it
+    still stands" is the fact an operator most needs and the one an
+    unconditional contest loop could never record.
+    """
+    return Event(
+        type=EventType.SUPPORT_RECOMPUTED,
+        ts=ts,
+        agent_id=actor,
+        payload={
+            "memory_id": memory_id,
+            "trigger_memory_id": trigger_memory_id,
+            "verdict": verdict,
+            "surviving": list(surviving),
+            "lost": list(lost),
+            "independent_count": independent_count,
+            "reason": reason[:256],
         },
     )
 

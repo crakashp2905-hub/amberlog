@@ -28,6 +28,7 @@ from .lineage import LineageGraph, LineageView
 import json
 from datetime import datetime, timezone
 
+from .justification import JustificationGraph, JustificationKind, justification_context
 from .enforcement import (
     AccessDecision,
     EnforcedRead,
@@ -164,6 +165,7 @@ class MemoryFabric:
         self.auto_activate = auto_activate
         self._estimator_dirty = True
         self._enforcer: Enforcer | None = None
+        self._justifications: JustificationGraph | None = None
         self._replay()
         self.outbox = Outbox(self.log._conn)
         self._ensure_store_identity()
@@ -946,7 +948,30 @@ class MemoryFabric:
         ]
         contested: list[str] = []
         if propagate:
-            for node in self.lineage_graph.descendants(memory_id):
+            # Recompute support rather than assume its loss.
+            #
+            # This loop used to mark *every* descendant contested, so a
+            # conclusion resting on two independent premises was treated
+            # exactly like one resting on a single invalidated premise.
+            # `evidence_is_independent` existed to tell them apart and nothing
+            # called it, which is why roadmap §4.2 — correct a belief without
+            # withdrawing unrelated knowledge — was unimplemented.
+            #
+            # The quarantine is emitted first so the recomputation sees the
+            # premise as already lost; otherwise every descendant would still
+            # find it usable and nothing would be contested at all.
+            self._emit(*emitted)
+            emitted = []
+
+            # Nearest first, recomputing each one *after* the previous
+            # transition has been emitted. Batching the verdicts against a
+            # single snapshot looked equivalent and was not: a grandchild was
+            # evaluated while its parent was still active, so it stayed
+            # justified and the cascade stopped one level short. The lineage
+            # walk is already ordered by depth, so one pass suffices.
+            for node in sorted(
+                self.lineage_graph.descendants(memory_id), key=lambda n: n.depth
+            ):
                 descendant = self.state.memories.get(node.memory_id)
                 if descendant is None:
                     continue
@@ -955,15 +980,37 @@ class MemoryFabric:
                     LifecycleState.DELETED,
                 ):
                     continue
-                emitted.append(
-                    self._transition(
-                        node.memory_id,
-                        LifecycleState.CONTESTED,
-                        f"justification retracted: ancestor {memory_id} quarantined ({reason})",
-                        actor,
-                    )
+
+                verdict = self.justifications.recompute(node.memory_id)
+                record = ev.support_recomputed(
+                    ts=self.now(),
+                    memory_id=verdict.memory_id,
+                    trigger_memory_id=memory_id,
+                    verdict=verdict.verdict,
+                    surviving=list(verdict.surviving),
+                    lost=list(verdict.lost),
+                    independent_count=verdict.independent_count,
+                    reason=verdict.reason,
+                    actor=actor,
                 )
-                contested.append(node.memory_id)
+                if verdict.still_justified:
+                    # Independently justified knowledge survives the loss of one
+                    # premise. Recorded anyway, so an operator can see that the
+                    # recomputation happened and what carried the conclusion.
+                    self._emit(record)
+                    continue
+
+                self._emit(
+                    record,
+                    self._transition(
+                        verdict.memory_id,
+                        LifecycleState.CONTESTED,
+                        f"support recomputed after {memory_id} was quarantined: "
+                        f"{verdict.reason}",
+                        actor,
+                    ),
+                )
+                contested.append(verdict.memory_id)
         self._emit(*emitted)
         return contested
 
@@ -1172,6 +1219,12 @@ class MemoryFabric:
         memories to an agent.
         """
         return self._require(memory_id)
+
+    @property
+    def justifications(self) -> "JustificationGraph":
+        if self._justifications is None:
+            self._justifications = JustificationGraph(self)
+        return self._justifications
 
     @property
     def enforcer(self) -> "Enforcer":

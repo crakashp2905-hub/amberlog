@@ -146,6 +146,13 @@ class TestRetraction(unittest.TestCase):
         self.assertIs(f.get(self.middle).lifecycle_state, LifecycleState.ACTIVE)
 
     def test_retraction_is_visible_in_the_audit_trail(self) -> None:
+        """The reason now names the *recomputation*, not just the ancestor.
+
+        Phase 4 replaced the unconditional contest loop with support
+        recomputation, so the audit records why the conclusion lost its
+        justification rather than only that an ancestor was withdrawn — and it
+        records the same for a conclusion that survived.
+        """
         f = self.fabric
         f.quarantine(self.root, reason="source episode was poisoned", actor="sec-team")
 
@@ -153,9 +160,15 @@ class TestRetraction(unittest.TestCase):
         lifecycle = [e for e in trail if e.type == "LifecycleChanged"]
         self.assertTrue(lifecycle)
         reason = lifecycle[-1].payload["reason"]
-        self.assertIn("justification retracted", reason)
+        self.assertIn("support recomputed", reason)
         self.assertIn(self.root, reason)
         self.assertEqual(lifecycle[-1].payload["actor"], "sec-team")
+
+        recomputed = [e for e in f.log.read() if e.type == "SupportRecomputed"]
+        self.assertTrue(recomputed, "the recomputation itself must be auditable")
+        for event in recomputed:
+            self.assertIn(event.payload["verdict"], ("justified", "contested", "unsupported"))
+            self.assertEqual(event.payload["trigger_memory_id"], self.root)
 
     def test_explain_names_the_retracted_ancestor(self) -> None:
         f = self.fabric

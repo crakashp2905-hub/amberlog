@@ -30,3 +30,10 @@ Thumbs.db
 # Not committed: it is 8 MB of someone else's dataset under its own licence, and
 # the harness re-downloads it. A commit of it was reverted rather than kept.
 research/bench/external/scifact-raw/
+
+# relevance_v2 is generated, not committed: 12.4 MB a split. MANIFEST.json
+# carries the SHA-256 of both and tests/test_relevance_v2.py rebuilds and
+# compares, which asserts the generator still produces those bytes -- a
+# stronger claim than committing them.
+research/bench/relevance_v2/dev.json
+research/bench/relevance_v2/test.json

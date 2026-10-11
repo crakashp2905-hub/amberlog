@@ -11,7 +11,7 @@ and did not.
 
 | | Check | Result |
 |---|---|---|
-| 1 | `pytest tests` | **965 passed**, 830 subtests |
+| 1 | `pytest tests` | **980 passed**, 832 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
 | 3 | `tools/scan_secrets.py` | 59 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
 | 4 | `compileall` over `memory_fabric`, `experiments`, `tests`, `tools` | clean |
@@ -86,6 +86,6 @@ because it is the honest argument for the checks existing:
 - **No adversarial testing of the sensitive-data detector.** It is pattern-based and misses novel formats, as SECURITY.md says.
 - **Tenancy is checked as authorisation, not as isolation.** Every test here runs in one process against one file. Nothing demonstrates — or could demonstrate — isolation against a caller holding the database.
 - **The internal benchmark is still mine**, but it is no longer the only one. SciFact's labels were written by third parties years earlier, and it immediately showed `relevance_v1` flattering the hashing embedder by a factor of four in the size of the gap.
-- **The test count in row 1 was wrong until this run, by 9.** Three documents said 974 where the suite collects and passes **965**; re-running the documented command is what found it. The 974 cannot be reproduced at the commit that recorded it (959 collected there), so it was a transcription error, not a regression — and a table row is exactly where "no numbers in docs without a run" is easiest to violate without noticing.
+- **The test count in row 1 has been wrong once, by 9.** Three documents said 974 where the suite collects and passes **965**; re-running the documented command is what found it. The 974 cannot be reproduced at the commit that recorded it (959 collected there), so it was a transcription error, not a regression — and a table row is exactly where "no numbers in docs without a run" is easiest to violate without noticing.
 - **A single run on one machine.** CI covers rows 1–5 and 11 across six interpreter/OS pairs; rows 6–10 were run by hand, here.
 - **The by-hand rows are not regression-proof.** The three defects above now have tests, so those specific failures are caught in CI from now on. The rows themselves are still a human running commands, which is why the harness mistakes in them are recorded above rather than quietly re-run until green.

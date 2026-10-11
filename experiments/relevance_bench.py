@@ -42,6 +42,7 @@ import json
 import math
 import pathlib
 import sys
+import time
 from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping, Sequence
 
@@ -55,6 +56,12 @@ BENCH_DIR = pathlib.Path(__file__).resolve().parent.parent / "research" / "bench
 BENCHMARK = "relevance_v1"
 DEFAULT_K = 3
 
+# k per benchmark, because the right k is a property of the data. v1 cases hold
+# 1-2 relevant memories against 18; v2 holds up to 4 (a 4-hop chain) against
+# ~500, and a k below the chain length would score a perfect selection as a
+# miss -- the oracle would be handicapped, which principle 8b forbids.
+BENCH_K = {"relevance_v1": 3, "relevance_v2": 5}
+
 BLOCKED_LIFECYCLE = frozenset({"quarantined", "deprecated", "deleted"})
 
 _STOP = frozenset(
@@ -67,10 +74,16 @@ _STOP = frozenset(
 # --- loading ----------------------------------------------------------------
 
 
-def load(split: str) -> list[dict[str, Any]]:
-    path = BENCH_DIR / BENCHMARK / f"{split}.json"
+def load(split: str, benchmark: str = BENCHMARK) -> list[dict[str, Any]]:
+    path = BENCH_DIR / benchmark / f"{split}.json"
+    if not path.exists():
+        raise SystemExit(
+            f"{path} is not built. relevance_v2 is generated rather than "
+            f"committed (12 MB a split); run "
+            f"`python -m research.bench.relevance_v2.build` first, and the "
+            f"MANIFEST digests will confirm you got the same bytes.")
     payload = json.loads(path.read_text(encoding="utf-8"))
-    assert payload["benchmark"] == BENCHMARK, payload["benchmark"]
+    assert payload["benchmark"] == benchmark, payload["benchmark"]
     return payload["cases"]
 
 
@@ -501,6 +514,19 @@ class CaseResult:
     irrelevant_ratio: float
     abstained: bool
     expect_abstain: bool
+    # Sufficiency (Priority 2). None where the case declares no critical
+    # requirement -- the MISSING sentinel from the relevance contract rather
+    # than a zero, because "this case cannot answer the question" and "this arm
+    # assembled an insufficient context" are different facts and averaging them
+    # together would report the first as the second.
+    requirements_total: int = 0
+    requirements_met: int = 0
+    sufficient: bool | None = None
+    # Stale evidence (Priority 3): a memory whose own lifecycle is active but
+    # whose source root has been retracted.
+    stale_declared: int = 0
+    stale_cited: int = 0
+    latency_ms: float = 0.0
 
 
 def dcg(gains: Sequence[float]) -> float:
@@ -540,6 +566,31 @@ def score_case(case: Mapping[str, Any], returned: Sequence[str],
     critical_recall = (
         found_critical / len(reachable_critical) if reachable_critical else 1.0
     )
+
+    # --- sufficiency --------------------------------------------------------
+    #
+    # Ranking asks "did the arm order the corpus well". This asks the question
+    # a decision actually turns on: does the assembled set *contain enough* to
+    # answer defensibly? They come apart. A 4-hop chain with three hops
+    # retrieved scores 0.75 recall and is worth nothing, because the conclusion
+    # cannot be reached; a `conflicting` case holding one of two contradictory
+    # sources scores 0.5 recall and is worse than nothing, because it looks
+    # complete.
+    #
+    # Satisfiers are intersected with `top` *minus* the forbidden set, so a
+    # requirement can never be satisfied by a memory a gate refuses. Without
+    # that subtraction the gate-bypassing arm would report full sufficiency on
+    # the `gated` family, which is the same mistake as crediting its nDCG.
+    requirements = labels.get("requirements") or []
+    visible = set(top) - forbidden
+    critical_reqs = [r for r in requirements if r.get("critical")]
+    met = [r for r in requirements if set(r["satisfied_by"]) & visible]
+    critical_met = [r for r in critical_reqs if set(r["satisfied_by"]) & visible]
+    sufficient = (
+        (len(critical_met) == len(critical_reqs)) if critical_reqs else None
+    )
+
+    stale = set(labels.get("stale") or ())
     return CaseResult(
         case_id=case["case_id"],
         family=case["family"],
@@ -555,7 +606,26 @@ def score_case(case: Mapping[str, Any], returned: Sequence[str],
         irrelevant_ratio=(len([m for m in top if m in irrelevant]) / len(top)) if top else 0.0,
         abstained=not top,
         expect_abstain=bool(labels["expect_abstain"]),
+        requirements_total=len(requirements),
+        requirements_met=len(met),
+        sufficient=sufficient,
+        stale_declared=len(stale),
+        stale_cited=len([m for m in top if m in stale]),
     )
+
+
+def _ratio(flags: Sequence[bool]) -> float | None:
+    """A rate over the cases that declare the property, or None.
+
+    None rather than 0.0: a benchmark whose cases carry no requirements has no
+    sufficiency, and reporting that as zero would make v1 look like a total
+    failure at a question it never asked.
+    """
+    return round(sum(1 for f in flags if f) / len(flags), 4) if flags else None
+
+
+def _mean_of(values: Sequence[float]) -> float | None:
+    return round(sum(values) / len(values), 4) if values else None
 
 
 @dataclass
@@ -603,6 +673,43 @@ class ArmReport:
                 (len([c for c in answerable if c.abstained]) / len(answerable))
                 if answerable else 0.0, 4
             ),
+            # --- Priority 2: sufficiency, over the cases that declare it ----
+            "sufficiency": _ratio([c.sufficient for c in self.cases
+                                   if c.sufficient is not None]),
+            "requirement_recall": _mean_of([
+                c.requirements_met / c.requirements_total
+                for c in self.cases if c.requirements_total
+            ]),
+            # --- Priority 3: use of evidence whose source root was retracted -
+            "stale_citation_rate": _ratio([
+                bool(c.stale_cited) for c in self.cases if c.stale_declared
+            ]),
+            # The rate alone cannot see the mechanism working. Grouping by
+            # source root collapses four derived restatements of one retracted
+            # survey into one, which takes the count from 4 to 1 and leaves the
+            # "did it cite any" rate at 1.000 either way. A binary that cannot
+            # distinguish four wrong citations from one is not measuring the
+            # thing the mechanism does.
+            "stale_citations_mean": _mean_of([
+                float(c.stale_cited) for c in self.cases if c.stale_declared
+            ]),
+        }
+
+    def timing(self) -> dict[str, float]:
+        """Wall clock, kept out of `summary()` deliberately.
+
+        Metrics must be byte-identical across two runs of one commit -- that is
+        how a hidden source of state gets caught. A timing figure never will
+        be, so folding it in would have meant loosening the reproducibility
+        test to accommodate a measurement rather than keeping the two kinds of
+        number apart.
+        """
+        if not self.cases:
+            return {"latency_ms": 0.0, "latency_ms_max": 0.0}
+        return {
+            "latency_ms": round(
+                sum(c.latency_ms for c in self.cases) / len(self.cases), 3),
+            "latency_ms_max": round(max(c.latency_ms for c in self.cases), 3),
         }
 
     def by_family(self) -> dict[str, dict[str, float]]:
@@ -631,6 +738,7 @@ def run(
     k: int = DEFAULT_K,
     arms: Sequence[str] | None = None,
     bypass_gates: bool = False,
+    benchmark: str = BENCHMARK,
 ) -> dict[str, Any]:
     """Score every arm over one split.
 
@@ -638,26 +746,35 @@ def run(
     prove `must_not_expose_rate` fires, because a metric that cannot fire is
     not a check.
     """
-    cases = load(split)
+    cases = load(split, benchmark)
     chosen = list(arms) if arms else list(ARMS)
     registry = {**ARMS, **BROKEN_ARMS}
     reports: dict[str, ArmReport] = {}
     for name in chosen:
         report = ArmReport(arm=name)
         for case in cases:
+            # Wall clock around the arm only, not the scoring. Reported because
+            # a selector that wins on nDCG and costs 500 ms a query has not
+            # won; P9 was declined on a 4.39 ms figure that turned out to be
+            # the wrong embedder's.
+            started = time.perf_counter()
             ranked = registry[name](case, k)
+            elapsed = (time.perf_counter() - started) * 1000.0
             if bypass_gates:
                 allowed, refused = list(ranked), {}
             else:
                 allowed, refused = apply_gates(case, ranked)
-            report.cases.append(score_case(case, allowed, refused, k))
+            scored = score_case(case, allowed, refused, k)
+            scored.latency_ms = elapsed
+            report.cases.append(scored)
         reports[name] = report
     return {
-        "benchmark": BENCHMARK,
+        "benchmark": benchmark,
         "split": split,
         "k": k,
         "cases": len(cases),
         "arms": {name: report.summary() for name, report in reports.items()},
+        "timing": {name: report.timing() for name, report in reports.items()},
         "by_family": {name: report.by_family() for name, report in reports.items()},
         "_reports": reports,
     }
@@ -690,11 +807,13 @@ def headroom(result: Mapping[str, Any], metric: str = "ndcg_at_k") -> dict[str, 
 def to_markdown(result: Mapping[str, Any]) -> str:
     gap = headroom(result)
     lines = [
-        f"# relevance_v1 — {result['split']} split",
+        f"# {result['benchmark']} — {result['split']} split",
         "",
         f"- **Arms:** {', '.join(result['arms'])}",
         f"- **Cases:** {result['cases']} · **k:** {result['k']}",
-        "- **Deterministic:** no model calls; two runs of one commit are byte-identical.",
+        "- **Deterministic** unless a `real_*` arm is present: those call an "
+        "embedding model, and the rest are byte-identical across runs of one "
+        "commit.",
         "",
         "## Arms",
         "",
@@ -710,6 +829,41 @@ def to_markdown(result: Mapping[str, Any]) -> str:
             f"**{row['must_not_expose_rate']:.3f}** | {row['irrelevant_ratio']:.3f} | "
             f"{row['abstention_precision']:.3f} | {row['false_abstention']:.3f} |"
         )
+    has_sufficiency = any(
+        row.get("sufficiency") is not None for row in result["arms"].values()
+    )
+    if has_sufficiency:
+        lines += [
+            "",
+            "## Sufficiency, stale evidence and cost",
+            "",
+            "Ranking asks whether the arm ordered the corpus well. These ask "
+            "whether the assembled context would support a defensible answer, "
+            "whether any of it rests on a retracted source, and what it cost.",
+            "",
+            "| arm | sufficient | requirement recall | stale citation | "
+            "stale cited / case | latency ms |",
+            "|---|---|---|---|---|---|",
+        ]
+        for name, row in result["arms"].items():
+            fmt = lambda v: "—" if v is None else f"{v:.3f}"  # noqa: E731
+            lines.append(
+                f"| `{name}` | {fmt(row.get('sufficiency'))} | "
+                f"{fmt(row.get('requirement_recall'))} | "
+                f"{fmt(row.get('stale_citation_rate'))} | "
+                f"{fmt(row.get('stale_citations_mean'))} | "
+                f"{result['timing'][name]['latency_ms']:.2f} |"
+            )
+        lines += [
+            "",
+            "`sufficient` is the share of cases where **every** critical "
+            "evidence requirement was met by something the gates allowed. A "
+            "requirement satisfiable only by a refused memory cannot be met, "
+            "so an arm that bypasses a gate gains nothing here either. `—` "
+            "means the benchmark declares no requirement of that kind, which "
+            "is not the same as scoring zero.",
+        ]
+
     lines += [
         "",
         "## Headroom",
@@ -745,7 +899,10 @@ def to_markdown(result: Mapping[str, Any]) -> str:
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--split", default="dev", choices=["dev", "test"])
-    parser.add_argument("--k", type=int, default=DEFAULT_K)
+    parser.add_argument("--benchmark", default=BENCHMARK, choices=sorted(BENCH_K))
+    parser.add_argument(
+        "--k", type=int, default=None,
+        help="defaults to the benchmark's own k (see BENCH_K)")
     parser.add_argument("--arms", nargs="*", choices=list(ARMS) + list(BROKEN_ARMS))
     parser.add_argument(
         "--bypass-gates", action="store_true",
@@ -755,8 +912,10 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--json", dest="as_json", action="store_true")
     args = parser.parse_args(argv)
 
+    k = args.k if args.k is not None else BENCH_K[args.benchmark]
     result = run(
-        args.split, k=args.k, arms=args.arms, bypass_gates=args.bypass_gates
+        args.split, k=k, arms=args.arms, bypass_gates=args.bypass_gates,
+        benchmark=args.benchmark,
     )
     serialisable = {k: v for k, v in result.items() if not k.startswith("_")}
 

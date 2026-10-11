@@ -230,11 +230,23 @@ class TheCeilingHolds(unittest.TestCase):
 class ItIsReproducible(unittest.TestCase):
     def test_two_runs_agree_exactly(self) -> None:
         """No model calls and no sampling, so a difference between runs would
-        mean a hidden source of state."""
+        mean a hidden source of state.
+
+        This caught a real regression: a latency column added to `summary()`
+        made the metrics non-reproducible, because a wall clock cannot be equal
+        across runs. The fix was to move timing to its own key rather than to
+        exempt it here -- a reproducibility test relaxed to fit a new field
+        stops being one.
+        """
         first = run("dev")
         second = run("dev")
         self.assertEqual(first["arms"], second["arms"])
         self.assertEqual(first["by_family"], second["by_family"])
+
+    def test_timing_is_reported_and_kept_out_of_the_metrics(self) -> None:
+        result = run("dev", arms=["lexical"])
+        self.assertIn("latency_ms", result["timing"]["lexical"])
+        self.assertNotIn("latency_ms", result["arms"]["lexical"])
 
     def test_the_markdown_report_is_byte_identical_across_runs(self) -> None:
         self.assertEqual(to_markdown(run("dev")), to_markdown(run("dev")))

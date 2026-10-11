@@ -1,0 +1,35 @@
+{
+  "benchmark": "relevance_v2",
+  "built_at": "2026-10-11",
+  "note": "Frozen. A change means a new benchmark directory, not an edit. The split JSON is generated, not committed; these digests are the reproducibility claim.",
+  "per_family": 6,
+  "families": [
+    "budget_pressure",
+    "conflicting",
+    "direct",
+    "facet_trap",
+    "gated",
+    "independent_support",
+    "multi_hop_3",
+    "multi_hop_4",
+    "shared_root",
+    "superseded_rev",
+    "unanswerable"
+  ],
+  "splits": {
+    "dev": {
+      "cases": 33,
+      "memories": 20465,
+      "approx_tokens": 272325,
+      "sha256": "f22bc8a30151e46c54690c55a065047975c6ef1dab41fc32edf42a2cfcddc7f3",
+      "bytes": 12437694
+    },
+    "test": {
+      "cases": 33,
+      "memories": 20454,
+      "approx_tokens": 272118,
+      "sha256": "cb44026b3a0317b57d938766537d752fbdd5d85221aeb5b0954269d8fd176d2e",
+      "bytes": 12431848
+    }
+  }
+}

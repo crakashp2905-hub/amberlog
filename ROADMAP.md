@@ -98,8 +98,8 @@ authorised memory can be irrelevant now and essential later.
 |---|---|---|---|
 | **R0** | Relevance contract and invariants | 10 invariants enforced in code, each with a test: task-scoped, exact-version-bound, no lifecycle authority, no gate override, explicit uncertainty, missing ≠ zero, auditable, budget-respecting, observed/inferred separable | ✅ **done** — [spec](docs/RELEVANCE_SPEC.md), 35 tests |
 | **R1** | Benchmark, baselines, **oracle ceiling** | A clean checkout runs it; deterministic arms repeat; a deliberately broken ranker fails it; the ceiling is measured *before* any threshold is registered | ✅ **done** — [relevance_v1](research/bench/relevance_v1/README.md), [ceiling **+0.222 nDCG**](research/results/relevance-v1-ceiling.md) |
-| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning | ⛔ **not the next thing to build.** The benchmark grew to 50 cases and four arms still sit within 0.04 of each other; R6 measured the model recovering ~40% of what nDCG penalises, so a ranker chasing the last points is chasing something the model partly fixes for free. Fix the embedder first — SciFact puts the shipped one at **less than half** of lexical retrieval |
-| **R3** | Budget-aware context assembly | Better context sufficiency than top-k at equal budget; critical omissions within tolerance; every omission has a reason | ⛔ **blocked on a benchmark that can measure it.** R6 showed a model reading 19 memories unaided, so a budget this benchmark can impose is not a budget that binds |
+| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning | ⛔ **still not next, and now for a measured reason.** [relevance_v2](research/bench/relevance_v2/README.md) puts the unclaimed headroom at **+0.232 nDCG@5** and says almost all of it is in multi-hop chains (`multi_hop_4` at 0.519) and provenance, not in ranking near-misses: `direct` and `facet_trap` are already solved at 1.000 ([result](research/results/relevance-v2-ceiling.md)). Sufficiency has the larger headroom (+0.267) and is registered first. Earlier reason, still true: The benchmark grew to 50 cases and four arms still sit within 0.04 of each other; R6 measured the model recovering ~40% of what nDCG penalises, so a ranker chasing the last points is chasing something the model partly fixes for free. Fix the embedder first — SciFact puts the shipped one at **less than half** of lexical retrieval |
+| **R3** | Budget-aware context assembly | Better context sufficiency than top-k at equal budget; critical omissions within tolerance; every omission has a reason | 🔶 **unblocked and registered.** relevance_v2's `budget_pressure` family costs ~25,000 prompt tokens for the full corpus against ~400 for a selection, so a budget now binds. Ceiling measured, threshold pre-registered as a share of it ([prereg](research/prereg/p2-context-sufficiency.md)); the selector itself is not built. The gap it has to close: **no arm abstains even once** on the nine dev cases where abstention is the only correct answer |
 | **R4** | Bounded lineage-aware discovery | Improved indirect relevance with bounded false additions, runtime and candidate growth. No causal claim without causal evidence | ✅ **done** — premise promotion took the `indirect` family 0.613 → **1.000**; bounded by depth, limit and parents-only |
 | **R5** | Temporal / context dynamics (bitemporal) | Relevance reverses when context changes without memory mutation; stale data is never presented as current; `valid_time` distinct from recorded time | ✅ **done** — `valid_from`/`valid_to` on `Memory` (schema 0.7.0), `applies_at()`, `retrieve(as_of=…)`; +0.074 nDCG on the frozen split |
 | **R6** | Real-agent integration | The full loop runs against a live provider with a deterministic stub path still in CI. A downstream claim only if a controlled experiment supports it | 🔶 **run. dev inconclusive, test ABANDONED** — perfect selection was worth +0.000 on the frozen split, so the registered abandonment clause fired. The dev finding that retrieval beats a stuffed context **did not replicate**. What survived both splits: a ~3× token saving, and stuffing the context making the model less willing to abstain ([result](research/results/r6-downstream.md)) |
@@ -142,6 +142,33 @@ So if R1's oracle ceiling also comes out at ~5 points, the honest conclusion is
 that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
+
+### What relevance_v2 changed
+
+**[relevance_v2](research/bench/relevance_v2/README.md)** is the benchmark both
+SciFact and R6 said was needed, built for the specific deficiency each had
+found: ~495 memories a case against v1's 18, distractors that are the
+answer-bearing sentence with **exactly one facet changed**, 4-hop chains with no
+direct statement of the asked quantity, and labels that carry evidence
+*requirements* rather than only relevance.
+
+The line everything else rests on: a deliberately broken arm returning storage
+order scores **0.000**, where on v1 it scored **0.843** and once beat the real
+baseline. Headroom is **+0.232 nDCG@5** on dev, and the per-family breakdown
+names where: `multi_hop_4` 0.519, `multi_hop_3` 0.600, `independent_support`
+0.693, against `direct` and `facet_trap` already at 1.000.
+
+Three results worth separating from the ranking number
+([full result](research/results/relevance-v2-ceiling.md)):
+
+- **Sufficiency headroom is larger than ranking headroom** (+0.267 against +0.232) and the two do not move together. Ordering well and assembling enough are not the same question.
+- **No arm abstains, ever** — 0.000 abstention precision on the nine dev cases where abstention is the only correct answer. Nothing in the retrieval path can say *the corpus does not answer this*, even when the reachable relevant set is empty and the store knows it.
+- **Source-root grouping cuts stale-evidence citation by 70%** (3.333 → 1.000 citations a case) and is the only one of the three mechanisms that moves it. The first number the provenance machinery has earned on its own target case. It never reaches zero.
+
+And it found three defects in itself plus one in its fixture *before* measuring
+anything, including an answer-key leak that would have graded wrong retrievals
+as correct answers 185 times. On v1 that class of defect shipped twice and was
+caught by a broken arm outscoring a real one.
 
 ### What the external benchmark and R6 changed
 
@@ -187,7 +214,7 @@ promotion on the `indirect` family with no lineage machinery at all.
 
 Three consequences for this roadmap:
 
-1. **R2 is blocked on the benchmark, not on the ranker.** Twenty cases cannot separate arms that differ by 0.05, and the two splits disagree about whether to fuse lexical with the real embedder. More labelled cases is the next useful work.
+1. **R2 was blocked on the benchmark, not on the ranker — and that is now addressed.** Twenty cases could not separate arms differing by 0.05. [relevance_v2](research/bench/relevance_v2/README.md) is 66 cases at ~495 memories each with near-misses one facet from the answer, and it separates them: a no-signal arm scores **0.000** where v1 gave it 0.843. It also says where the headroom is, which v1 could not.
 2. **Source-root grouping was measured against the wrong baseline.** It improves `copied_evidence` and `near_duplicate` relative to plain hybrid, and both are *worse* than plain `lexical` — so the comparison that mattered was never made. Re-measure before claiming it.
 3. **The default embedder does not change.** Zero runtime dependencies is a stated commitment and `OllamaEmbedder` needs a running service; it is one line to switch, with the numbers as the argument.
 

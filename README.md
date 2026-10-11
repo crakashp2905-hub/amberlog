@@ -20,7 +20,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**829 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**853 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including
@@ -340,12 +340,24 @@ comes first: the contract and its invariants ([docs/RELEVANCE_SPEC.md](docs/RELE
 done), then the benchmark with a measured oracle ceiling, then a ranker — not
 the other way round.
 
-The prediction on record before that run: Phase A and PA′ both found success
-tracking whether a correct memory reached the prompt, with perfect *selection*
-worth about **+5 points** and the rest of the gap being corpus **coverage**. If
-the new benchmark's oracle ceiling is also ~5 points, relevance ranking is not
-where the headroom is — and an oracle is much cheaper than a tuned ranker as a
-way to find that out.
+The benchmark exists and the ceiling is measured: **+0.222 nDCG@3** over the
+best simple baseline, with critical-memory omission going from 28.6% to zero
+([result](research/results/relevance-v1-ceiling.md)). That **contradicts** the
+~5-point prediction registered beforehand, and the prediction is left on record
+rather than edited away.
+
+Two findings matter more than the headroom. **The shipping retrieval path is
+the weakest non-broken arm** — beaten by plain IDF-weighted token overlap by up
+to 32 points, because it is a hashing embedder rather than a trained model; fix
+that before building a ranker. And three of the five families with the largest
+gaps (indirect evidence, copied evidence, temporal drift) are answerable with
+**provenance, source roots and recorded time — all of which the store already
+has and retrieval does not use.**
+
+The benchmark was invalid twice before it measured anything: corpus order
+leaked the answer, then `k` was as large as the corpus. The deliberately broken
+arm caught both, which is the argument for building the thing that can fail
+before the thing that can succeed.
 
 Three rules the contract enforces in code, each from a measured mistake:
 **irrelevant never means deleted** (Phase A's withdrawal policy cost 12.5

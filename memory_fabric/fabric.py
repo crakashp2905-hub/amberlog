@@ -176,7 +176,7 @@ class MemoryFabric:
         auto_activate: bool = False,
         encrypt_content: bool = True,
         key_provider: "KeyProvider | None" = None,
-        retrieval: str = "hybrid",
+        retrieval: str = "lexical",
         busy_timeout_ms: int = 5_000,
     ) -> None:
         self.log = EventLog(path, busy_timeout_ms=busy_timeout_ms)
@@ -1085,20 +1085,31 @@ class MemoryFabric:
     ) -> list[tuple[str, float]]:
         """Candidate discovery, by configured mode.
 
-        `hybrid` is the default, and the choice is a measured trade-off rather
-        than a preference. On `relevance_v1`, lexical alone has the better
-        nDCG (0.778 dev / 0.804 test against hybrid's 0.752 / 0.732) while
-        hybrid has the better **critical-memory omission** (0.214 / 0.000
-        against 0.286 / 0.200) and better recall.
+        **`lexical` is the default, and it was `hybrid` until an external
+        benchmark said otherwise.**
 
-        Critical omission is the metric with a consequence — it counts the
-        cases where the one decisive memory never reached the agent — so the
-        default optimises that and gives up some precision. A deployment that
-        would rather have precision can pass `retrieval="lexical"`, and the
-        reasoning is written down so that choice is informed.
+        `hybrid` is reciprocal-rank fusion of the vector and lexical arms, and
+        it was chosen on `relevance_v1` because it beat vector-only and omitted
+        fewer critical memories. On SciFact — 5,183 real abstracts, 339
+        third-party judgements — it scores **0.558 nDCG@10 against lexical's
+        0.621**, because the default embedder is a hashed bag of words scoring
+        0.315 and RRF gives a near-noise arm real rank votes. Noise with a vote
+        is worse than no vote.
+
+        Not an isolated reading: on `relevance_v1`'s own expanded test split
+        `lexical` scores 0.733 against hybrid's 0.693. **Lexical wins the
+        held-out split of both benchmarks.**
+
+        The rule is not "fusion is bad". With a *trained* embedder configured,
+        fusion helped on the same test split — 0.849 against 0.802 — so
+        `retrieval="hybrid"` is the recommendation once `embedder=` is a real
+        model. The rule is: do not fuse a weak arm into a strong one.
 
         `vector` reproduces the pre-2026-10-11 behaviour exactly, for anyone
         who needs the old ranking while validating.
+
+        Numbers: `research/results/scifact-external.md` and
+        `research/results/relevance-v1-real-embedder.md`.
         """
         mode = self.retrieval_mode
         if mode == "vector":

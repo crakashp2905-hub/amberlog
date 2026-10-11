@@ -347,6 +347,25 @@ best simple baseline, with critical-memory omission going from 28.6% to zero
 ~5-point prediction registered beforehand, and the prediction is left on record
 rather than edited away.
 
+**An external benchmark changed the product.** SciFact — 300 queries, 5,183
+abstracts, labels written by someone else — put the shipped hashing embedder at
+**0.315 nDCG@10 against plain lexical retrieval's 0.621**, where my own
+benchmark had reported an 8% gap rather than a 2× one
+([result](research/results/scifact-external.md)). The default retrieval mode is
+now `lexical`; `hybrid` is the recommendation once a trained embedder is
+configured. The parameter-free lexical arm landing just under published BM25 is
+the most reassuring number here — it says the harness behaves as a third party
+would expect.
+
+**And retrieval does change answers.** R6 ran a real model over the benchmark:
+selected context beat handing it the whole corpus, at **a third of the prompt
+tokens** — which the pre-registration predicted would *not* happen. Against its
+registered bar the result is **inconclusive** (20% of measured headroom against
+40% required) and is reported that way. Two things it measured that no earlier
+milestone had: the model recovers about **40% of what nDCG penalises**, and
+stuffing the context **halves** its willingness to say it cannot tell
+([result](research/results/r6-downstream.md)).
+
 The biggest lever turned out to be the embedder, and it is bigger than
 everything else here: a trained model (`nomic-embed-text`) closes **~70% of the
 dev headroom** and matches bounded premise promotion with no lineage machinery

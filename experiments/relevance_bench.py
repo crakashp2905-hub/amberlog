@@ -309,7 +309,12 @@ def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
 
     fabric = MemoryFabric(
         ":memory:", auto_activate=True, encrypt_content=False,
-        retrieval=case.get("_retrieval", "hybrid"),
+        # No default here. `current` means "the product exactly as it ships",
+        # so it must follow `MemoryFabric`'s own default rather than carry a
+        # copy of it — a hardcoded "hybrid" kept this arm reporting the old
+        # ranking after the product default changed, which is the one thing
+        # this arm exists not to do.
+        **({"retrieval": case["_retrieval"]} if "_retrieval" in case else {}),
     )
     try:
         ids = {}
@@ -417,6 +422,13 @@ ARMS: dict[str, Callable[[Mapping[str, Any], int], list[str]]] = {
     "real_vector": arm_real_vector,
     "real_hybrid": arm_real_hybrid,
     "store_temporal": None,  # filled below: needs the per-case event time
+    # Lexical *with* the mechanisms: the configuration the lexical/hybrid
+    # question never tested. Grouping and promotion are orthogonal to which
+    # retrieval arm feeds them, so choosing between them without measuring the
+    # combination would have been a false dichotomy.
+    "lexical_all": _store_arm(
+        "lexical", group_by_source_root=True, expand_lineage=1
+    ),
     "store_roots": _store_arm(
         "hybrid", group_by_source_root=True, expand_lineage=0
     ),

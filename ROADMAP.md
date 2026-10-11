@@ -98,11 +98,11 @@ authorised memory can be irrelevant now and essential later.
 |---|---|---|---|
 | **R0** | Relevance contract and invariants | 10 invariants enforced in code, each with a test: task-scoped, exact-version-bound, no lifecycle authority, no gate override, explicit uncertainty, missing ≠ zero, auditable, budget-respecting, observed/inferred separable | ✅ **done** — [spec](docs/RELEVANCE_SPEC.md), 35 tests |
 | **R1** | Benchmark, baselines, **oracle ceiling** | A clean checkout runs it; deterministic arms repeat; a deliberately broken ranker fails it; the ceiling is measured *before* any threshold is registered | ✅ **done** — [relevance_v1](research/bench/relevance_v1/README.md), [ceiling **+0.222 nDCG**](research/results/relevance-v1-ceiling.md) |
-| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning | ⛔ **blocked on sample size, not on design.** A trained embedder closed ~70% of the dev headroom ([result](research/results/relevance-v1-real-embedder.md)) and the frozen split cannot separate arms differing by 0.05. More labelled cases come first |
+| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning | ⛔ **not the next thing to build.** The benchmark grew to 50 cases and four arms still sit within 0.04 of each other; R6 measured the model recovering ~40% of what nDCG penalises, so a ranker chasing the last points is chasing something the model partly fixes for free. Fix the embedder first — SciFact puts the shipped one at **less than half** of lexical retrieval |
 | **R3** | Budget-aware context assembly | Better context sufficiency than top-k at equal budget; critical omissions within tolerance; every omission has a reason | blocked on R2 |
 | **R4** | Bounded lineage-aware discovery | Improved indirect relevance with bounded false additions, runtime and candidate growth. No causal claim without causal evidence | ✅ **done** — premise promotion took the `indirect` family 0.613 → **1.000**; bounded by depth, limit and parents-only |
 | **R5** | Temporal / context dynamics (bitemporal) | Relevance reverses when context changes without memory mutation; stale data is never presented as current; `valid_time` distinct from recorded time | ✅ **done** — `valid_from`/`valid_to` on `Memory` (schema 0.7.0), `applies_at()`, `retrieve(as_of=…)`; +0.074 nDCG on the frozen split |
-| **R6** | Real-agent integration | The full loop runs against a live provider with a deterministic stub path still in CI. A downstream claim only if a controlled experiment supports it | blocked on R2 |
+| **R6** | Real-agent integration | The full loop runs against a live provider with a deterministic stub path still in CI. A downstream claim only if a controlled experiment supports it | 🔶 **run, inconclusive as registered** — `store_all` closed 20% of measured headroom against a registered 40% bar. But retrieval **beat stuffing the whole corpus** at a third of the tokens, which the registration predicted it would not ([result](research/results/r6-downstream.md)) |
 | **R7** | Security and reliability | ✅ crypto (AEAD, external key custody) · ✅ trust boundary · ✅ multi-process durability · ✅ **tamper-evident event chain** with external checkpoints · ✅ concurrency measured and documented · ✅ version-skew tests · ✅ [OPERATIONS.md](docs/OPERATIONS.md). ✅ erasure inventory (`erasure_scope` reports reached / kept / unreachable, with the third as *unknown* rather than guessed) · ✅ state-machine property tests | ✅ **done** |
 | **R8** | Developer experience | An unfamiliar developer completes the quickstart unaided; demo matches docs | — |
 | **R9** | Release qualification | Claims match measured evidence, per deployment model | — |
@@ -142,6 +142,30 @@ So if R1's oracle ceiling also comes out at ~5 points, the honest conclusion is
 that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
+
+### What the external benchmark and R6 changed
+
+**SciFact** ([result](research/results/scifact-external.md)) — 300 queries,
+5,183 abstracts, third-party labels — showed the hashing embedder at **0.315
+nDCG@10 against lexical's 0.621**, where `relevance_v1` had reported an 8% gap
+rather than a 2× one. My own benchmark was flattering it through corpus size,
+distractors I wrote, and memories short enough that token overlap nearly always
+works. The parameter-free lexical arm landing just under published BM25 (0.621
+against ~0.665) is the most reassuring number in the project: the harness
+behaves the way a third party would expect.
+
+**The product default changed from `hybrid` to `lexical`** as a result, because
+fusing a near-noise arm into a good one costs 6.3 points there and loses on
+`relevance_v1`'s held-out split too. `hybrid` is the recommendation once a
+trained embedder is configured.
+
+**R6** ([result](research/results/r6-downstream.md)) is inconclusive against its
+registered bar and still the most informative run here: retrieval beat handing
+the model the whole corpus, at a third of the prompt tokens, which the
+registration predicted would not happen. It also measured the conversion factor
+every earlier milestone assumed — the model recovers ~40% of what nDCG
+penalises — and found that stuffing the context **halves** a model's
+willingness to say it cannot tell.
 
 ### What R1's follow-up changed
 

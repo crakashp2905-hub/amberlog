@@ -105,12 +105,17 @@ class DoctorTests(unittest.TestCase):
         try:
             with conn:
                 conn.execute("DROP TRIGGER events_no_update")
-            self.assertEqual(
-                conn.execute(
-                    "SELECT count(*) FROM sqlite_master WHERE type = 'trigger'"
-                ).fetchone()[0],
-                1,
-            )
+            # Named rather than counted: the integrity chain has append-only
+            # triggers of its own now, and a total made this assertion break
+            # whenever anything else grew one.
+            remaining = {
+                row[0]
+                for row in conn.execute(
+                    "SELECT name FROM sqlite_master WHERE type = 'trigger'"
+                )
+            }
+            self.assertNotIn("events_no_update", remaining)
+            self.assertIn("events_no_delete", remaining)
         finally:
             conn.close()
 
@@ -294,6 +299,31 @@ class DoctorTests(unittest.TestCase):
             self.assertIn("readable from", finding.detail)
         finally:
             fabric.close()
+
+    def test_the_event_chain_detects_a_tamper(self) -> None:
+        """The check two earlier security claims cited before it existed.
+
+        The append-only triggers are a guard; once dropped, edited and
+        recreated, nothing in the log disagrees with the edit. The chain does.
+        """
+        conn = sqlite3.connect(self.path)
+        try:
+            with conn:
+                conn.execute("DROP TRIGGER events_no_update")
+                conn.execute("UPDATE events SET ts = ts + 1 WHERE seq = 2")
+                conn.execute(
+                    "CREATE TRIGGER events_no_update BEFORE UPDATE ON events "
+                    "BEGIN SELECT RAISE(ABORT, 'append-only'); END"
+                )
+        finally:
+            conn.close()
+
+        code, report = self._run()
+        self.assertEqual(code, 5)
+        self.assertEqual(self._status(report, "event chain"), "fail")
+        # And the append-only check still passes, because the trigger is back:
+        # the two checks answer different questions and the report says so.
+        self.assertEqual(self._status(report, "append-only enforcement"), "ok")
 
     def test_a_check_that_cannot_run_is_never_reported_as_ok(self) -> None:
         """The honest outcome of "I could not tell" is a warning with the reason."""

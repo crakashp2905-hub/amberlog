@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pathlib
 import platform
 import shutil
 import sqlite3
@@ -276,6 +277,58 @@ def cmd_attention(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         print(f"  {C.DIM}$ {item.action}{C.RESET}")
     # A non-zero exit lets this run as a health check in a script.
     return 1 if any(i.severity == "high" for i in items) else 0
+
+
+def cmd_checkpoint(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Print or verify an integrity checkpoint.
+
+    A checkpoint is `(seq, chain_digest)`: small enough to commit to another
+    repository, write to append-only storage, paste into a ticket or read out
+    loud. It is worth nothing stored beside the database — whoever could
+    rewrite the chain could rewrite it too — and that is exactly why the
+    command prints it rather than filing it somewhere for you.
+    """
+    chain = fabric.log.chain
+    if args.verify:
+        payload = json.loads(pathlib.Path(args.verify).read_text(encoding="utf-8"))
+        from .integrity import Checkpoint
+
+        result = chain.verify_against(Checkpoint.from_json(payload))
+        if args.json:
+            print(json.dumps(result.to_json(), indent=2))
+        elif result.ok:
+            print(f"{C.GREEN}{result.detail}{C.RESET}")
+        else:
+            print(f"{C.RED}{result.detail}{C.RESET}", file=sys.stderr)
+        return 0 if result.ok else 5
+
+    checkpoint = chain.checkpoint()
+    verification = chain.verify(fabric.log.read())
+    if args.json:
+        print(json.dumps(
+            {**checkpoint.to_json(), "verification": verification.to_json()},
+            indent=2,
+        ))
+        return 0 if verification.ok else 5
+
+    heading("Integrity checkpoint")
+    table(
+        ["", ""],
+        [
+            ["store", fabric.store_id],
+            ["sequence", str(checkpoint.seq)],
+            ["chain digest", checkpoint.chain_digest],
+            ["chained events", str(checkpoint.events)],
+            ["verified", "yes" if verification.ok else "NO"],
+        ],
+    )
+    if verification.unchained_before:
+        print(f"\n  {C.YELLOW}{G.BULLET}{C.RESET} {verification.unchained_before} "
+              "event(s) predate the chain and are not covered.")
+    print(f"\n  {C.DIM}Store this where the database cannot reach it. A chain "
+          f"verifies against itself; only an external digest catches one "
+          f"rewritten wholesale.{C.RESET}")
+    return 0 if verification.ok else 5
 
 
 def cmd_tenants(fabric: MemoryFabric, args: argparse.Namespace) -> int:
@@ -892,6 +945,57 @@ def _check_blocked_not_exposed(fabric: MemoryFabric) -> Finding:
     )
 
 
+def _check_event_chain(fabric: MemoryFabric) -> Finding:
+    """Recompute the hash chain over the event log.
+
+    This is the check two earlier security claims cited before the mechanism
+    existed. The append-only triggers are a guard; once dropped, edited and
+    recreated, nothing in the log disagrees with the edit. The chain does.
+
+    Reports `ok` when the chain verifies, and prints the current checkpoint in
+    the detail so an operator can copy it somewhere else.
+
+    An earlier version warned *every* time, on the grounds that a chain alone
+    is tamper-evident rather than tamper-proof and only an external checkpoint
+    closes that. True — but a warning that can never be cleared is noise, and
+    noise is what teaches an operator to stop reading warnings. The limitation
+    belongs in the advice and in SECURITY.md, not in a permanent amber light.
+    """
+    chain = fabric.log.chain
+    result = chain.verify(fabric.log.read())
+    if not result.ok:
+        return Finding(
+            "fail", "event chain",
+            f"{result.detail} (first bad sequence: {result.first_bad_seq})",
+            "The event log has been modified. Restore from a verified backup "
+            "and compare against an external checkpoint.",
+        )
+    if result.checked == 0:
+        return Finding(
+            "warn", "event chain",
+            "no hash chain recorded, so nothing about this log's history is "
+            "verifiable beyond the append-only triggers",
+            "A store written before chaining existed. New events are chained "
+            "from now on; there is deliberately no backfill, because hashing "
+            "old events today proves only that they agree with themselves.",
+        )
+    checkpoint = chain.checkpoint()
+    detail = (
+        f"{result.checked} event(s) verified; checkpoint seq {checkpoint.seq} "
+        f"{checkpoint.chain_digest[:16]}…"
+    )
+    if result.unchained_before:
+        return Finding(
+            "warn", "event chain",
+            f"{detail}; {result.unchained_before} event(s) predate the chain "
+            "and are not covered",
+            "A store that adopted chaining late. There is deliberately no "
+            "backfill: hashing old events today proves only that they agree "
+            "with themselves.",
+        )
+    return Finding("ok", "event chain", detail)
+
+
 def _check_content_cipher(fabric: MemoryFabric) -> Finding:
     """Which cipher generation this store's content is sealed with.
 
@@ -1017,6 +1121,7 @@ def _check_dashboard_asset(fabric: MemoryFabric) -> Finding:
 
 DOCTOR_CHECKS = (
     _check_append_only,
+    _check_event_chain,
     _check_replay,
     _check_schema,
     _check_retractions,
@@ -1129,6 +1234,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("overview", cmd_overview, "Store health and what it can and cannot tell you")
     add("tenants", cmd_tenants, "Which tenants this store holds")
+    p = add("checkpoint", cmd_checkpoint,
+            "Print an integrity checkpoint, or verify against a saved one")
+    p.add_argument("--verify", metavar="FILE",
+                   help="a checkpoint JSON file saved earlier, elsewhere")
     add("doctor", cmd_doctor,
         "Whether this installation's answers can be believed (exit 0/1/5)")
 

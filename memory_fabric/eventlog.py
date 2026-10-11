@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from pathlib import Path
 from typing import Iterable, Iterator
 
 from .events import Event
+from .integrity import IntegrityChain
 from .txn import depth as txn_depth
 from .txn import forget as txn_forget
 from .txn import transaction as txn_transaction
@@ -69,6 +71,10 @@ class EventLog:
         # Safe unwrapped because every statement is `IF NOT EXISTS` and,
         # with `isolation_level=None`, each autocommits.
         self._conn.executescript(_SCHEMA)
+        # After the log's own schema, because it chains the rows that table
+        # holds. Hash-chaining every append is the mechanism two earlier
+        # security claims cited before it existed — see `integrity.py`.
+        self.chain = IntegrityChain(self._conn)
 
     # --- transactions ----------------------------------------------------
 
@@ -114,6 +120,10 @@ class EventLog:
                     ),
                 )
                 stored.append(event.with_seq(int(cursor.lastrowid)))
+            # Inside the same transaction as the insert. Chaining separately
+            # would leave a window in which an event exists unchained, and a
+            # crash there would be indistinguishable from a deletion.
+            self.chain.extend(stored, int(time.time() * 1000))
             return stored
 
     # --- reading ---------------------------------------------------------

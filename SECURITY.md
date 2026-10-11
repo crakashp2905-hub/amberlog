@@ -114,6 +114,23 @@ Four limits, stated rather than implied:
 - **A ciphertext is bound to its store, memory and version.** A tag alone would let authentic content be copied between memories, or an old version's bytes pasted over the current one to undo a correction by editing one column.
 - **Key custody is a deployment choice and the default is the weakest one.** `SqliteKeyProvider` keeps keys beside the ciphertext: that makes erasure possible and does nothing against someone holding the file. `DirectoryKeyProvider` or `CallbackKeyProvider` move them out; `memory-fabric --keys <dir>` opens such a store. A missing key store raises `KeyUnavailable` rather than reporting erasure, because telling an operator their data was deliberately destroyed is the one answer that stops them looking for the volume they did not mount.
 
+## Tamper evidence
+
+Every appended event is hashed and chained into its predecessor
+(`memory_fabric/integrity.py`). Editing, deleting or reordering any event
+breaks every link after it, and verification names the first divergent sequence
+number.
+
+**This exists because two earlier security claims cited "the event digests"
+when there were none** — the `seal` docstring justified a missing
+authentication tag that way, and the federation handler claimed a refusal
+before parsing. Both sentences predated the mechanism they named.
+
+- **A chain is tamper-evident, not tamper-proof.** Anyone who can write both the log and the chain can rewrite both consistently, and `verify` cannot tell. A test drives exactly that attack.
+- **The defence is a checkpoint kept elsewhere.** `memory-fabric checkpoint` prints `(seq, chain_digest)`: small enough to commit to another repository, write to append-only storage, paste into a ticket or read aloud. Stored beside the database it buys nothing. `--verify FILE` compares one back.
+- **Coverage is explicit.** Chaining starts when the table first appears, so a store written earlier has an unchained prefix, reported as `unchained_before` rather than counted as verified. There is deliberately no backfill: hashing old events today proves only that they agree with themselves.
+- **The chain's own table is append-only too**, by trigger — without that, a tamper could edit an event and fix its link in one transaction, which is the whole attack.
+
 ## Known gaps
 
 - **The sensitive-data detector is pattern-based**, so it misses novel secret formats and flags some harmless strings. It is one control among several, never the only one protecting a restricted memory. Its false-positive classes are documented in `tools/scan_secrets.py`.

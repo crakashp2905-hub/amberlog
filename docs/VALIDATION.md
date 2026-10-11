@@ -11,15 +11,15 @@ and did not.
 
 | | Check | Result |
 |---|---|---|
-| 1 | `pytest tests` | **715 passed**, 127 subtests |
+| 1 | `pytest tests` | **722 passed**, 133 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
 | 3 | `tools/scan_secrets.py` | 58 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
 | 4 | `compileall` over `memory_fabric`, `experiments`, `tests`, `tools` | clean |
 | 5 | Wheel contents | `py.typed`, `identity.py` and `dashboard.html` present; `experiments/` and `tests/` excluded; LICENSE recorded in `dist-info/licenses/` |
-| 6 | Install into a clean venv **outside the source tree**, then run the console script | `demo`, `tenants` and `doctor` all work; `doctor` reports **sound** with 9 ok and 0 warnings |
-| 7 | Two-hop retraction over a **real socket** with tenancy on | origin → hop 1 → hop 2 all `quarantined`; tenant preserved at the far end; an unsigned request refused |
+| 6 | Install into a clean venv **outside the source tree**, then run the console script | `demo`, `tenants` and `doctor` all work; `doctor` reports **sound**, 9 ok and 0 warnings, on a store created fresh for the run |
+| 7 | Two-hop retraction over a **real socket** with tenancy on | origin → hop 1 → hop 2 all `quarantined`; tenant preserved at the far end; a well-formed unsigned request refused **401** with a body of exactly `{"rejection_code": "unauthorized"}` |
 | 8 | Both `REFERENCE_DEPLOYMENT.md` Python blocks extracted and run **verbatim** in a clean directory | exit 0 |
-| 9 | Observability surface | `GET` 200 on `/`, `/api/overview`, `/api/propagation`; **`POST` 405**; unauthenticated **401**; wrong token **401** |
+| 9 | Observability surface | `GET` 200 on `/`, `/api/overview`, `/api/propagation`; **`POST` 405**; unauthenticated **401**; wrong token **401**; `build_server` refuses its own no-auth default off loopback |
 | 10 | A rewritten **0.3.0-era store** — no `tenant_id`, old inbox primary key | replays; tenant defaults to `tn_default`; inbox migrates in place and carries its row with an empty `target_key`; `doctor` reports sound |
 | 11 | Docker image built and served over the published port as a non-root user | CI job `docker` |
 
@@ -35,6 +35,35 @@ against a deliberately broken build:
 So the two changes are tested separately rather than by one scenario that would
 have passed on either.
 
+
+## What the by-hand rows found that the suite did not
+
+Rows 6–10 are run by hand, and on the first pass three of them reported
+failures. Two were the harness's fault and one was not — which is roughly the
+ratio worth expecting, and the reason the distinction is written down rather
+than smoothed over.
+
+**My harness, not the code.** Row 8 failed with an `OSError` from Windows
+socket initialisation because the probe cleared `PATH`. Row 9 printed "FAIL
+unauthenticated accepted" because the probe called `build_server(auth=None)`,
+which explicitly means no authentication. Row 7's first attempt posted `{}` and
+got **400**, not the documented 401, because an empty object is rejected on
+protocol version before authentication is ever reached; a *well-formed* unsigned
+retraction does get 401, as the documentation claims.
+
+**Three real defects, all on the fail-closed path**, found by chasing those
+false alarms rather than by the 715 tests that were passing at the time:
+
+1. **A refusal returned the store's internal state.** The full `Acknowledgement` was the 401 body, carrying `recipient_store_id`, `state_revision` — this store's event-log head — and `origin_sequence_seen`. An unauthenticated caller learned the identity of the store it had just failed to authenticate to, and could poll the head sequence as a live activity oracle. Now a rejection code and nothing else. It is still audited locally: saying nothing to the caller is not the same as recording nothing, and a fix that traded a disclosure for a blind spot would not be one.
+2. **`build_server` could publish the whole store unauthenticated.** `auth=None` built a tokenless config with **no host check**, so `build_server(fabric, host="0.0.0.0")` served every memory to the network while `build_config` sat one call away raising `InsecureConfiguration` for exactly that combination. The docstring said "`serve` refuses that off loopback" — true, and beside the point, since `build_server` is public and is the function a caller reaches for. Its default now goes through the same refusal. Unauthenticated on loopback still works, because a test and a local one-off both want it.
+3. **A documented guarantee was false and unachievable.** The handler's docstring and INVARIANTS.md row 11 both said an unauthenticated request is refused "before the message is even parsed". It is not, and it cannot be: the key is looked up by the *claimed* origin store and that claim lives in the body. What actually holds is that nothing is applied until the MAC verifies. Both documents now say that, and the parse-failure reply no longer echoes the parser's own message about the bytes it was handed.
+
+Each has a test that **fails against the previous behaviour** — verified by
+reverting the handler and re-running, the same discipline applied to the
+transitive fault scenarios. None of these had a test before, which is exactly
+why the leak survived a green suite: the assertions looked at the status code
+and never at the body.
+
 **Three checks found real bugs while being written**, which is recorded here
 because it is the honest argument for the checks existing:
 
@@ -48,4 +77,5 @@ because it is the honest argument for the checks existing:
 - **No concurrency testing.** One writer per store, which SQLite enforces and nothing here stresses.
 - **No adversarial testing of the sensitive-data detector.** It is pattern-based and misses novel formats, as SECURITY.md says.
 - **Tenancy is checked as authorisation, not as isolation.** Every test here runs in one process against one file. Nothing demonstrates — or could demonstrate — isolation against a caller holding the database.
-- **A single run on one machine.** CI covers rows 1–5 and 11 across six interpreter/OS pairs; rows 6–10 were run once, by hand, here.
+- **A single run on one machine.** CI covers rows 1–5 and 11 across six interpreter/OS pairs; rows 6–10 were run by hand, here.
+- **The by-hand rows are not regression-proof.** The three defects above now have tests, so those specific failures are caught in CI from now on. The rows themselves are still a human running commands, which is why the harness mistakes in them are recorded above rather than quietly re-run until green.

@@ -362,9 +362,25 @@ def build_server(
     quiet: bool = False,
     auth: AuthConfig | None = None,
 ) -> ThreadingHTTPServer:
-    """Build the server. `auth=None` means no authentication, which callers
-    must choose deliberately; `serve` refuses that off loopback."""
-    config = auth if auth is not None else AuthConfig(token=None)
+    """Build the server.
+
+    `auth=None` means no authentication, and it now goes through the same
+    refusal `serve` uses rather than past it. It did not: this function built a
+    tokenless `AuthConfig` directly with **no host check**, so
+    `build_server(fabric, host="0.0.0.0")` published every memory in the store
+    to the network, silently, while `build_config` sat one call away raising
+    `InsecureConfiguration` for exactly that combination. The old docstring
+    said "`serve` refuses that off loopback", which was true and beside the
+    point — `build_server` is public and is the function a caller reaches for.
+
+    The unauthenticated-on-loopback case still works, because a test and a
+    local one-off both want it, and a refusal there would buy nothing.
+    """
+    config = (
+        auth
+        if auth is not None
+        else build_config(host, token=None, no_auth=True)
+    )
     handler = partial(
         Handler, api=Api(fabric), authenticator=Authenticator(config), quiet=quiet
     )

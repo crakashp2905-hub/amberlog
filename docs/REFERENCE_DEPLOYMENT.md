@@ -141,8 +141,9 @@ Four things are enforced rather than advised, and each has a test:
 
 - An **unsigned** retraction is refused with 401 and applied to nothing.
 - A retraction signed with the **wrong key** is refused, and the failure is marked permanent so it is not retried forever.
-- An **unknown peer** cannot reconcile: `PeerRegistry` is the authorisation boundary, so a store cannot be made to trust somewhere it was never configured for.
-- A **malformed body** is refused with a rejection code rather than a stack trace.
+- An **unknown peer** cannot reconcile: `PeerRegistry` is the authorisation boundary, so a store cannot be made to trust somewhere it was never configured for — and it cannot tell a refusal apart from a store that does not exist, or the boundary would be an enumeration oracle.
+- A **malformed body** is refused with a rejection code rather than a stack trace, and without echoing the parser's own message about the bytes it was given.
+- A **refusal says nothing else.** Not this store's id, not its event-log head sequence, not how far it has read an origin's sequence. The full acknowledgement used to be the 401 body, which made the head sequence a pollable activity oracle for anyone who could reach the port. It is still recorded locally — saying nothing to the caller is not the same as recording nothing.
 
 A signature proves who sent a retraction and that it was unmodified. It proves
 **nothing** about whether the retracted claim was false.

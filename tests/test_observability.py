@@ -29,6 +29,10 @@ from memory_fabric import (
 )
 from memory_fabric.cli import G, _strip, clip, main
 from memory_fabric.observability import report
+from memory_fabric.observability.auth import (
+    InsecureConfiguration,
+    build_config,
+)
 from memory_fabric.observability.server import build_server
 
 
@@ -119,6 +123,50 @@ class TestOverview(unittest.TestCase):
             self.assertIn("cannot support causal value estimates", joined)
         finally:
             fabric.close()
+
+
+
+class TestTheBuilderCannotPublishUnauthenticated(unittest.TestCase):
+    """`build_server(auth=None)` means no authentication.
+
+    It used to mean that with **no host check**, so
+    `build_server(fabric, host="0.0.0.0")` published every memory in the store
+    to the network, silently, while `build_config` sat one call away raising
+    for exactly that combination. The docstring said "`serve` refuses that off
+    loopback" — true, and beside the point, since `build_server` is public and
+    is the function a caller reaches for. Found by a by-hand validation probe
+    that used it the obvious way.
+    """
+
+    def setUp(self) -> None:
+        self.fabric = MemoryFabric(":memory:")
+        self.addCleanup(self.fabric.close)
+
+    def test_it_refuses_no_auth_off_loopback(self) -> None:
+        for host in ("0.0.0.0", "::", "192.168.1.10"):
+            with self.subTest(host=host):
+                with self.assertRaises(InsecureConfiguration):
+                    build_server(self.fabric, host=host, port=0)
+
+    def test_no_auth_on_loopback_is_still_allowed(self) -> None:
+        """A test and a local one-off both want it, and a refusal there would
+        buy nothing."""
+        server = build_server(self.fabric, host="127.0.0.1", port=0)
+        self.addCleanup(server.server_close)
+        self.assertIsNone(
+            server.RequestHandlerClass.keywords["authenticator"].config.token
+        )
+
+    def test_an_explicit_config_is_honoured_off_loopback(self) -> None:
+        """The refusal is about the *default*, not about binding widely with a
+        token — which is what the container does."""
+        config = build_config("0.0.0.0", token="t" * 32, no_auth=False)
+        server = build_server(self.fabric, host="127.0.0.1", port=0, auth=config)
+        self.addCleanup(server.server_close)
+        self.assertEqual(
+            server.RequestHandlerClass.keywords["authenticator"].config.token,
+            "t" * 32,
+        )
 
 
 class TestAttention(unittest.TestCase):

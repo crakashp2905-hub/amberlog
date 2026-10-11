@@ -201,9 +201,20 @@ def build_federation_server(
     """An HTTP server that accepts retractions and reconciliation requests.
 
     Separate from the observability server on purpose; see the module docstring.
-    Every request must authenticate, and an unauthenticated one is refused
-    before the message is even parsed — invariant 11, fail closed when identity
-    is unknown.
+
+    **Order of operations, stated precisely because an earlier version of this
+    docstring claimed something stronger and false.** It said an
+    unauthenticated request was refused "before the message is even parsed".
+    It is not, and it cannot be: the key is looked up by the *claimed* origin
+    store, and that claim lives in the body. So the envelope is parsed first,
+    and the authentication gate sits between parsing and anything consequential
+    — which is what invariant 11 actually requires. Nothing is applied, and no
+    lifecycle changes, until the HMAC verifies.
+
+    Two consequences are handled rather than hoped about:
+
+    * **The parser is reachable unauthenticated.** Bounded by `MAX_BODY_BYTES`, a Content-Length check and a strict `Retraction.from_json`, and the detail of a parse failure is *not* echoed to the caller.
+    * **A refusal says as little as possible.** An unauthorised caller gets a rejection code and nothing else. The full `Acknowledgement` carries this store's id, its event-log head sequence and how far it has read a given origin's sequence; served on the fail-closed path that made the head sequence a live activity oracle for anyone who could reach the port. The same reasoning as the `wrong_tenant` access decision, which reports version 0 and no detail.
     """
 
     class Handler(BaseHTTPRequestHandler):
@@ -253,18 +264,34 @@ def build_federation_server(
                 body = self._read_body()
                 retraction = Retraction.from_json(body.get("retraction", {}))
             except ProtocolError as exc:
+                # The code, not the detail. `detail` quotes the parser's own
+                # message about attacker-supplied bytes, which is a free
+                # description of this build's parsing to anyone who can reach
+                # the port and tells a legitimate sender nothing its own
+                # serialiser could not have told it.
                 self._reply(
-                    HTTPStatus.BAD_REQUEST,
-                    {"rejection_code": exc.code.value, "detail": exc.detail},
+                    HTTPStatus.BAD_REQUEST, {"rejection_code": exc.code.value}
                 )
                 return
 
-            # 1-3: authenticate, then authorise. Before anything is applied.
+            # Authenticate, then authorise, before anything is applied. Not
+            # before parsing — see this function's docstring for why that is
+            # impossible when the key is named by the claimed origin.
             key = registry.key_for(retraction.origin_store_id)
             signature = body.get("signature") or {}
             if key is None or not retraction.verify(signature, key):
-                ack = fabric.receive_retraction(retraction, sender_authorised=False)
-                self._reply(HTTPStatus.UNAUTHORIZED, ack.to_json())
+                # Still recorded locally: a refused retraction is an audit
+                # event worth having. But the acknowledgement is *not* the
+                # reply. It carries `recipient_store_id`, `state_revision` —
+                # this store's event-log head — and `origin_sequence_seen`,
+                # none of which an unauthenticated caller may learn, and the
+                # head sequence in particular is pollable as an activity
+                # oracle.
+                fabric.receive_retraction(retraction, sender_authorised=False)
+                self._reply(
+                    HTTPStatus.UNAUTHORIZED,
+                    {"rejection_code": RejectionCode.UNAUTHORIZED.value},
+                )
                 return
 
             ack = fabric.receive_retraction(retraction, sender_authorised=True)
@@ -294,6 +321,11 @@ def build_federation_server(
 
             asker = str(body.get("store_id", ""))
             if registry.get(asker) is None:
+                # A code and nothing else, which is also what the retraction
+                # path now returns. An unknown peer must not be able to tell
+                # "no such store here" from "that store exists but you are not
+                # it" — the registry is the authorisation boundary, and a
+                # distinguishable refusal would make it an enumeration oracle.
                 self._reply(
                     HTTPStatus.UNAUTHORIZED,
                     {"rejection_code": RejectionCode.UNAUTHORIZED.value},

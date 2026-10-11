@@ -439,6 +439,115 @@ class TestHttpTransport(FederationCase):
             json.load(ctx.exception)["rejection_code"], RejectionCode.MALFORMED.value
         )
 
+    def test_a_refusal_tells_an_unauthenticated_caller_nothing(self) -> None:
+        """A rejection code and nothing else.
+
+        The full `Acknowledgement` was the reply here, and it carries this
+        store's id, its event-log head sequence (`state_revision`) and how far
+        it has read a given origin's sequence. Served on the *fail-closed*
+        path, which made the head sequence a pollable activity oracle for
+        anyone who could reach the port — and told an unauthenticated caller
+        the identity of the store it had just failed to authenticate to.
+
+        No test was watching this body, which is why the leak survived the
+        suite; found by a by-hand validation probe. The same reasoning as the
+        `wrong_tenant` access decision, which reports version 0 and no detail.
+        """
+        retraction = self.origin.request_retraction(
+            self.memory_id, reason="r", recipients=[self.alice.store_id], actor="ag_n"
+        )
+        request = urllib.request.Request(
+            self.served.endpoint + "/federation/retraction",
+            data=json.dumps({"retraction": retraction.to_json()}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with self.assertRaises(urllib.error.HTTPError) as ctx:
+            urllib.request.urlopen(request, timeout=5)
+        payload = json.load(ctx.exception)
+
+        self.assertEqual(ctx.exception.code, 401)
+        self.assertEqual(payload, {"rejection_code": RejectionCode.UNAUTHORIZED.value})
+        for leaked in (
+            "state_revision", "origin_sequence_seen", "recipient_store_id",
+            "retraction_id", "at", "detail", "state",
+        ):
+            self.assertNotIn(leaked, payload, f"{leaked} must not reach an unauthenticated caller")
+        self.assertNotIn(self.alice.store_id, json.dumps(payload))
+
+    def test_the_refusal_is_still_audited_locally(self) -> None:
+        """Saying nothing to the caller is not the same as recording nothing.
+
+        The pair matters: if quietening the reply had also dropped the local
+        event, the fix would have traded a disclosure for a blind spot.
+        """
+        retraction = self.origin.request_retraction(
+            self.memory_id, reason="r", recipients=[self.alice.store_id], actor="ag_n"
+        )
+        request = urllib.request.Request(
+            self.served.endpoint + "/federation/retraction",
+            data=json.dumps({"retraction": retraction.to_json()}).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with self.assertRaises(urllib.error.HTTPError):
+            urllib.request.urlopen(request, timeout=5)
+
+        rejected = [
+            event for event in self.alice.log.read()
+            if event.type == "RetractionRejected"
+            and event.payload.get("retraction_id") == retraction.retraction_id
+        ]
+        self.assertEqual(len(rejected), 1)
+        self.assertEqual(
+            rejected[0].payload["rejection_code"], RejectionCode.UNAUTHORIZED.value
+        )
+
+    def test_a_parse_failure_does_not_echo_the_parser_message(self) -> None:
+        """`detail` quoted the parser's own complaint about attacker bytes.
+
+        That is a free description of this build's parsing to anyone who can
+        reach the port, and it tells a legitimate sender nothing its own
+        serialiser could not. The code stays; the prose goes.
+        """
+        for body in (b"not json", b"{}", json.dumps({"garbage": True}).encode()):
+            with self.subTest(body=body[:20]):
+                request = urllib.request.Request(
+                    self.served.endpoint + "/federation/retraction",
+                    data=body,
+                    headers={"Content-Type": "application/json"},
+                    method="POST",
+                )
+                with self.assertRaises(urllib.error.HTTPError) as ctx:
+                    urllib.request.urlopen(request, timeout=5)
+                payload = json.load(ctx.exception)
+                self.assertEqual(ctx.exception.code, 400)
+                self.assertEqual(list(payload), ["rejection_code"])
+                self.assertNotIn("detail", payload)
+
+    def test_an_unknown_peer_cannot_tell_refusal_apart_from_absence(self) -> None:
+        """The registry is the authorisation boundary. A distinguishable
+        refusal would make it an enumeration oracle."""
+        bodies = (
+            {"store_id": "st_" + "Q" * 26, "since_sequence": -1},
+            {"store_id": self.bob.store_id, "since_sequence": -1},
+        )
+        replies = []
+        for body in bodies:
+            request = urllib.request.Request(
+                self.served.endpoint + "/federation/reconcile",
+                data=json.dumps(body).encode(),
+                headers={"Content-Type": "application/json"},
+                method="POST",
+            )
+            with self.assertRaises(urllib.error.HTTPError) as ctx:
+                urllib.request.urlopen(request, timeout=5)
+            replies.append((ctx.exception.code, json.load(ctx.exception)))
+        # A store that exists elsewhere in the federation but is not a peer of
+        # alice's looks exactly like one that does not exist at all.
+        self.assertEqual(replies[0], replies[1])
+        self.assertEqual(replies[0][0], 401)
+
     def test_reconciliation_over_http_requires_a_known_peer(self) -> None:
         request = urllib.request.Request(
             self.served.endpoint + "/federation/reconcile",

@@ -98,7 +98,7 @@ authorised memory can be irrelevant now and essential later.
 |---|---|---|---|
 | **R0** | Relevance contract and invariants | 10 invariants enforced in code, each with a test: task-scoped, exact-version-bound, no lifecycle authority, no gate override, explicit uncertainty, missing ≠ zero, auditable, budget-respecting, observed/inferred separable | ✅ **done** — [spec](docs/RELEVANCE_SPEC.md), 35 tests |
 | **R1** | Benchmark, baselines, **oracle ceiling** | A clean checkout runs it; deterministic arms repeat; a deliberately broken ranker fails it; the ceiling is measured *before* any threshold is registered | ✅ **done** — [relevance_v1](research/bench/relevance_v1/README.md), [ceiling **+0.222 nDCG**](research/results/relevance-v1-ceiling.md) |
-| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning; no integrity regression; latency and cost reported. **Threshold against `lexical`, not `current`** | next — but the cheap fixes in R1 §3 come first |
+| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning | ⛔ **blocked on sample size, not on design.** A trained embedder closed ~70% of the dev headroom ([result](research/results/relevance-v1-real-embedder.md)) and the frozen split cannot separate arms differing by 0.05. More labelled cases come first |
 | **R3** | Budget-aware context assembly | Better context sufficiency than top-k at equal budget; critical omissions within tolerance; every omission has a reason | blocked on R2 |
 | **R4** | Bounded lineage-aware discovery | Improved indirect relevance with bounded false additions, runtime and candidate growth. No causal claim without causal evidence | ✅ **done** — premise promotion took the `indirect` family 0.613 → **1.000**; bounded by depth, limit and parents-only |
 | **R5** | Temporal / context dynamics (bitemporal) | Relevance reverses when context changes without memory mutation; stale data is never presented as current; `valid_time` distinct from recorded time | ✅ **done** — `valid_from`/`valid_to` on `Memory` (schema 0.7.0), `applies_at()`, `retrieve(as_of=…)`; +0.074 nDCG on the frozen split |
@@ -142,6 +142,19 @@ So if R1's oracle ceiling also comes out at ~5 points, the honest conclusion is
 that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
+
+### What R1's follow-up changed
+
+A trained embedder (`nomic-embed-text` via the existing `OllamaEmbedder`)
+closes **~70% of the dev headroom** and **+0.045 on the frozen split** — more
+than every mechanism in this project combined, and it matches bounded premise
+promotion on the `indirect` family with no lineage machinery at all.
+
+Three consequences for this roadmap:
+
+1. **R2 is blocked on the benchmark, not on the ranker.** Twenty cases cannot separate arms that differ by 0.05, and the two splits disagree about whether to fuse lexical with the real embedder. More labelled cases is the next useful work.
+2. **Source-root grouping was measured against the wrong baseline.** It improves `copied_evidence` and `near_duplicate` relative to plain hybrid, and both are *worse* than plain `lexical` — so the comparison that mattered was never made. Re-measure before claiming it.
+3. **The default embedder does not change.** Zero runtime dependencies is a stated commitment and `OllamaEmbedder` needs a running service; it is one line to switch, with the numbers as the argument.
 
 ### Explicitly deferred until evidence changes
 

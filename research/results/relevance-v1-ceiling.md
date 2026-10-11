@@ -168,6 +168,20 @@ Neither would have been visible without per-mechanism arms. An all-or-nothing
 "contextual retrieval" arm would have shown +0.015 and looked like weak
 evidence for a good idea.
 
+## 3c. Followed up: the embedder was the biggest lever
+
+§3 said the hashing embedder was the single biggest limitation of every number
+here, and that a real model might close most of the headroom with no new
+mechanism. **It closes about 70% of it on dev** —
+[full result](relevance-v1-real-embedder.md) — more than every mechanism in
+§3b combined, and it matches bounded premise promotion on `indirect` with no
+lineage machinery.
+
+On the frozen split the gain is +0.045, and the two splits disagree about
+whether to fuse with lexical. Twenty cases cannot settle that, which makes
+**sample size the binding constraint** on this benchmark, ahead of any
+mechanism and ahead of a ranker.
+
 ## 4. Where the headroom actually is
 
 Per-family nDCG on dev, oracle minus `lexical`:

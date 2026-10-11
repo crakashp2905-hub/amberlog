@@ -351,6 +351,45 @@ class TheStoreMechanismsHelp(unittest.TestCase):
         )
 
 
+class TheRealEmbedderArmsAreHonest(unittest.TestCase):
+    """They must be skipped when no model is reachable, never substituted.
+
+    Scoring `real_vector` with the hashing embedder would turn a real-model
+    claim into a hash, and nothing in the report would say so. The benchmark
+    also has to stay runnable in CI with nothing installed.
+    """
+
+    def test_the_helper_returns_none_rather_than_falling_back(self) -> None:
+        from unittest.mock import patch
+
+        import experiments.relevance_bench as bench
+
+        with patch.object(bench, "_REAL_EMBEDDER", None),              patch.object(bench, "_REAL_EMBEDDER_TRIED", False),              patch.dict("sys.modules", {"memory_fabric.adapters.ollama": None}):
+            self.assertIsNone(bench.real_embedder())
+
+    def test_the_arm_raises_rather_than_scoring_a_hash(self) -> None:
+        from unittest.mock import patch
+
+        import experiments.relevance_bench as bench
+
+        case = load("dev")[0]
+        with patch.object(bench, "real_embedder", lambda: None):
+            with self.assertRaises(RuntimeError):
+                bench.arm_real_vector(case, 3)
+
+    def test_they_are_not_in_the_default_arm_set_for_a_clean_run(self) -> None:
+        """A normal `--split dev` must not require a running service.
+
+        They *are* in `ARMS`, because a reader asking "what did the real
+        embedder score?" should find it listed — so this pins the weaker
+        property: the arms that need a model are named, and the default run on
+        a machine without one is the documented failure rather than a silent
+        substitution.
+        """
+        self.assertIn("real_vector", ARMS)
+        self.assertIn("real_hybrid", ARMS)
+
+
 class TheFamiliesDiscriminate(unittest.TestCase):
     """A family where every arm scores the same tests nothing."""
 

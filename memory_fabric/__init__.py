@@ -47,6 +47,9 @@ from .federation import (
 )
 from .identity import (
     DEFAULT_TENANT,
+    InMemoryRevocations,
+    RevocationStore,
+    SqliteRevocations,
     ROLE_AGENT,
     ROLE_AUDITOR,
     ROLE_OPERATOR,
@@ -92,6 +95,9 @@ from .vectors import Embedder, HashingEmbedder, VectorIndex
 __version__ = "0.7.0"
 
 __all__ = [
+    "RevocationStore",
+    "InMemoryRevocations",
+    "SqliteRevocations",
     "CONTRACT_VERSION",
     "MISSING",
     "SelectionDecision",

@@ -56,7 +56,7 @@ the keys with it.
 What a backup does **not** contain:
 
 - **Content keys, when they live outside the database.** A `DirectoryKeyProvider` or KMS store is a separate backup with separate retention, and a database restored without its keys is unreadable. `doctor` reports `KeyUnavailable` rather than erasure for exactly this case, so the message points at the volume you did not mount.
-- **The revocation list**, which is in memory only and does not survive a restart. Short credential lifetimes are the control; see [SECURITY.md](../SECURITY.md).
+- **Nothing, when the service is used.** Revocations live in the database (`SqliteRevocations`, sharing the event log's connection), so a backup carries them. A bare `PrincipalRegistry` keeps them in memory, and a backup cannot carry what was never written — `service.revocations_are_durable` says which you have.
 
 ### Integrity checkpoint
 
@@ -185,5 +185,5 @@ Said plainly rather than left for an incident to discover.
 - **No multi-host story.** P9 declined distribution on measurement — 25× the memories cost 1.7× the latency.
 - **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those — `erasure_scope` reports them as unknown rather than pretending otherwise, which is the most a store can honestly do.
 - **No alerting.** `doctor` and `attention` exit non-zero; wiring that to a pager is yours.
-- **The revocation list does not survive a restart.** In-memory by design, with short lifetimes as the control.
+- **Revocation durability depends on which surface you use.** A `MemoryService` writes revocations to the database; a bare `PrincipalRegistry` keeps them in memory. `service.revocations_are_durable` answers it rather than leaving it to be inferred.
 - **Untested here:** restore onto a different OS, stores above a few hundred thousand events, and recovery from filesystem-level corruption rather than logical tampering.

@@ -183,8 +183,42 @@ class OllamaClient:
         }
 
     def embed(self, model: str, inputs: Sequence[str]) -> list[list[float]]:
-        result = self._post("/api/embed", {"model": model, "input": list(inputs)})
-        return result["embeddings"]
+        """A batch of embeddings, **recorded** like every other model call.
+
+        The recording was missing: this method posted and returned, so an
+        embedder's cost never reached `self.calls` and never showed up in
+        `usage()`. AGENTS.md requires every LLM call to log its model, a prompt
+        hash and its token counts, and an embedder that bills invisibly is the
+        easiest way to make a retrieval result look cheaper than it is — which
+        matters precisely now that a real embedder is being compared against a
+        free hashing one.
+
+        One record per batch rather than per input, because one request is what
+        actually happened and splitting it would invent a latency distribution.
+        """
+        texts = list(inputs)
+        started = time.perf_counter()
+        result = self._post("/api/embed", {"model": model, "input": texts})
+        vectors = result.get("embeddings")
+        if not isinstance(vectors, list) or len(vectors) != len(texts):
+            raise OllamaError(
+                f"{model}: asked for {len(texts)} embedding(s), got "
+                f"{len(vectors) if isinstance(vectors, list) else type(vectors).__name__}. "
+                "Is it an embedding model? `ollama pull nomic-embed-text`"
+            )
+        self.calls.append(
+            CallRecord(
+                model=model,
+                # The batch, hashed as one: two batches differ if any text does.
+                prompt_sha256=hashlib.sha256(
+                    "".join(texts).encode("utf-8")
+                ).hexdigest(),
+                prompt_tokens=int(result.get("prompt_eval_count") or 0),
+                completion_tokens=0,
+                seconds=time.perf_counter() - started,
+            )
+        )
+        return vectors
 
 
 class OllamaEmbedder:

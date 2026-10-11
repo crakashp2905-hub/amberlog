@@ -207,9 +207,27 @@ class Session:
 class MemoryService:
     """Owns a fabric and exposes it only through verified sessions."""
 
-    def __init__(self, fabric: MemoryFabric | None = None, **fabric_kwargs: Any) -> None:
+    def __init__(
+        self,
+        fabric: MemoryFabric | None = None,
+        durable_revocations: bool = True,
+        **fabric_kwargs: Any,
+    ) -> None:
         self._fabric = fabric if fabric is not None else MemoryFabric(**fabric_kwargs)
         self._principals = self._fabric.principals
+        if durable_revocations:
+            # On by default *here* and off in a bare `PrincipalRegistry`,
+            # because a service is the thing that restarts. An in-memory list
+            # un-revokes every leaked credential still inside its lifetime at
+            # exactly the moment revocation is for.
+            #
+            # Shares the event log's connection, so a revocation commits with
+            # the same transaction and busy timeout as everything else.
+            from .identity import SqliteRevocations
+
+            self._principals.revocations = SqliteRevocations(
+                self._fabric.log._conn, self._fabric.now
+            )
 
     # --- administration --------------------------------------------------
     #
@@ -242,6 +260,15 @@ class MemoryService:
         return self._principals.issue(
             agent_id, now=self._fabric.now(), ttl_seconds=ttl_seconds, **kwargs
         )
+
+    @property
+    def revocations_are_durable(self) -> bool:
+        """Whether a revocation survives a restart.
+
+        Readable rather than inferred, because the answer changes what short
+        credential lifetimes are protecting against.
+        """
+        return bool(getattr(self._principals.revocations, "durable", False))
 
     def revoke(self, credential: Credential | str) -> bool:
         return self._principals.revoke(credential)

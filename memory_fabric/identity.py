@@ -40,7 +40,7 @@ import hashlib
 import hmac
 import json
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Mapping
+from typing import Any, Iterable, Mapping, Protocol
 
 from .ids import new_ulid
 
@@ -186,6 +186,124 @@ class _Registration:
     key_id: str
 
 
+class RevocationStore(Protocol):
+    """Where revocations live.
+
+    A seam rather than a hard-coded table, because the honest answer to "does
+    revocation survive a restart?" is a deployment choice: a one-process tool
+    wants nothing on disk, and a service wants the list where its other session
+    state already lives.
+    """
+
+    durable: bool
+
+    def revoke_credential(self, credential_id: str) -> bool: ...
+
+    def revoke_agent(self, agent_id: str) -> None: ...
+
+    def reinstate_agent(self, agent_id: str) -> None: ...
+
+    def is_revoked(self, agent_id: str, credential_id: str) -> bool: ...
+
+
+class InMemoryRevocations:
+    """The default. Fast, shared with nothing, gone on restart.
+
+    Right for a one-process tool and wrong for a service, which is why
+    `SqliteRevocations` exists and why `durable` is a readable flag rather than
+    something an operator has to infer from the class name.
+    """
+
+    durable = False
+
+    def __init__(self) -> None:
+        self._credentials: set[str] = set()
+        self._agents: set[str] = set()
+
+    def revoke_credential(self, credential_id: str) -> bool:
+        already = credential_id in self._credentials
+        self._credentials.add(credential_id)
+        return not already
+
+    def revoke_agent(self, agent_id: str) -> None:
+        self._agents.add(agent_id)
+
+    def reinstate_agent(self, agent_id: str) -> None:
+        self._agents.discard(agent_id)
+
+    def is_revoked(self, agent_id: str, credential_id: str) -> bool:
+        return agent_id in self._agents or (
+            bool(credential_id) and credential_id in self._credentials
+        )
+
+
+class SqliteRevocations:
+    """Revocations on disk, shared by every process on that database.
+
+    Takes a connection rather than a path so it can share the event log's —
+    and with it the transaction and the busy timeout — when a caller wants a
+    revocation to commit alongside whatever else it is doing.
+
+    Deliberately **not** in the event log. A revocation is operational state
+    that can be reinstated, and the log is append-only history: a reinstatement
+    would have to be a second event contradicting the first, and every reader
+    would fold both to answer a yes/no question a row answers directly.
+    """
+
+    durable = True
+
+    _SCHEMA = """
+    CREATE TABLE IF NOT EXISTS revoked_credentials (
+        credential_id TEXT PRIMARY KEY,
+        revoked_ms    INTEGER NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS revoked_agents (
+        agent_id   TEXT PRIMARY KEY,
+        revoked_ms INTEGER NOT NULL
+    );
+    """
+
+    def __init__(self, conn: Any, now_ms: Any = None) -> None:
+        self._conn = conn
+        self._now_ms = now_ms or (lambda: 0)
+        # Outside any transaction: `executescript` issues its own COMMIT.
+        self._conn.executescript(self._SCHEMA)
+
+    def revoke_credential(self, credential_id: str) -> bool:
+        cursor = self._conn.execute(
+            "INSERT INTO revoked_credentials (credential_id, revoked_ms) "
+            "VALUES (?, ?) ON CONFLICT(credential_id) DO NOTHING",
+            (credential_id, self._now_ms()),
+        )
+        return cursor.rowcount > 0
+
+    def revoke_agent(self, agent_id: str) -> None:
+        self._conn.execute(
+            "INSERT INTO revoked_agents (agent_id, revoked_ms) VALUES (?, ?) "
+            "ON CONFLICT(agent_id) DO NOTHING",
+            (agent_id, self._now_ms()),
+        )
+
+    def reinstate_agent(self, agent_id: str) -> None:
+        self._conn.execute(
+            "DELETE FROM revoked_agents WHERE agent_id = ?", (agent_id,)
+        )
+
+    def is_revoked(self, agent_id: str, credential_id: str) -> bool:
+        if self._conn.execute(
+            "SELECT 1 FROM revoked_agents WHERE agent_id = ?", (agent_id,)
+        ).fetchone():
+            return True
+        if not credential_id:
+            return False
+        return bool(
+            self._conn.execute(
+                "SELECT 1 FROM revoked_credentials WHERE credential_id = ?",
+                (credential_id,),
+            ).fetchone()
+        )
+
+
 class PrincipalRegistry:
     """Who this store will act as, and the key each agent's credentials use.
 
@@ -194,11 +312,15 @@ class PrincipalRegistry:
     for a principal it was never configured to know.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, store: "RevocationStore | None" = None) -> None:
         self._agents: dict[str, _Registration] = {}
         self._tenants: set[str] = {DEFAULT_TENANT}
-        self._revoked: set[str] = set()
-        self._revoked_agents: set[str] = set()
+        # Durable when a store is supplied, in memory otherwise. The default
+        # stayed in memory for one release and SECURITY.md said so; what that
+        # meant in practice is that a restart un-revoked every leaked
+        # credential still inside its lifetime, which is the one moment
+        # revocation exists for.
+        self.revocations: RevocationStore = store or InMemoryRevocations()
 
     # --- configuration ---------------------------------------------------
 
@@ -293,11 +415,12 @@ class PrincipalRegistry:
         invalidates every *other* credential that agent holds and takes the
         whole agent offline to deal with one leaked token.
 
-        In-memory, and that is a real limitation stated rather than hidden: the
-        list does not survive a restart and is not shared between processes.
-        Short lifetimes remain the primary control; this is the fast remedy
-        within one process's lifetime. A deployment that needs durable
-        revocation should keep the list where its other session state lives.
+        Durability depends on the `RevocationStore` behind the registry.
+        `SqliteRevocations` survives a restart and is shared by every process
+        on that database; `InMemoryRevocations` is the default and does not.
+        Short credential lifetimes remain the primary control either way —
+        revocation is the fast remedy inside a lifetime, not a substitute for
+        bounding one.
         """
         credential_id = (
             credential if isinstance(credential, str) else credential.credential_id
@@ -307,9 +430,7 @@ class PrincipalRegistry:
                 "this credential has no id and cannot be revoked individually; "
                 "rotate the agent's key instead"
             )
-        already = credential_id in self._revoked
-        self._revoked.add(credential_id)
-        return not already
+        return self.revocations.revoke_credential(credential_id)
 
     def revoke_agent(self, agent_id: str) -> None:
         """Revoke every credential this agent holds, present and future.
@@ -319,16 +440,14 @@ class PrincipalRegistry:
         so its past actions remain attributable and a later `register` can
         bring it back deliberately.
         """
-        self._revoked_agents.add(agent_id)
+        self.revocations.revoke_agent(agent_id)
 
     def reinstate_agent(self, agent_id: str) -> None:
-        self._revoked_agents.discard(agent_id)
+        self.revocations.reinstate_agent(agent_id)
 
     def is_revoked(self, credential: "Credential") -> bool:
-        return (
-            credential.agent_id in self._revoked_agents
-            or bool(credential.credential_id)
-            and credential.credential_id in self._revoked
+        return self.revocations.is_revoked(
+            credential.agent_id, credential.credential_id
         )
 
     def verify(self, credential: Credential, now: int) -> Principal:

@@ -263,18 +263,53 @@ class TheBoundaryIsNotASandbox(ServiceCase):
         )
         self.assertEqual(fabric.tenant_of(planted), "tn_globex")
 
-    def test_revocation_does_not_survive_a_restart(self) -> None:
-        """In-memory, and stated rather than hidden. Short credential lifetimes
-        remain the primary control; a deployment needing durable revocation
-        keeps the list where its other session state lives."""
-        self.service.revoke(self.acme.credential)
-        self.assertTrue(self.service.principals.is_revoked(self.acme.credential))
+    def test_revocation_survives_a_restart(self) -> None:
+        """It did not, and that was the wrong default for a service.
 
+        A `MemoryService` is the thing that restarts, and an in-memory list
+        un-revokes every leaked credential still inside its lifetime at exactly
+        the moment revocation exists for. The service now keeps revocations on
+        disk by default, sharing the event log's connection.
+        """
+        self.assertTrue(self.service.revocations_are_durable)
+        self.service.revoke(self.acme.credential)
+        credential = self.acme.credential
+        self.service.revoke_agent("globex-bot")
+        self.service.close()
+
+        reopened = MemoryService(
+            MemoryFabric(Path(self._tmp.name) / "store.db", auto_activate=True)
+        )
+        self.addCleanup(reopened.close)
+        reopened.register_agent("acme-bot", key=b"k-acme", tenant_id="tn_acme")
+        reopened.register_agent("globex-bot", key=b"k-globex", tenant_id="tn_globex")
+
+        with self.assertRaises(IdentityError):
+            reopened.session(credential)
+        # The agent-level revocation survives too, including for a credential
+        # minted after the restart.
+        with self.assertRaises(IdentityError):
+            reopened.session(reopened.issue("globex-bot"))
+        # And an unrevoked agent is unaffected.
+        self.assertEqual(
+            reopened.session(reopened.issue("acme-bot")).agent_id, "acme-bot"
+        )
+
+    def test_a_bare_registry_still_keeps_revocations_in_memory(self) -> None:
+        """The library primitive keeps the cheap default; the *service* is
+        where durability is the right call. A one-process tool should not be
+        made to write a table it will never read again."""
         from memory_fabric.identity import PrincipalRegistry
 
-        fresh = PrincipalRegistry()
-        fresh.register("acme-bot", key=b"k-acme", tenant_id="tn_acme")
-        self.assertFalse(fresh.is_revoked(self.acme.credential))
+        bare = PrincipalRegistry()
+        self.assertFalse(bare.revocations.durable)
+
+    def test_durability_can_be_turned_off_deliberately(self) -> None:
+        plain = MemoryService(
+            MemoryFabric(":memory:"), durable_revocations=False
+        )
+        self.addCleanup(plain.close)
+        self.assertFalse(plain.revocations_are_durable)
 
     def test_a_credential_is_a_bearer_token(self) -> None:
         """Holding it is sufficient; it is not bound to a channel or a client.

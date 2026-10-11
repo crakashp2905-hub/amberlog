@@ -172,6 +172,72 @@ def arm_lexical(case: Mapping[str, Any], k: int) -> list[str]:
     return [memory_id for score, memory_id in scored if score > 0.0]
 
 
+_REAL_EMBEDDER = None
+_REAL_EMBEDDER_TRIED = False
+
+
+def real_embedder():
+    """A trained embedding model, when one is reachable. None otherwise.
+
+    Shared across cases so its cache survives: the same distractor pool appears
+    in every case, so a per-case embedder would pay for all fifteen of them
+    twenty times over.
+
+    Returns None rather than raising when Ollama is absent, because the whole
+    benchmark must stay runnable in CI with nothing installed — but the arms
+    that need it are then *skipped and reported as skipped*, never silently
+    scored with the hashing embedder. Substituting one would make a real-model
+    claim out of a hash.
+    """
+    global _REAL_EMBEDDER, _REAL_EMBEDDER_TRIED
+    if _REAL_EMBEDDER_TRIED:
+        return _REAL_EMBEDDER
+    _REAL_EMBEDDER_TRIED = True
+    try:
+        from memory_fabric.adapters.ollama import OllamaClient, OllamaEmbedder
+
+        client = OllamaClient()
+        available = client.available()
+        model = client.resolve("nomic-embed-text", available)
+        if model is None:
+            return None
+        _REAL_EMBEDDER = OllamaEmbedder(client=client, model=model)
+        _REAL_EMBEDDER.embed("warm-up")
+    except Exception:
+        _REAL_EMBEDDER = None
+    return _REAL_EMBEDDER
+
+
+def arm_real_vector(case: Mapping[str, Any], k: int) -> list[str]:
+    """Vector retrieval with a **trained** embedder rather than a hash.
+
+    The question R1 raised and could not answer: the hashing embedder is the
+    single biggest limitation of every number in that result, and a real model
+    might close most of the measured headroom with no new mechanism. Worth
+    knowing before building a ranker.
+    """
+    embedder = real_embedder()
+    if embedder is None:
+        raise RuntimeError("no embedding model available")
+    index = VectorIndex(embedder)
+    texts = [m["content"] for m in case["corpus"]] + [query_text(case)]
+    embedder.warm(texts)
+    for memory in case["corpus"]:
+        index.add(memory["id"], memory["content"])
+    hits = index.search(query_text(case), k=len(case["corpus"]), min_relevance=0.0)
+    return [memory_id for memory_id, score in hits if score > 0.0]
+
+
+def arm_real_hybrid(case: Mapping[str, Any], k: int) -> list[str]:
+    """Lexical fused with the trained embedder."""
+    ranks: dict[str, float] = {}
+    for arm in (arm_lexical, arm_real_vector):
+        for position, memory_id in enumerate(arm(case, k)):
+            ranks[memory_id] = ranks.get(memory_id, 0.0) + 1.0 / (60 + position + 1)
+    fused = sorted(ranks.items(), key=lambda pair: (-pair[1], pair[0]))
+    return [memory_id for memory_id, score in fused]
+
+
 def arm_vector(case: Mapping[str, Any], k: int) -> list[str]:
     """The store's own index.
 
@@ -348,6 +414,8 @@ ARMS: dict[str, Callable[[Mapping[str, Any], int], list[str]]] = {
     "store_lexical": _store_arm(
         "lexical", group_by_source_root=False, expand_lineage=0
     ),
+    "real_vector": arm_real_vector,
+    "real_hybrid": arm_real_hybrid,
     "store_temporal": None,  # filled below: needs the per-case event time
     "store_roots": _store_arm(
         "hybrid", group_by_source_root=True, expand_lineage=0

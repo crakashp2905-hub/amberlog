@@ -99,10 +99,10 @@ authorised memory can be irrelevant now and essential later.
 | **R0** | Relevance contract and invariants | 10 invariants enforced in code, each with a test: task-scoped, exact-version-bound, no lifecycle authority, no gate override, explicit uncertainty, missing ≠ zero, auditable, budget-respecting, observed/inferred separable | ✅ **done** — [spec](docs/RELEVANCE_SPEC.md), 35 tests |
 | **R1** | Benchmark, baselines, **oracle ceiling** | A clean checkout runs it; deterministic arms repeat; a deliberately broken ranker fails it; the ceiling is measured *before* any threshold is registered | ✅ **done** — [relevance_v1](research/bench/relevance_v1/README.md), [ceiling **+0.222 nDCG**](research/results/relevance-v1-ceiling.md) |
 | **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning | ⛔ **not the next thing to build.** The benchmark grew to 50 cases and four arms still sit within 0.04 of each other; R6 measured the model recovering ~40% of what nDCG penalises, so a ranker chasing the last points is chasing something the model partly fixes for free. Fix the embedder first — SciFact puts the shipped one at **less than half** of lexical retrieval |
-| **R3** | Budget-aware context assembly | Better context sufficiency than top-k at equal budget; critical omissions within tolerance; every omission has a reason | blocked on R2 |
+| **R3** | Budget-aware context assembly | Better context sufficiency than top-k at equal budget; critical omissions within tolerance; every omission has a reason | ⛔ **blocked on a benchmark that can measure it.** R6 showed a model reading 19 memories unaided, so a budget this benchmark can impose is not a budget that binds |
 | **R4** | Bounded lineage-aware discovery | Improved indirect relevance with bounded false additions, runtime and candidate growth. No causal claim without causal evidence | ✅ **done** — premise promotion took the `indirect` family 0.613 → **1.000**; bounded by depth, limit and parents-only |
 | **R5** | Temporal / context dynamics (bitemporal) | Relevance reverses when context changes without memory mutation; stale data is never presented as current; `valid_time` distinct from recorded time | ✅ **done** — `valid_from`/`valid_to` on `Memory` (schema 0.7.0), `applies_at()`, `retrieve(as_of=…)`; +0.074 nDCG on the frozen split |
-| **R6** | Real-agent integration | The full loop runs against a live provider with a deterministic stub path still in CI. A downstream claim only if a controlled experiment supports it | 🔶 **run, inconclusive as registered** — `store_all` closed 20% of measured headroom against a registered 40% bar. But retrieval **beat stuffing the whole corpus** at a third of the tokens, which the registration predicted it would not ([result](research/results/r6-downstream.md)) |
+| **R6** | Real-agent integration | The full loop runs against a live provider with a deterministic stub path still in CI. A downstream claim only if a controlled experiment supports it | 🔶 **run. dev inconclusive, test ABANDONED** — perfect selection was worth +0.000 on the frozen split, so the registered abandonment clause fired. The dev finding that retrieval beats a stuffed context **did not replicate**. What survived both splits: a ~3× token saving, and stuffing the context making the model less willing to abstain ([result](research/results/r6-downstream.md)) |
 | **R7** | Security and reliability | ✅ crypto (AEAD, external key custody) · ✅ trust boundary · ✅ multi-process durability · ✅ **tamper-evident event chain** with external checkpoints · ✅ concurrency measured and documented · ✅ version-skew tests · ✅ [OPERATIONS.md](docs/OPERATIONS.md). ✅ erasure inventory (`erasure_scope` reports reached / kept / unreachable, with the third as *unknown* rather than guessed) · ✅ state-machine property tests | ✅ **done** |
 | **R8** | Developer experience | An unfamiliar developer completes the quickstart unaided; demo matches docs | — |
 | **R9** | Release qualification | Claims match measured evidence, per deployment model | — |
@@ -159,13 +159,18 @@ fusing a near-noise arm into a good one costs 6.3 points there and loses on
 `relevance_v1`'s held-out split too. `hybrid` is the recommendation once a
 trained embedder is configured.
 
-**R6** ([result](research/results/r6-downstream.md)) is inconclusive against its
-registered bar and still the most informative run here: retrieval beat handing
-the model the whole corpus, at a third of the prompt tokens, which the
-registration predicted would not happen. It also measured the conversion factor
-every earlier milestone assumed — the model recovers ~40% of what nDCG
-penalises — and found that stuffing the context **halves** a model's
-willingness to say it cannot tell.
+**R6** ([result](research/results/r6-downstream.md)) is inconclusive on dev and
+**abandoned on the frozen split**, where perfect selection was worth +0.000 —
+the registered clause for exactly that case fired on its own. The dev finding
+that retrieval beats a stuffed context did not replicate; the frozen split
+reverses it.
+
+The strongest conclusion is about the benchmark rather than the retriever: **a
+corpus a model can simply read does not pose a retrieval problem.** So the next
+work is harder corpora and distractors that are near-misses rather than
+obviously wrong — not a ranker, and not more mechanisms. Two effects did
+survive both splits: a ~3× token saving for no measured quality loss, and
+stuffing the context making a model less willing to admit it cannot tell.
 
 ### What R1's follow-up changed
 

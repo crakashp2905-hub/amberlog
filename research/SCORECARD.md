@@ -38,6 +38,30 @@ Real models, real episodes, pre-registered thresholds, ≥5 seeds for A, A′ an
 | **PB3** | Reputation weighting beats uniform | ⚠️ **inconclusive** — not implemented; the data would have supported it |
 | **PC** | A population learns what to propagate | 🔬 **exploratory only** — the PB1 gate did not pass, so no verdict is reported. Descriptively: the learner did not beat the fixed policy, and the outcome channel the design requires made the population **worse** (−0.042 [−0.081, −0.005]) rather than merely inert |
 
+## 2a. The contextual relevance track (R0–R6)
+
+Added after the live phases. The pattern repeats: the mechanism works, and the
+held-out split declines to confirm it mattered.
+
+| | claim | outcome |
+|---|---|---|
+| **R1** | A measurable oracle ceiling exists for selection | ✅ **measured** — +0.222 nDCG@3 on dev, refuting a ~5-point prediction carried over from Phase A. The benchmark was **invalid twice** before it measured anything, caught both times by a deliberately broken arm |
+| **R4/R5** | Provenance, source roots and recorded time improve retrieval | ⚠️ **marginal** — +0.043 nDCG on dev, −0.013 on the expanded test split, and **no demonstrated downstream benefit** |
+| **Embedder** | A trained embedder beats the hashing stub | ✅ **supported, and larger than every mechanism combined** — ~70% of dev headroom |
+| **SciFact** | Retrieval quality on an external corpus with third-party labels | ✅ **run** — the hashing embedder scores **0.315 against lexical's 0.621**, where my own benchmark reported an 8% gap. The parameter-free lexical arm lands just under published BM25 |
+| **R6** | Better retrieval produces better answers | 🔶 **dev inconclusive** (20% of a registered 40% bar) · ⛔ **test ABANDONED** — perfect selection worth +0.000, and the dev result **did not replicate** |
+
+Two things survived R6's frozen split: a **~3× token saving** for no measured
+quality loss, and **stuffing the context making a model less willing to say it
+cannot tell**. Both are real and neither is a quality claim.
+
+**The strongest conclusion of the whole track is about measurement.** An
+external benchmark showed my own one flattering the shipped embedder by a
+factor of four in the size of the gap; R6 showed a corpus a model can simply
+read does not pose a retrieval problem at all. The product default changed from
+`hybrid` to `lexical` on that evidence — the first time an external benchmark
+has overruled an internal one here.
+
 ## 3. Integrity engineering (roadmap phases 0–7)
 
 Not hypotheses. Deterministic guarantees, so the unit is "tested or not", and a
@@ -49,8 +73,8 @@ reproducible counterexample is a bug rather than a statistic.
 | Invariants partial | 7 | 0 |
 | Invariants with no route to a test | 3 | 0 |
 
-686 unit/integration/property tests, 17 deterministic multi-store fault
-scenarios, six testing layers. Full matrix in
+974 unit/integration/property tests, 17 deterministic multi-store fault
+scenarios, eleven testing layers. Full matrix in
 [docs/INVARIANTS.md](../docs/INVARIANTS.md).
 
 ---

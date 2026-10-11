@@ -1,18 +1,23 @@
 # R6 — does better retrieval change what a model answers?
 
-**Verdict: INCONCLUSIVE, as registered.** `store_all` beats the best simple arm
-by 20% of the measured headroom; the pre-registered bar was 40%. It is not
-killed either — it is above the baseline, just not far enough.
+**dev: INCONCLUSIVE. test: ABANDONED — there was no headroom to divide.**
 
-And the most useful thing here is that **my first prediction was wrong in the
-direction that matters**: giving the model the whole corpus did *not* beat
-retrieval. Retrieval won, at **a third of the prompt tokens**.
+On the frozen split, handing the model the entire corpus scored **exactly what
+handing it the oracle's memories scored** (0.792 against 0.792). The
+registration's section 4 clause fired on its own: *if `C` − `B` ≤ 0.05 the
+comparison is abandoned, not reinterpreted.* The harness printed it without
+being asked.
+
+**And the dev result did not replicate.** On dev, retrieval beat stuffing the
+context (0.788 against 0.758) and I wrote that up as the finding worth having.
+On test it goes the other way (0.750 against 0.792). Two splits disagreeing
+means **I do not know**, and the dev sections below are left standing so the
+overclaim is visible rather than edited away.
 
 - **Registration:** [r6-downstream-retrieval.md](../prereg/r6-downstream-retrieval.md), with one dated amendment (3 seeds not 5) made before any number was seen
 - **Model:** `qwen2.5:7b` via Ollama, temperature 0, running on CPU
-- **Run:** 2026-10-11, dev split, 3 seeds, k=3, 30 cases of which **22 graded on correctness**
-- **Raw:** [r6-dev-raw.json](r6-dev-raw.json)
-- Test split: running; this document will be amended with it rather than quietly completed.
+- **Runs:** 2026-10-11. dev (30 cases, 22 graded) and the frozen test split (20 cases, 16 graded); 3 seeds each, k=3
+- **Raw:** [r6-dev-raw.json](r6-dev-raw.json) and [r6-test-raw.json](r6-test-raw.json)
 
 ---
 
@@ -26,7 +31,37 @@ retrieval. Retrieval won, at **a third of the prompt tokens**.
 | **`store_all`** | **0.788** | [0.773, 0.818] | 0.714 | **0** | 0.667 | 103 |
 | `oracle_memory` | 0.909 | [0.909, 0.909] | 0.857 | **0** | 1.000 | 85 |
 
-## 2. The verdict, applied exactly as registered
+## 1a. The frozen test split
+
+| arm | correctness | 95% CI | critical present | gate violations | abstain precision | prompt tokens |
+|---|---|---|---|---|---|---|
+| `no_memory` | 0.250 | [0.250, 0.250] | 0.000 | **0** | 1.000 | 67 |
+| `all_memory` | **0.792** | [0.688, 0.875] | 0.895 | **0** | **0.000** | 299 |
+| `store_plain` | 0.750 | [0.688, 0.812] | 0.737 | **0** | 1.000 | 105 |
+| `store_all` | 0.750 | [0.688, 0.812] | 0.684 | **0** | 1.000 | 105 |
+| `oracle_memory` | **0.792** | [0.750, 0.812] | 0.895 | **0** | 1.000 | 86 |
+
+```
+best simple arm  B = 0.792   (all_memory)
+ceiling          C = 0.792   (oracle_memory)
+headroom             +0.000  <= 0.05  ->  ABANDONED
+```
+
+**Perfect selection is worth nothing here.** Not a little; nothing. On these 16
+graded cases a model given 19 memories answers as well as one given the 3
+correct ones, so there is no quantity for retrieval to capture, and a threshold
+on it would be the H3 mistake: registering a margin larger than the ceiling.
+
+That is a verdict on **my benchmark**, not on retrieval. The reason is the one
+SciFact already identified: my distractors are *clearly* wrong rather than
+near-misses in the same technical register, so a competent model ignores them.
+19 short facts with 16 obvious non-answers is not a retrieval problem for
+`qwen2.5:7b`.
+
+What would make it one: corpora a model cannot read in full, and distractors
+plausible at the sentence level. Both now sit above any ranker in the backlog.
+
+## 2. The dev verdict, applied exactly as registered
 
 ```
 best simple arm  B = 0.758   (all_memory)
@@ -44,7 +79,7 @@ recording the shortfall rather than observing that it is "most of the way
 there", because the threshold was registered precisely so that this moment
 could not be renegotiated.
 
-## 3. Prediction 1 was wrong, and that is the result worth having
+## 3. Prediction 1 on dev, and the reversal on test
 
 The registration predicted:
 
@@ -55,16 +90,20 @@ The registration predicted:
 It does beat `store_plain` (0.758 against 0.712). It **loses to `store_all`**
 (0.758 against 0.788) — and does it with **294 prompt tokens against 103**.
 
-So on this benchmark, with this model: **retrieval beats stuffing the context,
-at a third of the tokens.** That is the first downstream evidence in this
-project that selection is worth anything at all, and it was predicted not to
-happen.
+So on **dev**: retrieval beats stuffing the context, at a third of the tokens.
 
-The restraint it needs: 294 tokens is a small context by any modern standard.
-A model with a large window and a corpus this size has no reason to struggle,
-and it still did worse than selection. What that cannot tell us is what happens
-at a corpus size where stuffing is not an option, which is where retrieval
-obviously matters and where this benchmark has nothing to say.
+**On test it reverses.** `all_memory` 0.792 against `store_all` 0.750 — the
+prediction the dev split refuted is the one the frozen split supports.
+
+Together the two splits say the honest thing: **on a benchmark whose corpora a
+model can simply read, selecting or not does not reliably matter.** The dev
+direction was the more interesting result and it is the one that failed to
+replicate, which is the ordinary way an interesting result behaves.
+
+The token difference survives both splits and is not in dispute: 103 against
+294–299, a roughly 3x saving for no measured loss on test and a gain on dev.
+That is a cost argument for retrieval rather than a quality one, and worth
+keeping separate from the quality question.
 
 ## 4. The mechanisms earn their first downstream number
 
@@ -76,10 +115,17 @@ rankings.
 Also +0.071 on critical-fact presence (0.714 against 0.643), which is the
 channel the effect should travel through if the story is right.
 
-Set against it: the mechanisms were measured as **marginal-to-negative** on the
-expanded test split under lexical retrieval
-([scifact-external.md](scifact-external.md) §4), so this is dev-only evidence
-for them and the test split is the number that matters.
+Set against it, decisively: on the frozen test split `store_all` and
+`store_plain` are **identical at 0.750**, and `store_all` is *worse* on
+critical-fact presence (0.684 against 0.737). The +0.076 is dev-only, dev is
+where these mechanisms were tuned, and the split that matters shows nothing.
+With their −0.013 nDCG on the same split
+([scifact-external.md](scifact-external.md) section 4), the honest position is
+that **the mechanisms have no demonstrated downstream benefit.**
+
+They stay enabled because they address indirect evidence and copied sources
+that neither benchmark can currently test — an argument from design rather than
+from evidence, and it should be labelled as one.
 
 ## 5. Stuffing the context makes a model worse at abstaining
 
@@ -97,10 +143,14 @@ three on a question the corpus cannot answer. Given a selected context it
 abstains twice as often, and given exactly the right memories — none, for an
 unanswerable case — it abstains every time.
 
-That is a safety argument for retrieval that has nothing to do with
-correctness: **a smaller, better context does not just cost fewer tokens, it
-makes the model more willing to admit it does not know.** Two unanswerable
-cases on this split, so it is a direction rather than an estimate.
+The frozen split points the same way and harder: `all_memory` abstains on
+**0 of 1** unanswerable cases, where every selected arm abstains on 1 of 1.
+
+So this is the one effect that **replicates across both splits**: a smaller,
+better context does not merely cost fewer tokens, it makes the model more
+willing to admit it does not know. Three unanswerable cases in total, so a
+direction rather than an estimate — and the only direction here that survived
+the frozen split.
 
 ## 6. Prediction 2 was right
 
@@ -143,20 +193,26 @@ value would have failed the run whatever the correctness column said.
 
 ## 10. The honest summary
 
-> Pre-registered threshold not met: `store_all` closes 20% of the measured
-> headroom against a registered bar of 40%. **Inconclusive**, not supported.
+> **Dev: inconclusive** — `store_all` closes 20% of the measured headroom
+> against a registered bar of 40%. **Test: abandoned** — perfect selection is
+> worth **+0.000** there, so the question cannot be asked at all.
 >
-> But the prediction that retrieval would prove unnecessary — that a model
-> handed 18–20 memories would do as well as one handed the right 3 — was
-> **wrong**. Retrieval won by 3 points at a third of the tokens, and the
-> mechanisms added 7.6 points of correctness on top. This is the first
-> downstream evidence in the project that selection changes answers.
+> The dev finding I was most pleased with, retrieval beating a stuffed context
+> at a third of the tokens, **did not replicate**. The frozen split reverses
+> it. Two splits disagreeing means I do not know, and the dev sections above
+> are left standing so the overclaim stays visible.
 >
-> The conversion factor is now measured rather than assumed: the model recovers
-> about 40% of what nDCG penalises. That makes retrieval work worth less
-> downstream than the ranking numbers imply — and it is the number every
-> earlier milestone was missing.
+> The mechanisms' +0.076 downstream gain is dev-only, dev is where they were
+> tuned, and on the frozen split they are identical to plain retrieval and
+> slightly worse on critical-fact presence. **They have no demonstrated
+> downstream benefit.**
 >
-> And one finding nobody asked for: **stuffing the context halved the model's
-> willingness to say it could not tell.** A selected context is not only
-> cheaper, it is more honest.
+> Two things survive. The **~3x token saving** holds on both splits for no
+> measured quality loss, which is a cost argument rather than a quality one.
+> And **stuffing the context makes a model less willing to abstain**, on both
+> splits, which is a safety argument with nothing to do with correctness.
+>
+> The strongest conclusion is about the benchmark rather than the retriever:
+> **a corpus a model can simply read does not pose a retrieval problem.** My
+> distractors are too obviously wrong — exactly what SciFact showed. Harder
+> corpora come before any ranker.

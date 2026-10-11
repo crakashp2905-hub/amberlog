@@ -21,7 +21,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**943 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**974 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including
@@ -357,14 +357,19 @@ configured. The parameter-free lexical arm landing just under published BM25 is
 the most reassuring number here — it says the harness behaves as a third party
 would expect.
 
-**And retrieval does change answers.** R6 ran a real model over the benchmark:
-selected context beat handing it the whole corpus, at **a third of the prompt
-tokens** — which the pre-registration predicted would *not* happen. Against its
-registered bar the result is **inconclusive** (20% of measured headroom against
-40% required) and is reported that way. Two things it measured that no earlier
-milestone had: the model recovers about **40% of what nDCG penalises**, and
-stuffing the context **halves** its willingness to say it cannot tell
-([result](research/results/r6-downstream.md)).
+**Whether retrieval changes answers is still unresolved, and the honest
+version is less flattering than the first draft of this paragraph.** R6 ran a
+real model over the benchmark. On dev, selected context beat handing the model
+the whole corpus at a third of the tokens — which the pre-registration
+predicted would *not* happen. **On the frozen split that reversed**, and
+perfect selection was worth **+0.000**, so the registered abandonment clause
+fired: a corpus a model can simply read does not pose a retrieval problem.
+
+Two effects survived both splits: a **~3× token saving** for no measured
+quality loss, and — the one nobody asked for — **stuffing the context makes the
+model less willing to say it cannot tell**. The mechanisms' dev-only +0.076
+correctness gain did not replicate, so **they have no demonstrated downstream
+benefit** ([result](research/results/r6-downstream.md)).
 
 The biggest lever turned out to be the embedder, and it is bigger than
 everything else here: a trained model (`nomic-embed-text`) closes **~70% of the

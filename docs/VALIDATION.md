@@ -11,7 +11,7 @@ and did not.
 
 | | Check | Result |
 |---|---|---|
-| 1 | `pytest tests` | **943 passed**, 585 subtests |
+| 1 | `pytest tests` | **974 passed**, 830 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
 | 3 | `tools/scan_secrets.py` | 58 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
 | 4 | `compileall` over `memory_fabric`, `experiments`, `tests`, `tools` | clean |
@@ -25,6 +25,8 @@ and did not.
 | 12 | **Multi-process concurrency** — 4 processes × 20 appends on one store | all 80 land; sequence a gapless run; hash chain verifies; a zero-timeout writer fails cleanly rather than corrupting |
 | 13 | **Version skew** — a 0.2.0/0.3.0 store on current code | replays; every added field's absent-meaning preserves old behaviour; the new retrieval filters do not exclude old data; `doctor` sound. A 99.0.0 store is refused with a schema failure |
 | 14 | **Protocol skew** — a hop-0 retraction round-tripped through the 0.3.0 field set | byte-compatible: no new fields serialised, and the minimal payload still applies and enforces |
+| 14a | **External benchmark** — SciFact (BEIR/MTEB), 300 judged queries over 5,183 abstracts, third-party labels | the parameter-free lexical arm scores 0.621 nDCG@10 against published BM25's ~0.665 — a little under properly-tuned BM25, which is where it should be. The shipped hashing embedder scores **0.315** |
+| 14b | **Downstream (R6)** — a real model over the benchmark, 3 seeds, blind substring grading | inconclusive against its registered bar (20% of headroom against 40%); retrieval beat stuffing the corpus at a third of the tokens; zero gate violations across every arm and seed |
 | 15a | **Data-access audit** — every public member of `MemoryFabric` classified, enforced by test | 50 members classified; adding one fails the test until it is. Found 2 real misuses of the unenforced read in shipped code |
 | 15 | **Tamper detection** — edited payload/timestamp/actor, deleted event, reordered pair, missing link, truncated log, wholesale chain rewrite | each caught, at the right sequence; the rewrite caught only by an external checkpoint |
 
@@ -83,5 +85,6 @@ because it is the honest argument for the checks existing:
 - **The multi-process contention tests are weaker than they look.** They pass with the pragma removed, because the writers do not reliably overlap on a fast disk. They are strong evidence nothing is lost or corrupted under real load, and no evidence about timeout behaviour; the two deterministic tests that hold a write lock open are the ones that isolate that. The first version of *those* was also weak — `child.poll()` being None only proved the child had not finished importing — so the child now signals readiness before contending.
 - **No adversarial testing of the sensitive-data detector.** It is pattern-based and misses novel formats, as SECURITY.md says.
 - **Tenancy is checked as authorisation, not as isolation.** Every test here runs in one process against one file. Nothing demonstrates — or could demonstrate — isolation against a caller holding the database.
+- **The internal benchmark is still mine**, but it is no longer the only one. SciFact's labels were written by third parties years earlier, and it immediately showed `relevance_v1` flattering the hashing embedder by a factor of four in the size of the gap.
 - **A single run on one machine.** CI covers rows 1–5 and 11 across six interpreter/OS pairs; rows 6–10 were run by hand, here.
 - **The by-hand rows are not regression-proof.** The three defects above now have tests, so those specific failures are caught in CI from now on. The rows themselves are still a human running commands, which is why the harness mistakes in them are recorded above rather than quietly re-run until green.

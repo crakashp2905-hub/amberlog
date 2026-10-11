@@ -231,6 +231,27 @@ def build_federation_server(
             self.end_headers()
             self.wfile.write(body)
 
+        def _drain(self) -> None:
+            """Read and discard the request body.
+
+            `protocol_version = "HTTP/1.1"` means keep-alive, and a handler
+            that replies without consuming the body leaves the connection
+            desynchronised: the next read picks up the unread bytes, and the
+            server aborts. A client then sees a connection reset instead of the
+            404 or 401 the server meant to send — which for the auth path turns
+            a clean refusal into something indistinguishable from a crash.
+
+            Found by a test-ordering change making the unknown-endpoint test
+            fail with `ConnectionAbortedError`.
+            """
+            length = int(self.headers.get("Content-Length") or 0)
+            remaining = min(max(length, 0), MAX_BODY_BYTES)
+            while remaining > 0:
+                chunk = self.rfile.read(min(remaining, 65536))
+                if not chunk:
+                    break
+                remaining -= len(chunk)
+
         def _read_body(self) -> dict[str, Any]:
             length = int(self.headers.get("Content-Length") or 0)
             if length <= 0:
@@ -248,6 +269,9 @@ def build_federation_server(
             elif self.path == "/federation/reconcile":
                 self._reconcile()
             else:
+                # Drained first: the body is unread at this point and replying
+                # without consuming it breaks the connection.
+                self._drain()
                 self._reply(HTTPStatus.NOT_FOUND, {"error": "unknown endpoint"})
 
         def do_GET(self) -> None:  # noqa: N802

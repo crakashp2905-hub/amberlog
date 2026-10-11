@@ -20,7 +20,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**793 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**829 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including
@@ -332,6 +332,25 @@ Both surfaces read through one model ([report.py](memory_fabric/observability/re
 3. **Outcomes need a third-party verifier.** An agent that scores its own episodes can manufacture value for any memory it likes, so `record_outcome` rejects a verifier equal to the acting agent.
 
 The test that demonstrates the point is `test_naive_is_fooled_by_selection_bias_and_ips_is_not` in [tests/test_estimators.py](tests/test_estimators.py): a memory with *exactly zero* true effect scores 0.84 under naive usage-success and ≈0.00 under the propensity-corrected estimator.
+
+## What is being built next
+
+A **contextual relevance** layer, sequenced so the thing that could falsify it
+comes first: the contract and its invariants ([docs/RELEVANCE_SPEC.md](docs/RELEVANCE_SPEC.md),
+done), then the benchmark with a measured oracle ceiling, then a ranker — not
+the other way round.
+
+The prediction on record before that run: Phase A and PA′ both found success
+tracking whether a correct memory reached the prompt, with perfect *selection*
+worth about **+5 points** and the rest of the gap being corpus **coverage**. If
+the new benchmark's oracle ceiling is also ~5 points, relevance ranking is not
+where the headroom is — and an oracle is much cheaper than a tuned ranker as a
+way to find that out.
+
+Three rules the contract enforces in code, each from a measured mistake:
+**irrelevant never means deleted** (Phase A's withdrawal policy cost 12.5
+points), **a relevance score never overrides authorisation or retraction**, and
+**a missing signal is never scored zero**.
 
 ## Read in this order
 

@@ -566,6 +566,34 @@ class TestHttpTransport(FederationCase):
             payload = json.load(response)
         self.assertEqual(payload["store_id"], self.alice.store_id)
 
+    def test_an_unknown_endpoint_replies_rather_than_dropping_the_connection(self) -> None:
+        """A 404, not a connection reset.
+
+        The handler replied without reading the request body, and with
+        HTTP/1.1 keep-alive that desynchronises the connection: the server
+        aborts and the client gets `ConnectionAbortedError` instead of the
+        status the server meant to send. For the auth paths that would turn a
+        clean refusal into something indistinguishable from a crash.
+
+        Repeated on one connection on purpose — a single request would not
+        reach the desynchronised state.
+        """
+        import http.client
+        from urllib.parse import urlparse
+
+        parsed = urlparse(self.served.endpoint)
+        connection = http.client.HTTPConnection(parsed.hostname, parsed.port, timeout=5)
+        self.addCleanup(connection.close)
+        for attempt in range(3):
+            with self.subTest(attempt=attempt):
+                connection.request(
+                    "POST", "/federation/whatever", body=b'{"a": 1}',
+                    headers={"Content-Type": "application/json"},
+                )
+                response = connection.getresponse()
+                self.assertEqual(response.status, 404)
+                response.read()
+
     def test_an_unknown_endpoint_is_not_found(self) -> None:
         request = urllib.request.Request(
             self.served.endpoint + "/federation/whatever", data=b"{}", method="POST"

@@ -74,6 +74,17 @@ from .model import (
     WithdrawalBasis,
 )
 from .projections import Episode, Projection
+from .relevance import (
+    CONTRACT_VERSION,
+    MISSING,
+    ContextPackage,
+    ContextSnapshot,
+    ReasonCode,
+    RelevanceAssessment,
+    RelevanceEvidence,
+    RelevanceLabel,
+    SelectionDecision,
+)
 from .service import MemoryService, Session
 from .session import AgentSession, SessionClosed
 from .vectors import Embedder, HashingEmbedder, VectorIndex
@@ -81,6 +92,15 @@ from .vectors import Embedder, HashingEmbedder, VectorIndex
 __version__ = "0.6.0"
 
 __all__ = [
+    "CONTRACT_VERSION",
+    "MISSING",
+    "SelectionDecision",
+    "ReasonCode",
+    "RelevanceLabel",
+    "RelevanceEvidence",
+    "RelevanceAssessment",
+    "ContextPackage",
+    "ContextSnapshot",
     "Session",
     "MemoryService",
     "new_tenant_id",

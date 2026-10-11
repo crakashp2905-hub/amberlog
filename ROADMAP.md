@@ -81,6 +81,64 @@ To close it: `pip install anthropic`, set credentials, and run `examples/agent_o
 
 P2 listed a Postgres backend. It was dropped from the milestone because it does not serve the gate — observability is about what the surfaces can explain, not where the bytes live — and because a driver (`psycopg`) would be the project's first runtime dependency, costing the zero-dependency property for no gain at current scale. Postgres belongs with the first deployment that actually needs concurrent writers or a store larger than one machine's SQLite file; the storage seam already exists (ARCHITECTURE.md §4).
 
+## The next sequence: contextual relevance (R0–R9)
+
+Added 2026-10-11, from two planning documents that agree on the sequencing. This
+replaces nothing above — the integrity substrate stays, and the research record
+stays — but it is where the next work goes, and this table is the single source
+of truth for it.
+
+**The product question widens.** From "can we govern memory safely?" to "given
+this task, which memories matter, why, what is uncertain, and what must not be
+exposed?" Relevance and integrity are separate, jointly necessary capabilities:
+a relevant memory can be false, stale, retracted or unauthorised, and a true
+authorised memory can be irrelevant now and essential later.
+
+| # | Milestone | Gate | State |
+|---|---|---|---|
+| **R0** | Relevance contract and invariants | 10 invariants enforced in code, each with a test: task-scoped, exact-version-bound, no lifecycle authority, no gate override, explicit uncertainty, missing ≠ zero, auditable, budget-respecting, observed/inferred separable | ✅ **done** — [spec](docs/RELEVANCE_SPEC.md), 35 tests |
+| **R1** | Benchmark, baselines, **oracle ceiling** | A clean checkout runs it; deterministic arms repeat; a deliberately broken ranker fails it; the ceiling is measured *before* any threshold is registered | next |
+| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning; no integrity regression; latency and cost reported | blocked on R1 |
+| **R3** | Budget-aware context assembly | Better context sufficiency than top-k at equal budget; critical omissions within tolerance; every omission has a reason | blocked on R2 |
+| **R4** | Bounded lineage-aware discovery | Improved indirect relevance with bounded false additions, runtime and candidate growth. No causal claim without causal evidence | blocked on R3 |
+| **R5** | Temporal / context dynamics (bitemporal) | Relevance reverses when context changes without memory mutation; stale data is never presented as current; `valid_time` distinct from recorded time | blocked on R1 |
+| **R6** | Real-agent integration | The full loop runs against a live provider with a deterministic stub path still in CI. A downstream claim only if a controlled experiment supports it | blocked on R2 |
+| **R7** | Security and reliability | ✅ crypto (AEAD, external key custody), ✅ trust boundary, ✅ multi-process durability. **Open:** concurrency limits, erasure across backups/caches/exports, tamper-evident event chain | partly done |
+| **R8** | Developer experience | An unfamiliar developer completes the quickstart unaided; demo matches docs | — |
+| **R9** | Release qualification | Claims match measured evidence, per deployment model | — |
+
+### Why the benchmark comes before the ranker
+
+Of four simulated hypotheses, **three were mis-operationalised, and every time
+the fault was in the measurement rather than the mechanism.** A ranker written
+before the thing that could falsify it gets tuned on whichever examples flatter
+it. Both planning documents say the same, and so does
+[RETROSPECTIVE.md](research/RETROSPECTIVE.md).
+
+### What R1 is expected to find
+
+Worth registering as a prediction rather than discovering later. Phase A and PA′
+both found success tracking one quantity — whether a correct memory reached the
+prompt — with conversion at 93–98% in every arm and coverage-to-success at
+**ρ = +0.975**. Perfect *selection* was worth **+5 points**; the rest was corpus
+**coverage**, which is memory construction, not retrieval.
+
+So if R1's oracle ceiling also comes out at ~5 points, the honest conclusion is
+that relevance ranking is not where the headroom is — and an oracle is a far
+cheaper way to learn that than a tuned ranker. That is the whole argument for
+this ordering.
+
+### Explicitly deferred until evidence changes
+
+A learned retrieval controller · online learning from unverified outcomes ·
+relevance-driven deletion · default selective federation · P2P · graph ML ·
+all-candidate counterfactual evaluation · a single score combining relevance,
+trust, freshness and utility.
+
+Phase C already measured the nearest thing to the first two: the learner did not
+beat the fixed policy, and the outcome channel the design requires made the
+population **worse** (−0.042 [−0.081, −0.005]).
+
 ## Settled decisions
 
 | # | Decision | Choice |

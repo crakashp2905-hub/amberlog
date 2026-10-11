@@ -285,18 +285,41 @@ class MemoryFabric:
         self._sealing_store_id = self.state.store_id
 
     def _store_id_from_log(self) -> str | None:
-        """This store's id straight from its first `StoreIdentified` event.
+        """This store's id straight from its `StoreIdentified` event.
 
         Deliberately not via the projection: this is needed *while* the
         projection is being rebuilt. Returns None for a store that has never
         been identified, which is a store with no memories either, so nothing
         needs the AAD yet.
+
+        **Two distinct identities is a fatal condition, not a tie to break.**
+        It means events were copied from another store into this one, event by
+        event. The copied memories' content is sealed with the *source* store's
+        id in its associated data, so picking either identity makes the other
+        store's content undecryptable — and the failure surfaces much later as
+        `content failed authentication (AES-GCM)`, which sends whoever reads it
+        looking for a tamper that never happened.
+
+        Found by a shipped example doing exactly this: building a fresh store
+        and replaying another's events into it. That is not a backup. Use
+        `memory-fabric backup`, which copies the file and therefore the
+        identity.
         """
+        identities: list[str] = []
         for event in self.log.read_types([ev.EventType.STORE_IDENTIFIED]):
             store_id = event.payload.get("store_id")
-            if store_id:
-                return str(store_id)
-        return None
+            if store_id and str(store_id) not in identities:
+                identities.append(str(store_id))
+        if len(identities) > 1:
+            raise PolicyViolation(
+                f"this log contains {len(identities)} store identities "
+                f"({', '.join(identities)}), which happens when one store's "
+                "events are replayed into another. Content sealed by one store "
+                "cannot be read under another's identity, so there is no "
+                "correct choice here. Copy the file with `memory-fabric "
+                "backup` instead of replaying events."
+            )
+        return identities[0] if identities else None
 
     def _content_aad(self, memory_id: str, version: int) -> bytes:
         """The associated data a content ciphertext is bound to.
@@ -1895,6 +1918,21 @@ class MemoryFabric:
         """
         principal = self.principals.verify(credential, self.now())
         return TenantView(self, principal, verified=True)
+
+    def lifecycle_of(self, memory_id: str) -> LifecycleState:
+        """One memory's lifecycle state, and **no content**.
+
+        Exists because the adapters wanted to tell a model what happened to its
+        own write and were reaching for `get()` to do it. `get()` returns a
+        withdrawn memory on purpose — an operator judging a withdrawal has to
+        read what was withdrawn — so an adapter holding it is one autocomplete
+        away from serving retracted knowledge to a model, and it would look
+        like working code.
+
+        Found by the data-access audit, which flagged every `fabric.get(` in
+        the shipped examples and adapters.
+        """
+        return self._require(memory_id).lifecycle_state
 
     def tenant_of(self, memory_id: str) -> str:
         return self._require(memory_id).tenant_id

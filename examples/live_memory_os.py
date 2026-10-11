@@ -300,18 +300,33 @@ def main() -> int:
             # by path and the command now says so. The first version of this
             # section pointed it at `:memory:` and got a green tick for a
             # backup of nothing, which is how that bug was found.
+            # Built by *writing* to a file-backed store, not by replaying the
+            # depot's events into it.
+            #
+            # The earlier version did replay them, and it was wrong in a way
+            # worth recording: a fresh store mints a `StoreIdentified` event of
+            # its own, so the result held two identities, and content sealed
+            # under the depot's identity failed its authentication check. The
+            # error surfaced as "content failed authentication (AES-GCM)",
+            # which reads as a tamper. Opening such a store is now refused with
+            # an explanation instead.
+            #
+            # The lesson the example should teach: **replaying events into
+            # another store is not a backup.** `memory-fabric backup` copies
+            # the file, and therefore the identity and the keys with it.
             on_disk_path = str(Path(tmp) / "depot-on-disk.db")
             on_disk = MemoryFabric(on_disk_path)
             try:
-                for event in depot.log.read():
-                    on_disk.log.append(event)
-                on_disk.rebuild()
-                # Its own count, not the depot's. A fresh store mints a
-                # StoreIdentified event of its own before any copied events
-                # arrive, so it holds one more than the log it was fed —
-                # which the first version of this check compared against and
-                # reported as a failing backup.
+                seeded = on_disk.remember(
+                    "ag-n", "Oil change every 250 hours on the yard tug."
+                )
+                on_disk.validate(seeded, actor="supervisor")
+                on_disk.quarantine(
+                    seeded, reason="contradicted by the service log",
+                    actor="supervisor", basis=WithdrawalBasis.CONTRADICTED,
+                )
                 on_disk_events = len(on_disk.log)
+                on_disk_memory = seeded
             finally:
                 on_disk.close()
 
@@ -333,8 +348,12 @@ def main() -> int:
                 ))
                 passed.append(check(
                     "projections that live only in the log survive",
-                    restored.state.withdrawal_basis.get(memory_id)
+                    restored.state.withdrawal_basis.get(on_disk_memory)
                     == WithdrawalBasis.CONTRADICTED.value,
+                ))
+                passed.append(check(
+                    "sealed content is still readable from the copy",
+                    "Oil change" in restored.get(on_disk_memory).content,
                 ))
             finally:
                 restored.close()

@@ -11,7 +11,7 @@ and did not.
 
 | | Check | Result |
 |---|---|---|
-| 1 | `pytest tests` | **906 passed**, 438 subtests |
+| 1 | `pytest tests` | **918 passed**, 447 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
 | 3 | `tools/scan_secrets.py` | 58 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
 | 4 | `compileall` over `memory_fabric`, `experiments`, `tests`, `tools` | clean |
@@ -25,6 +25,7 @@ and did not.
 | 12 | **Multi-process concurrency** — 4 processes × 20 appends on one store | all 80 land; sequence a gapless run; hash chain verifies; a zero-timeout writer fails cleanly rather than corrupting |
 | 13 | **Version skew** — a 0.2.0/0.3.0 store on current code | replays; every added field's absent-meaning preserves old behaviour; the new retrieval filters do not exclude old data; `doctor` sound. A 99.0.0 store is refused with a schema failure |
 | 14 | **Protocol skew** — a hop-0 retraction round-tripped through the 0.3.0 field set | byte-compatible: no new fields serialised, and the minimal payload still applies and enforces |
+| 15a | **Data-access audit** — every public member of `MemoryFabric` classified, enforced by test | 50 members classified; adding one fails the test until it is. Found 2 real misuses of the unenforced read in shipped code |
 | 15 | **Tamper detection** — edited payload/timestamp/actor, deleted event, reordered pair, missing link, truncated log, wholesale chain rewrite | each caught, at the right sequence; the rewrite caught only by an external checkpoint |
 
 ## Two results worth stating rather than scoring

@@ -394,7 +394,9 @@ class OllamaMemoryAgent:
             return {"role": "tool", "content": f"could not record: {exc}"}
 
         run.remembered.append(memory_id)
-        state = self.fabric.get(memory_id).lifecycle_state.value
+        # Metadata only. `get()` would also hand back the content of a
+        # withdrawn memory, which an adapter must never hold.
+        state = self.fabric.lifecycle_of(memory_id).value
         return {
             "role": "tool",
             "content": (

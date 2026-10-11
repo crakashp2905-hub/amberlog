@@ -294,7 +294,9 @@ class ClaudeMemoryAgent:
                 continue
 
             run.remembered.append(memory_id)
-            state = self.fabric.get(memory_id).lifecycle_state.value
+            # Metadata only. `get()` would also hand back the content of a
+            # withdrawn memory, which an adapter must never hold.
+            state = self.fabric.lifecycle_of(memory_id).value
             results.append(
                 {
                     "type": "tool_result",

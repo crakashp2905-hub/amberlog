@@ -45,6 +45,14 @@ Takes a consistent snapshot **and replays it** before reporting success — a
 backup that cannot be replayed is not a backup. It refuses `:memory:` with exit
 6 rather than reporting success for copying nothing.
 
+**Replaying one store's events into another is not a backup.** A fresh store
+mints a `StoreIdentified` event of its own, so the result holds two identities,
+and content sealed under the source store's identity fails its authentication
+check — surfacing as "content failed authentication (AES-GCM)", which reads as
+a tamper that never happened. Opening such a store is now refused with an
+explanation instead. `backup` copies the *file*, and therefore the identity and
+the keys with it.
+
 What a backup does **not** contain:
 
 - **Content keys, when they live outside the database.** A `DirectoryKeyProvider` or KMS store is a separate backup with separate retention, and a database restored without its keys is unreadable. `doctor` reports `KeyUnavailable` rather than erasure for exactly this case, so the message points at the volume you did not mount.
@@ -103,6 +111,15 @@ expected, a missing key store is an operational fault.
 1. `memory-fabric --db store.db attention` lists what needs a human, worst first.
 2. For a federated memory, check the propagation view: `OperatorClient.propagation()` or `/api/propagation`. A recipient stuck in `retrying` or `failed` is the cause.
 3. A withdrawal recorded on a weak basis (`co_occurrence`, `unstated`) is more likely to be a mistake than the memory is to be wrong — PA′ measured 57 of 87 naive withdrawals as being about a completely different fault. The remedy is usually `release`, not deeper propagation.
+
+### "This log contains N store identities"
+
+Events from one store were replayed into another. There is no correct identity
+to pick: whichever is chosen, the other store's content cannot be decrypted.
+
+1. Do not try to merge the logs. Take the backup of whichever store you actually want.
+2. To move a store, copy the file (`backup`), not its events.
+3. To move *knowledge* between stores, use federation — `offer` re-seals the content under the recipient's identity, which is the whole point of the AAD binding.
 
 ### "The database is locked"
 

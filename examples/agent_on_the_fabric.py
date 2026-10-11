@@ -24,6 +24,7 @@ from memory_fabric.cli import configure_output
 
 configure_output()
 
+from memory_fabric.sdk import operator
 from memory_fabric import MemoryFabric
 from memory_fabric.adapters import ingest_transcript
 from memory_fabric.adapters.claude import ClaudeMemoryAgent
@@ -136,8 +137,14 @@ def main() -> None:
 
     rule("4. What the agent wrote, and what governance did with it")
 
+    # Through the operator client, not `fabric.get()`. This section is an
+    # operator view — it deliberately shows withdrawn memories — and an
+    # example is the thing adapter authors copy. `operator(...).inspect()`
+    # says "I mean the unenforced read" out loud; `fabric.get()` says nothing
+    # and is shorter to type.
+    reviewer = operator(fabric, actor="reviewer")
     for memory_id in run.remembered:
-        memory = fabric.get(memory_id)
+        memory = reviewer.inspect(memory_id)
         print(f"  {memory_id}")
         print(f"    state:   {memory.lifecycle_state.value}")
         print(f"    by:      {memory.provenance.created_by}")

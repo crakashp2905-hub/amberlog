@@ -21,7 +21,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**974 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**965 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including
@@ -352,10 +352,15 @@ abstracts, labels written by someone else — put the shipped hashing embedder a
 **0.315 nDCG@10 against plain lexical retrieval's 0.621**, where my own
 benchmark had reported an 8% gap rather than a 2× one
 ([result](research/results/scifact-external.md)). The default retrieval mode is
-now `lexical`; `hybrid` is the recommendation once a trained embedder is
-configured. The parameter-free lexical arm landing just under published BM25 is
-the most reassuring number here — it says the harness behaves as a third party
-would expect.
+now `lexical`. The parameter-free lexical arm landing just under published BM25
+is the most reassuring number here — it says the harness behaves as a third
+party would expect.
+
+Swap in a **trained** embedder on the same 300 queries and the picture inverts:
+`real_vector` scores **0.701** and fusing it with lexical scores **0.726**,
+*above* published BM25. So fusion is not good or bad in itself — **do not fuse
+a weak arm into a strong one**. Both halves of the recommendation are now
+measured: `lexical` by default, `hybrid` once `embedder=` is a real model.
 
 **Whether retrieval changes answers is still unresolved, and the honest
 version is less flattering than the first draft of this paragraph.** R6 ran a

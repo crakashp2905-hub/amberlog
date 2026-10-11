@@ -1100,10 +1100,13 @@ class MemoryFabric:
         `lexical` scores 0.733 against hybrid's 0.693. **Lexical wins the
         held-out split of both benchmarks.**
 
-        The rule is not "fusion is bad". With a *trained* embedder configured,
-        fusion helped on the same test split — 0.849 against 0.802 — so
-        `retrieval="hybrid"` is the recommendation once `embedder=` is a real
-        model. The rule is: do not fuse a weak arm into a strong one.
+        The rule is not "fusion is bad". On the same 300 SciFact queries with a
+        *trained* embedder, the vector arm scores 0.701 and fusing it with
+        lexical scores **0.726** — above published BM25 (~0.665). Fusion costs
+        6.3 points with a hashed arm and gains 2.5 with a trained one, same
+        mechanism, opposite sign. So `retrieval="hybrid"` is the measured
+        recommendation once `embedder=` is a real model, and the rule is: do
+        not fuse a weak arm into a strong one.
 
         `vector` reproduces the pre-2026-10-11 behaviour exactly, for anyone
         who needs the old ranking while validating.

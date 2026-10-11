@@ -156,8 +156,14 @@ behaves the way a third party would expect.
 
 **The product default changed from `hybrid` to `lexical`** as a result, because
 fusing a near-noise arm into a good one costs 6.3 points there and loses on
-`relevance_v1`'s held-out split too. `hybrid` is the recommendation once a
-trained embedder is configured.
+`relevance_v1`'s held-out split too.
+
+The same run with a **trained** embedder settles the other half, which the two
+internal splits had disagreed about: `real_vector` 0.701, `real_hybrid`
+**0.726** — fusion *gains* 2.5 points when the second arm carries signal, and
+`real_hybrid` is **above published BM25**. Same mechanism, opposite sign, so the
+rule is **do not fuse a weak arm into a strong one**, and `hybrid` is the
+measured recommendation once a trained embedder is configured.
 
 **R6** ([result](research/results/r6-downstream.md)) is inconclusive on dev and
 **abandoned on the frozen split**, where perfect selection was worth +0.000 —

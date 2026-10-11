@@ -48,7 +48,7 @@ held-out split declines to confirm it mattered.
 | **R1** | A measurable oracle ceiling exists for selection | ✅ **measured** — +0.222 nDCG@3 on dev, refuting a ~5-point prediction carried over from Phase A. The benchmark was **invalid twice** before it measured anything, caught both times by a deliberately broken arm |
 | **R4/R5** | Provenance, source roots and recorded time improve retrieval | ⚠️ **marginal** — +0.043 nDCG on dev, −0.013 on the expanded test split, and **no demonstrated downstream benefit** |
 | **Embedder** | A trained embedder beats the hashing stub | ✅ **supported, and larger than every mechanism combined** — ~70% of dev headroom |
-| **SciFact** | Retrieval quality on an external corpus with third-party labels | ✅ **run** — the hashing embedder scores **0.315 against lexical's 0.621**, where my own benchmark reported an 8% gap. The parameter-free lexical arm lands just under published BM25 |
+| **SciFact** | Retrieval quality on an external corpus with third-party labels | ✅ **run** — the hashing embedder scores **0.315 against lexical's 0.621**, where my own benchmark reported an 8% gap. The parameter-free lexical arm lands just under published BM25; a trained embedder fused with it reaches **0.726, above published BM25**, which is what makes `hybrid` the recommendation there and `lexical` the default |
 | **R6** | Better retrieval produces better answers | 🔶 **dev inconclusive** (20% of a registered 40% bar) · ⛔ **test ABANDONED** — perfect selection worth +0.000, and the dev result **did not replicate** |
 
 Two things survived R6's frozen split: a **~3× token saving** for no measured
@@ -73,7 +73,7 @@ reproducible counterexample is a bug rather than a statistic.
 | Invariants partial | 7 | 0 |
 | Invariants with no route to a test | 3 | 0 |
 
-974 unit/integration/property tests, 17 deterministic multi-store fault
+965 unit/integration/property tests, 17 deterministic multi-store fault
 scenarios, eleven testing layers. Full matrix in
 [docs/INVARIANTS.md](../docs/INVARIANTS.md).
 

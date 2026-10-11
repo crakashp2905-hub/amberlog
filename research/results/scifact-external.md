@@ -18,12 +18,19 @@ one could show it.
 
 | arm | nDCG@10 | Recall@10 | MRR |
 |---|---|---|---|
-| **`lexical`** (IDF overlap) | **0.621** | 0.755 | 0.585 |
-| `hashing_hybrid` (the shipped default) | 0.558 | 0.712 | 0.516 |
+| **`real_hybrid`** (trained embedder + lexical) | **0.726** | **0.851** | **0.692** |
+| `real_vector` (trained embedder) | 0.701 | 0.846 | 0.660 |
+| `lexical` (IDF overlap) | 0.621 | 0.755 | 0.585 |
+| `hashing_hybrid` | 0.558 | 0.712 | 0.516 |
 | `hashing_vector` | 0.315 | 0.412 | 0.290 |
 | `oracle` | 1.000 | 1.000 | 1.000 |
 
 The ceiling held: no arm beat the oracle (principle 8b).
+
+Trained embedder: `nomic-embed-text` (768-dim) via Ollama. Published BM25 on
+SciFact is around **0.665**, so `real_hybrid` at 0.726 is above a tuned lexical
+baseline and `lexical` at 0.621 is a little below it — both where they should
+be relative to a third-party reference point.
 
 ## 2. A credibility anchor the internal benchmark cannot provide
 
@@ -56,6 +63,33 @@ them properties I built into it:
 None of this makes `relevance_v1` useless — it tests provenance, retraction,
 tenancy and temporal validity, none of which SciFact has. It makes it unsuitable
 as the *only* benchmark, which is the case for having both.
+
+## 3a. Fusion helps a strong arm and hurts a weak one — externally confirmed
+
+The question `relevance_v1`'s two splits disagreed about, settled on 300
+queries over a real corpus:
+
+| | vector alone | fused with lexical | fusion is worth |
+|---|---|---|---|
+| hashing embedder | 0.315 | 0.558 | **+0.243** to the *vector* arm |
+| trained embedder | 0.701 | **0.726** | **+0.025** |
+| against `lexical` (0.621) | | | |
+
+Read the first row the other way and it is the finding: fusing the hashed arm
+*into lexical* takes 0.621 down to **0.558**. Fusing the trained arm into
+lexical takes 0.621 up to **0.726**. Same mechanism, opposite sign, and the
+only thing that changed is whether the second arm carries signal.
+
+Reciprocal-rank fusion is scale-free, which is why it was chosen — and that is
+exactly why it cannot discount a bad arm. Every arm gets rank votes of equal
+weight, so a near-noise arm does not contribute weakly, it contributes
+*wrongly*, and the good arm has to outvote it.
+
+**So both halves of the recommendation now have external evidence**, which they
+did not when the default changed:
+
+- **hashing embedder (the zero-dependency default) → `retrieval="lexical"`.** Fusion costs 6.3 points.
+- **trained embedder configured → `retrieval="hybrid"`.** Fusion gains 2.5 points over the embedder alone and 10.5 over lexical.
 
 ## 4. The shipped default is wrong on a real corpus
 
@@ -107,14 +141,16 @@ corpora should set `retrieval="hybrid"`. The numbers are here to make that
 choice rather than to foreclose it.
 
 **The mechanisms stay on by default** at −0.013 on the test split and +0.006 on
-dev, which is to say measurably nothing either way on this benchmark — kept
-because they address indirect evidence and copied sources, which SciFact cannot
-test at all, and because R6 measured them at **+0.076 downstream correctness**
-([R6](r6-downstream.md) §4).
+dev, which is measurably nothing either way on this benchmark — and R6's
++0.076 downstream gain **did not replicate on its frozen split**
+([R6](r6-downstream.md)). They are kept on an argument from design: they address
+indirect evidence and copied sources, which neither benchmark can currently
+test. That is a weaker justification than a measurement and is labelled as
+one.
 
 ## 5. What this does not establish
 
-1. **No trained-embedder number here yet.** `real_vector` and `real_hybrid` need 5,183 embeddings and the run collided with R6 for a CPU-bound model server; it is queued, not abandoned, and this document will be amended with the result rather than quietly completed.
+1. **One embedding model.** `nomic-embed-text` is a good open model and not the best available; a stronger one would move `real_vector` and `real_hybrid` together, and might change whether fusion still helps at the top.
 2. **SciFact is not this project's domain.** No provenance, no lifecycle, no retraction, no tenants. The governance layer is inert and the R4/R5 mechanisms have nothing to act on. It measures retrieval on a hard real corpus.
 3. **One external dataset.** SciFact is scientific claim verification; a different BEIR task could order the arms differently, and BEIR exists precisely because single-dataset results mislead.
 4. **k=10, the BEIR convention**, not the k=3 `relevance_v1` uses. The arms are compared to each other at the same k, but the two benchmarks' absolute numbers are not comparable.
@@ -133,6 +169,11 @@ test at all, and because R6 measured them at **+0.076 downstream correctness**
 >
 > And it changes the product. The shipped `hybrid` default **loses to lexical
 > alone on the held-out split of both benchmarks**, because reciprocal-rank
-> fusion gives a near-noise arm real votes. The default becomes `lexical`;
-> fusion stays, recommended where a trained embedder makes both arms worth
-> fusing.
+> fusion gives a near-noise arm real votes. The default becomes `lexical`.
+>
+> With a trained embedder the sign flips and fusion becomes the best arm here —
+> **0.726, above published BM25** — so `hybrid` is the recommendation once
+> `embedder=` is a real model. Same mechanism, opposite effect, and the rule is
+> not "fusion is good" or "fusion is bad" but **do not fuse a weak arm into a
+> strong one**. That is now measured on 300 third-party-labelled queries rather
+> than argued from two internal splits that disagreed.

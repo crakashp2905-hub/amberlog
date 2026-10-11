@@ -78,7 +78,13 @@ from .model import (
     context_key,
 )
 from .projections import Episode, Projection, _digest
-from .vectors import MIN_RELEVANCE, Embedder, VectorIndex
+from .vectors import (
+    MIN_RELEVANCE,
+    Embedder,
+    LexicalIndex,
+    VectorIndex,
+    fuse,
+)
 
 
 class FabricError(RuntimeError):
@@ -163,6 +169,7 @@ class MemoryFabric:
         auto_activate: bool = False,
         encrypt_content: bool = True,
         key_provider: "KeyProvider | None" = None,
+        retrieval: str = "hybrid",
     ) -> None:
         self.log = EventLog(path)
         # Everything after opening the log can fail — a missing key store
@@ -185,6 +192,13 @@ class MemoryFabric:
             self.encrypt_content = encrypt_content
             self.projection = Projection(unsealer=self._unseal_content)
             self.index = VectorIndex(embedder)
+            # The arm the product was missing. `relevance_v1` measured the
+            # vector path as the weakest non-broken arm, losing to
+            # IDF-weighted token overlap by up to 32 points on the frozen
+            # split, because `HashingEmbedder` is a hashed bag of words rather
+            # than a trained model.
+            self.lexical = LexicalIndex()
+            self.retrieval_mode = retrieval
             self.firewall = firewall or Firewall()
             self.retention = retention or RetentionPolicy()
             self.estimator = build_estimator(estimator)
@@ -628,7 +642,7 @@ class MemoryFabric:
             )
         # The index holds the plaintext too, so drop it or a search would still
         # surface the content the caller just erased.
-        self.index.remove(memory_id)
+        self._unindex(memory_id)
         return had_content
 
     def erasure_status(self, memory_id: str):
@@ -797,8 +811,67 @@ class MemoryFabric:
         )
         for memory in self.state.memories.values():
             if memory.lifecycle_state is not LifecycleState.DELETED:
-                self.index.add(memory.id, self._index_text(memory))
+                self._index(memory.id, self._index_text(memory))
         self._estimator_dirty = True
+
+    def _search(
+        self,
+        query: str,
+        k: int,
+        eligible: set[str],
+        min_relevance: float,
+    ) -> list[tuple[str, float]]:
+        """Candidate discovery, by configured mode.
+
+        `hybrid` is the default, and the choice is a measured trade-off rather
+        than a preference. On `relevance_v1`, lexical alone has the better
+        nDCG (0.778 dev / 0.804 test against hybrid's 0.752 / 0.732) while
+        hybrid has the better **critical-memory omission** (0.214 / 0.000
+        against 0.286 / 0.200) and better recall.
+
+        Critical omission is the metric with a consequence — it counts the
+        cases where the one decisive memory never reached the agent — so the
+        default optimises that and gives up some precision. A deployment that
+        would rather have precision can pass `retrieval="lexical"`, and the
+        reasoning is written down so that choice is informed.
+
+        `vector` reproduces the pre-2026-10-11 behaviour exactly, for anyone
+        who needs the old ranking while validating.
+        """
+        mode = self.retrieval_mode
+        if mode == "vector":
+            return self.index.search(
+                query, k=k, restrict_to=eligible, min_relevance=min_relevance
+            )
+        if mode == "lexical":
+            return self.lexical.search(
+                query, k=k, restrict_to=eligible, min_relevance=min_relevance
+            )
+        if mode != "hybrid":
+            raise ValueError(
+                f"unknown retrieval mode {mode!r}; expected hybrid, lexical or vector"
+            )
+        # Each arm is asked for the whole pool before fusion: truncating an arm
+        # to k first would let a memory ranked k+1 by one arm and 1 by the
+        # other drop out, which is exactly the case fusion exists to catch.
+        dense = self.index.search(
+            query, k=k, restrict_to=eligible, min_relevance=min_relevance
+        )
+        sparse = self.lexical.search(
+            query, k=k, restrict_to=eligible, min_relevance=min_relevance
+        )
+        return fuse(dense, sparse, k=k)
+
+    def _index(self, memory_id: str, text: str) -> None:
+        """Both retrieval arms, always. A memory indexed in one and not the
+        other would make `retrieval_mode` change *what exists* rather than how
+        it is ranked."""
+        self.index.add(memory_id, text)
+        self.lexical.add(memory_id, text)
+
+    def _unindex(self, memory_id: str) -> None:
+        self.index.remove(memory_id)
+        self.lexical.remove(memory_id)
 
     @staticmethod
     def _index_text(memory: Memory) -> str:
@@ -1001,7 +1074,7 @@ class MemoryFabric:
                 )
             )
         self._emit(*emitted)
-        self.index.add(memory.id, self._index_text(memory))
+        self._index(memory.id, self._index_text(memory))
         return memory.id
 
     def revise(
@@ -1050,7 +1123,7 @@ class MemoryFabric:
                 reason=reason,
             )
         )
-        self.index.add(memory_id, self._index_text(revised))
+        self._index(memory_id, self._index_text(revised))
         return revised
 
     def derive(
@@ -1131,9 +1204,7 @@ class MemoryFabric:
             include_contested=include_contested, tenant_id=tenant_id
         )
         pool_size = pool if pool is not None else max(k * 4, k)
-        hits = self.index.search(
-            query, k=pool_size, restrict_to=eligible, min_relevance=min_relevance
-        )
+        hits = self._search(query, pool_size, eligible, min_relevance)
 
         # Only estimate values when the policy will actually rank on them.
         # Refitting the estimator on every retrieval and then ranking by
@@ -1403,7 +1474,7 @@ class MemoryFabric:
         """Deprecate. Deletion is the retention policy's decision, not the
         caller's, so that a single call can never destroy an audit trail."""
         self._emit(self._transition(memory_id, LifecycleState.DEPRECATED, reason, actor))
-        self.index.remove(memory_id)
+        self._unindex(memory_id)
         return self.state.memories[memory_id]
 
     def challenge(
@@ -1819,7 +1890,7 @@ class MemoryFabric:
                 emitted.append(
                     self._transition(decision.memory_id, to_state, decision.reason, actor)
                 )
-                self.index.remove(decision.memory_id)
+                self._unindex(decision.memory_id)
             if emitted:
                 self._emit(*emitted)
         return decisions

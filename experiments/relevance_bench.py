@@ -203,6 +203,14 @@ def arm_hybrid(case: Mapping[str, Any], k: int) -> list[str]:
     return [memory_id for memory_id, score in fused]
 
 
+def _store_arm(mode: str) -> Callable[[Mapping[str, Any], int], list[str]]:
+    def arm(case: Mapping[str, Any], k: int) -> list[str]:
+        return arm_current({**case, "_retrieval": mode}, k)
+
+    arm.__name__ = f"arm_store_{mode}"
+    return arm
+
+
 def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
     """`MemoryFabric.retrieve()` exactly as it ships.
 
@@ -213,7 +221,10 @@ def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
     from memory_fabric import MemoryFabric
     from memory_fabric.model import LifecycleState
 
-    fabric = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False)
+    fabric = MemoryFabric(
+        ":memory:", auto_activate=True, encrypt_content=False,
+        retrieval=case.get("_retrieval", "hybrid"),
+    )
     try:
         ids = {}
         for memory in case["corpus"]:
@@ -288,7 +299,11 @@ ARMS: dict[str, Callable[[Mapping[str, Any], int], list[str]]] = {
     "lexical": arm_lexical,
     "vector": arm_vector,
     "hybrid": arm_hybrid,
+    # `current` is whatever the product ships today. `store_vector` pins the
+    # pre-2026-10-11 behaviour so a regression is visible rather than inferred.
     "current": arm_current,
+    "store_vector": _store_arm("vector"),
+    "store_lexical": _store_arm("lexical"),
     "oracle": arm_oracle,
 }
 CEILING = "oracle"

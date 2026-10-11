@@ -251,6 +251,54 @@ class ItIsReproducible(unittest.TestCase):
         self.assertEqual(set(run("dev")["arms"]), set(ARMS))
 
 
+class TheProductArmImproved(unittest.TestCase):
+    """Pins the retrieval change R1 motivated, so a regression is visible.
+
+    `relevance_v1` found the shipping vector path to be the weakest non-broken
+    arm. Hybrid retrieval (RRF over the vector and lexical indexes) is now the
+    default, and `store_vector` pins the old behaviour so the comparison stays
+    measurable rather than remembered.
+    """
+
+    def test_hybrid_beats_the_old_vector_only_path(self) -> None:
+        for split in SPLITS:
+            result = run(split, arms=["current", "store_vector"])
+            with self.subTest(split):
+                self.assertGreater(
+                    result["arms"]["current"]["ndcg_at_k"],
+                    result["arms"]["store_vector"]["ndcg_at_k"],
+                )
+
+    def test_it_omits_fewer_critical_memories(self) -> None:
+        """The metric the default was chosen for. Lexical alone has a better
+        nDCG; hybrid misses the decisive memory less often, and that is the
+        failure with a consequence."""
+        for split in SPLITS:
+            result = run(split, arms=["current", "store_vector"])
+            with self.subTest(split):
+                self.assertLessEqual(
+                    result["arms"]["current"]["critical_omission_rate"],
+                    result["arms"]["store_vector"]["critical_omission_rate"],
+                )
+
+    def test_the_old_behaviour_is_still_reachable(self) -> None:
+        """`retrieval="vector"` reproduces the pre-change ranking exactly, for
+        anyone who needs the old ordering while validating."""
+        result = run("test", arms=["store_vector", "vector"])
+        self.assertEqual(
+            result["arms"]["store_vector"]["ndcg_at_k"],
+            result["arms"]["vector"]["ndcg_at_k"],
+        )
+
+    def test_an_unknown_retrieval_mode_is_refused(self) -> None:
+        from memory_fabric import MemoryFabric
+
+        fabric = MemoryFabric(":memory:", retrieval="magic")
+        self.addCleanup(fabric.close)
+        with self.assertRaises(ValueError):
+            fabric.retrieve(agent_id="a", query="anything")
+
+
 class TheFamiliesDiscriminate(unittest.TestCase):
     """A family where every arm scores the same tests nothing."""
 

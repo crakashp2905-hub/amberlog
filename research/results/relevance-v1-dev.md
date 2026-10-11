@@ -1,6 +1,6 @@
 # relevance_v1 — dev split
 
-- **Arms:** none, lexical, vector, hybrid, current, oracle
+- **Arms:** none, lexical, vector, hybrid, current, store_vector, store_lexical, oracle
 - **Cases:** 15 · **k:** 3
 - **Deterministic:** no model calls; two runs of one commit are byte-identical.
 
@@ -12,7 +12,9 @@
 | `lexical` | 0.778 | 0.452 | 0.821 | 0.845 | 0.714 | 0.286 | **0.000** | 0.429 | 0.000 | 0.000 |
 | `vector` | 0.728 | 0.381 | 0.786 | 0.774 | 0.714 | 0.286 | **0.000** | 0.548 | 0.000 | 0.000 |
 | `hybrid` | 0.752 | 0.429 | 0.857 | 0.774 | 0.786 | 0.214 | **0.000** | 0.476 | 0.000 | 0.000 |
-| `current` | 0.728 | 0.381 | 0.786 | 0.774 | 0.714 | 0.286 | **0.000** | 0.548 | 0.000 | 0.000 |
+| `current` | 0.752 | 0.429 | 0.857 | 0.774 | 0.786 | 0.214 | **0.000** | 0.476 | 0.000 | 0.000 |
+| `store_vector` | 0.728 | 0.381 | 0.786 | 0.774 | 0.714 | 0.286 | **0.000** | 0.548 | 0.000 | 0.000 |
+| `store_lexical` | 0.756 | 0.452 | 0.821 | 0.798 | 0.714 | 0.286 | **0.000** | 0.429 | 0.000 | 0.000 |
 | `oracle` | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | **0.000** | 0.000 | 1.000 | 0.000 |
 
 ## Headroom
@@ -111,6 +113,26 @@ A ranker's threshold is a share of that headroom, never an absolute margin (AGEN
 |---|---|---|---|---|---|
 | apparent_conflict | 1 | 0.920 | 1.000 | 0 | 0 |
 | conflicting | 1 | 1.000 | 1.000 | 0 | 0 |
+| constrained | 1 | 1.000 | 1.000 | 0 | 0 |
+| copied_evidence | 1 | 0.307 | 0.000 | 0 | 0 |
+| direct | 1 | 1.000 | 1.000 | 0 | 0 |
+| indirect | 1 | 0.613 | 0.000 | 0 | 0 |
+| lexical_trap | 1 | 0.500 | 1.000 | 0 | 0 |
+| near_duplicate | 1 | 0.307 | 1.000 | 0 | 0 |
+| negative_evidence | 1 | 1.000 | 1.000 | 0 | 0 |
+| rare_critical | 1 | 0.387 | 0.000 | 0 | 0 |
+| retracted | 1 | 1.000 | 1.000 | 0 | 0 |
+| superseded | 1 | 1.000 | 1.000 | 0 | 0 |
+| temporal_drift | 1 | 0.500 | 1.000 | 0 | 0 |
+| unanswerable | 1 | — | — | 0 | 0 |
+| unauthorized | 1 | 1.000 | 1.000 | 0 | 0 |
+
+### `store_vector`
+
+| family | cases | nDCG | critical recall | violations | abstained |
+|---|---|---|---|---|---|
+| apparent_conflict | 1 | 0.920 | 1.000 | 0 | 0 |
+| conflicting | 1 | 1.000 | 1.000 | 0 | 0 |
 | constrained | 1 | 0.920 | 1.000 | 0 | 0 |
 | copied_evidence | 1 | 0.000 | 0.000 | 0 | 0 |
 | direct | 1 | 1.000 | 1.000 | 0 | 0 |
@@ -119,6 +141,26 @@ A ranker's threshold is a share of that headroom, never an absolute margin (AGEN
 | near_duplicate | 1 | 0.000 | 0.000 | 0 | 0 |
 | negative_evidence | 1 | 1.000 | 1.000 | 0 | 0 |
 | rare_critical | 1 | 0.613 | 0.000 | 0 | 0 |
+| retracted | 1 | 1.000 | 1.000 | 0 | 0 |
+| superseded | 1 | 1.000 | 1.000 | 0 | 0 |
+| temporal_drift | 1 | 0.500 | 1.000 | 0 | 0 |
+| unanswerable | 1 | — | — | 0 | 0 |
+| unauthorized | 1 | 1.000 | 1.000 | 0 | 0 |
+
+### `store_lexical`
+
+| family | cases | nDCG | critical recall | violations | abstained |
+|---|---|---|---|---|---|
+| apparent_conflict | 1 | 0.920 | 1.000 | 0 | 0 |
+| conflicting | 1 | 1.000 | 1.000 | 0 | 0 |
+| constrained | 1 | 1.000 | 1.000 | 0 | 0 |
+| copied_evidence | 1 | 0.613 | 0.000 | 0 | 0 |
+| direct | 1 | 1.000 | 1.000 | 0 | 0 |
+| indirect | 1 | 0.613 | 0.000 | 0 | 0 |
+| lexical_trap | 1 | 0.631 | 1.000 | 0 | 0 |
+| near_duplicate | 1 | 0.307 | 0.000 | 0 | 0 |
+| negative_evidence | 1 | 1.000 | 1.000 | 0 | 0 |
+| rare_critical | 1 | 0.000 | 0.000 | 0 | 0 |
 | retracted | 1 | 1.000 | 1.000 | 0 | 0 |
 | superseded | 1 | 1.000 | 1.000 | 0 | 0 |
 | temporal_drift | 1 | 0.500 | 1.000 | 0 | 0 |

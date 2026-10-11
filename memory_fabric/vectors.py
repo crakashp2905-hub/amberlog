@@ -24,6 +24,111 @@ threshold choice to the caller, since the right value depends on the embedder.
 """
 
 
+_STOPWORDS = frozenset(
+    "the a an is are was were be been it its of for to in on at and or not "
+    "do does did should what which how why when who with from this that "
+    "still can could we i me my our us".split()
+)
+
+
+class LexicalIndex:
+    """IDF-weighted token overlap. The arm the product was missing.
+
+    `relevance_v1` measured the shipping vector path as the **weakest
+    non-broken arm** — 0.728 on dev and 0.485 on the frozen test split —
+    losing to exactly this by 5 and 32 points
+    ([result](../research/results/relevance-v1-ceiling.md)). The cause is not
+    the retrieval design: it is that `HashingEmbedder` is a hashed bag of words
+    rather than a trained model, so near-synonyms do not help it and shared
+    rare terms do not help it enough.
+
+    Deliberately not BM25. Full BM25 needs a tuned `k1` and `b`, and tuning
+    those on the dev split before a ranker milestone exists is how a baseline
+    becomes a fitted model. Length-normalised IDF overlap has no free
+    parameters.
+    """
+
+    def __init__(self) -> None:
+        self._terms: dict[str, frozenset[str]] = {}
+
+    def add(self, key: str, text: str) -> str:
+        self._terms[key] = frozenset(self._tokens(text))
+        return key
+
+    def remove(self, key: str) -> None:
+        self._terms.pop(key, None)
+
+    def __len__(self) -> int:
+        return len(self._terms)
+
+    @staticmethod
+    def _tokens(text: str) -> list[str]:
+        return [t for t in _TOKEN.findall(text.lower()) if t not in _STOPWORDS]
+
+    def _idf(self) -> dict[str, float]:
+        total = len(self._terms)
+        counts: dict[str, int] = {}
+        for terms in self._terms.values():
+            for term in terms:
+                counts[term] = counts.get(term, 0) + 1
+        return {
+            term: math.log((total + 1) / (count + 0.5))
+            for term, count in counts.items()
+        }
+
+    def search(
+        self,
+        query: str,
+        k: int = 5,
+        restrict_to: Iterable[str] | None = None,
+        min_relevance: float = MIN_RELEVANCE,
+    ) -> list[tuple[str, float]]:
+        query_terms = set(self._tokens(query))
+        if not query_terms:
+            return []
+        weights = self._idf()
+        allowed = set(restrict_to) if restrict_to is not None else None
+        scored: list[tuple[str, float]] = []
+        for key, terms in self._terms.items():
+            if allowed is not None and key not in allowed:
+                continue
+            if not terms:
+                continue
+            overlap = sum(weights.get(t, 0.0) for t in terms & query_terms)
+            # Length-normalised, or a long memory wins by containing more
+            # words rather than better ones.
+            score = overlap / math.sqrt(len(terms))
+            if score > min_relevance:
+                scored.append((key, score))
+        scored.sort(key=lambda pair: (-pair[1], pair[0]))
+        return scored[:k]
+
+
+def fuse(
+    *ranked: Sequence[tuple[str, float]], k: int = 5, constant: int = 60
+) -> list[tuple[str, float]]:
+    """Reciprocal-rank fusion across retrieval arms.
+
+    RRF rather than a weighted sum of scores, because cosine similarity and
+    IDF overlap are on incomparable scales and a weight between them would be
+    a tuned parameter — on the dev split, before any ranker milestone exists.
+    RRF needs only the ranks.
+
+    `constant` is the standard 60 from the original RRF paper, left alone for
+    the same reason.
+
+    The returned score is a fusion rank, **not** a relevance value, and is not
+    comparable to a cosine. Callers that need a relevance number should take it
+    from the arm they care about.
+    """
+    fused: dict[str, float] = {}
+    for results in ranked:
+        for position, (key, _score) in enumerate(results):
+            fused[key] = fused.get(key, 0.0) + 1.0 / (constant + position + 1)
+    ordered = sorted(fused.items(), key=lambda pair: (-pair[1], pair[0]))
+    return ordered[:k]
+
+
 class Embedder(Protocol):
     dim: int
 

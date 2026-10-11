@@ -92,6 +92,32 @@ real embedding model would likely move `vector`, `hybrid` and `current`
 together, and might close most of the headroom on its own — which would be a
 better outcome than a ranker and should be tested first.
 
+## 3a. Acted on: hybrid retrieval is now the default
+
+Measured before and after on both splits, with `store_vector` pinning the old
+behaviour so the comparison stays checkable:
+
+| arm | dev nDCG | dev critical omission | test nDCG | test critical omission |
+|---|---|---|---|---|
+| `store_vector` (the old default) | 0.728 | 0.286 | 0.485 | 0.400 |
+| **`current` (hybrid, the new default)** | **0.752** | **0.214** | **0.658** | **0.000** |
+| `store_lexical` | 0.756 | 0.286 | 0.804 | 0.200 |
+
+On the frozen test split the product arm gains **+0.173 nDCG** and critical
+omission goes from **40% to zero**.
+
+**The default is a trade-off, not a win on every axis.** Lexical alone still
+has the better nDCG — 0.804 against 0.658 on test — while hybrid has the better
+critical-memory omission and recall. Critical omission is the metric with a
+consequence: it counts the cases where the one decisive memory never reached
+the agent. So the default optimises that and gives up precision, and
+`retrieval="lexical"` is available with the reasoning written down so the
+choice is informed rather than inherited.
+
+RRF rather than a weighted score blend, because cosine similarity and IDF
+overlap are on incomparable scales and a weight between them would be a
+parameter tuned on the dev split before any ranker milestone exists.
+
 ## 4. Where the headroom actually is
 
 Per-family nDCG on dev, oracle minus `lexical`:

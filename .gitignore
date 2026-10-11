@@ -37,3 +37,5 @@ research/bench/external/scifact-raw/
 # stronger claim than committing them.
 research/bench/relevance_v2/dev.json
 research/bench/relevance_v2/test.json
+research/bench/propagation_v1/dev.json
+research/bench/propagation_v1/test.json

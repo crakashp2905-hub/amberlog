@@ -1,0 +1,26 @@
+{
+  "benchmark": "propagation_v1",
+  "built_at": "2026-10-11",
+  "note": "A focused fixture for one question, not a benchmark. Generated; these digests are the reproducibility claim.",
+  "per_family": 4,
+  "families": [
+    "copied_document",
+    "deep_chain",
+    "independent_reconfirmation",
+    "retracted_intermediate"
+  ],
+  "splits": {
+    "dev": {
+      "cases": 8,
+      "memories": 1636,
+      "sha256": "e1c172a0392c5c55abb45cb523403af84d6816819e27590dc5cc655ce57b3454",
+      "bytes": 1005510
+    },
+    "test": {
+      "cases": 8,
+      "memories": 1636,
+      "sha256": "cc0c901bd626dfbd746b315821aff701a40c3dd340da3ac0a46bbb08db4931d7",
+      "bytes": 1006183
+    }
+  }
+}

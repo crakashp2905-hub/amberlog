@@ -1,0 +1,232 @@
+"""propagation_v1 and the P3 arms.
+
+The fixture's whole value is that its derivation chains survive the round trip
+into the store. Two runs of P3 were invalid before this file existed: the first
+because relevance_v2's pair could not separate the rules, the second because a
+non-topological write order dropped the edges in silence and a correct arm
+looked wrong. These tests assert the chains, the rules, and the verdict
+arithmetic.
+"""
+
+from __future__ import annotations
+
+import json
+import pathlib
+import sys
+import unittest
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from experiments import p3_propagation as p3  # noqa: E402
+from experiments import relevance_bench as rb  # noqa: E402
+from research.bench.propagation_v1 import build  # noqa: E402
+
+BENCH = ROOT / "research" / "bench" / "propagation_v1"
+MANIFEST = json.loads((BENCH / "MANIFEST.json").read_text(encoding="utf-8"))
+BUILT = (BENCH / "dev.json").exists() and (BENCH / "test.json").exists()
+needs_build = unittest.skipUnless(
+    BUILT, "run `python -m research.bench.propagation_v1.build`")
+
+# The declared depth of each family's longest chain, asserted through the store
+# rather than read off the fixture.
+CHAIN_DEPTH = {
+    "retracted_intermediate": 2,   # r1 -> s1 -> d1
+    "deep_chain": 3,               # r1 -> a1 -> b1 -> c1
+    "copied_document": 1,          # r2 -> d1
+    "independent_reconfirmation": 1,
+}
+
+
+class TestReproducible(unittest.TestCase):
+    def test_a_rebuild_matches_the_committed_digests(self):
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            manifest = build.write(pathlib.Path(tmp))
+        for split, expected in MANIFEST["splits"].items():
+            with self.subTest(split=split):
+                self.assertEqual(manifest["splits"][split]["sha256"],
+                                 expected["sha256"])
+
+
+class TestInsertionOrder(unittest.TestCase):
+    """`len(parents)` is not a topological order."""
+
+    def test_a_two_level_chain_is_ordered_by_dependency(self):
+        corpus = [
+            {"id": "c", "parents": [["b", 1]]},
+            {"id": "b", "parents": [["a", 1]]},
+            {"id": "a", "parents": []},
+        ]
+        order = [m["id"] for m in rb.insertion_order(corpus)]
+        self.assertLess(order.index("a"), order.index("b"))
+        self.assertLess(order.index("b"), order.index("c"))
+
+    def test_sorting_by_parent_count_would_not_have_caught_this(self):
+        """The regression itself, stated as a test.
+
+        Both `b` and `c` have one parent, so the old key leaves them in corpus
+        order and `c` is written before its parent exists.
+        """
+        corpus = [
+            {"id": "c", "parents": [["b", 1]]},
+            {"id": "b", "parents": [["a", 1]]},
+            {"id": "a", "parents": []},
+        ]
+        old = [m["id"] for m in sorted(corpus, key=lambda m: len(m["parents"]))]
+        self.assertLess(old.index("c"), old.index("b"))
+
+    def test_a_dangling_parent_raises_rather_than_dropping_the_edge(self):
+        with self.assertRaises(AssertionError):
+            rb.insertion_order([{"id": "x", "parents": [["missing", 1]]}])
+
+
+class TestChainsSurviveTheStore(unittest.TestCase):
+    @needs_build
+    def test_every_family_keeps_its_declared_depth(self):
+        for split in ("dev", "test"):
+            for case in rb.load(split, "propagation_v1"):
+                ctx = p3.build_context(case)
+                try:
+                    graph = ctx.fabric.lineage_graph
+                    deepest = 0
+                    for bench, sid in ctx.store_id.items():
+                        depth = len([
+                            n for n in graph.ancestors(sid)
+                            if n.memory_id in ctx.bench_id
+                        ])
+                        deepest = max(deepest, depth)
+                    self.assertEqual(
+                        deepest, CHAIN_DEPTH[case["family"]],
+                        f"{case['case_id']}: chain depth {deepest}, expected "
+                        f"{CHAIN_DEPTH[case['family']]}. A dropped parent edge "
+                        f"makes every propagation rule read a derived memory as "
+                        f"independent evidence.",
+                    )
+                finally:
+                    ctx.fabric.close()
+
+    @needs_build
+    def test_the_retracted_memory_is_an_intermediate_not_a_root(self):
+        """The structure relevance_v2 was missing, asserted here."""
+        for split in ("dev", "test"):
+            for case in rb.load(split, "propagation_v1"):
+                if case["family"] != "retracted_intermediate":
+                    continue
+                ctx = p3.build_context(case)
+                try:
+                    self.assertEqual(ctx.retracted, {"s1"}, case["case_id"])
+                    # Retracted, yet shares a root with standing evidence.
+                    self.assertEqual(ctx.root_of("s1"), "r1")
+                    self.assertEqual(ctx.root_of("g1"), "r1")
+                    self.assertTrue(ctx.has_retracted_ancestor("d1"))
+                    self.assertFalse(ctx.has_retracted_ancestor("g1"))
+                finally:
+                    ctx.fabric.close()
+
+
+class TestRules(unittest.TestCase):
+    @needs_build
+    def test_blanket_invalidation_discards_the_standing_conclusion(self):
+        """The failure the fixture exists to catch.
+
+        g1 does not descend from the retracted interim analysis, but it shares
+        a root with it, so withholding by root identity loses the answer.
+        """
+        for split in ("dev", "test"):
+            for case in rb.load(split, "propagation_v1"):
+                if case["family"] != "retracted_intermediate":
+                    continue
+                ctx = p3.build_context(case)
+                try:
+                    ranked = p3.base_ranking(ctx)
+                    blanket = p3.rule_blanket_invalidation(list(ranked), ctx)
+                    traversal = p3.rule_graph_traversal(list(ranked), ctx)
+                    self.assertNotIn("g1", blanket, case["case_id"])
+                    self.assertIn("g1", traversal, case["case_id"])
+                    self.assertNotIn("d1", traversal, case["case_id"])
+                finally:
+                    ctx.fabric.close()
+
+    @needs_build
+    def test_no_rule_solves_a_re_ingested_document(self):
+        """Recorded as a test so it cannot quietly start passing unnoticed.
+
+        If a change makes this fail, the product gained the ability to see a
+        copy under a separate root, which is a result and needs its own
+        write-up -- not a test to be deleted.
+        """
+        for case in rb.load("dev", "propagation_v1"):
+            if case["family"] != "copied_document":
+                continue
+            ctx = p3.build_context(case)
+            try:
+                ranked = p3.base_ranking(ctx)
+                for name in ("blanket_invalidation", "graph_traversal",
+                             "source_root_grouping"):
+                    allowed = p3.RULES[name](list(ranked), ctx)
+                    self.assertIn("r2", allowed, f"{case['case_id']}/{name}")
+            finally:
+                ctx.fabric.close()
+
+    def test_the_oracle_is_the_only_rule_that_reads_the_labels(self):
+        import inspect
+
+        for name, rule in p3.RULES.items():
+            source = inspect.getsource(rule)
+            if name == p3.CEILING:
+                continue
+            self.assertNotIn(
+                '["labels"]', source,
+                f"{name} reads the labels, which makes it an oracle rather "
+                f"than a method",
+            )
+
+
+class TestVerdict(unittest.TestCase):
+    """The registered arithmetic, including the clause that fired once."""
+
+    def _result(self, stale: dict[str, float], invalid: float = 0.0) -> dict:
+        return {
+            "arms": {
+                name: {
+                    "stale_citations_mean": value,
+                    "unnecessary_invalidation": (
+                        invalid if name == "blanket_invalidation" else 0.0),
+                }
+                for name, value in stale.items()
+            }
+        }
+
+    def test_zero_headroom_is_abandoned_not_reinterpreted(self):
+        v = p3.verdict(self._result({
+            "no_propagation": 3.333, "blanket_invalidation": 0.0,
+            "graph_traversal": 0.0, "source_root_grouping": 1.0,
+            "oracle_propagation": 0.0,
+        }))
+        self.assertEqual(v["verdict"], "ABANDONED")
+
+    def test_the_measured_dev_shape_is_not_supported(self):
+        v = p3.verdict(self._result({
+            "no_propagation": 1.375, "blanket_invalidation": 0.5,
+            "graph_traversal": 0.5, "source_root_grouping": 1.25,
+            "oracle_propagation": 0.0,
+        }))
+        self.assertEqual(v["verdict"], "NOT SUPPORTED")
+        self.assertAlmostEqual(v["threshold"], 0.300, places=3)
+
+    def test_trading_invalidation_for_stale_citations_fails_outright(self):
+        """A rule cannot buy the primary metric with the secondary one."""
+        result = self._result({
+            "no_propagation": 1.375, "blanket_invalidation": 0.5,
+            "graph_traversal": 0.5, "source_root_grouping": 0.1,
+            "oracle_propagation": 0.0,
+        })
+        result["arms"]["source_root_grouping"]["unnecessary_invalidation"] = 0.9
+        v = p3.verdict(result)
+        self.assertTrue(v["verdict"].startswith("FAILED"))
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()

@@ -60,7 +60,7 @@ DEFAULT_K = 3
 # 1-2 relevant memories against 18; v2 holds up to 4 (a 4-hop chain) against
 # ~500, and a k below the chain length would score a perfect selection as a
 # miss -- the oracle would be handicapped, which principle 8b forbids.
-BENCH_K = {"relevance_v1": 3, "relevance_v2": 5}
+BENCH_K = {"relevance_v1": 3, "relevance_v2": 5, "propagation_v1": 5}
 
 BLOCKED_LIFECYCLE = frozenset({"quarantined", "deprecated", "deleted"})
 
@@ -310,6 +310,39 @@ def _as_of(case: Mapping[str, Any]) -> int | None:
     return case["task"].get("event_time")
 
 
+def insertion_order(corpus):
+    """Parents before children, by dependency rather than by parent count.
+
+    Sorting on `len(parents)` is not a topological order. It works only for
+    chains of depth one: in `root -> interim -> restatement` the interim and
+    the restatement both have one parent, so the restatement can be written
+    first, its parent is not yet in the store, and the edge is dropped in
+    silence. The memory then becomes its own source root and every propagation
+    rule reads it as independent evidence.
+
+    That is how `retracted_intermediate` first reported 1.500 stale citations
+    for an arm that should have scored 0.000 -- the arm was correct and the
+    fixture had no chain to traverse. It is the third time in this project that
+    an absent provenance edge has looked like a result about a mechanism.
+    """
+    remaining = list(corpus)
+    placed: set[str] = set()
+    ordered = []
+    while remaining:
+        ready = [
+            m for m in remaining
+            if all(p[0] in placed for p in (m.get("parents") or ()))
+        ]
+        if not ready:
+            raise AssertionError(
+                f"cycle or dangling parent among {[m['id'] for m in remaining][:5]}")
+        for m in ready:
+            ordered.append(m)
+            placed.add(m["id"])
+        remaining = [m for m in remaining if m["id"] not in placed]
+    return ordered
+
+
 def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
     """`MemoryFabric.retrieve()` exactly as it ships.
 
@@ -332,9 +365,9 @@ def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
     try:
         ids = {}
         local = {}
-        # Two passes: parents must exist before a child can name them, and the
-        # dataset lists corpora in shuffled order.
-        for memory in sorted(case["corpus"], key=lambda m: len(m.get("parents") or [])):
+        # Dependency order: parents must exist before a child can name them,
+        # and the dataset lists corpora shuffled.
+        for memory in insertion_order(case["corpus"]):
             parents = [
                 (local[p[0]], 1) for p in (memory.get("parents") or []) if p[0] in local
             ]

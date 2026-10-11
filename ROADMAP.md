@@ -143,6 +143,38 @@ that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
 
+### What P3 changed
+
+**[P3](research/results/p3-correction-propagation.md) is the first negative
+result about a shipped mechanism rather than about a hypothesis.** Asked whether
+the product's dependency-aware behaviour beats simpler rules on a retracted
+source with several apparent supports, the answer on both splits is that it
+loses to a five-line baseline:
+
+| arm | stale cited / case | unnecessary invalidation | sufficient |
+|---|---|---|---|
+| `no_propagation` | 1.375 | 0.000 | 1.000 |
+| `blanket_invalidation` | 0.500 | **0.500** | **0.500** |
+| **`graph_traversal`** | **0.500** | 0.000 | 1.000 |
+| `source_root_grouping` (the product) | 1.250 | 0.000 | 1.000 |
+| `oracle_propagation` | 0.000 | 0.000 | 1.000 |
+
+Source-root grouping closes **−150%** of the headroom against a registered 40%
+bar. The concrete gap is that **nothing in the retrieval path asks whether a
+memory descends from something withdrawn**, and the lineage graph that would
+answer it already exists and is already walked by `_derivation_related`.
+
+Two things keep this from being a simple "add the rule":
+
+- **The conservative rule is not the safe one.** Blanket invalidation matches traversal on stale evidence and discards the standing source in two families out of four, which halves sufficiency. That is why two primary metrics were registered and neither may be traded.
+- **One family defeats everything, including the oracle's rationale.** A withdrawn document re-ingested under its own root is two source roots and two votes. Provenance is correct about the sources and wrong about the evidence, and `_group_by_root` is deliberately not content deduplication, so it cannot see it.
+
+The first two runs of this experiment were invalid and both are on the record:
+the first fixture could not separate the rules at all (its standing source had a
+different root, so blanket invalidation scored the oracle), and the second wrote
+memories in order of `len(parents)` — not a topological order — so a two-level
+chain silently lost its edges and a correct arm looked wrong.
+
 ### What relevance_v2 changed
 
 **[relevance_v2](research/bench/relevance_v2/README.md)** is the benchmark both

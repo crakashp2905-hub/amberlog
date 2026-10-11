@@ -169,33 +169,50 @@ that was the one R6 result to survive its frozen split. The two together are
 the argument for making sufficiency a first-class output rather than something
 read off a ranking.
 
-## 7. Source-root grouping is the only mechanism that moves stale evidence
+## 7. Stale evidence: the store already handles it completely
+
+> **Corrected 2026-10-12.** This section previously reported that source-root
+> grouping cuts stale-evidence citation by 70% and is "the first measured
+> number for the provenance machinery acting on the case it was designed for".
+> That was an artifact of the same class as the three defects in §3, and the
+> original numbers are kept below.
+
+Re-measured with the fixture's quarantine applied **after** the corpus is
+written, which is what any real caller does:
 
 | arm | mechanism | stale cited / case |
 |---|---|---|
-| `lexical` | none | 3.333 |
-| `store_plain` | none | 1.500 |
-| `store_lineage` | premise promotion | 1.500 |
-| `store_temporal` | validity filtering | 1.500 |
-| `store_roots` | **source roots** | **1.000** |
-| `store_all` | all three | 1.000 |
+| `lexical` (harness reference, no store) | none | **3.333** |
+| `store_plain` | none | **0.000** |
+| `store_roots` | source roots | 0.000 |
+| `store_all` | all three | 0.000 |
+| `lexical_all` | source roots + promotion | 0.000 |
 | `oracle` | — | 0.000 |
 
-Grouping by source root is the whole of the effect: adding lineage and temporal
-filtering to it changes nothing, and either alone changes nothing. On the
-lexical arm the reduction is 3.333 → 1.000, a **70%** cut.
+**Every arm that goes through the store cites zero stale evidence, with every
+mechanism off.** `quarantine(propagate=True)` contests the descendants of a
+retracted memory and contested memories are withheld by default, so the
+question is settled before retrieval runs. Source-root grouping contributes
+nothing to it.
 
-Two caveats that matter more than the headline. The **citation rate stays
-1.000** for every real arm: grouping reduces how much stale evidence reaches the
-context and never eliminates it, so on these cases a context built from the
-product always contains at least one memory whose source was retracted. And the
-oracle's 0.000 is true by construction — it knows which memories are stale — so
-it bounds the metric without being a method.
+The only arm that cites stale evidence is `lexical` — the harness's own
+reference implementation, which scores the corpus directly and has no lifecycle
+propagation at all. The 3.333 is a property of the benchmark harness, not of the
+product.
 
-This is the first measured number for the provenance machinery acting on the
-case it was designed for, and it arrives only because the fixture bug in §3 was
-found. The comparison against blanket invalidation and plain graph traversal is
-registered separately and not run here.
+What the earlier version measured was the product with its own retraction
+propagation prevented from running: the fixture quarantined inside the write
+loop, so when a parent was retracted its children did not yet exist and there
+was nothing to propagate to. The original table, preserved:
+
+| arm | stale cited / case (invalid) |
+|---|---|
+| `lexical` | 3.333 |
+| `store_plain` / `store_lineage` / `store_temporal` | 1.500 |
+| `store_roots` / `store_all` | 1.000 |
+
+[P3](p3-correction-propagation.md) has the full account and the corrected
+comparison against blanket invalidation and graph traversal.
 
 ## 8. Cost
 
@@ -235,9 +252,13 @@ arrives too late.
 > is the only correct answer. Those two facts are the case for the next
 > milestone being about assembled evidence rather than about ordering.
 >
-> Source-root grouping cuts stale-evidence citation by **70%** and is the only
-> mechanism that moves it — the first number the provenance machinery has
-> earned on its own target case. It never reaches zero.
+> **Corrected:** an earlier version of this summary credited source-root
+> grouping with cutting stale-evidence citation by 70%. In fact every
+> store-backed arm cites **zero** stale evidence with every mechanism off,
+> because quarantining a memory already contests its descendants and contested
+> memories are withheld. The 70% was measured against a store whose own
+> propagation the fixture had prevented from running. See §7 and
+> [P3](p3-correction-propagation.md).
 >
 > And the benchmark found three bugs in itself and one in its fixture before it
 > measured anything, including a leak that would have graded wrong retrievals

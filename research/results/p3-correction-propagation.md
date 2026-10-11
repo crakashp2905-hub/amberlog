@@ -1,202 +1,219 @@
-# P3 — correction propagation: plain graph traversal beats the product
+# P3 — correction propagation: the product was right and my fixture was wrong
 
-**NOT SUPPORTED, on both splits, and not narrowly.** The product's
-dependency-aware behaviour — source-root grouping — closes **−150%** of the
-measured headroom against a registered bar of 40%: it is substantially *worse*
-than the best simple baseline. A five-line rule that withholds anything with a
-retracted ancestor is optimal on every family except the one nothing solves.
+> ## Correction, 2026-10-12
+>
+> **An earlier version of this document concluded that "plain graph traversal
+> beats the product" and that the product has "no retraction propagation in the
+> retrieval path at all". Both claims were false, and they were false because
+> of a defect in my fixture.**
+>
+> `quarantine(propagate=True)` contests the descendants of a retracted memory,
+> and CONTESTED is excluded from `_eligible_ids` unless a caller asks for it. My
+> fixture quarantined **inside the write loop**, so when a parent was retracted
+> its children did not exist yet, there was nothing to propagate to, and the
+> store was left in a state the product never produces: a retracted parent with
+> active descendants. Every arm was then measured against that state.
+>
+> With the quarantine applied after the corpus is written — which is what any
+> real caller does — the product withholds exactly the right memories, and the
+> arm said to beat it adds nothing. The original numbers and conclusions are
+> preserved in §6 so the overclaim stays visible rather than being edited away.
+>
+> This is the **fifth** time in this project that a measurement artifact has
+> looked like a result about a mechanism, and the first time one produced a
+> false negative result about shipped behaviour.
 
 - **Registration:** [p3-correction-propagation.md](../prereg/p3-correction-propagation.md), written before any arm existed
 - **Fixture:** [propagation_v1](../bench/propagation_v1/build.py) — 16 cases, four families, ~205 memories a case, dev 8 / test 8
-- **Runs:** 2026-10-11, `python -m experiments.p3_propagation --split {dev,test}`, k=5
+- **Runs:** 2026-10-12, `python -m experiments.p3_propagation --split {dev,test}`
 - **Deterministic:** no model calls; one retrieval a case, five rules over the same ranking
 
 ---
 
-## 1. The numbers
+## 1. The numbers, corrected
+
+**dev and test are identical on every cell**, which is worth more than either
+split's decimals at eight cases a split.
 
 | arm | stale cited / case | stale rate | unnecessary invalidation | sufficient |
 |---|---|---|---|---|
-| `no_propagation` | 1.375 | 0.750 | 0.000 | 1.000 |
+| `no_propagation` (the product's default) | **0.500** | 0.250 | 0.000 | 1.000 |
 | `blanket_invalidation` | 0.500 | 0.250 | **0.500** | **0.500** |
-| **`graph_traversal`** | **0.500** | 0.250 | **0.000** | **1.000** |
-| `source_root_grouping` (the product) | 1.250 | 0.750 | 0.000 | 1.000 |
+| `graph_traversal` | 0.500 | 0.250 | 0.000 | 1.000 |
+| `source_root_grouping` | 0.500 | 0.250 | 0.000 | 1.000 |
 | `oracle_propagation` | 0.000 | 0.000 | 0.000 | 1.000 |
 
-```
-best baseline        B = 0.500   (graph_traversal, and blanket ties it)
-ceiling              C = 0.000   (oracle, zero by construction)
-headroom                 +0.500
-threshold            B - 0.40 x headroom = 0.300
-source_root_grouping     1.250        ->  NOT SUPPORTED (-150% of headroom)
-```
+`no_propagation` is a misleading name now that the fixture is correct: it means
+*no additional rule at exposure time*, and the propagation has already happened
+at quarantine time. It is the product as it ships.
 
-**The frozen split agrees to three decimals** on every arm except
-`no_propagation` (1.500 against 1.375). Eight cases a split, so the counts
-matter more than the decimals, and they are given beside every rate in the
-harness output.
+## 2. What the product actually does, and it is the right thing
 
-## 2. Graph traversal is optimal everywhere the question is answerable
+On `retracted_intermediate` — the case this fixture was built to supply, where a
+**derived** memory is retracted while its root still carries standing evidence:
 
-Stale citations a case, by family — the aggregate hides this entirely:
+| memory | role | state after `quarantine(s1)` | exposed? |
+|---|---|---|---|
+| `r1` | the survey, standing | active | yes |
+| `s1` | interim analysis, **retracted** | quarantined | no |
+| `d1`, `d2` | restatements of `s1` | **contested** | no |
+| `g1` | final analysis, drawn from `r1` | active | **yes** |
 
-| arm | `retracted_intermediate` | `deep_chain` | `independent_reconfirmation` | `copied_document` |
-|---|---|---|---|---|
-| `no_propagation` | 2.000 | 0.000 | 1.500 | 2.000 |
-| `blanket_invalidation` | **0.000** | 0.000 | **0.000** | 2.000 |
-| `graph_traversal` | **0.000** | 0.000 | **0.000** | 2.000 |
-| `source_root_grouping` | 2.000 | 0.000 | 1.000 | 2.000 |
-| `oracle_propagation` | 0.000 | 0.000 | 0.000 | 0.000 |
+That is exactly correct, and it is the discrimination the whole fixture exists
+to test. `g1` shares a source root with the retracted memory and does not
+descend from it, so withholding by root identity loses the answer and following
+edges keeps it. **The product follows edges**, at write time, through the
+lineage graph whose `descendants()` docstring has always called it "the
+retraction set".
 
-Unnecessary invalidation, which is where the two simple rules part:
+Adding a traversal rule at exposure time, which is what next-step 1 proposed,
+**would be redundant with this**. `graph_traversal` and the product's default
+score identically on every metric in §1 because they are computing the same
+thing twice.
+
+## 3. Blanket invalidation is still wrong, and the fixture still catches it
+
+The one arm the corrected run separates:
 
 | arm | `retracted_intermediate` | `deep_chain` | `independent_reconfirmation` | `copied_document` |
 |---|---|---|---|---|
 | `blanket_invalidation` | **1.000** | **1.000** | 0.000 | 0.000 |
 | every other arm | 0.000 | 0.000 | 0.000 | 0.000 |
 
-So: **the entire residual 0.500 is `copied_document`**, and traversal is exactly
-the oracle on the other three families. Blanket invalidation matches it on stale
-evidence and pays for it by discarding the standing source in two families out
-of four, which halves sufficiency from 1.000 to 0.500 — it answers nothing in
-the cases where an answer existed.
+(unnecessary invalidation — the share of cases where a standing, reachable
+measurement was withheld)
 
-That is prediction 1 confirmed, and §4 is about why it took a second fixture to
-confirm it.
+Withholding everything that shares a root with a retracted memory discards the
+standing conclusion in two families out of four, and sufficiency falls from
+1.000 to **0.500**: it answers nothing in half the cases where an answer
+existed. So the conservative rule is not the safe one, which is what the matched
+structure was built to show, and that part of the design worked.
 
-## 3. What nothing solves, and why it is in the fixture
+## 4. The whole remaining gap is one family, and it is real
 
-`copied_document` is 2.000 for **every rule including the product's**. The same
-contractor bulletin was ingested twice — once retracted, once as a copy filed by
-the site office — and provenance honestly records two roots, because there were
-two ingestions. Root identity says the copy is independent. Parent edges say the
-copy is independent. Both are right about the provenance and wrong about the
-evidence.
+Stale citations a case, by family:
 
-`_group_by_root` exists precisely to stop copies counting as corroboration, and
-it cannot see this one: it groups by source root, and a re-ingested document is
-two roots and two votes. The mechanism's own docstring says it is "not content
-deduplication, deliberately", for a good reason — two near-identical memories
-can be independently observed, which is real corroboration. The cost of that
-correct choice is this case.
+| arm | `retracted_intermediate` | `deep_chain` | `independent_reconfirmation` | `copied_document` |
+|---|---|---|---|---|
+| every arm except the oracle | 0.000 | 0.000 | 0.000 | **2.000** |
+| `oracle_propagation` | 0.000 | 0.000 | 0.000 | 0.000 |
 
-It is in the fixture knowing nothing solves it, because a comparison containing
-only cases some arm wins is a comparison arranged to have a winner.
+**`copied_document` accounts for 100% of the residual 0.500.** A withdrawn
+contractor bulletin was re-ingested months later under its own root, and
+provenance honestly records two sources because there were two ingestions. Root
+identity says the copy is independent. Parent edges say the copy is independent.
+Both are right about the provenance and wrong about the evidence.
 
-## 4. The first run of this experiment was abandoned, and the clause was right
+`_group_by_root` cannot see it and should not be expected to: its docstring says
+it is "not content deduplication, deliberately", because two near-identical
+memories can be independently observed and that is real corroboration. The cost
+of that correct choice is this case.
 
-Run against relevance_v2's `shared_root` / `independent_support` pair, P3
-**abandoned on both splits**:
+**This is the only actionable finding in this experiment**, and it is a
+different problem from the one the experiment was registered to study: it needs
+content-level identity between an incoming memory and a withdrawn one, at
+ingestion rather than at retrieval, and a policy decision about what to do when
+they match. It is not a propagation rule.
 
-| arm | stale cited / case | unnecessary invalidation |
-|---|---|---|
-| `no_propagation` | 3.333 | 0.000 |
-| `blanket_invalidation` | **0.000** | **0.000** |
-| `graph_traversal` | **0.000** | **0.000** |
-| `source_root_grouping` | 1.000 | 0.000 |
-| `oracle_propagation` | 0.000 | 0.000 |
+## 5. The verdict, applied as registered
 
-Two one-line baselines scored *exactly the oracle* on both primary metrics, so
-`B - C = 0.000` and the registered clause fired on its own.
+```
+best baseline        B = 0.500   (every baseline ties)
+ceiling              C = 0.000   (oracle, zero by construction)
+headroom                 +0.500
+threshold            B - 0.40 x headroom = 0.300
+source_root_grouping     0.500        ->  NOT SUPPORTED (closed 0%)
+```
 
-**That was prediction 1 being wrong.** I predicted blanket invalidation would
-win on stale citations and lose on unnecessary invalidation. It won both,
-because in `independent_support` the standing load-cell trial has a **different
-source root** — so a rule withholding by root identity never touches it. The
-registration names the condition in so many words — *"it discards nothing
-wrongly only because the standing trial has a different root"* — and I built the
-matched pair anyway without the case where that stops being true.
+Technically correct and substantively uninteresting. `source_root_grouping`
+closes 0% of the headroom because **the headroom is entirely `copied_document`**
+and no arm under test addresses it, the product's included. The registered
+comparison was between propagation rules, and the propagation question turns out
+to be already solved; what is left is an identity question nobody registered.
 
-The separating structure is a **retracted non-root**: a derived memory that is
-itself retracted, sitting under a root that still carries standing evidence.
-Then withholding by root is wrong and following edges is right. `propagation_v1`
-exists to supply it, and relevance_v2 was left byte-for-byte as committed
-because [its ceiling](relevance-v2-ceiling.md) was measured against those
-digests.
+A cleaner reading of the same numbers: every rule that follows derivation edges
+is at the floor this fixture can reach, one rule that ignores them pays 0.500
+unnecessary invalidation for no gain, and the oracle's remaining 0.500 of
+headroom is a problem of a different kind.
 
-## 5. And the second run was wrong too, until the chains were built
+## 6. The original run, preserved
 
-The first `propagation_v1` run reported **1.500** stale citations for
-`graph_traversal` on `retracted_intermediate`, where it should score 0.000 — the
-rule was correct and the fixture had no chain to traverse.
+The numbers this document reported before the fixture was fixed, with the
+quarantine applied inside the write loop:
 
-Both this experiment and the shared harness wrote memories in order of
-`len(parents)`, which is **not a topological order**. It is correct only for
-chains of depth one, which is all relevance_v1 and relevance_v2 contain. In
-`root → interim → restatement` the interim and the restatement both have one
-parent, so the restatement could be written first, its parent was not yet in the
-store, and the edge was dropped in silence — leaving the memory as its own
-source root and reading to every rule as independent evidence.
+| arm | stale cited / case | unnecessary invalidation | sufficient |
+|---|---|---|---|
+| `no_propagation` | 1.375 | 0.000 | 1.000 |
+| `blanket_invalidation` | 0.500 | 0.500 | 0.500 |
+| `graph_traversal` | 0.500 | 0.000 | 1.000 |
+| `source_root_grouping` | 1.250 | 0.000 | 1.000 |
+| `oracle_propagation` | 0.000 | 0.000 | 1.000 |
 
-That is the **third** time in this project an absent provenance edge has looked
-like a result about a mechanism: v2's bare-string parents, my wrong explanation
-of the identical numbers that followed, and now this. `insertion_order()` in
-`experiments/relevance_bench.py` raises on a cycle or dangling parent rather
-than skipping it, and `tests/test_propagation_v1.py` asserts the full depth of
-each chain survives the round trip through the store.
+From which I concluded that graph traversal beat the product by 150% of the
+headroom and that the retrieval path had no propagation. The 1.375 and the 1.250
+are both artifacts: they are what the product does when its own retraction
+propagation has been prevented from running.
 
-Correcting it changed `blanket_invalidation` and `graph_traversal` from 0.875 to
-0.500 and left the product's 1.250 untouched, so the verdict moved from −43% to
-−150% of the headroom. The direction never changed; the margin did.
+**What that run got right**, and the corrected run confirms: blanket
+invalidation's 0.500 unnecessary invalidation, the sufficiency halving, the
+prediction that blanket and traversal coincide on stale evidence, and
+`copied_document` defeating everything.
 
-## 6. What this says about the product
+**What it got wrong**: the entire headline, and the recommendation that followed
+from it.
 
-The product has **no retraction propagation in the retrieval path at all**.
-Source-root grouping is a de-duplication rule that happens to touch derived
-memories, and on this question it performs worse than doing nothing much:
-1.250 against `no_propagation`'s 1.375. It reduces stale citations by collapsing
-*copies* of one root and then keeps the best-ranked survivor, which on
-`retracted_intermediate` is still stale.
+Two earlier invalid runs are also on the record. The first used relevance_v2's
+`shared_root` / `independent_support` pair and abandoned on both splits, because
+that pair's standing source has a different root so blanket invalidation scored
+the oracle — prediction 1 wrong, and the registration had named the exact
+condition I then failed to build. The second wrote memories in order of
+`len(parents)`, which is not a topological order, so a two-level chain lost its
+edges and a correct arm looked wrong.
 
-The concrete gap: nothing asks *does this memory descend from something that was
-withdrawn?* at exposure time. The lineage graph that would answer it already
-exists and is already used — `_derivation_related` walks it — so this is a rule
-the fabric can express and does not.
+So: **three invalid runs before a valid one**, and all three failed the same
+way. A fixture that does not reproduce the state the product actually puts
+itself in measures the fixture.
 
-A caveat on the ceiling, which belongs with the recommendation: the oracle
-scores 0.000 **by construction**, because it is handed the labelled stale set.
-It bounds the metric and is not a method. And `graph_traversal`'s 0.500 is a
-measurement on 16 hand-built cases with my labels, four to a family, two to a
-split. It is strong enough to say the product should have the rule and not
-strong enough to say the rule is sufficient.
-
-## 7. Predictions, scored
+## 7. Predictions, scored against the corrected run
 
 | | prediction | outcome |
 |---|---|---|
-| 1 | blanket invalidation wins on stale, loses on unnecessary invalidation | **wrong on relevance_v2** (won both), **right on propagation_v1** (0.500 unnecessary invalidation, sufficiency halved). The registration named the condition and the first fixture did not contain it |
-| 2 | blanket and traversal mostly coincide, because every derived memory is one hop from the root | **right** — identical on stale citations in every family. They differ only on unnecessary invalidation, which is what the deeper chains were added for |
-| 3 | source-root grouping will not reach the oracle, and will close well under 40% | **right, and understated** — it closed −150%, i.e. it is worse than the best baseline rather than merely short of the bar |
-| 4 | the product will fail its own registered bar | **right**, and recorded in advance precisely so that −150% could not be renegotiated into "it helps a bit" |
+| 1 | blanket invalidation wins on stale, loses on unnecessary invalidation | **right** — 0.500 unnecessary invalidation, sufficiency halved to 0.500, concentrated in the two families with a retracted non-root. Wrong on the first fixture, which lacked that structure |
+| 2 | blanket and traversal mostly coincide, every derived memory being one hop from the root | **right** — identical on stale citations in every family |
+| 3 | source-root grouping will not reach the oracle | **right, for a different reason than I gave.** I predicted it would keep the best-ranked stale restatement; in fact no stale restatement is exposed at all, and the gap to the oracle is one family nothing addresses |
+| 4 | the product will fail its own registered bar | **right on the arithmetic, wrong in substance.** It fails because the remaining headroom is not a propagation problem, not because its propagation is poor |
 
 ## 8. What this does not establish
 
-1. **Sixteen cases, four to a family, eight to a split.** Every number is a direction with a wide interval. The two splits agreeing is worth more than either split's decimals.
-2. **No external check exists for this question**, in this project or, as far as I know, anywhere. SciFact has no provenance. These are my cases and my labels.
-3. **One store, one process, no time.** The retraction is already in place when the query runs. "A retraction that arrives after a conclusion was acted on" is a different experiment and needs the event log, not the retrieval path. Federation is untested and its ROADMAP gates still govern it.
-4. **No downstream measurement.** Whether a context free of stale evidence changes what a model answers is unmeasured. Given R6, it should not be assumed.
-5. **`graph_traversal` is not implemented in the product.** It is an experiment arm. Shipping it needs a decision about what to do when the only support for a needed fact is withdrawn — abstain, or expose it flagged — and that is a product question this experiment does not answer.
+1. **Sixteen cases, four to a family, eight to a split.** The two splits agreeing exactly is worth more than the decimals.
+2. **No external check exists for this question**, here or, as far as I know, anywhere. These are my cases and my labels.
+3. **One store, one process, no time.** The retraction is in place before the query. "A retraction arriving after a conclusion was acted on" is a different experiment and needs the event log.
+4. **Nothing about weak withdrawal bases.** Every quarantine here uses `contradicted`. `WithdrawalBasis` distinguishes bases that undermine content from ones Phase A measured as harmful withdrawal rules, and whether propagation *should* depend on the basis is unmeasured — the product propagates regardless.
+5. **No downstream measurement.** Whether a context free of stale evidence changes what a model answers is unmeasured, and given R6 it must not be assumed.
 
 ## 9. The honest summary
 
-> The product's dependency-aware behaviour **loses to a five-line baseline**,
-> and loses to it on both splits by the same margin. Withholding anything with
-> a retracted ancestor is exactly optimal on three of four families;
-> source-root grouping closes −150% of the headroom against a registered 40%
-> bar, which is to say it is worse than the best simple rule.
+> **The product already propagates retraction correctly, and I published a
+> result saying it does not.** Quarantining a memory contests its descendants,
+> contested memories are withheld by default, and a sibling conclusion that
+> shares the root but does not descend from the retracted memory is correctly
+> kept. On the case this fixture was built to supply, that is exactly right.
 >
-> Blanket invalidation ties traversal on stale evidence and pays 0.500
-> unnecessary invalidation for it, halving sufficiency — so the conservative
-> rule is not the safe one, which is what the fixture was built to show.
+> The reason I measured otherwise is that my fixture quarantined inside the
+> write loop, before the children existed, leaving a retracted parent with
+> active descendants — a state the product never produces. Every arm was
+> measured against it, and the two arms that looked bad were the two that rely
+> on the propagation having run.
 >
-> One family defeats everything: a withdrawn document re-ingested under its own
-> root. Provenance correctly records two sources and is correctly wrong about
-> the evidence, and the mechanism designed to stop copies counting as
-> corroboration cannot see it.
+> So **next-step 1 is withdrawn**: adding an ancestor-check at exposure time
+> would duplicate work already done at write time, and `graph_traversal` scores
+> identically to the product on every metric here because it computes the same
+> thing twice.
 >
-> Both of the first two runs of this experiment were invalid — the first because
-> its fixture could not separate the rules, the second because a non-topological
-> write order silently dropped the derivation edges. Both are recorded above
-> rather than edited away, because the pattern they share is the one this
-> project keeps repeating: an absent provenance edge reads as a result about a
-> mechanism.
+> Blanket invalidation is still wrong, by 0.500 unnecessary invalidation and
+> half its sufficiency, so the matched structure earned its place.
+>
+> And the one real gap is not a propagation rule at all: **a withdrawn document
+> re-ingested under its own root** is 100% of the remaining headroom, defeats
+> every arm including the product, and needs content identity at ingestion plus
+> a policy for what to do on a match.

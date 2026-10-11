@@ -69,20 +69,34 @@ At equal budget the answer is: **no reliable gain.** 0.533 against 0.533 on dev,
 0.500 against 0.400 on test. Two splits disagreeing on a 0.1 difference over 33
 cases means I do not know, and the dev tie is the less flattering of the two.
 
-## 3. What did survive both splits
+## 3. Nothing survived both splits — and the effect I claimed did was an artifact
 
-**`sufficiency_aware` cites zero stale evidence, on both splits**, against
-1.000 a case for top-k and **3.500 for full context**. That is inherited
-wholesale from [P3](p3-correction-propagation.md)'s measured winner — withhold
-anything with a retracted ancestor — and it is the only effect here that
-replicates.
+> **Corrected 2026-10-12.** This section reported that `sufficiency_aware` cites
+> zero stale evidence against 1.000 a case for top-k and 3.500 for
+> `full_context`, calling it "the only effect here that replicates". Both
+> comparison figures were artifacts and the claim is withdrawn.
 
-It also reframes `full_context`. Handing the model the whole corpus is
-sufficiency-optimal *and* hands it every memory whose source was retracted, at
-3.500 a case. Sufficiency and soundness are not the same property, and the arm
-that maximises the first is the worst on the second. That is an argument against
-full context that has nothing to do with cost, and it did not come from the
-metric this experiment registered.
+Re-measured, every arm cites **0.000** stale evidence on both splits, including
+`top_k` and `full_context`:
+
+| arm | stale cited / case (was) | stale cited / case (corrected) |
+|---|---|---|
+| `top_k` | 1.000 | **0.000** |
+| `full_context` | 3.500 | **0.000** |
+| `sufficiency_aware` | 0.000 | 0.000 |
+
+Two separate defects, both mine. `top_k`'s 1.000 came from the fixture
+quarantining inside the write loop, so the product's own propagation never ran
+([P3](p3-correction-propagation.md)). `full_context`'s 3.500 came from this
+module: the candidate pool's tail was filtered by the *benchmark's*
+`lifecycle_state` rather than by what the store considers exposable, which put
+contested descendants back into a pool the store had already excluded them from.
+
+So the selector's apparent advantage was the product's own behaviour, measured
+twice with it switched off. **No effect in this experiment replicates**, and the
+reframing of `full_context` that I drew from it — sufficiency-optimal but
+unsound — is withdrawn with it. `full_context` is sufficiency-optimal and costs
+219× the tokens, which is the whole of the finding.
 
 ## 4. Why the selector fails, which is structural
 
@@ -214,8 +228,8 @@ gap should be shown not sitting in one.
 > evidence about a conjunction, and nothing between those two settings is
 > either.
 >
-> One thing replicates on both splits: the selector cites **zero** stale
-> evidence where top-k cites 1.000 a case and full context cites 3.500. It is
-> borrowed entirely from P3 and it is the only effect in this experiment that
-> held — and it says that the arm which maximises sufficiency is the worst on
-> soundness, which the registered metric could not see.
+> **Nothing here replicates.** An earlier version of this summary claimed the
+> selector's zero stale citations as the one surviving effect; every arm scores
+> zero once the fixture lets the product's retraction propagation run and this
+> module stops re-admitting memories the store had excluded. The comparison was
+> the product's own behaviour measured twice with it switched off.

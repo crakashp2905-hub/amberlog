@@ -176,42 +176,58 @@ coverage abstains on 79% of answerable cases; demanding coverage of only the
 terms the corpus contains abstains on none. Token presence is not evidence about
 a conjunction, and nothing between those settings is either.
 
-One effect replicated on both splits, borrowed wholesale from P3: the selector
-cites **zero** stale evidence where top-k cites 1.000 a case and `full_context`
-cites **3.500**. So the arm that maximises sufficiency is the worst on
-soundness — which the registered metric could not see.
+**Nothing in P2 replicates.** An earlier version of this section claimed the
+selector's zero stale citations as a surviving effect. Every arm scores zero
+once the fixture lets the product's retraction propagation run and the
+experiment stops re-admitting memories the store had already excluded from its
+candidate pool — the comparison was the product's own behaviour, measured twice
+with it switched off.
 
-### What P3 changed
+### What P3 changed, after three invalid runs
 
-**[P3](research/results/p3-correction-propagation.md) is the first negative
-result about a shipped mechanism rather than about a hypothesis.** Asked whether
-the product's dependency-aware behaviour beats simpler rules on a retracted
-source with several apparent supports, the answer on both splits is that it
-loses to a five-line baseline:
+**[P3](research/results/p3-correction-propagation.md) ended up a correction to
+itself.** It first reported that the product's dependency-aware behaviour loses
+to a five-line baseline by 150% of the headroom, and that *"nothing in the
+retrieval path asks whether a memory descends from something withdrawn"*. Both
+claims were false.
+
+`quarantine(propagate=True)` contests the descendants of a retracted memory and
+contested memories are withheld by default, so the product already follows
+derivation edges — at write time, through the lineage graph whose
+`descendants()` docstring has always called it "the retraction set". My fixture
+quarantined **inside the write loop**, so when a parent was retracted its
+children did not exist yet, nothing propagated, and every arm was measured
+against a state the product never produces.
+
+Corrected, dev and test identical on every cell:
 
 | arm | stale cited / case | unnecessary invalidation | sufficient |
 |---|---|---|---|
-| `no_propagation` | 1.375 | 0.000 | 1.000 |
+| `no_propagation` (the product as it ships) | 0.500 | 0.000 | 1.000 |
 | `blanket_invalidation` | 0.500 | **0.500** | **0.500** |
-| **`graph_traversal`** | **0.500** | 0.000 | 1.000 |
-| `source_root_grouping` (the product) | 1.250 | 0.000 | 1.000 |
+| `graph_traversal` | 0.500 | 0.000 | 1.000 |
+| `source_root_grouping` | 0.500 | 0.000 | 1.000 |
 | `oracle_propagation` | 0.000 | 0.000 | 1.000 |
 
-Source-root grouping closes **−150%** of the headroom against a registered 40%
-bar. The concrete gap is that **nothing in the retrieval path asks whether a
-memory descends from something withdrawn**, and the lineage graph that would
-answer it already exists and is already walked by `_derivation_related`.
+On `retracted_intermediate` — a retracted memory that is *derived*, under a root
+that still carries standing evidence — the product withholds the restatements
+and keeps the sibling conclusion. That is the discrimination the fixture exists
+to test, and it passes it. **A traversal rule at exposure time would duplicate
+work already done at write time**, which is why `graph_traversal` and the
+product score identically.
 
-Two things keep this from being a simple "add the rule":
+What survives:
 
-- **The conservative rule is not the safe one.** Blanket invalidation matches traversal on stale evidence and discards the standing source in two families out of four, which halves sufficiency. That is why two primary metrics were registered and neither may be traded.
-- **One family defeats everything, including the oracle's rationale.** A withdrawn document re-ingested under its own root is two source roots and two votes. Provenance is correct about the sources and wrong about the evidence, and `_group_by_root` is deliberately not content deduplication, so it cannot see it.
+- **The conservative rule is still wrong.** Blanket invalidation ties on stale evidence and discards the standing source in two families of four, halving sufficiency from 1.000 to 0.500. Registering two primary metrics is what caught it.
+- **One family is 100% of the remaining gap.** A withdrawn document re-ingested under its own root is two source roots and two votes; provenance is right about the sources and wrong about the evidence. `_group_by_root` is deliberately not content deduplication, so it cannot see it, and neither can any arm tested. **This is the only actionable finding**, and it is an identity question at ingestion rather than a propagation rule.
 
-The first two runs of this experiment were invalid and both are on the record:
-the first fixture could not separate the rules at all (its standing source had a
-different root, so blanket invalidation scored the oracle), and the second wrote
-memories in order of `len(parents)` — not a topological order — so a two-level
-chain silently lost its edges and a correct arm looked wrong.
+Three invalid runs preceded the valid one, all on the record. The first fixture
+could not separate the rules (its standing source had a different root, so
+blanket invalidation scored the oracle). The second wrote memories in order of
+`len(parents)` — not a topological order — so a two-level chain lost its edges.
+The third quarantined before the descendants existed. Each time the measurement
+failed in a way that read as a result about a mechanism, and the third time it
+produced a false negative about shipped behaviour.
 
 ### What relevance_v2 changed
 
@@ -233,7 +249,7 @@ Three results worth separating from the ranking number
 
 - **Sufficiency headroom is larger than ranking headroom** (+0.267 against +0.232) and the two do not move together. Ordering well and assembling enough are not the same question.
 - **No arm abstains, ever** — 0.000 abstention precision on the nine dev cases where abstention is the only correct answer. Nothing in the retrieval path can say *the corpus does not answer this*, even when the reachable relevant set is empty and the store knows it.
-- **Source-root grouping cuts stale-evidence citation by 70%** (3.333 → 1.000 citations a case) and is the only one of the three mechanisms that moves it. The first number the provenance machinery has earned on its own target case. It never reaches zero.
+- **Stale evidence: the store already handles it completely, and an earlier version of this line said grouping cut it by 70%.** Every store-backed arm cites **zero** with every mechanism off, because quarantining contests descendants and contested memories are withheld. The 70% was measured against a store whose own propagation the fixture had prevented from running. The only arm that cites stale evidence is the harness's non-store reference implementation.
 
 And it found three defects in itself plus one in its fixture *before* measuring
 anything, including an answer-key leak that would have graded wrong retrievals

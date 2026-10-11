@@ -313,9 +313,11 @@ def build_context(case: Mapping[str, Any]) -> Context:
         store_id[memory["id"]] = stored
         bench_id[stored] = memory["id"]
         if memory["lifecycle_state"] in rb.BLOCKED_LIFECYCLE:
-            fabric.quarantine(stored, reason="benchmark fixture", actor="bench",
-                              basis="contradicted")
             retracted.add(memory["id"])
+    # After every write: see p3_propagation.build_context.
+    for bench in retracted:
+        fabric.quarantine(store_id[bench], reason="benchmark fixture",
+                          actor="bench", basis="contradicted")
     return Context(
         case=case, fabric=fabric, store_id=store_id, bench_id=bench_id,
         retracted=retracted,
@@ -349,12 +351,20 @@ def base_ranking(ctx: Context) -> list[str]:
     )
     scored = [ctx.bench_id[m.id] for m in result.exposed]
     seen = set(scored)
-    # Quarantined memories are absent from `retrieve` and must stay absent:
-    # the gates, not this function, decide what may be exposed.
+    # The tail is what the **store** considers exposable and the index merely
+    # did not score. Filtering it by the benchmark's own `lifecycle_state`
+    # instead re-admitted memories the store had excluded: quarantining a
+    # memory contests its descendants, so they are CONTESTED in the store while
+    # the fixture still calls them active, and the first version of this
+    # function put them back. `full_context` then reported 3.500 stale
+    # citations a case that the product does not make.
+    exposable = ctx.fabric._eligible_ids(
+        include_contested=False,
+        tenant_id=ctx.case["task"].get("tenant_id", "tn_default"),
+    )
     tail = [
         m["id"] for m in ctx.case["corpus"]
-        if m["id"] not in seen
-        and m["lifecycle_state"] not in rb.BLOCKED_LIFECYCLE
+        if m["id"] not in seen and ctx.store_id[m["id"]] in exposable
     ]
     return scored + tail
 

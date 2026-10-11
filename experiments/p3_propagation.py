@@ -196,10 +196,13 @@ def build_context(case: Mapping[str, Any]) -> Context:
         store_id[memory["id"]] = stored
         bench_id[stored] = memory["id"]
         if memory["lifecycle_state"] in rb.BLOCKED_LIFECYCLE:
-            fabric.quarantine(
-                stored, reason="benchmark fixture", actor="bench", basis="contradicted"
-            )
             retracted.add(memory["id"])
+    # Quarantine after every write, so `propagate=True` has descendants to
+    # reach. Inside the loop it silently did nothing, which is what made the
+    # first version of this experiment report a product with no propagation.
+    for bench in retracted:
+        fabric.quarantine(store_id[bench], reason="benchmark fixture",
+                          actor="bench", basis="contradicted")
     return Context(
         case=case, fabric=fabric, store_id=store_id, bench_id=bench_id,
         retracted=retracted, stale=set(case["labels"].get("stale") or ()),

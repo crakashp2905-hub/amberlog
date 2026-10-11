@@ -365,6 +365,7 @@ def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
     try:
         ids = {}
         local = {}
+        to_quarantine: list[str] = []
         # Dependency order: parents must exist before a child can name them,
         # and the dataset lists corpora shuffled.
         for memory in insertion_order(case["corpus"]):
@@ -383,10 +384,24 @@ def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
             local[memory["id"]] = stored
             ids[stored] = memory["id"]
             if memory["lifecycle_state"] in BLOCKED_LIFECYCLE:
-                fabric.quarantine(
-                    stored, reason="benchmark fixture", actor="bench",
-                    basis="contradicted",
-                )
+                to_quarantine.append(stored)
+
+        # Quarantine **after** every memory is written, never inside the loop.
+        #
+        # `quarantine(propagate=True)` contests the descendants, and CONTESTED
+        # is excluded from `_eligible_ids` unless a caller asks for it. Done
+        # inside the loop the children do not exist yet, so there is nothing to
+        # propagate to and the store is left with a retracted parent and active
+        # descendants -- a state the product never produces and which no
+        # measurement taken against it describes.
+        #
+        # This is what made P3 report that the product has no retraction
+        # propagation. It has, and on the case that experiment was built around
+        # it behaves exactly like the `graph_traversal` arm that was said to
+        # beat it.
+        for stored in to_quarantine:
+            fabric.quarantine(stored, reason="benchmark fixture", actor="bench",
+                              basis="contradicted")
         options = case.get("_options") or {}
         result = fabric.retrieve(
             agent_id=case["task"]["agent_id"],

@@ -126,13 +126,85 @@ class TestChainsSurviveTheStore(unittest.TestCase):
                     ctx.fabric.close()
 
 
+class TestFixtureReproducesTheProductState(unittest.TestCase):
+    """The defect that produced a false negative result about shipped behaviour.
+
+    `quarantine(propagate=True)` contests descendants, and CONTESTED is
+    withheld by default. Quarantining inside the write loop leaves a retracted
+    parent with **active** descendants -- a state the product never puts itself
+    in -- and every arm measured against it reports stale citations the product
+    does not make. That is how P3 came to conclude that graph traversal beats
+    the product, and that the retrieval path has no propagation at all.
+
+    A fixture that does not reproduce the state the product produces measures
+    the fixture.
+    """
+
+    @needs_build
+    def test_descendants_of_a_retracted_memory_are_contested(self):
+        from memory_fabric.model import LifecycleState
+
+        checked = 0
+        for split in ("dev", "test"):
+            for case in rb.load(split, "propagation_v1"):
+                stale = case["labels"].get("stale") or ()
+                if not stale:
+                    continue
+                ctx = p3.build_context(case)
+                try:
+                    for memory in stale:
+                        if memory not in ctx.store_id:
+                            continue
+                        # `copied_document`'s stale memories descend from a
+                        # *different* root, so no propagation reaches them --
+                        # which is the family's whole point.
+                        if not ctx.has_retracted_ancestor(memory):
+                            continue
+                        state = ctx.fabric.state.memories[
+                            ctx.store_id[memory]].lifecycle_state
+                        self.assertEqual(
+                            state, LifecycleState.CONTESTED,
+                            f"{case['case_id']}/{memory} is {state.value}; the "
+                            f"fixture quarantined before this memory existed, so "
+                            f"the product's propagation never ran",
+                        )
+                        checked += 1
+                finally:
+                    ctx.fabric.close()
+        self.assertGreater(checked, 0, "no descendant was checked")
+
+    @needs_build
+    def test_the_product_withholds_the_restatements_and_keeps_the_conclusion(self):
+        """What P3 said the product could not do.
+
+        The retracted memory is an intermediate: its restatements must go and
+        the sibling conclusion drawn from the same standing root must stay.
+        """
+        for split in ("dev", "test"):
+            for case in rb.load(split, "propagation_v1"):
+                if case["family"] != "retracted_intermediate":
+                    continue
+                ctx = p3.build_context(case)
+                try:
+                    pool = p3.base_ranking(ctx)
+                    self.assertIn("g1", pool, case["case_id"])
+                    self.assertNotIn("d1", pool, case["case_id"])
+                    self.assertNotIn("d2", pool, case["case_id"])
+                    self.assertNotIn("s1", pool, case["case_id"])
+                finally:
+                    ctx.fabric.close()
+
+
 class TestRules(unittest.TestCase):
     @needs_build
     def test_blanket_invalidation_discards_the_standing_conclusion(self):
-        """The failure the fixture exists to catch.
+        """The failure the fixture exists to catch, and the one real finding.
 
-        g1 does not descend from the retracted interim analysis, but it shares
-        a root with it, so withholding by root identity loses the answer.
+        g1 does not descend from the retracted interim analysis but shares a
+        root with it, so withholding by root identity loses the answer. This is
+        the only arm the corrected run separates: the product and
+        `graph_traversal` score identically on every metric, because they
+        compute the same thing and the product computes it at write time.
         """
         for split in ("dev", "test"):
             for case in rb.load(split, "propagation_v1"):

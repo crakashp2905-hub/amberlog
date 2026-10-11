@@ -47,6 +47,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Protocol
 
+from ..txn import transaction
 from .cipher import IntegrityError, default_suite, is_sealed, suite_for
 
 _SCHEMA = """
@@ -271,8 +272,12 @@ class ContentVault:
         now_ms: Callable[[], int] | None = None,
     ) -> None:
         self._conn = conn
-        with self._conn:
-            self._conn.executescript(_SCHEMA)
+        # NOT wrapped in `transaction()`: `executescript` issues its own
+        # COMMIT before running, which would end ours and leave the
+        # context manager committing a transaction that no longer exists.
+        # Safe unwrapped because every statement is `IF NOT EXISTS` and,
+        # with `isolation_level=None`, each autocommits.
+        self._conn.executescript(_SCHEMA)
         clock = now_ms or (lambda: 0)
         self.keys: KeyProvider = keys or SqliteKeyProvider(conn, clock)
 

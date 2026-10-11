@@ -28,6 +28,7 @@ import time
 from dataclasses import dataclass
 from typing import Iterable, Sequence
 
+from .txn import transaction
 from .protocol import (
     Acknowledgement,
     PropagationState,
@@ -110,10 +111,14 @@ class Outbox:
 
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._conn = conn
-        with self._conn:
-            self._migrate_target_key("inbox")
-            self._migrate_target_key("outbox")
-            self._conn.executescript(_SCHEMA)
+        # NOT wrapped in `transaction()`: `executescript` issues its own
+        # COMMIT before running, which would end ours and leave the
+        # context manager committing a transaction that no longer exists.
+        # Safe unwrapped because every statement is `IF NOT EXISTS` and,
+        # with `isolation_level=None`, each autocommits.
+        self._migrate_target_key("inbox")
+        self._migrate_target_key("outbox")
+        self._conn.executescript(_SCHEMA)
 
     def _migrate_target_key(self, table: str) -> None:
         """Widen a table's key to include the per-hop retraction target.

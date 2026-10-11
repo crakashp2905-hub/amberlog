@@ -9,11 +9,13 @@ from __future__ import annotations
 
 import json
 import sqlite3
-import threading
 from pathlib import Path
 from typing import Iterable, Iterator
 
 from .events import Event
+from .txn import depth as txn_depth
+from .txn import forget as txn_forget
+from .txn import transaction as txn_transaction
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -50,13 +52,40 @@ class EventLog:
         self.path = str(path)
         if self.path != ":memory:":
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
-        self._conn = sqlite3.connect(self.path, check_same_thread=False)
+        # `isolation_level=None` turns off sqlite3's implicit transaction
+        # management so `transaction()` below owns every BEGIN and COMMIT. With
+        # the default, a statement silently opens a transaction and any
+        # `with conn:` exit commits it — which is how `request_retraction`
+        # came to be non-atomic.
+        self._conn = sqlite3.connect(
+            self.path, check_same_thread=False, isolation_level=None
+        )
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA foreign_keys=ON")
-        self._lock = threading.Lock()
-        with self._conn:
-            self._conn.executescript(_SCHEMA)
+        # NOT wrapped in `transaction()`: `executescript` issues its own
+        # COMMIT before running, which would end ours and leave the
+        # context manager committing a transaction that no longer exists.
+        # Safe unwrapped because every statement is `IF NOT EXISTS` and,
+        # with `isolation_level=None`, each autocommits.
+        self._conn.executescript(_SCHEMA)
+
+    # --- transactions ----------------------------------------------------
+
+    def transaction(self):
+        """A transaction that **nests**, which `with conn:` does not.
+
+        Delegates to `txn.transaction`, which keys the nesting depth by
+        *connection* — because `EventLog`, `Outbox` and `ContentVault` share
+        one connection precisely in order to share one transactional boundary,
+        and a per-object counter would have each opening nested transactions
+        unaware of the others. See that module for what this fixed.
+        """
+        return txn_transaction(self._conn)
+
+    @property
+    def in_transaction(self) -> bool:
+        return txn_depth(self._conn) > 0
 
     # --- writing ---------------------------------------------------------
 
@@ -68,7 +97,7 @@ class EventLog:
         batch = list(events)
         if not batch:
             return []
-        with self._lock, self._conn:
+        with self.transaction():
             stored: list[Event] = []
             for event in batch:
                 cursor = self._conn.execute(
@@ -137,6 +166,12 @@ class EventLog:
         return int(row["c"])
 
     def close(self) -> None:
+        # The transaction-depth entry is keyed by connection identity and a
+        # closed connection's id can be reused by a later object, so dropping
+        # it here is correctness rather than tidiness: a stale entry would
+        # start a new log at a non-zero depth and its first `COMMIT` would
+        # never run.
+        txn_forget(self._conn)
         self._conn.close()
 
 

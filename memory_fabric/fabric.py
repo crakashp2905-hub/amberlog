@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import random
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
@@ -344,7 +345,7 @@ class MemoryFabric:
             issued_at=iso_timestamp(self.now()),
         )
 
-        with self.log._conn:
+        with self._transaction():
             self.quarantine(memory_id, reason=reason, actor=actor, basis=basis)
             self._emit(
                 ev.retraction_requested(
@@ -456,7 +457,7 @@ class MemoryFabric:
         # 5. Version and cursor rules.
         cursor = self.outbox.cursor_for(retraction.origin_store_id)
         if retraction.origin_sequence < cursor:
-            with self.log._conn:
+            with self._transaction():
                 self.outbox.record_inbox(
                     retraction, "superseded", f"below cursor {cursor}", _now_ms()
                 )
@@ -478,7 +479,7 @@ class MemoryFabric:
 
         targets = self._imports_of(retraction)
         if not targets:
-            with self.log._conn:
+            with self._transaction():
                 self.outbox.record_inbox(retraction, "unknown_memory", "no import held", _now_ms())
                 self.outbox.advance_cursor(
                     retraction.origin_store_id, retraction.origin_sequence
@@ -491,7 +492,7 @@ class MemoryFabric:
 
         # 6. Persist the event, the inbox record and the lifecycle change in one
         #    transaction. A crash between them is the window invariant 6 covers.
-        with self.log._conn:
+        with self._transaction():
             for local_id in targets:
                 if self.get(local_id).lifecycle_state is not LifecycleState.QUARANTINED:
                     self.quarantine(
@@ -614,7 +615,7 @@ class MemoryFabric:
         audit answer from silence.
         """
         self._require(memory_id)
-        with self.log._conn:
+        with self._transaction():
             had_content = self.vault.erase(memory_id, reason, _now_ms())
             self._emit(
                 ev.content_erased(
@@ -759,6 +760,35 @@ class MemoryFabric:
             self.projection.apply(event)
         self._estimator_dirty = True
         return stored
+
+    @contextmanager
+    def _transaction(self):
+        """A log transaction that also keeps the **projection** honest.
+
+        `_emit` appends to the log *and* folds the event into the projection
+        immediately, because callers inside a transaction read `self.state`
+        straight afterwards — `quarantine` recomputes support from it, for
+        instance. So the fold cannot be deferred to the commit.
+
+        The consequence is that a rollback leaves the in-memory projection
+        ahead of the log: the disk is correct and the live process keeps
+        serving a withdrawal that no longer exists. Found by the regression
+        test for the atomicity fix, which asserted on the open fabric and not
+        only on a reopened one.
+
+        So an outermost rollback replays from the log. That is a full rebuild,
+        which is why it is on the failure path only — AGENTS.md principle 3
+        says the log is the source of truth, and this is the one place that was
+        quietly not true of a running process.
+        """
+        outermost = not self.log.in_transaction
+        try:
+            with self.log.transaction():
+                yield
+        except BaseException:
+            if outermost:
+                self._replay()
+            raise
 
     def _replay(self) -> None:
         """Rebuild all state from the log, including the vector index."""

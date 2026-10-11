@@ -97,7 +97,7 @@ class Dispatcher:
             ack = self.transport.send(row.recipient, row.retraction)
         except TransportError as exc:
             report.errors.append(f"{row.recipient}: {exc.detail}")
-            with connection:
+            with self.fabric.log.transaction():
                 if exc.permanent:
                     # A route that does not exist will not start existing. Fail
                     # visibly rather than retrying eight times first.
@@ -114,7 +114,7 @@ class Dispatcher:
                         report.retrying += 1
             return
 
-        with connection:
+        with self.fabric.log.transaction():
             self._absorb(row, ack, report)
 
     def _absorb(

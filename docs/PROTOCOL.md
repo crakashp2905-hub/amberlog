@@ -234,6 +234,24 @@ converged?" is asking about the system at rest, which is what
 2. **Not forwarding back to the sender.** A pure optimisation — deduplication would absorb it — worth one saved round trip per hop.
 3. **`MAX_HOPS` (16).** A backstop, not the defence. Reaching it means something is wrong with the topology or the dedup key, so a store at the limit withdraws its own copy, refuses to forward, and records `RetractionRejected` with `hop_limit` rather than dropping the retraction quietly.
 
+## 7b. On "one transaction"
+
+Where this document says a retraction's local effect and its delivery intent
+commit together, that is now true and was not always. `sqlite3`'s connection
+context manager commits unconditionally and does not nest, so an inner
+`with conn:` inside an outer one ended the outer transaction — and every append
+had one. The claim was in this document, in INVARIANTS.md and in the Phase 1
+commit message before it was in the code.
+
+`txn.transaction` provides the nesting: `BEGIN IMMEDIATE` at the outermost
+level, named savepoints below it, with the depth keyed per **connection**
+because the log, the outbox and the content vault share one in order to share
+one boundary. Schema setup stays outside it, because `executescript` issues its
+own COMMIT.
+
+An implementation of this protocol in another language should check the same
+thing about its own database driver before believing its own documentation.
+
 ## 8. What this specification does not cover
 
 - **Transitive re-sharing.** v1 assumes an importer does not re-share onward. Lifting that assumption means the origin no longer knows its recipients, and retraction must flood the provenance graph hop by hop. That is the measured trigger for peer-to-peer work and is deliberately out of scope until the single-hop case is durable.

@@ -143,6 +143,44 @@ that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
 
+### What P2 changed, which was mostly my own registration
+
+**[P2](research/results/p2-context-sufficiency.md) was abandoned on both splits
+because I registered a primary metric that one of my own registered baselines
+maximises for free.** `full_context` holds every satisfier by definition and
+scores exactly the oracle's 0.800 sufficiency, so `C − B = 0.000` before any
+method existed. Prediction 1 said it would win on sufficiency and lose on tokens
+— it did, by **219× in tokens** — and I did not follow that through to the fact
+that it made the threshold unreachable.
+
+**Sufficiency can always be bought with context.** The non-degenerate question
+is sufficiency at a fixed budget, which the registration already contained as
+`budget_matched_top_k` and then made decisive for nothing. Checking that a
+primary metric is not trivially maximised by a registered baseline is now a step
+this project owes every future registration, in the same way principle 8a's
+ceiling is owed to every threshold.
+
+At equal budget there is no reliable gain: a tie on dev, +0.100 on test, 33
+cases a split.
+
+**The selector does not work, and the defect is structural rather than a
+parameter.** It greedily adds whatever covers the most uncovered query terms,
+and a chain's middle hop covers none — its whole value is connecting the other
+two, so its marginal gain is zero and it can never be selected. `multi_hop_3`
+and `multi_hop_4` score **0.000**, identical to budget-matched top-k. Assembly
+for multi-hop evidence is path-finding over an entity graph, not coverage
+maximisation.
+
+**Abstention is still at zero, and now has a diagnosis.** Demanding full lexical
+coverage abstains on 79% of answerable cases; demanding coverage of only the
+terms the corpus contains abstains on none. Token presence is not evidence about
+a conjunction, and nothing between those settings is either.
+
+One effect replicated on both splits, borrowed wholesale from P3: the selector
+cites **zero** stale evidence where top-k cites 1.000 a case and `full_context`
+cites **3.500**. So the arm that maximises sufficiency is the worst on
+soundness — which the registered metric could not see.
+
 ### What P3 changed
 
 **[P3](research/results/p3-correction-propagation.md) is the first negative

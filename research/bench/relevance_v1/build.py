@@ -398,6 +398,572 @@ CASES.append(case(
     entities=["yard-tug"],
 ))
 
+# ===========================================================================
+# Cases 3 and 4 of each family. Added 2026-10-11 because sample size became the
+# binding constraint: 15 dev and 5 test cases cannot separate arms that differ
+# by 0.05, which is the size of the differences the benchmark was being asked
+# to adjudicate.
+#
+# The split rule is extended rather than rewritten — cases 1 and 3 to dev, 2
+# and 4 to test — so every one of the original 20 stays exactly where it was. A
+# frozen split that moved cases would invalidate every measurement taken
+# against it.
+# ===========================================================================
+
+# --- direct -----------------------------------------------------------------
+CASES.append(case(
+    "direct-03", "direct",
+    "What grade of hydraulic oil does the tipper take?",
+    [
+        mem("m1", "The tipper uses ISO 46 hydraulic oil.", entities=["tipper"]),
+        mem("m2", "The loader uses ISO 32 hydraulic oil.", entities=["loader"]),
+        mem("m3", "Hydraulic oil is stored in the bunded cabinet."),
+    ],
+    {"relevant": ["m1"], "critical": ["m1"], "irrelevant": ["m2", "m3"],
+     "roles": {"m1": "necessary"}},
+    "m1 gives the grade for the named vehicle; m2 is the same predicate for a different one and m3 is about storage rather than grade.",
+    entities=["tipper"],
+))
+CASES.append(case(
+    "direct-04", "direct",
+    "Who signs off a lifting plan?",
+    [
+        mem("m1", "A lifting plan is signed off by the appointed person, not the crane operator.",
+            entities=["lifting-plan"]),
+        mem("m2", "Lifting plans are filed in the site office for seven years.",
+            entities=["lifting-plan"]),
+        mem("m3", "The crane operator holds a CPCS card."),
+    ],
+    {"relevant": ["m1"], "critical": ["m1"], "irrelevant": ["m2", "m3"],
+     "roles": {"m1": "necessary"}},
+    "m1 answers who signs; m2 shares the subject but answers retention, and m3 mentions the role m1 explicitly excludes.",
+    entities=["lifting-plan"],
+))
+
+# --- lexical trap -----------------------------------------------------------
+CASES.append(case(
+    "lexical_trap-03", "lexical_trap",
+    "What causes the chiller to trip on low pressure?",
+    [
+        mem("m1", "The chiller trips on low pressure when the condenser fan fails.",
+            entities=["chiller"]),
+        mem("m2", "The chiller trips on high pressure when the strainer blocks; high pressure trips are logged separately.",
+            entities=["chiller"]),
+        mem("m3", "Low pressure alarms on the boiler indicate a feedwater fault.",
+            entities=["boiler"]),
+    ],
+    {"relevant": ["m1"], "critical": ["m1"], "irrelevant": ["m2", "m3"],
+     "roles": {"m1": "necessary"}},
+    "m2 matches the equipment and the word pressure but the opposite fault; m3 matches the fault but the wrong equipment. Only m1 matches both.",
+    entities=["chiller"],
+))
+CASES.append(case(
+    "lexical_trap-04", "lexical_trap",
+    "How long is the curing time for the floor paint in bay 3?",
+    [
+        mem("m1", "Bay 3 floor paint cures in 12 hours.", entities=["bay-3"]),
+        mem("m2", "Bay 3 wall paint cures in 4 hours; wall paint curing is faster than floor.",
+            entities=["bay-3"]),
+        mem("m3", "Bay 5 floor paint cures in 24 hours.", entities=["bay-5"]),
+    ],
+    {"relevant": ["m1"], "critical": ["m1"], "irrelevant": ["m2", "m3"],
+     "roles": {"m1": "necessary"}},
+    "m2 shares the bay and mentions floor curing while answering about walls; m3 shares the surface and the predicate at a different bay.",
+    entities=["bay-3"],
+))
+
+# --- indirect ---------------------------------------------------------------
+CASES.append(case(
+    "indirect-03", "indirect",
+    "Should we still trust the recommended torque for the mounting bolts?",
+    [
+        mem("m1", "The mounting bolts are grade 8.8.", entities=["mounting-bolts"]),
+        mem("m2", "Grade 8.8 bolts at this diameter take 110 Nm, so the mounting bolts take 110 Nm.",
+            method="consolidated", parents=[["m1", 1]], entities=["mounting-bolts"],
+            source_root="m1"),
+        mem("m3", "The torque wrench was calibrated in June."),
+    ],
+    {"relevant": ["m1", "m2"], "critical": ["m1"], "irrelevant": ["m3"],
+     "roles": {"m1": "necessary", "m2": "necessary"}},
+    "The recommendation m2 rests entirely on the grade claim m1; judging whether to trust it requires seeing the premise, which shares no wording with the question.",
+    entities=["mounting-bolts"],
+))
+CASES.append(case(
+    "indirect-04", "indirect",
+    "Is the two-person rule for the roof hatch still justified?",
+    [
+        mem("m1", "The roof hatch opens onto an unguarded edge.", entities=["roof-hatch"]),
+        mem("m2", "Because the edge is unguarded, the roof hatch requires two people.",
+            method="consolidated", parents=[["m1", 1]], entities=["roof-hatch"],
+            source_root="m1"),
+        mem("m3", "A guardrail was installed along the roof edge in August.",
+            entities=["roof-hatch"]),
+        mem("m4", "The roof hatch is 900 mm square.", entities=["roof-hatch"]),
+    ],
+    {"relevant": ["m1", "m2", "m3"], "critical": ["m1", "m3"], "irrelevant": ["m4"],
+     "roles": {"m1": "necessary", "m2": "background", "m3": "necessary"}},
+    "The rule's justification is m1; m3 is the fact that removes it. Answering honestly needs the premise and the thing that invalidates it, neither of which restates the question.",
+    entities=["roof-hatch"],
+))
+
+# --- rare critical ---------------------------------------------------------
+CASES.append(case(
+    "rare_critical-03", "rare_critical",
+    "Walk me through swapping the battery on the pallet truck.",
+    [
+        mem("m1", "Pallet truck battery swap: isolate, unclip the retainer, slide out on the roller bed.",
+            entities=["pallet-truck"]),
+        mem("m2", "Pallet truck batteries weigh 180 kg.", entities=["pallet-truck"]),
+        mem("m3", "The roller bed latch on this unit is broken; the battery will slide off if unsupported.",
+            entities=["pallet-truck"]),
+        mem("m4", "Pallet truck batteries are charged overnight.", entities=["pallet-truck"]),
+    ],
+    {"relevant": ["m1", "m3"], "critical": ["m3"], "irrelevant": ["m4"],
+     "roles": {"m1": "necessary", "m3": "necessary"}},
+    "m3 is the defect that makes the documented procedure dangerous on this unit, and it reads as a complaint rather than an instruction so it shares little with the task wording.",
+    entities=["pallet-truck"],
+))
+CASES.append(case(
+    "rare_critical-04", "rare_critical",
+    "Prepare the weighbridge for the morning deliveries.",
+    [
+        mem("m1", "Weighbridge start-up: power on, zero the deck, run the test weight.",
+            entities=["weighbridge"]),
+        mem("m2", "The weighbridge test weight is kept in the gatehouse.",
+            entities=["weighbridge"]),
+        mem("m3", "Zeroing the weighbridge with a vehicle on the deck bakes in an offset that persists until the next calibration.",
+            entities=["weighbridge"]),
+        mem("m4", "The weighbridge was resurfaced in 2024.", entities=["weighbridge"]),
+    ],
+    {"relevant": ["m1", "m3"], "critical": ["m3"], "irrelevant": ["m4"],
+     "roles": {"m1": "necessary", "m3": "necessary"}},
+    "m3 turns a routine step into a lasting fault and is phrased as a consequence, not a procedure, so similarity to the task is weak.",
+    entities=["weighbridge"],
+))
+
+# --- temporal drift ---------------------------------------------------------
+CASES.append(case(
+    "temporal_drift-03", "temporal_drift",
+    "What is the current speed limit in the yard?",
+    [
+        mem("m1", "The yard speed limit is 8 km/h.", valid_from=T0 - 86400 * 600,
+            valid_to=T0 - 86400 * 60, recorded_at=T0 - 86400 * 600),
+        mem("m2", "The yard speed limit was reduced to 5 km/h two months ago.",
+            valid_from=T0 - 86400 * 60, valid_to=None, recorded_at=T0 - 86400 * 60),
+        mem("m3", "Yard speed is enforced by the gate camera."),
+    ],
+    {"relevant": ["m2"], "critical": ["m2"], "irrelevant": ["m1", "m3"],
+     "roles": {"m2": "necessary"}},
+    "m1 is the superseded limit and still in the corpus; the task asks for current, so returning it would authorise driving too fast.",
+    entities=["yard"],
+))
+CASES.append(case(
+    "temporal_drift-04", "temporal_drift",
+    "Which supplier were we using for gloves last winter?",
+    [
+        mem("m1", "Gloves come from Supplier Delta.", valid_from=T0 - 86400 * 500,
+            valid_to=T0 - 86400 * 120, recorded_at=T0 - 86400 * 500,
+            entities=["delta"]),
+        mem("m2", "Gloves now come from Supplier Echo.", valid_from=T0 - 86400 * 120,
+            valid_to=None, recorded_at=T0 - 86400 * 120, entities=["echo"]),
+        mem("m3", "Glove sizes stocked are M, L and XL."),
+    ],
+    {"relevant": ["m1"], "critical": ["m1"], "irrelevant": ["m2", "m3"],
+     "roles": {"m1": "necessary"}},
+    "A historical question: the correct answer is the memory whose validity has ended, and the current one is wrong. The mirror of temporal_drift-03 over the same mechanism.",
+    event_time=T0 - 86400 * 200,
+    entities=["gloves"],
+))
+
+# --- superseded -------------------------------------------------------------
+CASES.append(case(
+    "superseded-03", "superseded",
+    "What is the maximum stack height for the pallets?",
+    [
+        mem("m1", "Pallets may be stacked four high.", lifecycle_state="deprecated",
+            version=1, entities=["pallets"]),
+        mem("m2", "Pallets may be stacked three high after the racking inspection.",
+            version=2, entities=["pallets"]),
+        mem("m3", "Pallets are 1200 x 1000 mm.", entities=["pallets"]),
+    ],
+    {"relevant": ["m2"], "critical": ["m2"], "irrelevant": ["m1", "m3"],
+     "roles": {"m2": "necessary"}},
+    "m1 is the superseded height and remains in the corpus; returning it would authorise an unsafe stack.",
+    entities=["pallets"],
+))
+CASES.append(case(
+    "superseded-04", "superseded",
+    "How many first-aiders does the site need on shift?",
+    [
+        mem("m1", "The site needs one first-aider on shift.", lifecycle_state="deprecated",
+            version=1),
+        mem("m2", "The site needs two first-aiders on shift since the headcount rose.",
+            version=2),
+        mem("m3", "First-aid training is renewed every three years."),
+    ],
+    {"relevant": ["m2"], "critical": ["m2"], "irrelevant": ["m1", "m3"],
+     "roles": {"m2": "necessary"}},
+    "The deprecated figure is the lower one, so returning it understates a safety requirement rather than merely being stale.",
+))
+
+# --- conflicting ------------------------------------------------------------
+CASES.append(case(
+    "conflicting-03", "conflicting",
+    "Is the loading ramp surface safe in frost?",
+    [
+        mem("m1", "The slip survey rated the loading ramp acceptable in frost.",
+            entities=["loading-ramp"], source_root="survey-1"),
+        mem("m2", "Two slips were reported on the loading ramp during frost last month.",
+            entities=["loading-ramp"], source_root="incident-log"),
+        mem("m3", "The loading ramp is 12 m long.", entities=["loading-ramp"]),
+    ],
+    {"relevant": ["m1", "m2"], "critical": ["m2"], "irrelevant": ["m3"],
+     "roles": {"m1": "contradictory", "m2": "contradictory"}},
+    "A survey and an incident log disagree about the same surface under the same condition. Both belong in the context; returning only the survey is the failure.",
+    entities=["loading-ramp"],
+))
+CASES.append(case(
+    "conflicting-04", "conflicting",
+    "Can the gantry hoist lift the transformer?",
+    [
+        mem("m1", "The gantry hoist plate reads 2 tonnes.", entities=["gantry-hoist"],
+            source_root="plate"),
+        mem("m2", "The latest load test certifies the gantry hoist at 1.5 tonnes.",
+            entities=["gantry-hoist"], source_root="load-test"),
+        mem("m3", "The transformer weighs 1.8 tonnes.", entities=["transformer"]),
+    ],
+    {"relevant": ["m1", "m2", "m3"], "critical": ["m2", "m3"], "irrelevant": [],
+     "roles": {"m1": "contradictory", "m2": "contradictory", "m3": "necessary"}},
+    "The answer flips on which capacity is authoritative, and the weight is what makes the disagreement decisive. Returning the plate alone licenses an overload.",
+    entities=["gantry-hoist", "transformer"],
+))
+
+# --- apparent conflict ------------------------------------------------------
+CASES.append(case(
+    "apparent_conflict-03", "apparent_conflict",
+    "Can we run the extractor fan while welding in the paint booth?",
+    [
+        mem("m1", "The extractor fan may run during welding in the fabrication bay.",
+            entities=["fabrication-bay"]),
+        mem("m2", "The extractor fan must not run during welding in the paint booth: solvent vapour.",
+            entities=["paint-booth"]),
+        mem("m3", "The paint booth extractor is rated 4,000 m3/h.", entities=["paint-booth"]),
+    ],
+    {"relevant": ["m2"], "critical": ["m2"], "irrelevant": ["m1", "m3"],
+     "roles": {"m2": "necessary"}},
+    "m1 and m2 only appear to conflict: they state different locations. The task names the paint booth, which selects m2.",
+    entities=["paint-booth"],
+))
+CASES.append(case(
+    "apparent_conflict-04", "apparent_conflict",
+    "Is the sealant approved for potable water pipework?",
+    [
+        mem("m1", "The sealant is approved for heating pipework.", entities=["sealant"]),
+        mem("m2", "The sealant is not approved for potable water.", entities=["sealant"]),
+        mem("m3", "The sealant cures in 30 minutes.", entities=["sealant"]),
+    ],
+    {"relevant": ["m2"], "critical": ["m2"], "irrelevant": ["m1", "m3"],
+     "roles": {"m2": "necessary"}},
+    "Both approvals are true of different applications. The task names one, and returning the heating approval would read as a yes.",
+    entities=["sealant"],
+))
+
+# --- copied evidence --------------------------------------------------------
+CASES.append(case(
+    "copied_evidence-03", "copied_evidence",
+    "How strong is the case that the conveyor bearing is failing?",
+    [
+        mem("m1", "Vibration survey: conveyor bearing shows a rising 1x peak.",
+            entities=["conveyor"], source_root="vib-1"),
+        mem("m2", "Per the vibration survey, the conveyor bearing's 1x peak is rising.",
+            entities=["conveyor"], method="imported", parents=[["m1", 1]],
+            source_root="vib-1"),
+        mem("m3", "Shift note quoting the vibration survey: conveyor bearing deteriorating.",
+            entities=["conveyor"], method="consolidated", parents=[["m1", 1]],
+            source_root="vib-1"),
+        mem("m4", "Oil analysis found bronze particles in the conveyor gearbox.",
+            entities=["conveyor"], source_root="oil-1"),
+    ],
+    {"relevant": ["m1", "m4"], "critical": ["m4"], "irrelevant": [],
+     "roles": {"m1": "corroborative", "m4": "necessary"}},
+    "m2 and m3 restate m1 and add no independent support; a context of m1+m2+m3 reads as three findings and is one. m4 is the only second root.",
+    entities=["conveyor"],
+))
+CASES.append(case(
+    "copied_evidence-04", "copied_evidence",
+    "Do we have independent evidence that the water heater is undersized?",
+    [
+        mem("m1", "Commissioning report: water heater output 18 kW against a 24 kW demand.",
+            entities=["water-heater"], source_root="commissioning"),
+        mem("m2", "Summary of the commissioning report: heater undersized.",
+            entities=["water-heater"], method="consolidated", parents=[["m1", 1]],
+            source_root="commissioning"),
+        mem("m3", "Handover pack repeats the commissioning finding of an undersized heater.",
+            entities=["water-heater"], method="imported", parents=[["m1", 1]],
+            source_root="commissioning"),
+        mem("m4", "Occupants report no hot water after 0800 on weekdays.",
+            entities=["water-heater"], source_root="complaints"),
+    ],
+    {"relevant": ["m1", "m4"], "critical": ["m4"], "irrelevant": [],
+     "roles": {"m1": "corroborative", "m4": "necessary"}},
+    "The question asks specifically about independence, so returning three descendants of one report is the wrong answer however relevant each looks.",
+    entities=["water-heater"],
+))
+
+# --- near duplicate ---------------------------------------------------------
+CASES.append(case(
+    "near_duplicate-03", "near_duplicate",
+    "Anything I should know before using the scissor lift?",
+    [
+        mem("m1", "Scissor lift maximum working height is 7.8 m."),
+        mem("m2", "Scissor lift max height: 7.8 m."),
+        mem("m3", "The scissor lift reaches 7.8 m."),
+        mem("m4", "Scissor lift working height limit is 7.8 metres."),
+        mem("m5", "The scissor lift's left outrigger sensor is faulty and reads deployed when it is not."),
+    ],
+    {"relevant": ["m1", "m5"], "critical": ["m5"], "irrelevant": [],
+     "roles": {"m1": "background", "m5": "necessary"}},
+    "Four restatements of the height will fill a top-k budget and crowd out m5, which is the only memory that changes what the operator must check.",
+    token_budget=120,
+))
+CASES.append(case(
+    "near_duplicate-04", "near_duplicate",
+    "Brief me on the site induction.",
+    [
+        mem("m1", "Site induction takes 45 minutes."),
+        mem("m2", "The induction lasts 45 minutes."),
+        mem("m3", "Induction duration: 45 min."),
+        mem("m4", "Allow 45 minutes for site induction."),
+        mem("m5", "Inductions cannot be run after 1500 because the fire alarm test blocks the room."),
+    ],
+    {"relevant": ["m1", "m5"], "critical": ["m5"], "irrelevant": [],
+     "roles": {"m1": "background", "m5": "necessary"}},
+    "The duplicated duration is true and unhelpful; m5 is the constraint that changes scheduling, and redundancy is what buries it.",
+    token_budget=120,
+))
+
+# --- constrained ------------------------------------------------------------
+CASES.append(case(
+    "constrained-03", "constrained",
+    "Which disposal route should we use for the solvent drums?",
+    [
+        mem("m1", "Route Gamma is cheapest for solvent drums.", entities=["gamma"]),
+        mem("m2", "Route Gamma is not licensed for hazardous waste.", entities=["gamma"]),
+        mem("m3", "Route Kappa is licensed for hazardous waste and takes solvent drums.",
+            entities=["kappa"]),
+        mem("m4", "Solvent drums are classified hazardous.", entities=["solvent-drums"]),
+    ],
+    {"relevant": ["m2", "m3", "m4"], "critical": ["m2", "m4"], "irrelevant": [],
+     "roles": {"m2": "necessary", "m3": "necessary", "m4": "necessary"}},
+    "The constraint rules Gamma out, and m4 is what makes the constraint apply. Returning the cheapest route alone would be a licensing breach.",
+    constraints=["only use licensed hazardous waste routes"],
+    entities=["solvent-drums"],
+))
+CASES.append(case(
+    "constrained-04", "constrained",
+    "Who can we send to do the confined-space entry tomorrow?",
+    [
+        mem("m1", "Priya is the most experienced at confined-space entry.", entities=["priya"]),
+        mem("m2", "Priya's confined-space certification lapsed in March.", entities=["priya"]),
+        mem("m3", "Tom holds a current confined-space certification.", entities=["tom"]),
+    ],
+    {"relevant": ["m2", "m3"], "critical": ["m2"], "irrelevant": [],
+     "roles": {"m2": "necessary", "m3": "necessary"}},
+    "Experience is not the constraint; certification is. m2 is what disqualifies the obvious choice and m3 is the admissible one.",
+    constraints=["only send currently certified people"],
+    entities=["confined-space"],
+))
+
+# --- negative evidence ------------------------------------------------------
+CASES.append(case(
+    "negative_evidence-03", "negative_evidence",
+    "Is the leak likely to be the roof membrane?",
+    [
+        mem("m1", "A failed roof membrane produces staining exactly like this.",
+            entities=["roof-membrane"]),
+        mem("m2", "The roof membrane was replaced in full last autumn and pressure tested.",
+            entities=["roof-membrane"]),
+        mem("m3", "The staining appeared after the sprinkler main was charged.",
+            entities=["sprinkler"]),
+    ],
+    {"relevant": ["m1", "m2", "m3"], "critical": ["m2"], "irrelevant": [],
+     "roles": {"m1": "background", "m2": "contradictory", "m3": "necessary"}},
+    "m1 makes the tempting answer attractive, m2 rules it out, and m3 points elsewhere. A retriever ranking only positive support confirms the wrong cause.",
+    entities=["roof-membrane"],
+))
+CASES.append(case(
+    "negative_evidence-04", "negative_evidence",
+    "Could the outage have been the generator fuel supply?",
+    [
+        mem("m1", "Fuel starvation causes exactly this generator shutdown pattern.",
+            entities=["generator"]),
+        mem("m2", "The fuel tank was 80% full and the day tank float tested good after the outage.",
+            entities=["generator"]),
+        mem("m3", "The generator control panel logged an undervoltage trip.",
+            entities=["generator"]),
+    ],
+    {"relevant": ["m1", "m2", "m3"], "critical": ["m2"], "irrelevant": [],
+     "roles": {"m1": "background", "m2": "contradictory", "m3": "necessary"}},
+    "The eliminating evidence m2 is the decisive memory, and it shares fewer words with the question than the hypothesis it rules out.",
+    entities=["generator"],
+))
+
+# --- unanswerable -----------------------------------------------------------
+CASES.append(case(
+    "unanswerable-03", "unanswerable",
+    "What is the torque setting for the east crane's slew ring bolts?",
+    [
+        mem("m1", "The west crane's slew ring bolts take 240 Nm.", entities=["west-crane"]),
+        mem("m2", "The east crane was commissioned in 2021.", entities=["east-crane"]),
+        mem("m3", "Slew ring bolts are checked annually."),
+    ],
+    {"relevant": [], "critical": [], "irrelevant": ["m1", "m2", "m3"],
+     "expect_abstain": True, "roles": {}},
+    "Nothing gives the asked figure for the asked crane. Returning the west crane's torque would read as an answer and could overtighten.",
+    entities=["east-crane"],
+))
+CASES.append(case(
+    "unanswerable-04", "unanswerable",
+    "What did the insurer say about the flood exclusion?",
+    [
+        mem("m1", "The insurer confirmed the subsidence exclusion still applies.",
+            entities=["insurer"]),
+        mem("m2", "The policy renewal date is in April.", entities=["insurer"]),
+        mem("m3", "Flood defences were inspected in May."),
+    ],
+    {"relevant": [], "critical": [], "irrelevant": ["m1", "m2", "m3"],
+     "expect_abstain": True, "roles": {}},
+    "The corpus has an insurer statement about a different exclusion and facts about flooding, but nothing about a flood exclusion. Combining them would fabricate a position.",
+    entities=["insurer"],
+))
+
+# --- unauthorized -----------------------------------------------------------
+CASES.append(case(
+    "unauthorized-03", "unauthorized",
+    "How do I get into the server cabinet to reseat the switch?",
+    [
+        mem("m1", "Server cabinet access: raise a change ticket, then collect the key from IT.",
+            entities=["server-cabinet"]),
+        mem("m2", "Server cabinet key safe combination is held by the IT duty engineer.",
+            entities=["server-cabinet"], security_class="restricted",
+            capabilities=["it:keysafe"], scope="private"),
+        mem("m3", "The server cabinet is in the plant room.", entities=["server-cabinet"]),
+    ],
+    {"relevant": ["m1", "m2"], "critical": [], "irrelevant": ["m3"],
+     "must_not_expose": ["m2"], "roles": {"m1": "necessary", "m2": "necessary"}},
+    "m2 is directly relevant and the agent holds no it:keysafe capability. Returning it is a failure precisely because it answers the question.",
+    entities=["server-cabinet"],
+))
+CASES.append(case(
+    "unauthorized-04", "unauthorized",
+    "What is in the disciplinary file for the night-shift incident?",
+    [
+        mem("m1", "Incident reports are summarised in the weekly safety brief.",
+            entities=["incident"]),
+        mem("m2", "The night-shift disciplinary file records the outcome and the individual named.",
+            security_class="restricted", capabilities=["hr:files"], scope="private",
+            entities=["incident"]),
+        mem("m3", "Night shift runs 2200 to 0600."),
+    ],
+    {"relevant": ["m1", "m2"], "critical": [], "irrelevant": ["m3"],
+     "must_not_expose": ["m2"], "roles": {"m1": "background", "m2": "necessary"}},
+    "The restricted file is the only thing that answers the question, which is why relevance must not decide. The agent lacks hr:files.",
+    entities=["incident"],
+))
+
+# --- retracted --------------------------------------------------------------
+CASES.append(case(
+    "retracted-03", "retracted",
+    "Is the recommended coolant mix still 50/50?",
+    [
+        mem("m1", "Coolant mix is 50/50 water to glycol.", entities=["coolant"],
+            lifecycle_state="quarantined", method="imported"),
+        mem("m2", "The coolant specification is being revised by the manufacturer.",
+            entities=["coolant"]),
+        mem("m3", "Coolant is stored in the drum rack.", entities=["coolant"]),
+    ],
+    {"relevant": ["m1", "m2"], "critical": [], "irrelevant": ["m3"],
+     "must_not_expose": ["m1"], "roles": {"m1": "necessary", "m2": "background"}},
+    "m1 answers the question and was withdrawn at its origin. Exposing it is the failure PB2 measured away, and a relevance score would undo it.",
+    entities=["coolant"],
+))
+CASES.append(case(
+    "retracted-04", "retracted",
+    "Confirm the inspection interval for the pressure vessel.",
+    [
+        mem("m1", "Pressure vessel inspection interval is 24 months.",
+            entities=["pressure-vessel"], lifecycle_state="quarantined",
+            method="imported"),
+        mem("m2", "The pressure vessel interval is under review after the regulator's notice.",
+            entities=["pressure-vessel"]),
+        mem("m3", "The pressure vessel holds 400 litres.", entities=["pressure-vessel"]),
+    ],
+    {"relevant": ["m1", "m2"], "critical": [], "irrelevant": ["m3"],
+     "must_not_expose": ["m1"], "roles": {"m1": "necessary", "m2": "background"}},
+    "The withdrawn interval is the only direct answer, and confirming it would be a regulatory statement made on retracted knowledge.",
+    entities=["pressure-vessel"],
+))
+
+# --- answer keys for R6 -----------------------------------------------------
+#
+# Declared here, in the generator, so a rebuild cannot lose them — and declared
+# *before* R6 ran, as its pre-registration requires.
+#
+# Only for cases with an unambiguous short factual answer. A case whose correct
+# answer is "both claims, unresolved" (`conflicting`) or "say you cannot tell"
+# (`unanswerable`) gets no key: scoring those by substring would reward a model
+# for emitting a token rather than for reasoning, and inventing keys to widen
+# coverage is how a benchmark comes to measure the wrong thing. `unanswerable`
+# is scored on abstention, which needs no key.
+#
+# Each key is a list of alternatives, because "3.5 bar" and "3.5bar" are the
+# same answer and a single string would fail a model over whitespace.
+KEYS = {
+    "direct-01": ["3.5 bar", "3.5bar"],
+    "direct-02": ["90 day", "90-day", "every 90"],
+    "direct-03": ["iso 46", "iso-46"],
+    "direct-04": ["appointed person"],
+    "lexical_trap-01": ["valve 7", "valve seven", "partly closed", "restrict"],
+    "lexical_trap-02": ["80 nm", "80nm"],
+    "lexical_trap-03": ["condenser fan"],
+    "lexical_trap-04": ["12 hour", "12-hour", "twelve hour"],
+    "rare_critical-01": ["bypass"],
+    "rare_critical-02": ["40%", "40 %", "gauge"],
+    "rare_critical-03": ["latch", "support"],
+    "rare_critical-04": ["vehicle", "offset"],
+    "temporal_drift-01": ["2000", "20:00", "8pm", "8 pm"],
+    "temporal_drift-02": ["1800", "18:00", "6pm", "6 pm"],
+    "temporal_drift-03": ["5 km", "5km"],
+    "temporal_drift-04": ["delta"],
+    "superseded-01": ["10 tonne", "10t", "ten tonne"],
+    "superseded-03": ["three high", "3 high"],
+    "superseded-04": ["two", "2 first-aider"],
+    "apparent_conflict-01": ["not", "no"],
+    "apparent_conflict-03": ["not", "no"],
+    "apparent_conflict-04": ["not", "no"],
+    "constrained-01": ["beta"],
+    "constrained-03": ["kappa"],
+    "constrained-04": ["tom"],
+    "negative_evidence-01": ["not", "no", "unlikely", "ruled out", "replaced"],
+    "negative_evidence-03": ["not", "no", "unlikely", "sprinkler"],
+    "negative_evidence-04": ["not", "no", "unlikely", "undervoltage"],
+    "indirect-01": ["3.5 bar", "3.5bar"],
+    "indirect-02": ["no", "not", "inland"],
+    "indirect-03": ["110 nm", "110nm"],
+    "indirect-04": ["no", "not", "guardrail", "no longer"],
+    "near_duplicate-01": ["brake", "bedding"],
+    "near_duplicate-03": ["outrigger", "sensor"],
+    "near_duplicate-04": ["1500", "15:00", "3pm", "fire alarm"],
+    "copied_evidence-01": ["measurement", "independent", "0.8"],
+    "copied_evidence-03": ["oil", "bronze", "independent"],
+    "copied_evidence-04": ["occupant", "hot water", "independent"],
+}
+
+for c in CASES:
+    key = KEYS.get(c["case_id"])
+    if key:
+        c["labels"]["answer_contains"] = key
+
 # --- split ------------------------------------------------------------------
 # Deterministic and declared: the *second* case of each family goes to test
 # where a family has two, and single-case families stay in dev. Frozen now, so
@@ -406,7 +972,12 @@ dev, test = [], []
 seen = {}
 for c in CASES:
     seen[c["family"]] = seen.get(c["family"], 0) + 1
-    (test if seen[c["family"]] == 2 else dev).append(c)
+    # Cases 2 and 4 of each family go to test; 1 and 3 to dev. The rule is
+    # *extended* rather than rewritten: under the original rule only case 2
+    # went to test, so every one of the first 20 cases keeps its original
+    # side. A frozen split that moved cases would invalidate every measurement
+    # already taken against it.
+    (test if seen[c["family"]] % 2 == 0 else dev).append(c)
 
 # --- distractors -----------------------------------------------------------
 #

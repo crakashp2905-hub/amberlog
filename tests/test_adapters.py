@@ -505,3 +505,66 @@ class TestTranscriptIngestion(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheEmbedderBatchesAndCaches(unittest.TestCase):
+    """`OllamaEmbedder.warm` against a stub client — no model needed.
+
+    The chunking matters on a real corpus and not at all on a toy one, so it is
+    tested against a stub rather than discovered during a 5,183-document run:
+    a single request for every text is a multi-megabyte body that keeps a
+    CPU-bound model server busy past any sensible timeout, and a failure loses
+    the whole batch rather than one chunk.
+    """
+
+    class StubClient:
+        def __init__(self) -> None:
+            self.batches: list[list[str]] = []
+
+        def embed(self, model: str, inputs: list[str]) -> list[list[float]]:
+            self.batches.append(list(inputs))
+            return [[float(len(text)), 1.0, 0.0] for text in inputs]
+
+    def _embedder(self):
+        from memory_fabric.adapters.ollama import OllamaEmbedder
+
+        client = self.StubClient()
+        return OllamaEmbedder(client=client, model="stub"), client
+
+    def test_warm_chunks_rather_than_sending_everything_at_once(self) -> None:
+        embedder, client = self._embedder()
+        embedder.warm([f"text {i}" for i in range(150)], chunk=64)
+        self.assertEqual([len(b) for b in client.batches], [64, 64, 22])
+
+    def test_warm_populates_the_cache_so_embed_makes_no_call(self) -> None:
+        embedder, client = self._embedder()
+        texts = [f"text {i}" for i in range(10)]
+        embedder.warm(texts, chunk=4)
+        before = len(client.batches)
+        for text in texts:
+            embedder.embed(text)
+        self.assertEqual(len(client.batches), before, "embed re-requested a cached text")
+
+    def test_warm_skips_what_is_already_cached(self) -> None:
+        embedder, client = self._embedder()
+        embedder.warm(["a", "b"], chunk=64)
+        embedder.warm(["a", "b", "c"], chunk=64)
+        self.assertEqual(client.batches[-1], ["c"])
+
+    def test_warm_deduplicates_within_one_call(self) -> None:
+        """The benchmark corpora share a distractor pool, so the same text
+        arrives many times; embedding it once per occurrence would multiply a
+        real run's cost by the duplication factor."""
+        embedder, client = self._embedder()
+        embedder.warm(["a", "b", "a", "b", "a"], chunk=64)
+        self.assertEqual(client.batches, [["a", "b"]])
+
+    def test_a_chunk_size_of_zero_does_not_hang(self) -> None:
+        embedder, client = self._embedder()
+        embedder.warm(["a", "b"], chunk=0)
+        self.assertEqual([len(b) for b in client.batches], [1, 1])
+
+    def test_the_dimension_is_learned_from_the_response(self) -> None:
+        embedder, _ = self._embedder()
+        embedder.warm(["abc"], chunk=4)
+        self.assertEqual(embedder.dim, 3)

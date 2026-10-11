@@ -251,15 +251,27 @@ class OllamaEmbedder:
         self._cache[text] = vector
         return vector
 
-    def warm(self, texts: Sequence[str]) -> None:
-        """Embed a batch up front. One request instead of N."""
+    def warm(self, texts: Sequence[str], chunk: int = 64) -> None:
+        """Embed a batch up front: a few requests instead of N.
+
+        Chunked rather than one request, because "one request instead of N" does
+        not survive a real corpus. SciFact is 5,183 abstracts, and a single
+        5,183-input request is a multi-megabyte body that keeps a CPU-bound
+        model server busy long past any sensible timeout — and if it fails, the
+        whole batch is lost rather than one chunk of it.
+
+        Progress is visible between chunks too, which matters when the
+        alternative is a process that looks hung for twenty minutes.
+        """
         missing = [t for t in dict.fromkeys(texts) if t not in self._cache]
         if not missing:
             return
-        self.calls += 1
-        for text, vector in zip(missing, self.client.embed(self.model, missing)):
-            self._cache[text] = vector
-            self.dim = len(vector)
+        for start in range(0, len(missing), max(1, chunk)):
+            batch = missing[start : start + max(1, chunk)]
+            self.calls += 1
+            for text, vector in zip(batch, self.client.embed(self.model, batch)):
+                self._cache[text] = vector
+                self.dim = len(vector)
 
 
 REMEMBER_TOOL: dict[str, Any] = {

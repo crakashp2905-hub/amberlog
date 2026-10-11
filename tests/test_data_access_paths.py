@@ -56,6 +56,7 @@ METADATA = {
     "source_root": "the earliest observation a memory traces to",
     "shared_with": "which stores hold a copy",
     "erasure_status": "whether content was erased, and why",
+    "erasure_scope": "what an erasure reached, kept, and could not reach",
     "stats": "exposure counters",
     "value": "a value estimate",
     "tenants": "tenant inventory with counts",

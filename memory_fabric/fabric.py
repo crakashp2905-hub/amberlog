@@ -39,7 +39,14 @@ from .enforcement import (
     Verdict,
 )
 from .governance.cipher import IntegrityError, associated_data, is_sealed
-from .governance.erasure import ContentVault, KeyProvider, KeyUnavailable, seal, unseal
+from .governance.erasure import (
+    ERASED_MARKER,
+    ContentVault,
+    KeyProvider,
+    KeyUnavailable,
+    seal,
+    unseal,
+)
 from .outbox import Outbox, now_ms as _now_ms
 from .protocol import (
     MAX_HOPS,
@@ -668,6 +675,81 @@ class MemoryFabric:
         # surface the content the caller just erased.
         self._unindex(memory_id)
         return had_content
+
+    def erasure_scope(self, memory_id: str) -> dict[str, Any]:
+        """What an erasure reached, and what it provably did not.
+
+        A subject-access request needs a truthful answer, and "the content is
+        erased" is only true of the places this store controls. The honest
+        answer has three parts, and the third is the one usually left out.
+
+        **Reached**, and verified rather than asserted: the content key is
+        destroyed, the event-log payload is ciphertext nobody can open, the
+        search indexes no longer hold the terms, and the projection returns the
+        marker.
+
+        **Deliberately kept**: provenance, lineage, the retraction basis, the
+        propagation record and the whole audit trail. An auditor can still
+        answer "was this handled correctly?" about a memory nobody can read —
+        that is the point rather than a shortfall.
+
+        **Outside this store's reach**, and reported as unknown rather than
+        guessed: backups taken before the key was destroyed still hold the
+        ciphertext *and* the key; anything exported, logged, or sent to a model
+        provider left before erasure existed; a federated copy at another store
+        has its own key and must be erased there. `doctor` cannot see any of
+        these, so neither can this.
+        """
+        memory = self._require(memory_id)
+        record = self.vault.status(memory_id)
+        sealed = is_sealed(
+            next(
+                (
+                    (event.payload.get("memory") or {}).get("content", "")
+                    for event in reversed(list(self.log.read()))
+                    if event.type
+                    in (
+                        ev.EventType.MEMORY_CREATED,
+                        ev.EventType.MEMORY_VERSIONED,
+                    )
+                    and (event.payload.get("memory") or {}).get("id") == memory_id
+                ),
+                "",
+            )
+        )
+        shared = self.shared_with(memory_id)
+        return {
+            "memory_id": memory_id,
+            "erased": record.erased,
+            "reason": record.reason,
+            "erased_at": record.erased_ms,
+            "reached": {
+                "content_key_destroyed": record.erased,
+                "log_payload_is_ciphertext": sealed,
+                "content_reads_as_marker": memory.content == ERASED_MARKER,
+                "removed_from_vector_index": memory_id not in self.index._vectors,
+                "removed_from_lexical_index": memory_id not in self.lexical._terms,
+            },
+            "kept_deliberately": [
+                "provenance and the creating agent",
+                "derivation lineage in both directions",
+                "lifecycle history and the withdrawal basis",
+                "the propagation record and every acknowledgement",
+                "the erasure event itself, with its reason and time",
+            ],
+            "outside_this_store": {
+                "backups_taken_before_erasure": "unknown — they hold both the "
+                "ciphertext and the key; retention is an operational control",
+                "exports_logs_and_model_traces": "unknown — anything that left "
+                "this store is beyond crypto-erasure",
+                "federated_copies": sorted(shared) or "none recorded",
+                "federated_copies_note": "each recipient holds its own key and "
+                "must erase independently; a retraction withdraws a copy from "
+                "use but does not destroy its content",
+            },
+            "key_custody": type(self.vault.keys).__name__,
+            "provider_can_destroy": self.vault.supports_destroy,
+        }
 
     def erasure_status(self, memory_id: str):
         return self.vault.status(memory_id)

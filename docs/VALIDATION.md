@@ -11,7 +11,7 @@ and did not.
 
 | | Check | Result |
 |---|---|---|
-| 1 | `pytest tests` | **918 passed**, 447 subtests |
+| 1 | `pytest tests` | **938 passed**, 579 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
 | 3 | `tools/scan_secrets.py` | 58 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
 | 4 | `compileall` over `memory_fabric`, `experiments`, `tests`, `tools` | clean |

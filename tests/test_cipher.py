@@ -325,6 +325,104 @@ class EndToEndThroughTheFabric(unittest.TestCase):
             reopened.close()
 
 
+class TheErasureScopeIsHonest(unittest.TestCase):
+    """A subject-access request needs a truthful answer, and "the content is
+    erased" is only true of what this store controls."""
+
+    def setUp(self) -> None:
+        self._tmp = TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.fabric = MemoryFabric(
+            Path(self._tmp.name) / "store.db", auto_activate=True
+        )
+        self.addCleanup(self.fabric.close)
+        self.memory_id = self.fabric.remember(
+            agent_id="ag", content="the keypad code is PLUTO-4417"
+        )
+
+    def test_it_reports_every_place_the_erasure_reached(self) -> None:
+        self.fabric.erase_content(
+            self.memory_id, reason="subject request", actor="dpo"
+        )
+        scope = self.fabric.erasure_scope(self.memory_id)
+        self.assertTrue(scope["erased"])
+        for claim, reached in scope["reached"].items():
+            with self.subTest(claim):
+                self.assertTrue(reached, claim)
+
+    def test_the_claims_are_verified_not_asserted(self) -> None:
+        """Before erasure every one must be False, or the report is a constant
+        dressed up as a check."""
+        scope = self.fabric.erasure_scope(self.memory_id)
+        self.assertFalse(scope["erased"])
+        self.assertFalse(scope["reached"]["content_key_destroyed"])
+        self.assertFalse(scope["reached"]["content_reads_as_marker"])
+        self.assertFalse(scope["reached"]["removed_from_vector_index"])
+        self.assertFalse(scope["reached"]["removed_from_lexical_index"])
+
+    def test_the_search_indexes_really_are_purged(self) -> None:
+        """Content left in an index is still matchable, which would make the
+        erasure cosmetic in exactly the place a subject would notice."""
+        before = self.fabric.retrieve(agent_id="ag", query="keypad code PLUTO")
+        self.assertEqual(len(before.exposed), 1)
+        self.fabric.erase_content(self.memory_id, reason="request", actor="dpo")
+        after = self.fabric.retrieve(agent_id="ag", query="keypad code PLUTO")
+        self.assertEqual(after.exposed, [])
+        self.assertNotIn(self.memory_id, self.fabric.lexical._terms)
+        self.assertNotIn(self.memory_id, self.fabric.index._vectors)
+
+    def test_what_is_outside_the_store_is_unknown_rather_than_claimed(self) -> None:
+        """The part usually left out. A store cannot see its own backups,
+        exports or model traces, so it must not imply it has."""
+        self.fabric.erase_content(self.memory_id, reason="request", actor="dpo")
+        outside = self.fabric.erasure_scope(self.memory_id)["outside_this_store"]
+        self.assertIn("unknown", outside["backups_taken_before_erasure"])
+        self.assertIn("unknown", outside["exports_logs_and_model_traces"])
+
+    def test_a_federated_copy_is_named(self) -> None:
+        """A recipient holds its own key. A retraction withdraws the copy from
+        use; it does not destroy the content."""
+        from memory_fabric.federation import offer
+        from memory_fabric.governance.firewall import (
+            Firewall,
+            rule_capabilities_must_be_granted,
+            rule_must_be_active,
+            rule_restricted_stays_private,
+        )
+
+        permissive = Firewall(
+            rules=[
+                rule_must_be_active,
+                rule_restricted_stays_private,
+                rule_capabilities_must_be_granted,
+            ]
+        )
+        self.fabric.firewall = permissive
+        other = MemoryFabric(
+            Path(self._tmp.name) / "other.db", auto_activate=True,
+            firewall=permissive,
+        )
+        self.addCleanup(other.close)
+        result = offer(self.fabric, self.memory_id, other, "ag-b", activate=True)
+        self.assertTrue(result.accepted, result.reasons)
+
+        self.fabric.erase_content(self.memory_id, reason="request", actor="dpo")
+        scope = self.fabric.erasure_scope(self.memory_id)
+        self.assertIn(other.store_id, scope["outside_this_store"]["federated_copies"])
+        # And the recipient's copy really is still readable, which is why it is
+        # reported rather than assumed handled.
+        self.assertIn("PLUTO", other.get(result.imported_memory_id).content)
+
+    def test_the_audit_trail_is_listed_as_deliberately_kept(self) -> None:
+        self.fabric.erase_content(self.memory_id, reason="request", actor="dpo")
+        scope = self.fabric.erasure_scope(self.memory_id)
+        self.assertTrue(scope["kept_deliberately"])
+        # And it is true: the provenance survives a store reopen.
+        self.assertEqual(
+            self.fabric.get(self.memory_id).provenance.created_by, "ag"
+        )
+
+
 class KeyCustody(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()

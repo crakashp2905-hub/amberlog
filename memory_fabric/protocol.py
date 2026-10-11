@@ -99,7 +99,7 @@ class PropagationState(str, Enum):
     never silently absent from a report."""
 
 
-TERMINAL_STATES = frozenset(
+SETTLED_STATES = frozenset(
     {
         PropagationState.ENFORCED,
         PropagationState.VERIFIED,
@@ -108,6 +108,31 @@ TERMINAL_STATES = frozenset(
         PropagationState.FAILED,
     }
 )
+"""No longer **owed**: what `Outbox.pending` excludes.
+
+An `enforced` delivery is settled — the recipient's projections no longer
+expose the version, so the origin has nothing left to do — but it is not
+terminal, because the origin may still independently confirm it and move the
+pair to `verified`.
+"""
+
+TERMINAL_STATES = frozenset(
+    {
+        PropagationState.VERIFIED,
+        PropagationState.REJECTED,
+        PropagationState.SUPERSEDED,
+        PropagationState.FAILED,
+    }
+)
+"""No further transitions **at all**.
+
+Split from `SETTLED_STATES` after a property test asserted that a terminal
+state has no outgoing edges and found `enforced` declaring one to `verified`.
+One constant was answering two questions — "is this still owed?" and "can this
+still move?" — and `enforced` answers them differently. Collapsing them would
+have meant either an unreachable `verified` or an `enforced` delivery that
+`pending()` kept reporting forever.
+"""
 """States the dispatcher will not retry out of. FAILED is terminal and visible:
 a permanent failure that disappeared would be worse than one that keeps
 complaining."""

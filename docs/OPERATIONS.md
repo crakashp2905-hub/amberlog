@@ -96,6 +96,20 @@ nothing raising anywhere.
 4. Restore from the newest backup that verifies, then replay whatever you can reconstruct from upstream sources.
 5. The chain cannot tell you *who* altered the log, only that it was altered and where. Host-level audit is the only answer to who.
 
+### Answering a subject-access or erasure request
+
+```python
+fabric.erasure_scope(memory_id)
+```
+
+Three parts, and the third is the one usually omitted: what the erasure
+reached (verified, not asserted), what is kept deliberately, and what is
+**outside this store's reach** — backups taken before the key was destroyed,
+exports and model traces, and federated copies that hold their own keys. Those
+are reported as unknown rather than guessed. A retraction withdraws a remote
+copy from use; it does not destroy it, and the recipient must erase
+independently.
+
 ### "A store will not open: KeyUnavailable"
 
 The content keys are not where the store expects them. This is **not** erasure,
@@ -169,7 +183,7 @@ Said plainly rather than left for an incident to discover.
 
 - **No concurrency beyond serialised single-writer.** Measured, not assumed: 4 processes × 20 appends land all 80 with a gapless sequence and a verifying chain.
 - **No multi-host story.** P9 declined distribution on measurement — 25× the memories cost 1.7× the latency.
-- **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those.
+- **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those — `erasure_scope` reports them as unknown rather than pretending otherwise, which is the most a store can honestly do.
 - **No alerting.** `doctor` and `attention` exit non-zero; wiring that to a pager is yours.
 - **The revocation list does not survive a restart.** In-memory by design, with short lifetimes as the control.
 - **Untested here:** restore onto a different OS, stores above a few hundred thousand events, and recovery from filesystem-level corruption rather than logical tampering.

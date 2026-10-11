@@ -33,7 +33,7 @@ from .protocol import (
     Acknowledgement,
     PropagationState,
     Retraction,
-    TERMINAL_STATES,
+    SETTLED_STATES,
     can_transition,
 )
 
@@ -215,10 +215,17 @@ class Outbox:
         return [self._row(row) for row in rows]
 
     def pending(self) -> list[OutboxRow]:
-        """Everything not in a terminal state. This is what an operator needs:
-        a permanent failure that vanished would be worse than one that keeps
-        complaining."""
-        terminal = {state.value for state in TERMINAL_STATES}
+        """Everything still **owed**. This is what an operator needs: a
+        permanent failure that vanished would be worse than one that keeps
+        complaining.
+
+        `SETTLED_STATES` rather than `TERMINAL_STATES`, because `enforced` is
+        settled — nothing left to do — while still able to progress to
+        `verified`. The two were one constant until a property test found
+        `enforced` declaring an outgoing transition while being called
+        terminal.
+        """
+        terminal = {state.value for state in SETTLED_STATES}
         rows = self._conn.execute("SELECT * FROM outbox ORDER BY id").fetchall()
         return [self._row(row) for row in rows if row["state"] not in terminal]
 

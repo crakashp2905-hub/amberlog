@@ -118,6 +118,56 @@ RRF rather than a weighted score blend, because cosine similarity and IDF
 overlap are on incomparable scales and a weight between them would be a
 parameter tuned on the dev split before any ranker milestone exists.
 
+## 3b. Acted on: the three mechanisms the store already had
+
+R1 §4 said three of the five highest-gap families are answerable with
+provenance edges, source roots and recorded time. All three are now wired into
+retrieval, each measured as its own arm, with every option named explicitly so
+no arm silently inherits another's mechanism.
+
+| arm | dev nDCG | dev crit. omission | test nDCG | test crit. omission |
+|---|---|---|---|---|
+| `store_plain` (both off) | 0.752 | 0.214 | 0.658 | 0.000 |
+| `store_temporal` (`as_of` only) | 0.762 | 0.214 | 0.732 | 0.000 |
+| `store_roots` (grouping only) | 0.780 | **0.143** | 0.658 | 0.000 |
+| `store_lineage` (promotion only) | 0.786 | **0.143** | 0.658 | 0.000 |
+| **`store_all`** | **0.795** | **0.143** | **0.732** | 0.000 |
+| `lexical` (no mechanisms at all) | 0.778 | 0.286 | **0.804** | 0.200 |
+| `oracle` | 1.000 | 0.000 | 1.000 | 0.000 |
+
+**+0.043 nDCG on dev and +0.074 on test**, and critical-memory omission from
+0.214 to 0.143 on dev. That closes roughly **17% of the measured dev headroom**
+— real, and modest. Root grouping and lineage promotion are now on by default;
+`as_of` is not, and cannot be, because defaulting it to `now` would make every
+historical question unanswerable.
+
+**The restraint that belongs next to those numbers:** on the frozen test split
+`lexical` alone still scores **0.804 against `store_all`'s 0.732**. The
+mechanisms improve the product's own arm on both splits, and the product arm is
+still not the best arm on test. What they do buy there is critical omission —
+0.000 against lexical's 0.200 — which is the failure with a consequence.
+
+### Two implementation findings worth more than the numbers
+
+**Lineage expansion measured exactly zero on its first implementation.** It
+appended absent parents to the candidate pool, and the pool is four times `k`
+and already contained the premise — ranked below the distractors. Adding
+something already present changes nothing. The case needs the premise *pulled
+up* beside the conclusion that depends on it, so it now raises a parent's score
+to just under its child's. `indirect` went from 0.613 to **1.000**.
+
+**Root grouping and lineage promotion were undoing each other.** With both on,
+`indirect` fell back to 0.613 — because a premise and the conclusion drawn from
+it share a source root, and grouping discarded exactly what promotion had
+surfaced. Grouping now spares a derivation chain and collapses only true
+copies, which is the distinction it always meant: four memories quoting one
+report are one piece of evidence; a conclusion and its premise are two claims
+and both belong in the context.
+
+Neither would have been visible without per-mechanism arms. An all-or-nothing
+"contextual retrieval" arm would have shown +0.015 and looked like weak
+evidence for a good idea.
+
 ## 4. Where the headroom actually is
 
 Per-family nDCG on dev, oracle minus `lexical`:

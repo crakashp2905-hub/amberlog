@@ -203,12 +203,32 @@ def arm_hybrid(case: Mapping[str, Any], k: int) -> list[str]:
     return [memory_id for memory_id, score in fused]
 
 
-def _store_arm(mode: str) -> Callable[[Mapping[str, Any], int], list[str]]:
-    def arm(case: Mapping[str, Any], k: int) -> list[str]:
-        return arm_current({**case, "_retrieval": mode}, k)
+def _store_arm(
+    mode: str = "hybrid", **options: Any
+) -> Callable[[Mapping[str, Any], int], list[str]]:
+    """The product, configured. One arm per mechanism, measured separately.
 
-    arm.__name__ = f"arm_store_{mode}"
+    Each of the three mechanisms R1 pointed at is its own arm rather than a new
+    default, because turning one on by assumption is how a mechanism gets
+    credit it has not earned — the H2/H3/H4a pattern this project keeps
+    recording.
+    """
+
+    def arm(case: Mapping[str, Any], k: int) -> list[str]:
+        return arm_current({**case, "_retrieval": mode, "_options": options}, k)
+
+    arm.__name__ = f"arm_store_{mode}_{'_'.join(sorted(options)) or 'plain'}"
     return arm
+
+
+def _as_of(case: Mapping[str, Any]) -> int | None:
+    """The task's own event time, which is what temporal filtering is *for*.
+
+    Passing `now` instead would make every historical question unanswerable,
+    which is the `temporal_drift-02` case: the same corpus, the opposite
+    answer, because the task is about last year.
+    """
+    return case["task"].get("event_time")
 
 
 def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
@@ -227,24 +247,37 @@ def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
     )
     try:
         ids = {}
-        for memory in case["corpus"]:
+        local = {}
+        # Two passes: parents must exist before a child can name them, and the
+        # dataset lists corpora in shuffled order.
+        for memory in sorted(case["corpus"], key=lambda m: len(m.get("parents") or [])):
+            parents = [
+                (local[p[0]], 1) for p in (memory.get("parents") or []) if p[0] in local
+            ]
             stored = fabric.remember(
                 agent_id=case["task"]["agent_id"],
                 content=memory["content"],
                 tenant_id=memory.get("tenant_id", "tn_default"),
+                parents=parents,
+                method="consolidated" if parents else "observed",
+                valid_from=memory.get("valid_from"),
+                valid_to=memory.get("valid_to"),
             )
+            local[memory["id"]] = stored
             ids[stored] = memory["id"]
             if memory["lifecycle_state"] in BLOCKED_LIFECYCLE:
                 fabric.quarantine(
                     stored, reason="benchmark fixture", actor="bench",
                     basis="contradicted",
                 )
+        options = case.get("_options") or {}
         result = fabric.retrieve(
             agent_id=case["task"]["agent_id"],
             query=query_text(case),
             k=len(case["corpus"]),
             tenant_id=case["task"].get("tenant_id", "tn_default"),
             min_relevance=0.0,
+            **options,
         )
         return [ids[m.id] for m in result.exposed]
     finally:
@@ -302,10 +335,70 @@ ARMS: dict[str, Callable[[Mapping[str, Any], int], list[str]]] = {
     # `current` is whatever the product ships today. `store_vector` pins the
     # pre-2026-10-11 behaviour so a regression is visible rather than inferred.
     "current": arm_current,
-    "store_vector": _store_arm("vector"),
-    "store_lexical": _store_arm("lexical"),
+    # `store_plain` pins the product with both mechanisms **off**, so the
+    # before/after stays measurable now that they are the defaults. Without it
+    # every comparison arm silently inherited them and two tests compared a
+    # thing against itself.
+    "store_plain": _store_arm(
+        "hybrid", group_by_source_root=False, expand_lineage=0
+    ),
+    "store_vector": _store_arm(
+        "vector", group_by_source_root=False, expand_lineage=0
+    ),
+    "store_lexical": _store_arm(
+        "lexical", group_by_source_root=False, expand_lineage=0
+    ),
+    "store_temporal": None,  # filled below: needs the per-case event time
+    "store_roots": _store_arm(
+        "hybrid", group_by_source_root=True, expand_lineage=0
+    ),
+    "store_lineage": _store_arm(
+        "hybrid", group_by_source_root=False, expand_lineage=1
+    ),
+    "store_all": None,
     "oracle": arm_oracle,
 }
+def _temporal_arm(case: Mapping[str, Any], k: int) -> list[str]:
+    """Temporal filtering **only**.
+
+    Every option is named explicitly. Relying on a default made this arm
+    silently become "all three mechanisms" the moment roots and lineage became
+    the defaults, and the ablation table then showed `store_temporal` and
+    `store_all` with identical numbers — which read as temporal filtering
+    doing all the work.
+    """
+    return arm_current(
+        {
+            **case,
+            "_retrieval": "hybrid",
+            "_options": {
+                "as_of": _as_of(case),
+                "group_by_source_root": False,
+                "expand_lineage": 0,
+            },
+        },
+        k,
+    )
+
+
+def _all_mechanisms_arm(case: Mapping[str, Any], k: int) -> list[str]:
+    return arm_current(
+        {
+            **case,
+            "_retrieval": "hybrid",
+            "_options": {
+                "as_of": _as_of(case),
+                "group_by_source_root": True,
+                "expand_lineage": 1,
+            },
+        },
+        k,
+    )
+
+
+ARMS["store_temporal"] = _temporal_arm
+ARMS["store_all"] = _all_mechanisms_arm
+
 CEILING = "oracle"
 
 

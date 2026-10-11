@@ -15,7 +15,7 @@ from typing import Any, Mapping
 # `identity` imports only `ids`, so this direction carries no cycle.
 from .identity import DEFAULT_TENANT
 
-SCHEMA_VERSION = "0.6.0"
+SCHEMA_VERSION = "0.7.0"
 
 
 class MemoryType(str, Enum):
@@ -195,12 +195,51 @@ class Memory:
     security_class: SecurityClass = SecurityClass.INTERNAL
     capabilities: tuple[str, ...] = ()
     created_at: int = 0
+    """**Recorded** time: when this store learned the claim.
+
+    Distinct from `valid_from`/`valid_to`, which say when the claim is true of
+    the world. One timestamp cannot answer both "what was true then?" and
+    "what did we know then?", and `relevance_v1`'s `temporal_drift` family is
+    where conflating them costs: a retriever with only a recorded time cannot
+    tell a fact that *was* true from one that is.
+    """
+    valid_from: int | None = None
+    """When the claim starts applying to the world. None means "as far back as
+    anyone knows", which is the honest reading for a memory written before
+    this field existed — not "never valid"."""
+    valid_to: int | None = None
+    """When it stops. None means open-ended, i.e. still current."""
     superseded_at: int | None = None
     schema_version: str = SCHEMA_VERSION
 
     @property
     def context_key(self) -> str:
         return context_key(self.context)
+
+    def applies_at(self, when: int | None) -> bool:
+        """Whether this claim is true of the world at `when`.
+
+        `when` None means "do not filter", which is the right default for a
+        task that does not say what time it is about. A memory with no validity
+        window applies always — see `valid_from`.
+
+        Half-open: `valid_from <= when < valid_to`. A closed upper bound would
+        make two consecutive claims both apply at the instant one replaces the
+        other, and "both answers are current" is the one thing a temporal
+        filter must not say.
+        """
+        if when is None:
+            return True
+        if self.valid_from is not None and when < self.valid_from:
+            return False
+        if self.valid_to is not None and when >= self.valid_to:
+            return False
+        return True
+
+    @property
+    def is_open_ended(self) -> bool:
+        """No end to its validity, i.e. still current as far as this store knows."""
+        return self.valid_to is None
 
     def to_json(self) -> dict[str, Any]:
         return {
@@ -219,6 +258,8 @@ class Memory:
             "security_class": self.security_class.value,
             "capabilities": list(self.capabilities),
             "created_at": self.created_at,
+            "valid_from": self.valid_from,
+            "valid_to": self.valid_to,
             "superseded_at": self.superseded_at,
             "schema_version": self.schema_version,
         }
@@ -244,6 +285,11 @@ class Memory:
             security_class=SecurityClass(data.get("security_class", "internal")),
             capabilities=tuple(data.get("capabilities", ())),
             created_at=int(data.get("created_at", 0)),
+            # Absent in a log written before 0.7.0, and absent means
+            # open-ended rather than invalid: an older store's memories stay
+            # applicable at every time, which is exactly how they behaved.
+            valid_from=data.get("valid_from"),
+            valid_to=data.get("valid_to"),
             superseded_at=data.get("superseded_at"),
             schema_version=data.get("schema_version", SCHEMA_VERSION),
         )

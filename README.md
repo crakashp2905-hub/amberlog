@@ -20,7 +20,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**853 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**862 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including
@@ -345,6 +345,14 @@ best simple baseline, with critical-memory omission going from 28.6% to zero
 ([result](research/results/relevance-v1-ceiling.md)). That **contradicts** the
 ~5-point prediction registered beforehand, and the prediction is left on record
 rather than edited away.
+
+Both have now been acted on and re-measured. Hybrid retrieval took the product
+arm from 0.485 to 0.658 nDCG on the frozen split, with critical-memory omission
+going from 40% to zero; wiring in **source roots, premise promotion and
+bitemporal validity** added a further +0.074 there and +0.043 on dev, closing
+about 17% of the measured headroom. Lexical retrieval alone still has the better
+nDCG on the frozen split (0.804), and the product arm is still not the best arm
+— what it buys is not missing the decisive memory.
 
 Two findings matter more than the headroom. **The shipping retrieval path is
 the weakest non-broken arm** — beaten by plain IDF-weighted token overlap by up

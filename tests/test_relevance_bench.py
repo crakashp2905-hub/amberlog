@@ -299,6 +299,58 @@ class TheProductArmImproved(unittest.TestCase):
             fabric.retrieve(agent_id="a", query="anything")
 
 
+class TheStoreMechanismsHelp(unittest.TestCase):
+    """The three mechanisms R1 pointed at: provenance, source roots, recorded
+    time. Each measured as its own arm, because turning one on by assumption is
+    how a mechanism gets credit it has not earned."""
+
+    def test_all_three_together_beat_the_plain_hybrid_arm(self) -> None:
+        for split in SPLITS:
+            result = run(split, arms=["store_plain", "store_all"])
+            with self.subTest(split):
+                self.assertGreater(
+                    result["arms"]["store_all"]["ndcg_at_k"],
+                    result["arms"]["store_plain"]["ndcg_at_k"],
+                )
+
+    def test_lineage_promotion_actually_moves_the_indirect_family(self) -> None:
+        """The first implementation measured **exactly zero**, because it only
+        appended absent parents and the candidate pool already contained the
+        premise, ranked below the distractors. Promotion is the mechanism."""
+        result = run("dev", arms=["store_plain", "store_lineage"])
+        plain = result["by_family"]["store_plain"]["indirect"]["ndcg"]
+        promoted = result["by_family"]["store_lineage"]["indirect"]["ndcg"]
+        self.assertGreater(promoted, plain + 0.2, f"{plain} -> {promoted}")
+
+    def test_root_grouping_does_not_undo_lineage_promotion(self) -> None:
+        """They were undoing each other: the `indirect` family scored 1.000
+        with lineage alone and 0.613 with grouping as well, because a premise
+        and its conclusion share a source root and grouping discarded exactly
+        what promotion had surfaced. Grouping now spares a derivation chain."""
+        result = run("dev", arms=["store_lineage", "store_all"])
+        self.assertGreaterEqual(
+            result["by_family"]["store_all"]["indirect"]["ndcg"],
+            result["by_family"]["store_lineage"]["indirect"]["ndcg"],
+        )
+
+    def test_root_grouping_still_collapses_copies(self) -> None:
+        """The narrower rule must not have cost the thing grouping is for."""
+        result = run("dev", arms=["store_plain", "store_roots"])
+        self.assertGreater(
+            result["by_family"]["store_roots"]["copied_evidence"]["ndcg"],
+            result["by_family"]["store_plain"]["copied_evidence"]["ndcg"],
+        )
+
+    def test_the_defaults_are_the_measured_ones(self) -> None:
+        """`current` is the product as shipped, so it should now match
+        `store_all` minus the temporal filter a caller has to opt into."""
+        result = run("dev", arms=["current", "store_roots", "store_lineage"])
+        self.assertGreaterEqual(
+            result["arms"]["current"]["ndcg_at_k"],
+            result["arms"]["store_roots"]["ndcg_at_k"] - 1e-9,
+        )
+
+
 class TheFamiliesDiscriminate(unittest.TestCase):
     """A family where every arm scores the same tests nothing."""
 

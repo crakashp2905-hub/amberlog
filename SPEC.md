@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.6.0`
+- **Schema version:** `0.7.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,31 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.7.0 — bitemporal validity
+
+`Memory` gains `valid_from` and `valid_to`, both nullable. Additive: absent
+means open-ended, so every memory in a pre-0.7.0 log applies at every time,
+which is exactly how it behaved. No migration.
+
+**Why one timestamp was not enough.** `created_at` is when this store *learned*
+a claim. It cannot also say when the claim is *true of the world*, and
+`relevance_v1`'s `temporal_drift` family is where conflating them costs: the
+same corpus gives the opposite answer depending on whether the task asks "what
+is the closing time now?" or "what did we believe it was last year?" A
+retriever with only a recorded time cannot tell a fact that *was* true from one
+that is.
+
+`Memory.applies_at(when)` is half-open — `valid_from <= when < valid_to` —
+because a closed upper bound makes two consecutive claims both apply at the
+instant one replaces the other, and "both answers are current" is the one thing
+a temporal filter must not say.
+
+`retrieve(as_of=…)` filters the eligible set *before the index is queried*, for
+the reason the tenant filter does: a memory excluded before ranking cannot be
+ranked, scored, logged or leaked by a bug in a policy. It has **no default**,
+and cannot have one — defaulting to `now` would make every historical question
+unanswerable.
 
 ### 0.6.0 — authenticated content encryption
 

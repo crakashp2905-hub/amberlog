@@ -814,6 +814,162 @@ class MemoryFabric:
                 self._index(memory.id, self._index_text(memory))
         self._estimator_dirty = True
 
+    # --- the three mechanisms the store had and retrieval did not use -----
+    #
+    # `relevance_v1` found the five families with the largest oracle gap, and
+    # three of them — indirect evidence, copied evidence, temporal drift — are
+    # answerable with provenance edges, source roots and recorded time. All
+    # three already existed; retrieval simply never consulted them.
+    #
+    # Each is **off by default** and measured as its own benchmark arm. Turning
+    # one on by assumption is how a mechanism gets credit it has not earned,
+    # which is the H2/H3/H4a pattern this project keeps recording.
+
+    def _applicable_at(self, memory_ids: Iterable[str], when: int | None) -> set[str]:
+        """Drop memories whose validity window excludes `when`.
+
+        `when` None does nothing, which is right for a task that does not say
+        what time it is about. A memory with no window applies always, so a
+        store written before 0.7.0 is unaffected.
+        """
+        if when is None:
+            return set(memory_ids)
+        return {
+            memory_id
+            for memory_id in memory_ids
+            if self.state.memories[memory_id].applies_at(when)
+        }
+
+    def source_root(self, memory_id: str) -> str:
+        """The earliest observation this memory traces back to.
+
+        Its own id when it has no parents. Used to tell corroboration from
+        repetition: four memories quoting one report are one piece of evidence,
+        and a context assembled from all four *looks* four times as supported.
+        `relevance_v1`'s `copied_evidence` family is that case.
+
+        The lexicographically smallest root when there are several, so the
+        grouping key is deterministic — an id that varied by walk order would
+        make deduplication depend on insertion order.
+        """
+        roots = self.lineage_graph.roots(memory_id)
+        return min(roots) if roots else memory_id
+
+    def _group_by_root(
+        self, ranked: Sequence[tuple[str, float]], limit: int
+    ) -> list[tuple[str, float]]:
+        """Keep the best-ranked memory per source root — **except** a premise
+        of something already kept.
+
+        The purpose is to stop copies counting as corroboration: four memories
+        quoting one report are one piece of evidence, and a context assembled
+        from all four *looks* four times as supported.
+        `relevance_v1`'s `copied_evidence` family is that case.
+
+        A premise and the conclusion drawn from it share a root and are **not**
+        copies. Grouping them cost the whole lineage gain when both mechanisms
+        were enabled: the `indirect` family scored 1.000 with lineage promotion
+        alone and 0.613 with grouping as well, because grouping discarded
+        exactly the premise promotion had just surfaced. The two mechanisms
+        were undoing each other.
+
+        So the rule is narrower than "one per root": a candidate is dropped
+        only when something already kept shares its root *and* is not related
+        to it by derivation. Copies collapse; evidence chains survive.
+
+        Not content deduplication, deliberately. Two memories can be
+        near-identical and independently observed, which is real
+        corroboration, while two differently-worded memories can share one root
+        and be none.
+        """
+        kept: list[tuple[str, float]] = []
+        kept_by_root: dict[str, list[str]] = {}
+        for memory_id, score in ranked:
+            root = self.source_root(memory_id)
+            siblings = kept_by_root.get(root, [])
+            if siblings and not any(
+                self._derivation_related(memory_id, other) for other in siblings
+            ):
+                continue
+            kept.append((memory_id, score))
+            kept_by_root.setdefault(root, []).append(memory_id)
+            if len(kept) >= limit:
+                break
+        return kept
+
+    def _derivation_related(self, left: str, right: str) -> bool:
+        """Whether one of these is an ancestor of the other.
+
+        Checked through the parent edges rather than by content, because that
+        is the difference between "a conclusion and its premise" and "two
+        copies of one report" — and only the first pair belongs in a context
+        together.
+        """
+        graph = self.lineage_graph
+        if any(node.memory_id == right for node in graph.ancestors(left)):
+            return True
+        return any(node.memory_id == left for node in graph.ancestors(right))
+
+    def _expand_lineage(
+        self,
+        ranked: Sequence[tuple[str, float]],
+        eligible: set[str],
+        limit: int,
+        depth: int = 1,
+    ) -> list[tuple[str, float]]:
+        """**Promote** the premises of what was retrieved, not merely include them.
+
+        A conclusion is not assessable without the premise it rests on, and no
+        lexical or vector signal connects them: the premise may share no words
+        with the task at all. `relevance_v1`'s `indirect` family is exactly
+        that, and it is one of the largest oracle gaps.
+
+        The first version of this only *appended* absent parents, and measured
+        **exactly zero** effect — because the candidate pool is four times `k`
+        and already contained the premise, ranked below the distractors. Adding
+        something already present changes nothing. What the case needs is for a
+        premise to be pulled *up* to sit beside the conclusion that depends on
+        it, so this raises a parent's score to just under its child's whenever
+        that is an increase.
+
+        Bounded, and the bounds are the design: `depth` hops, `limit` results,
+        parents only, and a parent is promoted once. An unbounded walk over a
+        dense graph returns the store.
+
+        The 0.99 factor keeps the child ahead of its own premise, so the
+        ordering still reads as "the answer, then what it rests on".
+        """
+        if depth < 1:
+            return list(ranked)
+        scores = dict(ranked)
+        order = [memory_id for memory_id, _ in ranked]
+        frontier = list(order)
+        promoted: set[str] = set()
+        for _ in range(depth):
+            next_frontier: list[str] = []
+            for memory_id in frontier:
+                child_score = scores.get(memory_id, 0.0)
+                # `state.parents` holds ids, not (id, version) pairs — the
+                # versions live on `state.parent_versions`. Sorted so the walk
+                # is deterministic.
+                for parent_id in sorted(self.state.parents.get(memory_id, ())):
+                    if parent_id in promoted or parent_id not in eligible:
+                        continue
+                    if parent_id not in self.state.memories:
+                        continue
+                    promoted.add(parent_id)
+                    inherited = child_score * 0.99
+                    if scores.get(parent_id, -1.0) < inherited:
+                        scores[parent_id] = inherited
+                        if parent_id not in order:
+                            order.append(parent_id)
+                    next_frontier.append(parent_id)
+            frontier = next_frontier
+            if not frontier:
+                break
+        ordered = sorted(order, key=lambda mid: (-scores[mid], mid))
+        return [(memory_id, scores[memory_id]) for memory_id in ordered][:limit]
+
     def _search(
         self,
         query: str,
@@ -984,6 +1140,8 @@ class MemoryFabric:
         episode_id: str | None = None,
         auto_activate: bool | None = None,
         tenant_id: str = DEFAULT_TENANT,
+        valid_from: int | None = None,
+        valid_to: int | None = None,
     ) -> str:
         """Store a new memory. Runs the ingest screen before anything is stored.
 
@@ -1045,6 +1203,11 @@ class MemoryFabric:
             structured=dict(structured) if structured else None,
             scope=Scope(scope),
             tenant_id=tenant_id,
+            # Validity in the world, separate from `created_at` which is when
+            # this store learned it. Both None means "applies always", which is
+            # how every memory written before 0.7.0 behaves.
+            valid_from=valid_from,
+            valid_to=valid_to,
             lifecycle_state=lifecycle,
             security_class=SecurityClass(security_class),
             capabilities=tuple(capabilities),
@@ -1188,6 +1351,9 @@ class MemoryFabric:
         step: int = 0,
         min_relevance: float = MIN_RELEVANCE,
         tenant_id: str | None = None,
+        as_of: int | None = None,
+        group_by_source_root: bool = True,
+        expand_lineage: int = 1,
     ) -> RetrievalResult:
         """Retrieve, decide exposure, log both, return what was exposed.
 
@@ -1199,12 +1365,37 @@ class MemoryFabric:
         the behaviour every single-tenant store has always had. A caller acting
         for one tenant should not be passing it by hand at all — use
         `for_tenant` or `as_principal`, which cannot be forgotten.
+
+        **`group_by_source_root` and `expand_lineage` default on, because they
+        were measured.** On `relevance_v1` the two together take this arm from
+        0.752 to 0.795 nDCG@3 on dev and 0.658 to 0.732 on the frozen test
+        split, with critical-memory omission falling from 0.214 to 0.143. Both
+        can be switched off; the numbers are in
+        `research/results/relevance-v1-ceiling.md` so the choice is informed.
+
+        **`as_of` does not default**, and cannot. Defaulting it to `now` would
+        make every historical question unanswerable — `temporal_drift-02` is
+        the case: the same corpus, the opposite answer, because the task is
+        about last year. A caller that knows what time its task is about passes
+        it; one that does not gets no temporal filtering, which is the honest
+        behaviour rather than a guess.
         """
         eligible = self._eligible_ids(
             include_contested=include_contested, tenant_id=tenant_id
         )
         pool_size = pool if pool is not None else max(k * 4, k)
+        # Temporal applicability narrows the *eligible set*, before the index
+        # is queried, for the reason the tenant filter does: a memory excluded
+        # before ranking cannot be ranked, scored, logged or leaked by a bug
+        # in a policy.
+        eligible = self._applicable_at(eligible, as_of)
         hits = self._search(query, pool_size, eligible, min_relevance)
+        if expand_lineage:
+            hits = self._expand_lineage(
+                hits, eligible, limit=pool_size, depth=expand_lineage
+            )
+        if group_by_source_root:
+            hits = self._group_by_root(hits, limit=pool_size)
 
         # Only estimate values when the policy will actually rank on them.
         # Refitting the estimator on every retrieval and then ranking by

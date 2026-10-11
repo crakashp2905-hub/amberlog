@@ -1,6 +1,6 @@
 # relevance_v1 — test split
 
-- **Arms:** none, lexical, vector, hybrid, current, store_vector, store_lexical, oracle
+- **Arms:** none, lexical, vector, hybrid, current, store_plain, store_vector, store_lexical, store_temporal, store_roots, store_lineage, store_all, oracle
 - **Cases:** 5 · **k:** 3
 - **Deterministic:** no model calls; two runs of one commit are byte-identical.
 
@@ -13,8 +13,13 @@
 | `vector` | 0.485 | 0.333 | 0.667 | 0.500 | 0.700 | 0.400 | **0.000** | 0.667 | 1.000 | 0.000 |
 | `hybrid` | 0.732 | 0.467 | 0.933 | 0.700 | 1.000 | 0.000 | **0.000** | 0.533 | 1.000 | 0.000 |
 | `current` | 0.658 | 0.467 | 0.933 | 0.600 | 1.000 | 0.000 | **0.000** | 0.533 | 1.000 | 0.000 |
+| `store_plain` | 0.658 | 0.467 | 0.933 | 0.600 | 1.000 | 0.000 | **0.000** | 0.533 | 1.000 | 0.000 |
 | `store_vector` | 0.485 | 0.333 | 0.667 | 0.500 | 0.700 | 0.400 | **0.000** | 0.667 | 1.000 | 0.000 |
 | `store_lexical` | 0.804 | 0.500 | 0.900 | 0.800 | 0.800 | 0.200 | **0.000** | 0.433 | 1.000 | 0.000 |
+| `store_temporal` | 0.732 | 0.467 | 0.933 | 0.700 | 1.000 | 0.000 | **0.000** | 0.533 | 1.000 | 0.000 |
+| `store_roots` | 0.658 | 0.467 | 0.933 | 0.600 | 1.000 | 0.000 | **0.000** | 0.533 | 1.000 | 0.000 |
+| `store_lineage` | 0.658 | 0.467 | 0.933 | 0.600 | 1.000 | 0.000 | **0.000** | 0.533 | 1.000 | 0.000 |
+| `store_all` | 0.732 | 0.467 | 0.933 | 0.700 | 1.000 | 0.000 | **0.000** | 0.533 | 1.000 | 0.000 |
 | `oracle` | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 | **0.000** | 0.000 | 1.000 | 0.000 |
 
 ## Headroom
@@ -77,6 +82,16 @@ A ranker's threshold is a share of that headroom, never an absolute margin (AGEN
 | rare_critical | 1 | 0.693 | 1.000 | 0 | 0 |
 | temporal_drift | 1 | 0.631 | 1.000 | 0 | 0 |
 
+### `store_plain`
+
+| family | cases | nDCG | critical recall | violations | abstained |
+|---|---|---|---|---|---|
+| direct | 1 | 0.631 | 1.000 | 0 | 0 |
+| indirect | 1 | 0.704 | 1.000 | 0 | 0 |
+| lexical_trap | 1 | 0.631 | 1.000 | 0 | 0 |
+| rare_critical | 1 | 0.693 | 1.000 | 0 | 0 |
+| temporal_drift | 1 | 0.631 | 1.000 | 0 | 0 |
+
 ### `store_vector`
 
 | family | cases | nDCG | critical recall | violations | abstained |
@@ -96,6 +111,46 @@ A ranker's threshold is a share of that headroom, never an absolute margin (AGEN
 | lexical_trap | 1 | 1.000 | 1.000 | 0 | 0 |
 | rare_critical | 1 | 0.387 | 0.000 | 0 | 0 |
 | temporal_drift | 1 | 0.631 | 1.000 | 0 | 0 |
+
+### `store_temporal`
+
+| family | cases | nDCG | critical recall | violations | abstained |
+|---|---|---|---|---|---|
+| direct | 1 | 0.631 | 1.000 | 0 | 0 |
+| indirect | 1 | 0.704 | 1.000 | 0 | 0 |
+| lexical_trap | 1 | 0.631 | 1.000 | 0 | 0 |
+| rare_critical | 1 | 0.693 | 1.000 | 0 | 0 |
+| temporal_drift | 1 | 1.000 | 1.000 | 0 | 0 |
+
+### `store_roots`
+
+| family | cases | nDCG | critical recall | violations | abstained |
+|---|---|---|---|---|---|
+| direct | 1 | 0.631 | 1.000 | 0 | 0 |
+| indirect | 1 | 0.704 | 1.000 | 0 | 0 |
+| lexical_trap | 1 | 0.631 | 1.000 | 0 | 0 |
+| rare_critical | 1 | 0.693 | 1.000 | 0 | 0 |
+| temporal_drift | 1 | 0.631 | 1.000 | 0 | 0 |
+
+### `store_lineage`
+
+| family | cases | nDCG | critical recall | violations | abstained |
+|---|---|---|---|---|---|
+| direct | 1 | 0.631 | 1.000 | 0 | 0 |
+| indirect | 1 | 0.704 | 1.000 | 0 | 0 |
+| lexical_trap | 1 | 0.631 | 1.000 | 0 | 0 |
+| rare_critical | 1 | 0.693 | 1.000 | 0 | 0 |
+| temporal_drift | 1 | 0.631 | 1.000 | 0 | 0 |
+
+### `store_all`
+
+| family | cases | nDCG | critical recall | violations | abstained |
+|---|---|---|---|---|---|
+| direct | 1 | 0.631 | 1.000 | 0 | 0 |
+| indirect | 1 | 0.704 | 1.000 | 0 | 0 |
+| lexical_trap | 1 | 0.631 | 1.000 | 0 | 0 |
+| rare_critical | 1 | 0.693 | 1.000 | 0 | 0 |
+| temporal_drift | 1 | 1.000 | 1.000 | 0 | 0 |
 
 ### `oracle`
 

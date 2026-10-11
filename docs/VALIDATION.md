@@ -11,7 +11,7 @@ and did not.
 
 | | Check | Result |
 |---|---|---|
-| 1 | `pytest tests` | **722 passed**, 133 subtests |
+| 1 | `pytest tests` | **906 passed**, 438 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
 | 3 | `tools/scan_secrets.py` | 58 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
 | 4 | `compileall` over `memory_fabric`, `experiments`, `tests`, `tools` | clean |
@@ -22,6 +22,10 @@ and did not.
 | 9 | Observability surface | `GET` 200 on `/`, `/api/overview`, `/api/propagation`; **`POST` 405**; unauthenticated **401**; wrong token **401**; `build_server` refuses its own no-auth default off loopback |
 | 10 | A rewritten **0.3.0-era store** — no `tenant_id`, old inbox primary key | replays; tenant defaults to `tn_default`; inbox migrates in place and carries its row with an empty `target_key`; `doctor` reports sound |
 | 11 | Docker image built and served over the published port as a non-root user | CI job `docker` |
+| 12 | **Multi-process concurrency** — 4 processes × 20 appends on one store | all 80 land; sequence a gapless run; hash chain verifies; a zero-timeout writer fails cleanly rather than corrupting |
+| 13 | **Version skew** — a 0.2.0/0.3.0 store on current code | replays; every added field's absent-meaning preserves old behaviour; the new retrieval filters do not exclude old data; `doctor` sound. A 99.0.0 store is refused with a schema failure |
+| 14 | **Protocol skew** — a hop-0 retraction round-tripped through the 0.3.0 field set | byte-compatible: no new fields serialised, and the minimal payload still applies and enforces |
+| 15 | **Tamper detection** — edited payload/timestamp/actor, deleted event, reordered pair, missing link, truncated log, wholesale chain rewrite | each caught, at the right sequence; the rewrite caught only by an external checkpoint |
 
 ## Two results worth stating rather than scoring
 
@@ -74,7 +78,8 @@ because it is the honest argument for the checks existing:
 ## What none of this establishes
 
 - **Nothing here is a performance claim.** The accuracy thesis was tested properly and failed; [SCORECARD.md](../research/SCORECARD.md) has that, and these checks say nothing about it.
-- **No concurrency testing.** One writer per store, which SQLite enforces and nothing here stresses.
+- **Concurrency is now tested, and the first account of it was wrong.** I added an explicit `busy_timeout` pragma and wrote that it fixed concurrent writers failing instantly, believing SQLite's default to be zero. That is true of the C library and false of Python: `sqlite3.connect` sets 5 seconds of its own accord, so writers had always serialised. The falsification run — remove the pragma, expect the contention tests to fail — passed instead, which is what caught it. The pragma stays because it makes the value visible and configurable, not because it repaired anything.
+- **The multi-process contention tests are weaker than they look.** They pass with the pragma removed, because the writers do not reliably overlap on a fast disk. They are strong evidence nothing is lost or corrupted under real load, and no evidence about timeout behaviour; the two deterministic tests that hold a write lock open are the ones that isolate that. The first version of *those* was also weak — `child.poll()` being None only proved the child had not finished importing — so the child now signals readiness before contending.
 - **No adversarial testing of the sensitive-data detector.** It is pattern-based and misses novel formats, as SECURITY.md says.
 - **Tenancy is checked as authorisation, not as isolation.** Every test here runs in one process against one file. Nothing demonstrates — or could demonstrate — isolation against a caller holding the database.
 - **A single run on one machine.** CI covers rows 1–5 and 11 across six interpreter/OS pairs; rows 6–10 were run by hand, here.

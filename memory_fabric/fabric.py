@@ -170,8 +170,9 @@ class MemoryFabric:
         encrypt_content: bool = True,
         key_provider: "KeyProvider | None" = None,
         retrieval: str = "hybrid",
+        busy_timeout_ms: int = 5_000,
     ) -> None:
-        self.log = EventLog(path)
+        self.log = EventLog(path, busy_timeout_ms=busy_timeout_ms)
         # Everything after opening the log can fail — a missing key store
         # makes every sealed memory unreadable and `KeyUnavailable`
         # propagates from the replay. Closing the connection on the way out

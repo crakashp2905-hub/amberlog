@@ -50,7 +50,9 @@ END;
 class EventLog:
     """Append-only, replayable event store."""
 
-    def __init__(self, path: str | Path = ":memory:") -> None:
+    def __init__(
+        self, path: str | Path = ":memory:", busy_timeout_ms: int = 5_000
+    ) -> None:
         self.path = str(path)
         if self.path != ":memory:":
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
@@ -65,6 +67,22 @@ class EventLog:
         self._conn.row_factory = sqlite3.Row
         self._conn.execute("PRAGMA journal_mode=WAL")
         self._conn.execute("PRAGMA foreign_keys=ON")
+        # Explicit, not a fix. The C library's default busy timeout is zero,
+        # but Python's `sqlite3.connect` sets 5 seconds of its own accord, so
+        # this store has always serialised concurrent writers rather than
+        # failing on contention.
+        #
+        # Stated here anyway for two reasons: the value becomes visible and
+        # configurable instead of inherited from a stdlib default that could
+        # change, and a deployment that wants fail-fast behaviour can ask for
+        # it. What it does **not** do is make SQLite multi-writer.
+        #
+        # Worth recording because I first wrote this comment claiming the
+        # default was zero and that concurrent writers had been failing. They
+        # had not. The falsification run — remove the pragma, expect the
+        # contention test to fail — passed instead, which is how the claim got
+        # caught before it reached a commit message.
+        self._conn.execute(f"PRAGMA busy_timeout={busy_timeout_ms}")
         # NOT wrapped in `transaction()`: `executescript` issues its own
         # COMMIT before running, which would end ours and leave the
         # context manager committing a transaction that no longer exists.

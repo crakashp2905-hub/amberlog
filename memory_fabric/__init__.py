@@ -77,7 +77,7 @@ from .projections import Episode, Projection
 from .session import AgentSession, SessionClosed
 from .vectors import Embedder, HashingEmbedder, VectorIndex
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 __all__ = [
     "new_tenant_id",

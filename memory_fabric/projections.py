@@ -131,7 +131,9 @@ class Projection:
 
     def __init__(self, unsealer=None) -> None:
         self.state = ProjectionState()
-        self._unseal = unsealer or (lambda content, memory_id: content)
+        self._unseal = unsealer or (
+            lambda content, memory_id, version: content
+        )
 
     def apply(self, event: Event) -> None:
         if event.type in (EventType.MEMORY_CREATED, EventType.MEMORY_VERSIONED):
@@ -140,7 +142,13 @@ class Projection:
             content = memory.get("content")
             if isinstance(content, str):
                 memory = dict(memory)
-                memory["content"] = self._unseal(content, memory.get("id", ""))
+                # The version is passed because a ciphertext is bound to it:
+                # authenticated encryption stops an old version's content being
+                # pasted over the current one, which would roll a memory back
+                # after a correction without touching the log.
+                memory["content"] = self._unseal(
+                    content, memory.get("id", ""), int(memory.get("version", 1))
+                )
                 payload["memory"] = memory
                 event = replace(event, payload=payload)
         handler = _HANDLERS.get(event.type)

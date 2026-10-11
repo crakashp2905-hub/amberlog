@@ -21,7 +21,12 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .fabric import MemoryFabric, NotFound, PolicyViolation
-from .governance.erasure import ERASED_MARKER
+from .governance.cipher import default_suite, envelope_version
+from .governance.erasure import (
+    ERASED_MARKER,
+    DirectoryKeyProvider,
+    KeyUnavailable,
+)
 from .identity import DEFAULT_TENANT
 from .model import (
     BLOCKED_STATES,
@@ -887,6 +892,62 @@ def _check_blocked_not_exposed(fabric: MemoryFabric) -> Finding:
     )
 
 
+def _check_content_cipher(fabric: MemoryFabric) -> Finding:
+    """Which cipher generation this store's content is sealed with.
+
+    `enc:v1` was an unauthenticated keystream: a ciphertext could be edited and
+    the plaintext became whatever the editor chose, with nothing to detect it.
+    It is still *readable* so existing stores work, and it is never written
+    again — so the number remaining is a real operational figure and it only
+    goes down, as memories are revised.
+
+    Also reports where the keys live, because keys beside the ciphertext make
+    erasure possible and do nothing against someone holding the file.
+    """
+    counts: dict[str, int] = {}
+    for event in fabric.log.read():
+        if event.type not in ("MemoryCreated", "MemoryVersioned"):
+            continue
+        content = (event.payload.get("memory") or {}).get("content")
+        if not isinstance(content, str):
+            continue
+        version = envelope_version(content) or "plaintext"
+        counts[version] = counts.get(version, 0) + 1
+
+    custody = type(fabric.vault.keys).__name__
+    where = (
+        "in this database, beside the ciphertext"
+        if custody == "SqliteKeyProvider"
+        else f"externally ({custody})"
+    )
+    legacy = counts.get("v1", 0)
+    summary = ", ".join(f"{name} {count}" for name, count in sorted(counts.items()))
+
+    if legacy:
+        return Finding(
+            "warn", "content cipher",
+            f"{legacy} content version(s) still sealed with the unauthenticated "
+            f"enc:v1 keystream ({summary}); keys {where}",
+            "v1 ciphertext can be edited undetectably. Revising a memory "
+            "re-seals it; there is no bulk migration because rewriting the log "
+            "is the one thing this design forbids.",
+        )
+    if not counts:
+        return Finding("ok", "content cipher", f"no content yet; keys {where}")
+    plaintext = counts.get("plaintext", 0)
+    if plaintext and not fabric.encrypt_content:
+        return Finding(
+            "warn", "content cipher",
+            f"encryption is off for this store: {plaintext} content version(s) "
+            "in plaintext, so erasing a key would be cosmetic",
+            "Open the store with encrypt_content=True for new writes.",
+        )
+    return Finding(
+        "ok", "content cipher",
+        f"authenticated ({default_suite().name}); {summary}; keys {where}",
+    )
+
+
 def _check_tenant_isolation(fabric: MemoryFabric) -> Finding:
     """Can any tenant's agent reach another tenant's memory?
 
@@ -961,6 +1022,7 @@ DOCTOR_CHECKS = (
     _check_retractions,
     _check_weak_withdrawals,
     _check_sealed_content,
+    _check_content_cipher,
     _check_blocked_not_exposed,
     _check_tenant_isolation,
     _check_dashboard_asset,
@@ -1046,6 +1108,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="value estimator for display: naive_usage (default) or ips",
     )
     parser.add_argument("--json", action="store_true", help="emit JSON instead of tables")
+    parser.add_argument(
+        "--keys",
+        metavar="DIR",
+        help="directory holding this store's content keys, when they are kept "
+        "outside the database. Without it a store whose keys are external "
+        "cannot be opened at all — which is the correct refusal, not a bug.",
+    )
     parser.add_argument(
         "--create",
         action="store_true",
@@ -1198,8 +1267,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 2
 
+    key_provider = None
+    if args.keys:
+        key_provider = DirectoryKeyProvider(args.keys)
+
     try:
-        fabric = MemoryFabric(args.db, estimator=args.estimator)
+        fabric = MemoryFabric(
+            args.db, estimator=args.estimator, key_provider=key_provider
+        )
+    except KeyUnavailable as exc:
+        # Distinguished from any other open failure, because the remedy is
+        # specific and the default message would send someone looking at the
+        # database instead of at the key store they did not mount.
+        print(
+            f"{C.RED}could not open {args.db}: {exc}{C.RESET}\n"
+            f"{C.DIM}If this store's content keys are kept outside the "
+            f"database, point at them with --keys <dir>.{C.RESET}",
+            file=sys.stderr,
+        )
+        return 2
     except Exception as exc:
         print(f"{C.RED}could not open {args.db}: {exc}{C.RESET}", file=sys.stderr)
         return 2

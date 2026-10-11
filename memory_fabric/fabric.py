@@ -37,7 +37,8 @@ from .enforcement import (
     RiskLevel,
     Verdict,
 )
-from .governance.erasure import ContentVault, is_sealed, seal, unseal
+from .governance.cipher import IntegrityError, associated_data, is_sealed
+from .governance.erasure import ContentVault, KeyProvider, KeyUnavailable, seal, unseal
 from .outbox import Outbox, now_ms as _now_ms
 from .protocol import (
     MAX_HOPS,
@@ -160,42 +161,77 @@ class MemoryFabric:
         clock=None,
         auto_activate: bool = False,
         encrypt_content: bool = True,
+        key_provider: "KeyProvider | None" = None,
     ) -> None:
         self.log = EventLog(path)
-        # The vault must exist before the replay: the projection unseals as it
-        # folds, so the keys have to be reachable first.
-        self.vault = ContentVault(self.log._conn)
-        self.encrypt_content = encrypt_content
-        self.projection = Projection(unsealer=self._unseal_content)
-        self.index = VectorIndex(embedder)
-        self.firewall = firewall or Firewall()
-        self.retention = retention or RetentionPolicy()
-        self.estimator = build_estimator(estimator)
-        self.policy = build_policy(exposure_policy)
-        self.rng = random.Random(seed)
-        self._clock = clock or (lambda: int(time.time() * 1000))
-        # When true, a clean memory becomes active immediately. Off by default:
-        # a new memory is a candidate until something validates it.
-        self.auto_activate = auto_activate
-        self._estimator_dirty = True
-        self._enforcer: Enforcer | None = None
-        self._principals: PrincipalRegistry | None = None
-        self._justifications: JustificationGraph | None = None
-        self._replay()
-        self.outbox = Outbox(self.log._conn)
-        self._ensure_store_identity()
+        # Everything after opening the log can fail — a missing key store
+        # makes every sealed memory unreadable and `KeyUnavailable`
+        # propagates from the replay. Closing the connection on the way out
+        # matters on Windows, where a leaked handle keeps the file locked
+        # and the next attempt fails for a different and misleading reason.
+        try:
+            # The vault must exist before the replay: the projection unseals as it
+            # folds, so the keys have to be reachable first.
+            #
+            # `key_provider` is a constructor argument and not a settable
+            # attribute, because by the time a caller could assign one the replay
+            # has already tried to unseal every memory with the default. A test
+            # that swapped it afterwards failed on exactly that, which is the API
+            # telling the truth about when the decision has to be made.
+            self.vault = ContentVault(
+                self.log._conn, keys=key_provider, now_ms=self.now
+            )
+            self.encrypt_content = encrypt_content
+            self.projection = Projection(unsealer=self._unseal_content)
+            self.index = VectorIndex(embedder)
+            self.firewall = firewall or Firewall()
+            self.retention = retention or RetentionPolicy()
+            self.estimator = build_estimator(estimator)
+            self.policy = build_policy(exposure_policy)
+            self.rng = random.Random(seed)
+            self._clock = clock or (lambda: int(time.time() * 1000))
+            # When true, a clean memory becomes active immediately. Off by default:
+            # a new memory is a candidate until something validates it.
+            self.auto_activate = auto_activate
+            self._estimator_dirty = True
+            self._enforcer: Enforcer | None = None
+            self._principals: PrincipalRegistry | None = None
+            self._justifications: JustificationGraph | None = None
+            # Read from the log *before* the replay, not from the projection.
+            # The ciphertext AAD binds the store id, and `_replay` builds a new
+            # projection and only assigns it when finished — so during the replay
+            # `self.state` is still the empty one and `self.store_id` asserts.
+            # Caught by the erasure tests on reopen: a store with sealed content
+            # could not be opened at all.
+            self._sealing_store_id = self._store_id_from_log()
+            self._replay()
+            self.outbox = Outbox(self.log._conn)
+            self._ensure_store_identity()
+        except BaseException:
+            self.log.close()
+            raise
 
-    def _unseal_content(self, content: str, memory_id: str) -> str:
+    def _unseal_content(self, content: str, memory_id: str, version: int = 1) -> str:
         """Decrypt on the way out of the log, or report erasure.
 
         Text written before encryption existed passes through untouched, which
         is what keeps a 0.2.0 log replayable.
+
+        A failed authentication raises rather than returning anything. The
+        previous cipher could not fail — it had no tag — and decoded with
+        `errors="replace"`, so tampered bytes became mojibake inside a
+        `Memory.content` and travelled into an agent's context as if they were
+        remembered facts.
         """
         if not is_sealed(content):
             return content
-        return unseal(content, self.vault.key_for(memory_id, self.now()))
+        return unseal(
+            content,
+            self.vault.key_for(memory_id, self.now()),
+            self._content_aad(memory_id, version),
+        )
 
-    def _seal_content(self, content: str, memory_id: str) -> str:
+    def _seal_content(self, content: str, memory_id: str, version: int = 1) -> str:
         """Encrypt on the way into the log, when the store is configured to.
 
         Without this, `erase_content` destroys a key that was never used and the
@@ -214,7 +250,7 @@ class MemoryFabric:
                 f"{memory_id} has been content-erased; its content cannot be "
                 "written again. Record new information as a new memory."
             )
-        return seal(content, key)
+        return seal(content, key, self._content_aad(memory_id, version))
 
     def _ensure_store_identity(self) -> None:
         """Mint this store's opaque identity once and record it in its own log.
@@ -230,6 +266,37 @@ class MemoryFabric:
         """
         if self.state.store_id is None:
             self._emit(ev.store_identified(ts=self.now(), store_id=new_store_id()))
+        self._sealing_store_id = self.state.store_id
+
+    def _store_id_from_log(self) -> str | None:
+        """This store's id straight from its first `StoreIdentified` event.
+
+        Deliberately not via the projection: this is needed *while* the
+        projection is being rebuilt. Returns None for a store that has never
+        been identified, which is a store with no memories either, so nothing
+        needs the AAD yet.
+        """
+        for event in self.log.read_types([ev.EventType.STORE_IDENTIFIED]):
+            store_id = event.payload.get("store_id")
+            if store_id:
+                return str(store_id)
+        return None
+
+    def _content_aad(self, memory_id: str, version: int) -> bytes:
+        """The associated data a content ciphertext is bound to.
+
+        Raises rather than substituting a placeholder when the store has no
+        identity: sealing under `""` and later unsealing under a real id would
+        fail authentication on every read, and the failure would look like
+        tampering instead of like the configuration error it is.
+        """
+        store_id = self._sealing_store_id or self.state.store_id
+        if store_id is None:
+            raise PolicyViolation(
+                "cannot seal or unseal content before this store has an "
+                "identity; the StoreIdentified event is missing from the log"
+            )
+        return associated_data(store_id, memory_id, version)
 
     @property
     def store_id(self) -> str:
@@ -884,7 +951,9 @@ class MemoryFabric:
         # every reader downstream still sees plaintext; what changes is that the
         # bytes on disk are ciphertext and destroying the key is therefore real
         # erasure rather than a cosmetic one.
-        sealed = memory.evolve(content=self._seal_content(memory.content, memory.id))
+        sealed = memory.evolve(
+            content=self._seal_content(memory.content, memory.id, memory.version)
+        )
         emitted = [ev.memory_created(ts=now, memory=sealed, episode_id=episode_id)]
         if ruling.decision is FirewallDecision.QUARANTINE:
             emitted.append(
@@ -944,7 +1013,9 @@ class MemoryFabric:
             ev.memory_versioned(
                 ts=now,
                 memory=revised.evolve(
-                    content=self._seal_content(revised.content, revised.id)
+                    content=self._seal_content(
+                        revised.content, revised.id, revised.version
+                    )
                 ),
                 reason=reason,
             )

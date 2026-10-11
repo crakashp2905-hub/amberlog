@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.5.0`
+- **Schema version:** `0.6.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,64 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.6.0 — authenticated content encryption
+
+The `Memory.content` field's *stored* form changes. The memory schema itself is
+untouched, but the bytes in the log are a different envelope, so this is a
+version bump with a compatibility note rather than a silent fix.
+
+**What was wrong.** `enc:v1` was an HMAC-SHA256 counter-mode keystream with no
+authentication tag, which makes a ciphertext malleable: XOR a chosen delta into
+it and the plaintext becomes whatever the attacker picked. The code justified
+this by saying "the append-only log and the event digests provide [integrity]"
+— and **there are no event digests.** The log carries `seq`, `event_id`, `ts`,
+`type`, `agent_id`, `episode_id`, `schema_version` and `payload`, with nothing
+chaining or signing them. The append-only triggers raise the bar (a tamper
+needs file write access to drop them first, which `doctor` reports) but they do
+not sign anything.
+
+**What replaces it.** Three envelope generations, all readable at once:
+
+| envelope | suite | status |
+|---|---|---|
+| `enc:v1:` | HMAC-CTR, unauthenticated | **read-only**, never written again |
+| `enc:v2:` | HMAC-CTR + HMAC-SHA256 encrypt-then-MAC | zero-dependency default |
+| `enc:v3:` | AES-256-GCM via `cryptography` | automatic when installed |
+
+`v2` is a textbook composition of standard primitives — independent encryption
+and MAC subkeys via HKDF-Expand, encrypt-then-MAC in that order, constant-time
+tag comparison *before* decrypting — not a new cipher. `v3` exists because "use
+a maintained cryptographic library" is the right default advice and this module
+should not be the reason someone cannot follow it; installing `cryptography`
+switches new writes with no configuration and no migration.
+
+**Associated data.** A tag proves the bytes were not edited. It does not prove
+they belong here. The AAD binds `store_id`, `memory_id` and `version`, so
+sealed content cannot be copied between memories or between stores, and an old
+version's ciphertext cannot be pasted over the current one to roll a memory
+back after a correction — which would defeat the retraction machinery by
+editing one column.
+
+**Key custody is now a deployment choice.** `KeyProvider` has three
+implementations: `SqliteKeyProvider` (the default, keys beside the ciphertext),
+`DirectoryKeyProvider` (keys in a directory with its own permissions, so a
+stolen `.db` is not enough), and `CallbackKeyProvider` (a KMS). A provider that
+cannot destroy declares `supports_destroy = False` and the erasure record says
+the key outlived the erasure, because a store reporting an erasure it could not
+perform is worse than one that cannot erase. The erasure *record* is
+authoritative over the provider, so a restored key directory cannot resurrect
+content behind an audit row saying it is gone.
+
+**Migration.** None required, and none offered. `v1` stays readable; revising a
+memory re-seals it under the current suite; `doctor` counts what remains. There
+is deliberately no bulk re-encryption, because rewriting the log is the one
+thing this design forbids.
+
+**Forward compatibility is one-way.** A 0.6.0 store opened by 0.5.0 code would
+not recognise `enc:v2:`/`enc:v3:` as sealed and would hand the envelope back as
+content. Older *stores* open fine on newer code; older *code* must not be
+pointed at a newer store.
 
 ### 0.5.0 — tenant identity
 

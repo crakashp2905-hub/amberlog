@@ -16,11 +16,11 @@ and they are the most reusable thing here.
 | A retraction **follows a memory into other stores**, including ones the origin has never heard of, and drives acting-on-withdrawn-knowledge to zero | 17% → **0%** under both sharing policies, 240 decisions per arm ([PB2](research/results/phase-b-federated-agents.md)); re-shared two hops out, under outage, crash, diamond and cycle ([fault matrix](docs/INVARIANTS.md)) |
 | A premise can be invalidated **without destroying independently justified conclusions** | Lose one of two independent premises and the conclusion stays active; lose both and it is contested, never deleted ([Phase 4](docs/INVARIANTS.md)) |
 | Contradiction is **preserved rather than collapsed**, converting confident error into flagged uncertainty | 80% confidently wrong → **0%** with real disagreeing models ([live](research/results/live-multi-agent.md)); P(correct) 0.905 → 1.000 in simulation ([H4b](research/results/h4-topology-and-diversity.md)) |
-| Content can be **erased while the accountability survives** | Crypto-erasure: the text goes, the provenance, lineage, retraction basis and audit trail stay ([Phase 6](SECURITY.md)) |
+| Content can be **erased while the accountability survives** | Crypto-erasure under authenticated encryption, with keys optionally outside the database: the text goes, the provenance, lineage, retraction basis and audit trail stay ([Phase 6](SECURITY.md)) |
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**722 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**752 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including

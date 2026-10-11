@@ -24,6 +24,10 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
+from memory_fabric.governance.cipher import (
+    IntegrityError,
+    associated_data,
+)
 from memory_fabric.governance.erasure import (
     ERASED_MARKER,
     ContentVault,
@@ -39,6 +43,9 @@ class TestTheVault(unittest.TestCase):
         self.conn.row_factory = sqlite3.Row
         self.addCleanup(self.conn.close)
         self.vault = ContentVault(self.conn)
+        # A ciphertext is now bound to a store, memory and version, so the
+        # direct-cipher tests have to say which.
+        self.aad = associated_data("st_test", "m1", 1)
 
     def test_a_key_is_minted_once_and_reused(self) -> None:
         first = self.vault.key_for("m1", 1000)
@@ -46,23 +53,32 @@ class TestTheVault(unittest.TestCase):
 
     def test_sealing_hides_the_plaintext(self) -> None:
         key = self.vault.key_for("m1", 1000)
-        sealed = seal("deploy with AKIAIOSFODNN7EXAMPLE", key)
+        sealed = seal("deploy with AKIAIOSFODNN7EXAMPLE", key, self.aad)
         self.assertTrue(is_sealed(sealed))
         self.assertNotIn("AKIA", sealed)
         self.assertNotIn("deploy", sealed)
-        self.assertEqual(unseal(sealed, key), "deploy with AKIAIOSFODNN7EXAMPLE")
+        self.assertEqual(
+            unseal(sealed, key, self.aad), "deploy with AKIAIOSFODNN7EXAMPLE"
+        )
 
     def test_the_wrong_key_does_not_return_the_plaintext(self) -> None:
-        sealed = seal("secret text", self.vault.key_for("m1", 1000))
+        sealed = seal("secret text", self.vault.key_for("m1", 1000), self.aad)
         other = self.vault.key_for("m2", 1000)
-        self.assertNotEqual(unseal(sealed, other), "secret text")
+        # Now a refusal rather than garbage: the wrong key fails the tag, and a
+        # failed tag is an exception. The old scheme had no tag, so this test
+        # could only assert "not the plaintext" — which was also true of
+        # mojibake that flowed on into a Memory.content.
+        with self.assertRaises(IntegrityError):
+            unseal(sealed, other, self.aad)
 
     def test_erasure_destroys_the_key_irreversibly(self) -> None:
         key = self.vault.key_for("m1", 1000)
-        sealed = seal("sensitive", key)
+        sealed = seal("sensitive", key, self.aad)
         self.assertTrue(self.vault.erase("m1", "subject request", 2000))
         self.assertIsNone(self.vault.key_for("m1", 3000))
-        self.assertEqual(unseal(sealed, self.vault.key_for("m1", 3000)), ERASED_MARKER)
+        self.assertEqual(
+            unseal(sealed, self.vault.key_for("m1", 3000), self.aad), ERASED_MARKER
+        )
 
     def test_erasing_twice_is_not_an_error_and_not_a_second_erasure(self) -> None:
         self.vault.key_for("m1", 1000)
@@ -87,7 +103,9 @@ class TestTheVault(unittest.TestCase):
 
     def test_unsealing_unencrypted_text_passes_it_through(self) -> None:
         """What keeps a log written before encryption existed replayable."""
-        self.assertEqual(unseal("plain old content", b"any-key"), "plain old content")
+        self.assertEqual(
+            unseal("plain old content", b"any-key", self.aad), "plain old content"
+        )
         self.assertFalse(is_sealed("plain old content"))
 
     def test_the_marker_is_distinct_from_empty(self) -> None:

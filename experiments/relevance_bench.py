@@ -60,7 +60,8 @@ DEFAULT_K = 3
 # 1-2 relevant memories against 18; v2 holds up to 4 (a 4-hop chain) against
 # ~500, and a k below the chain length would score a perfect selection as a
 # miss -- the oracle would be handicapped, which principle 8b forbids.
-BENCH_K = {"relevance_v1": 3, "relevance_v2": 5, "propagation_v1": 5}
+BENCH_K = {"relevance_v1": 3, "relevance_v2": 5, "propagation_v1": 5,
+           "facet_v1": 3}
 
 BLOCKED_LIFECYCLE = frozenset({"quarantined", "deprecated", "deleted"})
 

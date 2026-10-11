@@ -1,0 +1,26 @@
+{
+  "benchmark": "facet_v1",
+  "built_at": "2026-10-12",
+  "note": "A focused fixture for one question, not a benchmark. Generated; these digests are the reproducibility claim.",
+  "per_family": 4,
+  "families": [
+    "implied_by_default",
+    "implied_by_exclusion",
+    "implied_by_paraphrase",
+    "stated_control"
+  ],
+  "splits": {
+    "dev": {
+      "cases": 8,
+      "memories": 1638,
+      "sha256": "ab9ff70fae296c3ad136abd0e070e19d91073a398bacf27a09a044bec03b934e",
+      "bytes": 1000468
+    },
+    "test": {
+      "cases": 8,
+      "memories": 1638,
+      "sha256": "1c35ceb642ef79c8a0e0ed97ccffdc2c107cab4b5f54225a5a1333797e53c7f8",
+      "bytes": 1000458
+    }
+  }
+}

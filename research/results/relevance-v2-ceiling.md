@@ -94,7 +94,16 @@ scores **1.000** on it. One facet apart in *form* is not one facet apart in
 present and IDF separates them cleanly. A near-miss that actually bites would
 have to make the discriminating facet *implied* rather than stated. The README
 carried this as a caveat before the run; the run converted it into a known
-defect, and it is the first thing a v3 should fix.
+defect.
+
+**Addressed, and measured** ([facet_v1](facet-v1-implied.md), 2026-10-12). With
+the deciding facet implied rather than stated, `lexical` scores **1.000 on a
+matched stated control and 0.000 on all three implied families, on both
+splits** — same questions, same facts, same values, same distractors. One
+family, `implied_by_default`, is **0.000 for every arm including a trained
+embedder**: a rule reading "all vehicles, except at these two sites" names
+neither the unit nor the site asked about, so no similarity measure can rank it
+because it is not similar.
 
 ## 4. Where the headroom actually is
 

@@ -143,6 +143,45 @@ that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
 
+### What facet_v1 changed
+
+relevance_v2 recorded a defect in its own hardest family: `facet_trap` made
+every distractor one facet from the answer and `lexical` scored **1.000**,
+because the query names every facet so the discriminating token is present in
+both. [facet_v1](research/results/facet-v1-implied.md) makes the deciding facet
+**implied** instead, and adds the thing `facet_trap` lacked — a **stated
+control** over the same questions, facts, values and distractors.
+
+`lexical`, both splits, identical:
+
+| family | nDCG@3 |
+|---|---|
+| `stated_control` | **1.000** |
+| `implied_by_exclusion` | **0.000** |
+| `implied_by_default` | **0.000** |
+| `implied_by_paraphrase` | **0.000** |
+
+1.000 against 0.000 with everything else held fixed, so the difficulty is
+attributable to the implication and nothing else. `facet_trap` could not make
+that argument at all: with no control, its 1.000 could have meant the family was
+easy or the whole benchmark was.
+
+Two findings beyond the separation:
+
+- **`implied_by_default` is 0.000 for every arm on both splits**, trained embedder included. The answer — "all yard vehicles run 3.9 bar in winter, except at the harbour and quarry sites" — names neither the unit nor the site, so it is not similar to the query and no similarity measure can rank it. Reaching it means knowing a default applies unless an exception says otherwise.
+- **A trained embedder refutes a prediction written into the generator.** It was expected to close `implied_by_paraphrase` and not the others; it does the opposite, recovering `implied_by_exclusion` (0.250 dev, 0.816 test) and leaving the paraphrase family near zero.
+
+Taken with relevance_v2's headroom sitting in multi-hop chains, the shape of
+what is missing is now specific: **the unclaimed headroom in this project is not
+waiting for a better similarity function.** It is waiting for something that
+reasons about what a memory entails.
+
+And a fourth confirmation of the fusion rule, with the roles reversed:
+`real_hybrid` (0.250) drags `real_vector` (0.516) back to `lexical`'s score on
+test. Every earlier case had a weak vector arm pulling down a strong lexical
+one; here a strong vector arm is pulled down by a weak lexical one. **Do not
+fuse a weak arm into a strong one**, whichever arm is weak.
+
 ### What P2 changed, which was mostly my own registration
 
 **[P2](research/results/p2-context-sufficiency.md) was abandoned on both splits

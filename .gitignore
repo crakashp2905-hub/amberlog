@@ -25,3 +25,8 @@ venv/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Third-party benchmark data, fetched on demand by experiments/external_bench.py.
+# Not committed: it is 8 MB of someone else's dataset under its own licence, and
+# the harness re-downloads it. A commit of it was reverted rather than kept.
+research/bench/external/scifact-raw/

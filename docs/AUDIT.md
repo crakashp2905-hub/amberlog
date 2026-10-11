@@ -152,6 +152,7 @@ Stated so they can be refused rather than discovered.
 | Multi-tenant deployment | **supported as authorisation, not as isolation** | Per-tenant authorisation on every read path, tested one test per path. One file is still one blast radius against a caller holding it; prefer one store per tenant where isolation must survive a compromised process. |
 | Untrusted recipients or senders | **unsupported** | No authentication on the federation path. |
 | Storing data requiring encryption at rest | **unsupported** | Plain SQLite file; quarantined memories still contain their content on disk. |
+| Application code holding the raw fabric | **not recommended** | `MemoryService` is the supported surface: it owns the fabric and hands out only credential-derived sessions that re-verify per call. The fabric itself trusts its caller completely and always will. |
 | Serving agents over a network | **unsupported for writes** | The HTTP surface is read-only by design and has one shared bearer token with no identity, roles, expiry, or revocation. |
 | Relying on value-ranked exposure | **not recommended** | Three live attempts lost to cheap baselines ([Phase A](../research/results/phase-a-real-agent-benchmark.md), [PA′](../research/results/phase-a-prime-attribution.md)), and the ranking has a [known defect](../research/decisions/2026-10-10-value-ranking-ignores-uncertainty.md). |
 

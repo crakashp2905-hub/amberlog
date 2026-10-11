@@ -118,6 +118,10 @@ class Credential:
     issued_at: int
     expires_at: int
     key_id: str = "k1"
+    credential_id: str = ""
+    """A unique id for *this* credential, so one can be revoked without
+    rotating the agent's key and invalidating every other credential it holds.
+    Signed, so it cannot be swapped for an unrevoked id."""
     signature: str = ""
 
     def body(self) -> dict[str, Any]:
@@ -129,6 +133,7 @@ class Credential:
             "issued_at": self.issued_at,
             "expires_at": self.expires_at,
             "key_id": self.key_id,
+            "credential_id": self.credential_id,
         }
 
     def signed_bytes(self) -> bytes:
@@ -166,6 +171,7 @@ class Credential:
                 issued_at=int(data["issued_at"]),
                 expires_at=int(data["expires_at"]),
                 key_id=str(data.get("key_id", "k1")),
+                credential_id=str(data.get("credential_id", "")),
                 signature=str(data.get("signature", "")),
             )
         except (KeyError, TypeError, ValueError) as exc:
@@ -191,6 +197,8 @@ class PrincipalRegistry:
     def __init__(self) -> None:
         self._agents: dict[str, _Registration] = {}
         self._tenants: set[str] = {DEFAULT_TENANT}
+        self._revoked: set[str] = set()
+        self._revoked_agents: set[str] = set()
 
     # --- configuration ---------------------------------------------------
 
@@ -271,8 +279,57 @@ class PrincipalRegistry:
             issued_at=now,
             expires_at=now + ttl_seconds,
             key_id=registration.key_id,
+            credential_id="cr_" + new_ulid(),
         )
         return credential.sign(registration.key)
+
+    # --- revocation ------------------------------------------------------
+
+    def revoke(self, credential: "Credential | str") -> bool:
+        """Revoke one credential by id, effective immediately.
+
+        Needed because a credential is a bearer token with a lifetime: without
+        this the only remedy for a leak was rotating the agent's key, which
+        invalidates every *other* credential that agent holds and takes the
+        whole agent offline to deal with one leaked token.
+
+        In-memory, and that is a real limitation stated rather than hidden: the
+        list does not survive a restart and is not shared between processes.
+        Short lifetimes remain the primary control; this is the fast remedy
+        within one process's lifetime. A deployment that needs durable
+        revocation should keep the list where its other session state lives.
+        """
+        credential_id = (
+            credential if isinstance(credential, str) else credential.credential_id
+        )
+        if not credential_id:
+            raise IdentityError(
+                "this credential has no id and cannot be revoked individually; "
+                "rotate the agent's key instead"
+            )
+        already = credential_id in self._revoked
+        self._revoked.add(credential_id)
+        return not already
+
+    def revoke_agent(self, agent_id: str) -> None:
+        """Revoke every credential this agent holds, present and future.
+
+        The blunt instrument, for a compromised agent rather than a leaked
+        token. Distinct from removing the registration: the agent stays known,
+        so its past actions remain attributable and a later `register` can
+        bring it back deliberately.
+        """
+        self._revoked_agents.add(agent_id)
+
+    def reinstate_agent(self, agent_id: str) -> None:
+        self._revoked_agents.discard(agent_id)
+
+    def is_revoked(self, credential: "Credential") -> bool:
+        return (
+            credential.agent_id in self._revoked_agents
+            or bool(credential.credential_id)
+            and credential.credential_id in self._revoked
+        )
 
     def verify(self, credential: Credential, now: int) -> Principal:
         """Establish a principal, or raise.
@@ -295,6 +352,13 @@ class PrincipalRegistry:
         if credential.is_expired(now):
             raise IdentityError(
                 f"{credential.agent_id}: credential expired at {credential.expires_at}"
+            )
+        # After the signature, so a revocation check never runs on an
+        # unverified id — and before the tenant and role checks, because a
+        # revoked credential should not be told *why else* it would have failed.
+        if self.is_revoked(credential):
+            raise IdentityError(
+                f"{credential.agent_id}: credential has been revoked"
             )
         if credential.tenant_id != registration.tenant_id:
             # Authentic but wrong: a validly signed credential naming another

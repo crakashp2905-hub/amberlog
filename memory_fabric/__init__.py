@@ -74,12 +74,15 @@ from .model import (
     WithdrawalBasis,
 )
 from .projections import Episode, Projection
+from .service import MemoryService, Session
 from .session import AgentSession, SessionClosed
 from .vectors import Embedder, HashingEmbedder, VectorIndex
 
 __version__ = "0.6.0"
 
 __all__ = [
+    "Session",
+    "MemoryService",
     "new_tenant_id",
     "ROLE_AUDITOR",
     "ROLE_OPERATOR",

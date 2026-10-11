@@ -20,7 +20,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**752 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**774 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including
@@ -268,14 +268,21 @@ fabric.share(mid, "team")                          # default-deny; returns a rea
 ## One store, several customers
 
 ```python
-fabric.principals.register("agent-acme", key=ACME_KEY, tenant_id="tn_acme")
-acme = fabric.as_principal(credential)      # verified: signed, unexpired, registered
+service = MemoryService(path="memory.db")            # owns the fabric; does not expose it
+service.register_agent("acme-bot", key=ACME_KEY, tenant_id="tn_acme")
+
+acme = service.session(service.issue("acme-bot"))    # verified: signed, unexpired, not revoked
 acme.remember("valve 7 is upstream of the pump")
-acme.retrieve("valve")                      # cannot be asked to read outside tn_acme
+acme.retrieve("valve")                               # cannot be asked to read outside tn_acme
+
+service.revoke(acme.credential)                      # effective on the very next call
 ```
 
 The methods on that handle take no `tenant_id`, so there is no call site at
-which someone can omit it. The filter sits **before the index is queried** and
+which someone can omit it. A session holds the *credential* rather than a
+verified principal and re-checks it on every operation — otherwise a credential
+revoked at 10:00 would still be acting at 11:00 through a handle minted at
+09:00. The filter sits **before the index is queried** and
 the enforcement check refuses **before resolving the lifecycle**, so a
 cross-tenant refusal says only "not yours" — not the version, not that the
 memory was withdrawn on weak evidence, each of which is a true statement about

@@ -50,13 +50,26 @@ class LexicalIndex:
 
     def __init__(self) -> None:
         self._terms: dict[str, frozenset[str]] = {}
+        # IDF depends on the corpus and not on the query, so it is computed
+        # once and invalidated on write. It used to be recomputed inside every
+        # `search` — a full scan of every document and all its terms, per
+        # query, O(corpus x queries).
+        #
+        # Measured: 27 ms/query uncached against 9.6 ms cached over 5,000
+        # documents, so **3x**, or 8 seconds against 3 for SciFact's 300
+        # queries. Worth having and *not* what made the first external run
+        # slow — I guessed that it was and the measurement said otherwise. The
+        # cost is the dense vector scan; see `VectorIndex.search`.
+        self._idf_cache: dict[str, float] | None = None
 
     def add(self, key: str, text: str) -> str:
         self._terms[key] = frozenset(self._tokens(text))
+        self._idf_cache = None
         return key
 
     def remove(self, key: str) -> None:
-        self._terms.pop(key, None)
+        if self._terms.pop(key, None) is not None:
+            self._idf_cache = None
 
     def __len__(self) -> int:
         return len(self._terms)
@@ -66,15 +79,18 @@ class LexicalIndex:
         return [t for t in _TOKEN.findall(text.lower()) if t not in _STOPWORDS]
 
     def _idf(self) -> dict[str, float]:
+        if self._idf_cache is not None:
+            return self._idf_cache
         total = len(self._terms)
         counts: dict[str, int] = {}
         for terms in self._terms.values():
             for term in terms:
                 counts[term] = counts.get(term, 0) + 1
-        return {
+        self._idf_cache = {
             term: math.log((total + 1) / (count + 0.5))
             for term, count in counts.items()
         }
+        return self._idf_cache
 
     def search(
         self,
@@ -181,6 +197,24 @@ class VectorIndex:
 
     Fine to thousands of memories, which is the P1 target. The upgrade path
     (pgvector, Qdrant) is behind this same interface (ARCHITECTURE.md section 4).
+
+    **The dimension matters more than the count, and the measurement that
+    retired distribution was taken at the wrong dimension.** P9 declined a
+    distributed backend on measurement — 4.39 ms per retrieval at 2,000
+    memories — with the 256-dim hashing embedder and its sparse-query shortcut.
+    A real 768-dim embedder produces *dense* queries, so that shortcut never
+    fires and every query is a full dense dot product:
+
+    | | 2,000 docs | 5,183 docs |
+    |---|---|---|
+    | hashed, 256-dim, sparse query | ~4 ms | — |
+    | trained, 768-dim, dense query | **210 ms** | **544 ms** |
+
+    That is ~50x at the same corpus size, and SciFact is the reason to want the
+    trained embedder. So P9's conclusion holds for the embedder it was measured
+    with and **does not transfer** to the one the evidence now recommends.
+    Re-measuring it is the open item; this docstring is not the place to
+    pre-judge it (AGENTS.md principle 9).
 
     Two optimisations, because a linear scan in pure Python is where all the
     time goes: vectors are normalised once on insert rather than on every

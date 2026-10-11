@@ -143,6 +143,43 @@ that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
 
+### What P1 changed
+
+**[P1](research/results/p1-evidence-chain-reconstruction.md) answers the
+question the previous three experiments located and missed its own bar doing
+it.** `MemoryFabric.reconstruct()` searches for a connected set of currently
+valid memories that jointly cover a query, rather than ranking candidates
+individually.
+
+Registered verdict: **NOT SUPPORTED, 33% of headroom against 40%, identical on
+both splits.** `multi_hop_3` passes on its own at 0.667 sufficiency against
+every baseline's 0.000; `multi_hop_4` scores 0.000; the registration pooled the
+two families, so 0.333 is the number.
+
+What it does, on a real case: it recovers the memory *"chiller-1 was re-fitted
+with the standard axle set in March"* — which contains **no query term at
+all** — from **rank 462 of ~486**, labels it `DEPENDENCY_REQUIRED`, and reports
+it as necessary by leave-one-out. That reason code had sat in the relevance
+contract with no producer anywhere in the codebase since R0.
+
+| | dev | test |
+|---|---|---|
+| nDCG@5, `lexical` → `chain` | 0.654 → **0.873** | 0.549 → **0.743** |
+| precision@5 | 0.267 → **0.778** | 0.242 → **0.586** |
+| families regressing | **0** | **0** |
+| search latency | **13 ms** (vs lexical's 10) | 16 ms |
+
+Three things it does not do, all measured:
+
+- **`multi_hop_4` fails for an instructive reason.** Its missing memory says *"add 0.35 bar as a salt-corrosion margin"*: it supplies no query term and links nothing, so a chain that is already complete and connected has no reason to want it. It **modifies** the answer. The mechanism solves distributed evidence needing a connector and not evidence that qualifies a conclusion — and `implied_by_default`, still 0.000 for every arm, is the same gap from another angle.
+- **Abstention is still unsolved**: 1 of 9 dev cases, 0 of 9 on test, and it reports `complete` on `unanswerable` cases because token coverage can be completed from memories that are not about the question.
+- **It is not a default.** `reconstruct` is opt-in, beside `retrieve`, because a mechanism that misses its registered bar does not become the default and chain reconstruction is a different operation from ranking.
+
+A disclosure is on the record in §4 of the result: diagnosing `multi_hop_4` I
+inspected a **frozen-split** case and found a second failure mode that does not
+appear on dev. The plausible fix would therefore be tuned on the frozen split,
+so it has not been made.
+
 ### What facet_v1 changed
 
 relevance_v2 recorded a defect in its own hardest family: `facet_trap` made

@@ -25,6 +25,7 @@ from .exposure import Candidate, ExposurePolicy, build_policy
 from .governance.firewall import Firewall, FirewallRequest, FirewallRuling
 from .governance.retention import RetentionDecision, RetentionPolicy
 from .ids import new_ulid
+from . import chains
 from .lineage import LineageGraph, LineageView
 import json
 from datetime import datetime, timezone
@@ -1570,6 +1571,138 @@ class MemoryFabric:
 
         self._emit(*emitted)
         return result
+
+    def reconstruct(
+        self,
+        agent_id: str,
+        query: str,
+        k: int = chains.MAX_STEPS,
+        episode_id: str | None = None,
+        tenant_id: str | None = None,
+        as_of: int | None = None,
+        include_contested: bool = False,
+        max_steps: int = chains.MAX_STEPS,
+        beam: int = chains.BEAM,
+        node_budget: int = chains.NODE_BUDGET,
+    ) -> "chains.EvidenceChain":
+        """Reconstruct a connected chain of **currently valid** evidence.
+
+        For the question `retrieve` cannot answer: one where no single memory
+        matches, because the answer is distributed across several and the
+        memory in the middle shares no word with the query.
+
+        Measured need, not a speculative feature. `multi_hop_4` sufficiency is
+        **0.000** for every arm that ranks candidates independently, against an
+        oracle's 1.000, and a coverage-greedy selector scored 0.000 too because
+        a connector's marginal query-term coverage is zero
+        (`research/results/p2-context-sufficiency.md`). Premise promotion lifts
+        the same family from 0.330 to 0.519 nDCG and cannot start from a query
+        that matches nothing, because it promotes a parent only once the child
+        has already ranked.
+
+        **The candidate set is the eligible set, not the search results.** A
+        connector scores zero on the index, so a candidate list taken from
+        `_search` would not contain the one memory this method exists to find —
+        the defect that made an earlier experiment's own oracle score 0.000 on
+        both chain families. Ranking supplies the order; eligibility supplies
+        the pool.
+
+        **Validity is by construction.** The pool is what `_eligible_ids` and
+        `_applicable_at` produce, so a retracted memory, a contested descendant
+        of one, a wrong-tenant memory, an unauthorised one and a memory outside
+        its validity interval are never nodes in the graph. Same argument
+        `_eligible_ids` makes for itself: a memory excluded before the search
+        cannot be reached by a bug in the search.
+
+        An **incomplete** chain is a real answer rather than a failure. It names
+        the query terms nothing could supply, which is the shape of "the corpus
+        does not join up"; `complete` stays False so a caller cannot mistake one
+        for the other, and deciding whether that means abstain is the caller's.
+
+        Every step carries why it is there and a leave-one-out necessity
+        verdict — see `chains.EvidenceChain.why`.
+        """
+        eligible = self._eligible_ids(
+            include_contested=include_contested, tenant_id=tenant_id
+        )
+        eligible = self._applicable_at(eligible, as_of)
+        if not eligible:
+            return chains.EvidenceChain()
+
+        # Ranked first, then everything else eligible in a stable order. The
+        # tail is where connectors live.
+        scored = self._search(query, len(eligible), eligible, 0.0)
+        relevance = {memory_id: score for memory_id, score in scored}
+        ordered = [memory_id for memory_id, _ in scored]
+        seen = set(ordered)
+        ordered += sorted(memory_id for memory_id in eligible if memory_id not in seen)
+
+        # `chains.tokens`, not the lexical index's: identifiers must stay
+        # whole or the graph's edges stop meaning "about the same thing".
+        terms = {
+            memory_id: chains.tokens(self.state.memories[memory_id].content)
+            for memory_id in ordered
+        }
+        # Query terms some candidate actually contains. A term nothing supplies
+        # cannot be covered, and demanding it would make every chain
+        # incomplete -- the defect that once abstained on 79% of answerable
+        # cases.
+        present: set[str] = set()
+        for tokens in terms.values():
+            present.update(tokens)
+        need = [t for t in chains.tokens(query) if t in present]
+
+        chain = chains.search(
+            ordered, terms, need,
+            max_steps=max_steps, beam=beam, node_budget=node_budget,
+            relevance=relevance,
+        )
+        if k is not None and len(chain.steps) > k:
+            # Truncating can only break a chain, so `connected` is
+            # recomputed rather than carried over -- a k that cuts the
+            # connector out must not leave the result claiming to hold
+            # together.
+            kept = chain.steps[:k]
+            chain = chains.EvidenceChain(
+                steps=kept, covered=chain.covered,
+                missing=chain.missing, nodes_explored=chain.nodes_explored,
+                budget_exhausted=chain.budget_exhausted,
+                connected=chains._connected(
+                    [s.memory_id for s in kept],
+                    {s.memory_id: frozenset(terms[s.memory_id]) for s in kept},
+                    frozenset(need),
+                ),
+            )
+
+        now = self.now()
+        emitted: list[ev.Event] = [
+            ev.retrieval_performed(
+                ts=now, agent_id=agent_id, episode_id=episode_id, query=query,
+                candidates=[
+                    (step.memory_id, self.state.memories[step.memory_id].version,
+                     relevance.get(step.memory_id, 0.0))
+                    for step in chain.steps
+                ],
+                context=None,
+            )
+        ]
+        for step in chain.steps:
+            emitted.append(ev.exposure_decided(
+                ts=now, agent_id=agent_id, episode_id=episode_id,
+                memory_id=step.memory_id,
+                version=self.state.memories[step.memory_id].version,
+                exposed=True,
+                # Deterministic search, so the propensity is 1.0 and is
+                # recorded rather than omitted. Principle 4 is unconditional:
+                # without a logged propensity this exposure cannot carry credit
+                # later, and "it was deterministic" is a value, not an excuse
+                # to leave the field empty.
+                propensity=1.0,
+                policy_id=f"chain/beam={beam},steps={max_steps}",
+                step=0,
+            ))
+        self._emit(*emitted)
+        return chain
 
     def _eligible_ids(
         self, include_contested: bool = False, tenant_id: str | None = None

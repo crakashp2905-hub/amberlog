@@ -46,6 +46,13 @@ from memory_fabric.enforcement import RiskLevel, Verdict
 
 ENFORCED = {
     "retrieve": "filters on lifecycle and tenant before the index is consulted",
+    "reconstruct": (
+        "a connected chain of evidence; narrows through the same chokepoint as "
+        "`retrieve` BEFORE the search runs, so a retracted memory, a contested "
+        "descendant of one, a wrong tenant and an expired validity interval are "
+        "never nodes in the graph. Filtering a chain afterwards would put the "
+        "boundary downstream of a search"
+    ),
     "use": "the single enforced read; returns no memory when the decision refuses",
     "verify_before_action": "re-checks a token immediately before a consequential act",
 }
@@ -141,10 +148,25 @@ class TheSurfaceIsFullyClassified(unittest.TestCase):
                 counts[name] = counts.get(name, 0) + 1
         self.assertEqual([n for n, c in counts.items() if c > 1], [])
 
-    def test_only_three_members_return_content_through_enforcement(self) -> None:
-        """Pinned so a fourth cannot appear without this test being updated and
-        read."""
-        self.assertEqual(set(ENFORCED), {"retrieve", "use", "verify_before_action"})
+    def test_only_four_members_return_content_through_enforcement(self) -> None:
+        """Pinned so a fifth cannot appear without this test being updated and
+        read.
+
+        `reconstruct` is the fourth, added 2026-10-12, and updating this
+        assertion is the deliberate act the pin exists to force. Two things
+        about it are worth stating here rather than in a commit message:
+
+        * It narrows through `_eligible_ids` and `_applicable_at` **before** the
+          search runs, so the enforcement is upstream of the code most likely
+          to be wrong -- the same argument `retrieve` makes.
+        * It returns **less** than `retrieve` does: an `EvidenceChain` carries
+          memory ids, reason codes, and the query/link terms a step supplied.
+          No `Memory` object and no content. The terms it does expose come only
+          from memories the gates already allowed.
+        """
+        self.assertEqual(
+            set(ENFORCED),
+            {"retrieve", "reconstruct", "use", "verify_before_action"})
 
 
 class TheAgentSurfacesCannotReachTheUnenforcedRead(unittest.TestCase):

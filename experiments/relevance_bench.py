@@ -417,6 +417,70 @@ def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
         fabric.close()
 
 
+def _build_fabric(case: Mapping[str, Any], retrieval: str | None = None):
+    """Write a case into a real store, in dependency order, quarantining last.
+
+    Factored out of `arm_current` because `arm_chain` needs exactly the same
+    store and the two must not drift. Both halves of "in dependency order" and
+    "quarantining last" were defects before they were rules: sorting by
+    `len(parents)` dropped the edges of a two-level chain, and quarantining
+    inside the loop meant a retracted parent had no children yet to propagate
+    to, so the store was left in a state the product never produces.
+    """
+    from memory_fabric import MemoryFabric
+
+    fabric = MemoryFabric(
+        ":memory:", auto_activate=True, encrypt_content=False,
+        **({"retrieval": retrieval} if retrieval else {}),
+    )
+    local: dict[str, str] = {}
+    ids: dict[str, str] = {}
+    to_quarantine: list[str] = []
+    for memory in insertion_order(case["corpus"]):
+        parents = [
+            (local[p[0]], 1) for p in (memory.get("parents") or []) if p[0] in local
+        ]
+        stored = fabric.remember(
+            agent_id=case["task"]["agent_id"],
+            content=memory["content"],
+            tenant_id=memory.get("tenant_id", "tn_default"),
+            parents=parents,
+            method="consolidated" if parents else "observed",
+            valid_from=memory.get("valid_from"),
+            valid_to=memory.get("valid_to"),
+        )
+        local[memory["id"]] = stored
+        ids[stored] = memory["id"]
+        if memory["lifecycle_state"] in BLOCKED_LIFECYCLE:
+            to_quarantine.append(stored)
+    for stored in to_quarantine:
+        fabric.quarantine(stored, reason="benchmark fixture", actor="bench",
+                          basis="contradicted")
+    return fabric, ids
+
+
+def arm_chain(case: Mapping[str, Any], k: int) -> list[str]:
+    """`MemoryFabric.reconstruct()` — bounded search for a connected chain.
+
+    Scored through the same harness as every other arm, so its nDCG and
+    sufficiency are comparable rather than computed by its own experiment.
+    Necessity, `nodes_explored` and latency live in `experiments/p1_chains.py`,
+    which is the only place that reads them.
+    """
+    fabric, ids = _build_fabric(case, "lexical")
+    try:
+        chain = fabric.reconstruct(
+            agent_id=case["task"]["agent_id"],
+            query=query_text(case),
+            k=k,
+            tenant_id=case["task"].get("tenant_id", "tn_default"),
+            as_of=_as_of(case),
+        )
+        return [ids[step.memory_id] for step in chain.steps]
+    finally:
+        fabric.close()
+
+
 def arm_oracle(case: Mapping[str, Any], k: int) -> list[str]:
     """The labelled relevant set, critical first.
 
@@ -483,6 +547,7 @@ ARMS: dict[str, Callable[[Mapping[str, Any], int], list[str]]] = {
     ),
     "real_vector": arm_real_vector,
     "real_hybrid": arm_real_hybrid,
+    "chain": arm_chain,
     "store_temporal": None,  # filled below: needs the per-case event time
     # Lexical *with* the mechanisms: the configuration the lexical/hybrid
     # question never tested. Grouping and promotion are orthogonal to which
@@ -778,6 +843,11 @@ class ArmReport:
                 ) if answerable else None,
                 "violations": len([r for r in rows if r.exposed_forbidden]),
                 "abstained": len([r for r in rows if r.abstained]),
+                # Sufficiency per family, because a mechanism aimed at one
+                # family is judged there and its no-regression is judged
+                # everywhere else. The aggregate hides both.
+                "sufficient": _ratio([
+                    r.sufficient for r in rows if r.sufficient is not None]),
             }
         return out
 
@@ -932,13 +1002,16 @@ def to_markdown(result: Mapping[str, Any]) -> str:
     ]
     for name in result["arms"]:
         lines += [f"### `{name}`", "",
-                  "| family | cases | nDCG | critical recall | violations | abstained |",
-                  "|---|---|---|---|---|---|"]
+                  "| family | cases | nDCG | critical recall | sufficient | "
+                  "violations | abstained |",
+                  "|---|---|---|---|---|---|---|"]
         for family, row in result["by_family"][name].items():
             ndcg = "—" if row["ndcg"] is None else f"{row['ndcg']:.3f}"
             crit = "—" if row["critical_recall"] is None else f"{row['critical_recall']:.3f}"
+            suff = ("—" if row.get("sufficient") is None
+                    else f"{row['sufficient']:.3f}")
             lines.append(
-                f"| {family} | {row['cases']} | {ndcg} | {crit} | "
+                f"| {family} | {row['cases']} | {ndcg} | {crit} | {suff} | "
                 f"{row['violations']} | {row['abstained']} |"
             )
         lines.append("")

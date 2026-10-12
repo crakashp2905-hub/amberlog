@@ -33,6 +33,43 @@ _PATTERNS: list[tuple[str, str, Pattern[str]]] = [
     ("anthropic_key", "high", re.compile(r"\bsk-ant-[A-Za-z0-9_-]{16,}\b")),
     ("openai_key", "high", re.compile(r"\bsk-[A-Za-z0-9]{32,}\b")),
     ("jwt", "high", re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b")),
+    # --- added 2026-10-13 -------------------------------------------------
+    #
+    # Thirteen patterns covered the credential classes this project happened to
+    # think of. These are the ones plainly missing, chosen for a shape that
+    # cannot plausibly occur by accident -- a fixed vendor prefix and a fixed
+    # length -- so each adds coverage without adding false positives. Classes
+    # needing a loose shape (an AWS *secret* key is 40 base64 characters with
+    # no prefix) are deliberately left to the entropy check, because a pattern
+    # for them would fire on every hash and ULID in a store.
+    #
+    # The count is not the point. `SECURITY.md` records the real weakness as
+    # **no adversarial testing**, and more patterns do not address it; the test
+    # corpus in `tests/test_sensitive_patterns.py` does, with a positive and a
+    # near-miss negative for every class including the original thirteen.
+    ("google_api_key", "high", re.compile(r"\bAIza[0-9A-Za-z_-]{35}\b")),
+    ("google_oauth_secret", "high", re.compile(r"\bGOCSPX-[A-Za-z0-9_-]{28}\b")),
+    ("stripe_key", "high", re.compile(r"\b[srp]k_(?:live|test)_[0-9A-Za-z]{20,}\b")),
+    ("gitlab_token", "high", re.compile(r"\bglpat-[0-9A-Za-z_-]{20}\b")),
+    ("huggingface_token", "high", re.compile(r"\bhf_[A-Za-z0-9]{34,}\b")),
+    ("npm_token", "high", re.compile(r"\bnpm_[A-Za-z0-9]{36}\b")),
+    ("sendgrid_key", "high", re.compile(r"\bSG\.[A-Za-z0-9_-]{20,}\.[A-Za-z0-9_-]{40,}\b")),
+    ("twilio_sid", "high", re.compile(r"\b(?:AC|SK)[0-9a-f]{32}\b")),
+    ("slack_webhook", "high",
+     re.compile(r"https://hooks\.slack\.com/services/[A-Za-z0-9/_-]{20,}")),
+    # A connection string carries the password in the authority, so the whole
+    # URI is the secret. Narrowed to known schemes: a generic `user:pass@host`
+    # matches ordinary prose about email addresses.
+    ("connection_string", "high", re.compile(
+        r"\b(?:mongodb(?:\+srv)?|postgres(?:ql)?|mysql|redis|amqp)://"
+        r"[^\s:@/]+:[^\s:@/]+@\S+")),
+    ("azure_storage_key", "high",
+     re.compile(r"(?i)\bAccountKey\s*=\s*[A-Za-z0-9+/=]{40,}")),
+    # Identity numbers with a checkable shape. `iban` is deliberately bounded
+    # at 15 characters so it does not swallow arbitrary alphanumeric runs.
+    ("iban", "high", re.compile(r"\b[A-Z]{2}\d{2}[A-Z0-9]{11,28}\b")),
+    ("ni_number_uk", "high",
+     re.compile(r"\b[A-CEGHJ-PR-TW-Z]{2}\d{6}[A-D]\b")),
     (
         "password_assignment",
         "high",

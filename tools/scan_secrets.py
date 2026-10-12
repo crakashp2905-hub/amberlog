@@ -59,6 +59,36 @@ ALLOWED_LINES = {
     ("tests/test_governance.py", "ssn_us"),
     ("tests/test_governance.py", "credit_card"),
 
+    # The adversarial corpus for the detector. Every value in it is invented,
+    # shaped like a credential and not one -- which is the whole point of the
+    # file: `SECURITY.md` records that the screen had never been tested
+    # adversarially, and a corpus that tests it has to contain the shapes it
+    # looks for. Allow-listed per kind rather than wholesale, so a *new* class
+    # appearing there still has to be declared here.
+    ("tests/test_sensitive_patterns.py", "private_key"),
+    ("tests/test_sensitive_patterns.py", "aws_access_key"),
+    ("tests/test_sensitive_patterns.py", "github_token"),
+    ("tests/test_sensitive_patterns.py", "slack_token"),
+    ("tests/test_sensitive_patterns.py", "anthropic_key"),
+    ("tests/test_sensitive_patterns.py", "openai_key"),
+    ("tests/test_sensitive_patterns.py", "jwt"),
+    ("tests/test_sensitive_patterns.py", "google_api_key"),
+    ("tests/test_sensitive_patterns.py", "google_oauth_secret"),
+    ("tests/test_sensitive_patterns.py", "stripe_key"),
+    ("tests/test_sensitive_patterns.py", "gitlab_token"),
+    ("tests/test_sensitive_patterns.py", "huggingface_token"),
+    ("tests/test_sensitive_patterns.py", "npm_token"),
+    ("tests/test_sensitive_patterns.py", "sendgrid_key"),
+    ("tests/test_sensitive_patterns.py", "twilio_sid"),
+    ("tests/test_sensitive_patterns.py", "slack_webhook"),
+    ("tests/test_sensitive_patterns.py", "connection_string"),
+    ("tests/test_sensitive_patterns.py", "azure_storage_key"),
+    ("tests/test_sensitive_patterns.py", "iban"),
+    ("tests/test_sensitive_patterns.py", "ni_number_uk"),
+    ("tests/test_sensitive_patterns.py", "password_assignment"),
+    ("tests/test_sensitive_patterns.py", "credit_card"),
+    ("tests/test_sensitive_patterns.py", "ssn_us"),
+
     # This file names the fixtures it allows, so it matches its own patterns.
     ("tools/scan_secrets.py", "password_assignment"),
     ("tools/scan_secrets.py", "credit_card"),

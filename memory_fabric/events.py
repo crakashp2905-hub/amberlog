@@ -28,6 +28,7 @@ class EventType:
     CONFLICT_DETECTED = "ConflictDetected"
     EXPERIMENT_RUN = "ExperimentRun"
     DUPLICATE_SUPPRESSED = "MemoryDuplicateSuppressed"
+    COPY_RECOGNISED = "MemoryCopyRecognised"
     STORE_IDENTIFIED = "StoreIdentified"
     RETRACTION_REQUESTED = "RetractionRequested"
     RETRACTION_APPLIED = "RetractionApplied"
@@ -549,6 +550,38 @@ def conflict_detected(
             "detector_id": detector_id,
             "confidence": confidence,
             "hypothesis_set": hypothesis_set,
+        },
+    )
+
+
+def copy_recognised(
+    ts: int,
+    agent_id: str,
+    episode_id: str | None,
+    memory_id: str,
+    original_memory_id: str,
+    containment: float,
+) -> Event:
+    """A newly written memory is a re-ingestion of one already held.
+
+    Recorded rather than inferred, and recorded even though the memory is still
+    stored: refusing the write would lose the fact that someone re-ingested the
+    document, and the event log is the source of truth about what happened
+    (principle 3). What the copy does *not* get is an independent source root.
+
+    `containment` is the measured share of the shorter side's content terms
+    present in the other. Logged so a later change to the matching rule cannot
+    silently reinterpret past decisions.
+    """
+    return Event(
+        type=EventType.COPY_RECOGNISED,
+        ts=ts,
+        agent_id=agent_id,
+        episode_id=episode_id,
+        payload={
+            "memory_id": memory_id,
+            "original_memory_id": original_memory_id,
+            "containment": containment,
         },
     )
 

@@ -143,6 +143,32 @@ that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
 
+### What copy recognition changed
+
+P3's residual was one family and it is now **zero on both splits**: the
+product's default matches the oracle at 0.000 stale citations, 0.000
+unnecessary invalidation and 1.000 sufficiency, while `blanket_invalidation`
+still pays 0.500 unnecessary invalidation and half its sufficiency. P3's
+registered comparison is abandoned by its own clause again — but because the
+headroom is gone, not because the fixture could not pose the question
+([result](research/results/p2b-copy-recognition.md)).
+
+A withdrawn document re-ingested under its own id is now recognised at **write**
+time: it shares its original's source root, arrives `contested` rather than
+`active`, and is reached by the original's withdrawal whichever of the two was
+stored first. Schema 0.8.0, additive.
+
+Three things worth carrying forward:
+
+- **Measurement chose the rule against my first design.** Jaccard overlap scores a real re-ingestion at 0.722 and the worst of **152,640** near-miss pairs at 0.800. The orders cross, so a Jaccard threshold would have put two memories about different sites under one source root and called it deduplication. The shipped rule is subset containment, which has nothing to tune.
+- **A copy is deliberately not a parent edge.** `_group_by_root` spares derivation-related memories, so a copy recorded as a child would have been exempted from the grouping meant to collapse it.
+- **`derive` had a pre-existing hole.** Retraction reached conclusions drawn before a withdrawal and not after: deriving from an already-quarantined premise produced an `active` memory. Fixed with the recomputation `quarantine` already runs, applied at write time.
+
+One published number moved. Copy recognition fires once in all of
+`relevance_v1` — on two statements of one yard speed limit — and `store_all`
+falls 0.0034 there. A test asserting an ordering across that 0.003 gap was
+removed rather than the mechanism, and the reasoning is in §5 of the result.
+
 ### What P1 changed
 
 **[P1](research/results/p1-evidence-chain-reconstruction.md) answers the

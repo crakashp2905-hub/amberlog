@@ -149,7 +149,11 @@ class TestSchemaMatchesTheCode(unittest.TestCase):
         """They answer different questions — "can you read my log?" versus "can
         you talk to me?" — and conflating them would force a wire break on every
         additive event change."""
-        self.assertEqual(SCHEMA_VERSION, "0.7.0")
+        # Pinned, and bumped deliberately: 0.8.0 added copy recognition,
+        # which is an additive event type and two projection maps. The protocol
+        # version did not move, which is the point this test makes -- an
+        # additive log change must not force a wire break.
+        self.assertEqual(SCHEMA_VERSION, "0.8.0")
         self.assertEqual(
             load("retraction-v1.schema.json")["properties"]["protocol_version"]["const"], 1
         )

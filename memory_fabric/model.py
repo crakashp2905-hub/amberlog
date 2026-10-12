@@ -15,7 +15,7 @@ from typing import Any, Mapping
 # `identity` imports only `ids`, so this direction carries no cycle.
 from .identity import DEFAULT_TENANT
 
-SCHEMA_VERSION = "0.7.0"
+SCHEMA_VERSION = "0.8.0"
 
 
 class MemoryType(str, Enum):
@@ -133,6 +133,17 @@ EXPOSABLE_STATES = frozenset({LifecycleState.ACTIVE})
 EXPLORATORY_STATES = frozenset({LifecycleState.CONTESTED})
 # Never exposable, whatever the policy.
 BLOCKED_STATES = frozenset(
+    {LifecycleState.QUARANTINED, LifecycleState.DEPRECATED, LifecycleState.DELETED}
+)
+# States that record a decision to take a memory out of circulation.
+#
+# Distinct from BLOCKED_STATES, which happens to hold the same members today
+# and answers a different question: BLOCKED is "may this be exposed", this is
+# "was this withdrawn". Re-ingesting a withdrawn document must not restore it,
+# and that test is about the decision rather than about exposability -- a
+# future non-exposable state that is not a withdrawal would belong in one and
+# not the other.
+WITHDRAWN_STATES = frozenset(
     {LifecycleState.QUARANTINED, LifecycleState.DEPRECATED, LifecycleState.DELETED}
 )
 

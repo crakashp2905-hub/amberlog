@@ -26,6 +26,7 @@ from .governance.firewall import Firewall, FirewallRequest, FirewallRuling
 from .governance.retention import RetentionDecision, RetentionPolicy
 from .ids import new_ulid
 from . import chains
+from . import duplicates
 from .lineage import LineageGraph, LineageView
 import json
 from datetime import datetime, timezone
@@ -72,6 +73,7 @@ from .model import (
     BLOCKED_STATES,
     EXPLORATORY_STATES,
     EXPOSABLE_STATES,
+    WITHDRAWN_STATES,
     FirewallDecision,
     LifecycleState,
     Memory,
@@ -179,7 +181,16 @@ class MemoryFabric:
         key_provider: "KeyProvider | None" = None,
         retrieval: str = "lexical",
         busy_timeout_ms: int = 5_000,
+        recognise_copies: bool = True,
     ) -> None:
+        # Default on, because the alternative is measured to be wrong rather
+        # than merely unmeasured: a withdrawn document re-ingested under its own
+        # id was **100% of the residual** in P3, counted as independent support
+        # by every rule tested, and carried a withdrawal that never reached its
+        # restatement. The cost is a linear scan of held content per write,
+        # which is why it is switchable for a store that ingests in bulk and
+        # would rather run the check as a batch job.
+        self.recognise_copies = recognise_copies
         self.log = EventLog(path, busy_timeout_ms=busy_timeout_ms)
         # Everything after opening the log can fail — a missing key store
         # makes every sealed memory unreadable and `KeyUnavailable`
@@ -958,9 +969,40 @@ class MemoryFabric:
         The lexicographically smallest root when there are several, so the
         grouping key is deterministic — an id that varied by walk order would
         make deduplication depend on insertion order.
+
+        **A recognised re-ingestion resolves to its original's root.** That is
+        the whole of the fix for the one case [P3](../research/results/p3-correction-propagation.md)
+        could not solve: a withdrawn document re-ingested under its own id was
+        two roots and two votes, because provenance correctly recorded two
+        ingestions and was correctly wrong about the evidence. Resolved here
+        rather than at write time, so the copy keeps its own identity, its own
+        provenance and its own place in the log, and only loses the claim to be
+        independent support.
         """
-        roots = self.lineage_graph.roots(memory_id)
-        return min(roots) if roots else memory_id
+        # Alternating resolution: follow a copy edge, then a lineage walk,
+        # until neither moves. The first version resolved copies only for the
+        # memory it was handed, so a conclusion *derived from a copy* still
+        # reported the copy as its root -- the lineage walk found the copy, and
+        # nothing resolved it onward to the original. Grouping then treated the
+        # conclusion as independent of everything under the original's root,
+        # which is the exact failure the copy relation exists to prevent, one
+        # level down.
+        seen: set[str] = set()
+        current = memory_id
+        while current not in seen:
+            seen.add(current)
+            original = self.state.copy_of.get(current)
+            if original is not None and original not in seen:
+                current = original
+                continue
+            roots = self.lineage_graph.roots(current)
+            if not roots:
+                return current
+            candidate = min(roots)
+            if candidate == current or candidate in seen:
+                return candidate
+            current = candidate
+        return current
 
     def _group_by_root(
         self, ranked: Sequence[tuple[str, float]], limit: int
@@ -1299,10 +1341,36 @@ class MemoryFabric:
                 )
                 return existing
 
+        # A re-ingestion of something already held, across agents and
+        # episodes. The exact-digest check above is scoped to one episode and
+        # one agent on purpose -- the same claim observed twice really is more
+        # evidence -- and it cannot see the case P3 measured: a document
+        # withdrawn as wrong, then re-ingested months later from a shared drive
+        # with a filing note appended, so its digest differs.
+        #
+        # Looked up *before* the write, and recorded after it, so the event
+        # names a memory that exists.
+        copy_of = None
+        if self.recognise_copies:
+            copy_of = duplicates.find_copy(
+                content,
+                {mid: m.content for mid, m in self.state.memories.items()},
+            )
+
         activate = self.auto_activate if auto_activate is None else auto_activate
         ruling = self.firewall.screen_ingest(content)
         if ruling.decision is FirewallDecision.QUARANTINE:
             lifecycle = LifecycleState.QUARANTINED
+        elif copy_of is not None and self.state.memories[
+                copy_of.memory_id].lifecycle_state in WITHDRAWN_STATES:
+            # Re-ingesting a withdrawn document does not restore it.
+            #
+            # CONTESTED rather than QUARANTINED: nobody has made a finding
+            # about *this* write, and the original's withdrawal may itself have
+            # been wrong. Contested is withheld from retrieval by default and
+            # stays visible to an operator, which is the honest state for "this
+            # arrived again and the reason it was withdrawn has not changed".
+            lifecycle = LifecycleState.CONTESTED
         elif activate:
             lifecycle = LifecycleState.ACTIVE
         else:
@@ -1342,6 +1410,30 @@ class MemoryFabric:
             content=self._seal_content(memory.content, memory.id, memory.version)
         )
         emitted = [ev.memory_created(ts=now, memory=sealed, episode_id=episode_id)]
+        if copy_of is not None:
+            # After the creation event, so the copy edge never names a memory
+            # the log has not yet introduced -- a replay applies these in order
+            # and a forward reference would leave `copy_of` pointing at nothing.
+            emitted.append(ev.copy_recognised(
+                ts=now, agent_id=agent_id, episode_id=episode_id,
+                memory_id=memory.id, original_memory_id=copy_of.memory_id,
+                containment=copy_of.score,
+            ))
+            if lifecycle is LifecycleState.CONTESTED:
+                emitted.append(ev.lifecycle_changed(
+                    ts=now, memory_id=memory.id,
+                    from_state=LifecycleState.CANDIDATE.value,
+                    to_state=LifecycleState.CONTESTED.value,
+                    reason=(f"re-ingestion of withdrawn {copy_of.memory_id}"),
+                    actor="copy-recognition",
+                    # A finding about the content, inherited: the original was
+                    # withdrawn for a reason that has not changed. Not
+                    # CO_OCCURRENCE, which Phase A measured as a harmful
+                    # withdrawal rule, and not UNSTATED, which would hide that
+                    # a reason exists.
+                    basis=self.state.withdrawal_basis.get(
+                        copy_of.memory_id, WithdrawalBasis.UNSTATED.value),
+                ))
         if ruling.decision is FirewallDecision.QUARANTINE:
             emitted.append(
                 ev.lifecycle_changed(
@@ -1448,7 +1540,7 @@ class MemoryFabric:
         for pid in parents:
             inherited.update(self._require(pid).context)
         inherited.update(dict(context or {}))
-        return self.remember(
+        derived = self.remember(
             agent_id=agent_id,
             content=content,
             type=type,
@@ -1457,6 +1549,44 @@ class MemoryFabric:
             method=method,
             tenant_id=tenant_id,
         )
+
+        # Check the support of what was just written.
+        #
+        # Retraction propagated to conclusions drawn *before* a withdrawal and
+        # not to ones drawn after: deriving from an already-quarantined premise
+        # produced an ACTIVE memory. The same two memories and the same
+        # finding, with opposite results depending on which arrived first --
+        # the same order-dependence the copy relation had, one layer up.
+        #
+        # This is the recomputation `quarantine` already runs, applied at write
+        # time, so there is no second rule about what counts as support. A
+        # derivation from independently-supported premises is unaffected: the
+        # verdict is about whether support survives, not about whether a
+        # premise is unusual.
+        if self.state.memories[derived].lifecycle_state is not LifecycleState.QUARANTINED:
+            verdict = self.justifications.recompute(derived)
+            if not verdict.still_justified:
+                self._emit(
+                    ev.support_recomputed(
+                        ts=self.now(),
+                        memory_id=verdict.memory_id,
+                        trigger_memory_id=derived,
+                        verdict=verdict.verdict,
+                        surviving=list(verdict.surviving),
+                        lost=list(verdict.lost),
+                        independent_count=verdict.independent_count,
+                        reason=verdict.reason,
+                        actor=agent_id,
+                    ),
+                    self._transition(
+                        derived,
+                        LifecycleState.CONTESTED,
+                        f"derived from premises that do not support it: "
+                        f"{verdict.reason}",
+                        agent_id,
+                    ),
+                )
+        return derived
 
     # --- retrieval -------------------------------------------------------
 
@@ -1903,8 +2033,103 @@ class MemoryFabric:
                     ),
                 )
                 contested.append(verdict.memory_id)
+
+            # Copies, which are not descendants and must not be treated as
+            # such. A re-ingestion is not *justified by* the original -- it is
+            # the same document -- so `justifications.recompute` has nothing to
+            # say about it and would leave it standing. Withdrawing a document
+            # withdraws every copy of it, transitively, and then the normal
+            # recomputation runs over whatever those copies support.
+            #
+            # Without this, withdrawal order decided the outcome: a copy
+            # written *after* the original was withdrawn came in contested,
+            # while one written before it stayed active. The same two memories
+            # and the same finding, with opposite results depending on which
+            # arrived first.
+            for copy_id in self._copy_closure(memory_id):
+                copy = self.state.memories.get(copy_id)
+                if copy is None or copy.lifecycle_state in (
+                    LifecycleState.QUARANTINED,
+                    LifecycleState.DELETED,
+                    LifecycleState.CONTESTED,
+                ):
+                    continue
+                self._emit(self._transition(
+                    copy_id,
+                    LifecycleState.CONTESTED,
+                    f"re-ingestion of {memory_id}, which was withdrawn: {reason}",
+                    actor,
+                    basis_value,
+                ))
+                contested.append(copy_id)
+                for node in sorted(
+                    self.lineage_graph.descendants(copy_id),
+                    key=lambda n: n.depth,
+                ):
+                    downstream = self.state.memories.get(node.memory_id)
+                    if downstream is None or downstream.lifecycle_state in (
+                        LifecycleState.QUARANTINED,
+                        LifecycleState.DELETED,
+                        LifecycleState.CONTESTED,
+                    ):
+                        continue
+                    verdict = self.justifications.recompute(node.memory_id)
+                    self._emit(ev.support_recomputed(
+                        ts=self.now(),
+                        memory_id=verdict.memory_id,
+                        trigger_memory_id=copy_id,
+                        verdict=verdict.verdict,
+                        surviving=list(verdict.surviving),
+                        lost=list(verdict.lost),
+                        independent_count=verdict.independent_count,
+                        reason=verdict.reason,
+                        actor=actor,
+                    ))
+                    if not verdict.still_justified:
+                        self._emit(self._transition(
+                            verdict.memory_id,
+                            LifecycleState.CONTESTED,
+                            f"support recomputed after copy {copy_id} was "
+                            f"contested: {verdict.reason}",
+                            actor,
+                        ))
+                        contested.append(verdict.memory_id)
         self._emit(*emitted)
         return contested
+
+    def _copy_closure(self, memory_id: str) -> list[str]:
+        """Every other memory that is the same document as this one.
+
+        **Symmetric**, which the first version was not. "These are the same
+        document" does not have a direction, but the recorded edge does: the
+        newer write points at the older one. So when a corpus arrives shuffled
+        and the copy happens to be stored *before* the original, the edge runs
+        copy -> original the other way round, and a walk that followed only
+        `copies` found nothing. Withdrawing the original then left the copy
+        standing -- the same ingestion order deciding the outcome that the
+        write-time check was added to remove, surviving one level down.
+
+        The relation is therefore walked as an undirected component over both
+        indexes. A copy of a copy is still the same document, so it is
+        transitive too. Ordered and cycle-guarded: the edges come from the log,
+        and a propagation walk is the wrong place to discover a malformed one.
+        """
+        out: list[str] = []
+        seen = {memory_id}
+        frontier = [memory_id]
+        while frontier:
+            current = frontier.pop()
+            neighbours = set(self.state.copies.get(current, ()))
+            original = self.state.copy_of.get(current)
+            if original is not None:
+                neighbours.add(original)
+            for other in sorted(neighbours):
+                if other in seen:
+                    continue
+                seen.add(other)
+                out.append(other)
+                frontier.append(other)
+        return out
 
     def release(self, memory_id: str, actor: str, reason: str = "reviewed and released") -> Memory:
         """Bring a quarantined memory back to candidate after human review."""

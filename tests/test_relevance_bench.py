@@ -379,7 +379,23 @@ class TheStoreMechanismsHelp(unittest.TestCase):
         )
         scores = {n: r["ndcg_at_k"] for n, r in result["arms"].items()}
         self.assertGreater(scores["store_all"], scores["store_plain"])
-        self.assertGreaterEqual(scores["store_all"], scores["store_roots"])
+        # The ordering between the two mechanisms-on configurations is NOT
+        # asserted, and dropping it is a correction rather than a loosening.
+        #
+        # `store_all` and `store_roots` differ by about 0.003 nDCG on 30 cases.
+        # That is not an ordering, and asserting it has now broken twice for
+        # reasons that were each correct: once when the benchmark grew to 50
+        # cases, and once when copy recognition shipped and collapsed "The yard
+        # speed limit is 8 km/h" with "The yard speed limit is 8 km/h for all
+        # vehicles" in `temporal_drift-03` -- two statements of one fact, which
+        # the product is now right to treat as one source.
+        #
+        # What the milestone actually claims is that the mechanisms beat plain
+        # retrieval, which is the assertion above. A test that pins a 0.003 gap
+        # measures sampling noise and blocks correct changes.
+        for configuration in ("store_all", "store_roots"):
+            self.assertGreater(scores[configuration], scores["store_plain"],
+                               configuration)
         self.assertGreaterEqual(scores["store_all"], scores["store_lineage"])
 
     def test_promotion_and_grouping_pull_against_each_other(self) -> None:

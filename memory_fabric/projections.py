@@ -91,6 +91,16 @@ class ProjectionState:
     # projection rather than a field on Memory because it is a property of the
     # decision, not of the memory, and a release leaves it readable.
     withdrawal_basis: dict[str, str] = field(default_factory=dict)
+    copy_of: dict[str, str] = field(default_factory=dict)
+    """Memory id -> the memory it re-ingests.
+
+    Deliberately not a parent edge. `_group_by_root` spares a memory that is
+    derivation-related to something already kept, because a premise and its
+    conclusion are not copies -- so recording a copy as a child would exempt it
+    from the grouping that exists to collapse it.
+    """
+    copies: dict[str, set[str]] = field(default_factory=dict)
+    """The reverse index, so retraction can follow copy edges outward."""
     # This store's own opaque identity, recorded in its log so it survives a
     # restore from backup. None until a StoreIdentified event has been seen.
     store_id: str | None = None
@@ -348,6 +358,13 @@ def _on_experiment_run(state: ProjectionState, event: Event) -> None:
         hset.resolved = True
 
 
+def _on_copy_recognised(state: ProjectionState, event: Event) -> None:
+    memory_id = event.payload["memory_id"]
+    original = event.payload["original_memory_id"]
+    state.copy_of[memory_id] = original
+    state.copies.setdefault(original, set()).add(memory_id)
+
+
 _HANDLERS = {
     EventType.EPISODE_STARTED: _on_episode_started,
     EventType.MEMORY_CREATED: _on_memory_created,
@@ -361,6 +378,7 @@ _HANDLERS = {
     EventType.CONFLICT_DETECTED: _on_conflict_detected,
     EventType.EXPERIMENT_RUN: _on_experiment_run,
     EventType.DUPLICATE_SUPPRESSED: _on_duplicate_suppressed,
+    EventType.COPY_RECOGNISED: _on_copy_recognised,
     EventType.STORE_IDENTIFIED: _on_store_identified,
     EventType.RETRACTION_REQUESTED: _on_retraction_requested,
     EventType.CONTENT_ERASED: _on_content_erased,

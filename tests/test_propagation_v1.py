@@ -222,25 +222,47 @@ class TestRules(unittest.TestCase):
                     ctx.fabric.close()
 
     @needs_build
-    def test_no_rule_solves_a_re_ingested_document(self):
-        """Recorded as a test so it cannot quietly start passing unnoticed.
+    def test_a_re_ingested_document_is_recognised_at_write_time(self):
+        """The replacement for `test_no_rule_solves_a_re_ingested_document`.
 
-        If a change makes this fail, the product gained the ability to see a
-        copy under a separate root, which is a result and needs its own
-        write-up -- not a test to be deleted.
+        That test asserted no rule could see a copy filed under its own root,
+        and carried the note: *if a change makes this fail, the product gained
+        the ability, which is a result and needs its own write-up -- not a test
+        to be deleted.* It failed. The write-up is
+        `research/results/p2b-copy-recognition.md`, and this is the inverted
+        assertion.
+
+        The recognition happens at **write** time, not in any propagation rule,
+        which is why none of the rules could ever have solved it: by the time
+        they run there are two roots, and the question is whether there should
+        have been one.
         """
-        for case in rb.load("dev", "propagation_v1"):
-            if case["family"] != "copied_document":
-                continue
-            ctx = p3.build_context(case)
-            try:
-                ranked = p3.base_ranking(ctx)
-                for name in ("blanket_invalidation", "graph_traversal",
-                             "source_root_grouping"):
-                    allowed = p3.RULES[name](list(ranked), ctx)
-                    self.assertIn("r2", allowed, f"{case['case_id']}/{name}")
-            finally:
-                ctx.fabric.close()
+        for split in ("dev", "test"):
+            for case in rb.load(split, "propagation_v1"):
+                if case["family"] != "copied_document":
+                    continue
+                ctx = p3.build_context(case)
+                try:
+                    fabric = ctx.fabric
+                    r1, r2 = ctx.store_id["r1"], ctx.store_id["r2"]
+                    # Direction is not asserted. The recorded edge runs from
+                    # the newer write to the older one, and these corpora are
+                    # shuffled, so which of the two is "the copy" depends on
+                    # storage order. What must hold is that they are the same
+                    # document, which is symmetric.
+                    related = (fabric.state.copy_of.get(r2) == r1
+                               or fabric.state.copy_of.get(r1) == r2)
+                    self.assertTrue(
+                        related,
+                        f"{case['case_id']}: the re-ingestion was not recognised")
+                    self.assertEqual(
+                        fabric.source_root(r2), fabric.source_root(r1),
+                        f"{case['case_id']}: copy and original must share a root")
+                    # The original is withdrawn, so the copy may not be exposed.
+                    self.assertNotIn("r2", p3.base_ranking(ctx),
+                                     case["case_id"])
+                finally:
+                    ctx.fabric.close()
 
     def test_the_oracle_is_the_only_rule_that_reads_the_labels(self):
         import inspect

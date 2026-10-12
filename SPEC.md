@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.7.0`
+- **Schema version:** `0.8.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,39 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.8.0 — copy recognition
+
+Additive: one event type and two projection maps. A pre-0.8.0 log replays
+unchanged and yields an empty copy relation, which is exactly the old
+behaviour, so no migration script is needed.
+
+**`MemoryCopyRecognised`** — payload `{memory_id, original_memory_id,
+containment}`. Emitted when a write is recognised as a re-ingestion of content
+already held. The memory is still stored: refusing the write would lose the
+fact that someone re-ingested the document, and the log is the source of truth
+about what happened. What the copy does not get is an independent source root.
+
+Projection state gains `copy_of: dict[str, str]` and its reverse index
+`copies: dict[str, set[str]]`.
+
+Three behaviours follow, and all three are measured in
+[p2b-copy-recognition.md](research/results/p2b-copy-recognition.md):
+
+* `source_root()` resolves through copy edges, alternating with the lineage walk, so a conclusion derived from a copy also resolves to the original's root.
+* `remember()` admits a re-ingestion of a **withdrawn** document as `contested` rather than `active`. Not `quarantined`: nobody has made a finding about this write, and the original's withdrawal may itself have been wrong.
+* `quarantine(propagate=True)` walks the copy relation as an **undirected** component. The recorded edge runs newer → older, and "these are the same document" has no direction, so a one-way walk missed a copy stored before its original.
+
+A copy is deliberately **not** a parent edge. `_group_by_root` spares a memory
+that is derivation-related to something already kept — a premise and its
+conclusion are not copies — so a copy recorded as a child would be exempted
+from the grouping that exists to collapse it.
+
+`derive()` additionally recomputes the support of what it just wrote, so a
+conclusion drawn from an already-withdrawn premise arrives `contested` instead
+of `active`. No new rule: it is the recomputation `quarantine` already runs,
+applied at write time, because retraction previously reached conclusions drawn
+*before* a withdrawal and not after.
 
 ### 0.7.0 — bitemporal validity
 

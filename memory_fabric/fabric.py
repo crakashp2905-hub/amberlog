@@ -27,6 +27,9 @@ from .governance.retention import RetentionDecision, RetentionPolicy
 from .ids import new_ulid
 from . import chains
 from . import duplicates
+from . import rerank as reranking
+from .relations import PULLS_IN_SUBJECT, RelationKind
+from .relevance import ReasonCode as _ReasonCode
 from .lineage import LineageGraph, LineageView
 import json
 from datetime import datetime, timezone
@@ -182,6 +185,7 @@ class MemoryFabric:
         retrieval: str = "lexical",
         busy_timeout_ms: int = 5_000,
         recognise_copies: bool = True,
+        rerank: bool = False,
     ) -> None:
         # Default on, because the alternative is measured to be wrong rather
         # than merely unmeasured: a withdrawn document re-ingested under its own
@@ -191,6 +195,14 @@ class MemoryFabric:
         # which is why it is switchable for a store that ingests in bulk and
         # would rather run the check as a batch job.
         self.recognise_copies = recognise_copies
+        # Off by default until it passes its registered bar
+        # (research/prereg/r2a-feature-reranker.md). A mechanism that has not
+        # been measured does not become a default, and this project has a
+        # standing record of mechanisms that looked right and were not.
+        # True selects the default mode; a string names one explicitly, so a
+        # benchmark can measure "replace" against "tiebreak" without a second
+        # constructor argument.
+        self.rerank = rerank
         # Bounded candidate lookup for the subset test. The exhaustive scan it
         # replaces cost 32.4 ms a write at 10,000 memories against 0.19 ms
         # with the check off -- a 168x write cost growing linearly, which made
@@ -1652,6 +1664,7 @@ class MemoryFabric:
         until: int | None = None,
         group_by_source_root: bool = True,
         expand_lineage: int = 1,
+        follow_relations: bool = False,
     ) -> RetrievalResult:
         """Retrieve, decide exposure, log both, return what was exposed.
 
@@ -1706,10 +1719,27 @@ class MemoryFabric:
         # in a policy.
         eligible = self._applicable_at(eligible, as_of, until)
         hits = self._search(query, pool_size, eligible, min_relevance)
+        if self.rerank:
+            # After fusion and before grouping. Reranking a *fused* pool is
+            # the claim under test -- that a reranker makes fusion safe -- so
+            # it has to see what fusion produced, and grouping afterwards still
+            # collapses copies in the new order.
+            hits = reranking.rerank(
+                query, hits,
+                {mid: self.state.memories[mid].content for mid, _ in hits},
+                self.lexical._idf(),
+                mode=self.rerank if isinstance(self.rerank, str) else "tiebreak",
+            )
         if expand_lineage:
             hits = self._expand_lineage(
                 hits, eligible, limit=pool_size, depth=expand_lineage
             )
+        if follow_relations:
+            # After lineage expansion and before grouping: a qualifier should
+            # travel with whatever it qualifies even if that arrived by
+            # premise promotion, and grouping afterwards still collapses
+            # copies in the new order.
+            hits = self._follow_relations(hits, eligible, limit=pool_size)
         if group_by_source_root:
             hits = self._group_by_root(hits, limit=pool_size)
 
@@ -1777,6 +1807,7 @@ class MemoryFabric:
         as_of: int | None = None,
         until: int | None = None,
         include_contested: bool = False,
+        follow_relations: bool = False,
         max_steps: int = chains.MAX_STEPS,
         beam: int = chains.BEAM,
         node_budget: int = chains.NODE_BUDGET,
@@ -1857,6 +1888,45 @@ class MemoryFabric:
             relevance=relevance,
             plain=self.chain_plain,
         )
+        if follow_relations and chain.steps:
+            # A qualifier is not reachable by the search: it supplies no query
+            # term, so it has no coverage to gain, and it links nothing the
+            # chain needs, so it is not a bridge either. That is exactly why
+            # `multi_hop_4` fails -- the memory that *modifies* the answer is
+            # invisible to coverage and connectedness both. A declared relation
+            # is the only thing that can put it in.
+            extra: list[chains.ChainStep] = []
+            present = {step.memory_id for step in chain.steps}
+            for step in chain.steps:
+                for kind in PULLS_IN_SUBJECT:
+                    for subject in sorted(
+                        self.state.related_to.get(
+                            (step.memory_id, kind.value), ())
+                    ):
+                        if subject in present or subject not in eligible:
+                            continue
+                        present.add(subject)
+                        extra.append(chains.ChainStep(
+                            memory_id=subject,
+                            reason=_ReasonCode.DEPENDENCY_REQUIRED,
+                            covers=(),
+                            bridges=(),
+                            # Necessary by declaration rather than by
+                            # leave-one-out: a qualification changes the
+                            # answer, so the chain is wrong without it in a way
+                            # the coverage test cannot see.
+                            necessary=True,
+                            rank=-1,
+                        ))
+            if extra:
+                chain = chains.EvidenceChain(
+                    steps=chain.steps + tuple(extra),
+                    covered=chain.covered, missing=chain.missing,
+                    nodes_explored=chain.nodes_explored,
+                    budget_exhausted=chain.budget_exhausted,
+                    connected=chain.connected,
+                )
+
         if k is not None and len(chain.steps) > k:
             # Truncating can only break a chain, so `connected` is
             # recomputed rather than carried over -- a k that cuts the
@@ -1908,6 +1978,76 @@ class MemoryFabric:
             ))
         self._emit(*emitted)
         return chain
+
+    def relate(
+        self,
+        subject_memory_id: str,
+        kind: str | RelationKind,
+        object_memory_id: str,
+        actor: str = "operator",
+    ) -> None:
+        """Declare a typed relation that is not a derivation.
+
+        `memory_fabric/relations.py` has the three kinds and why each exists.
+        Deliberately **not** a parent edge: `_group_by_root` spares anything
+        derivation-related to a kept memory, so a qualification recorded as a
+        parent would inherit an exemption meant for premises.
+
+        Nothing discovers these. A caller declares them, or an extraction step
+        at ingest does, and this project has measured neither — the first
+        measurement is a ceiling given perfect declarations, because the two
+        families they target are text its own generators wrote and a pattern
+        fitted to that phrasing would pass by construction
+        (`research/results/relations-ceiling.md`).
+        """
+        self._require(subject_memory_id)
+        self._require(object_memory_id)
+        if subject_memory_id == object_memory_id:
+            raise PolicyViolation("a memory cannot stand in a relation to itself")
+        self._emit(ev.memories_related(
+            ts=self.now(), actor=actor,
+            subject_memory_id=subject_memory_id,
+            kind=RelationKind(kind).value,
+            object_memory_id=object_memory_id,
+        ))
+
+    def relations_of(self, memory_id: str, kind: str | RelationKind
+                     ) -> list[str]:
+        """Objects this memory stands in `kind` to. Content-free."""
+        return sorted(
+            self.state.relations.get((memory_id, RelationKind(kind).value), ()))
+
+    def _follow_relations(
+        self, ranked: Sequence[tuple[str, float]], eligible: set[str],
+        limit: int,
+    ) -> list[tuple[str, float]]:
+        """Pull in whatever qualifies a selected memory.
+
+        Towards the qualifier, not away from it: a qualification changes the
+        answer, so its absence makes the answer *wrong* rather than
+        incomplete. Placed just below the memory it qualifies, so it travels
+        with it rather than competing with it on a score it was never given.
+
+        `EXCEPTS` is not followed here on purpose — an exception is a reason
+        *not* to use a rule, and pulling it in on selection would add a memory
+        arguing against the one beside it. Its use is deciding applicability,
+        which is a different step.
+        """
+        if not ranked:
+            return list(ranked)
+        out: list[tuple[str, float]] = []
+        present = {memory_id for memory_id, _ in ranked}
+        for memory_id, score in ranked:
+            out.append((memory_id, score))
+            for kind in PULLS_IN_SUBJECT:
+                for subject in sorted(
+                    self.state.related_to.get((memory_id, kind.value), ())
+                ):
+                    if subject in present or subject not in eligible:
+                        continue
+                    present.add(subject)
+                    out.append((subject, score * (1 - 1e-6)))
+        return out[:limit]
 
     def _eligible_ids(
         self, include_contested: bool = False, tenant_id: str | None = None

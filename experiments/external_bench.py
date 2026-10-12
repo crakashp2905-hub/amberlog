@@ -210,6 +210,35 @@ def _real_embedder():
     return _SHARED_EMBEDDER
 
 
+def _reranked(dataset: Dataset, k: int, base, mode: str):
+    """Any arm, with the feature reranker applied to its pool.
+
+    Part of the no-regression set for
+    `research/prereg/r2a-feature-reranker.md`: a reranker that fixes one
+    benchmark and breaks SciFact has moved the problem rather than solved it.
+    """
+    from memory_fabric.rerank import rerank as _rerank
+
+    lexical = _lexical_index(dataset)
+    idf = lexical._idf()
+
+    def search(query: str):
+        pool = base(query)
+        ranked = [(doc_id, 1.0 - i * 1e-6) for i, doc_id in enumerate(pool)]
+        contents = {d: dataset.corpus[d] for d in pool if d in dataset.corpus}
+        return [d for d, _ in _rerank(query, ranked, contents, idf, mode=mode)]
+
+    return search
+
+
+def arm_lexical_replace(dataset: Dataset, k: int):
+    return _reranked(dataset, k, arm_lexical(dataset, k), "replace")
+
+
+def arm_hashing_hybrid_replace(dataset: Dataset, k: int):
+    return _reranked(dataset, k, arm_hashing_hybrid(dataset, k), "replace")
+
+
 def arm_real_vector(dataset: Dataset, k: int):
     index = _vector_index(dataset, _real_embedder())
     return lambda query: [d for d, _ in index.search(query, k=k, min_relevance=0.0)]
@@ -247,6 +276,8 @@ ARMS: dict[str, Callable[[Dataset, int], Any]] = {
     "lexical": arm_lexical,
     "hashing_vector": arm_hashing_vector,
     "hashing_hybrid": arm_hashing_hybrid,
+    "lexical_replace": arm_lexical_replace,
+    "hashing_hybrid_replace": arm_hashing_hybrid_replace,
     "real_vector": arm_real_vector,
     "real_hybrid": arm_real_hybrid,
 }

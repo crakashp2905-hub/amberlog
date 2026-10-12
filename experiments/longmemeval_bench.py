@@ -237,8 +237,16 @@ def run_arm(arm: str, instances: Sequence[Mapping[str, Any]], k: int,
         retrieval = {"lexical": "lexical", "vector": "vector",
                      "hybrid": "hybrid", "chain": "lexical",
                      "real_vector": "vector", "real_hybrid": "hybrid",
+                     "hybrid_tiebreak": "hybrid",
+                     "hybrid_replace": "hybrid",
+                     "lexical_tiebreak": "lexical",
+                     "lexical_replace": "lexical",
                      "oracle": "lexical"}[arm]
         kwargs: dict[str, Any] = {}
+        if arm.endswith("_tiebreak"):
+            kwargs["rerank"] = "tiebreak"
+        elif arm.endswith("_replace"):
+            kwargs["rerank"] = "replace"
         if arm.startswith("real_") and embedder is not None:
             kwargs["embedder"] = embedder
         fabric = MemoryFabric(
@@ -300,8 +308,9 @@ def run_arm(arm: str, instances: Sequence[Mapping[str, Any]], k: int,
     return report
 
 
-ARMS = ("lexical", "vector", "hybrid", "chain", "real_vector", "real_hybrid",
-        "oracle")
+ARMS = ("lexical", "vector", "hybrid", "hybrid_tiebreak", "hybrid_replace",
+        "lexical_tiebreak", "lexical_replace", "chain", "real_vector",
+        "real_hybrid", "oracle")
 
 
 def real_embedder():

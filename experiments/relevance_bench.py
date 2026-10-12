@@ -283,6 +283,34 @@ def arm_hybrid(case: Mapping[str, Any], k: int) -> list[str]:
     return [memory_id for memory_id, score in fused]
 
 
+def _rerank_arm(retrieval: str, mode: str
+                ) -> Callable[[Mapping[str, Any], int], list[str]]:
+    """The product with reranking on, developed on dev and nowhere else.
+
+    `research/prereg/r2a-feature-reranker.md` names LongMemEval's `s` split as
+    the primary. A 60-instance sample of it showed the first design hurting --
+    lexical 0.768 -> 0.679 -- and iterating there would be tuning on the
+    registered metric, so the mechanism is developed here instead and
+    evaluated on the external benchmark once.
+    """
+
+    def arm(case: Mapping[str, Any], k: int) -> list[str]:
+        fabric, ids = _build_fabric(case, retrieval)
+        try:
+            fabric.rerank = mode
+            result = fabric.retrieve(
+                agent_id=case["task"]["agent_id"], query=query_text(case),
+                k=k, tenant_id=case["task"].get("tenant_id", "tn_default"),
+                min_relevance=0.0, as_of=_as_of(case),
+            )
+            return [ids[m.id] for m in result.exposed]
+        finally:
+            fabric.close()
+
+    arm.__name__ = f"arm_{retrieval}_rerank_{mode}"
+    return arm
+
+
 def _store_arm(
     mode: str = "hybrid", **options: Any
 ) -> Callable[[Mapping[str, Any], int], list[str]]:
@@ -548,6 +576,10 @@ ARMS: dict[str, Callable[[Mapping[str, Any], int], list[str]]] = {
     "real_vector": arm_real_vector,
     "real_hybrid": arm_real_hybrid,
     "chain": arm_chain,
+    "lexical_tiebreak": _rerank_arm("lexical", "tiebreak"),
+    "lexical_replace": _rerank_arm("lexical", "replace"),
+    "hybrid_tiebreak": _rerank_arm("hybrid", "tiebreak"),
+    "hybrid_replace": _rerank_arm("hybrid", "replace"),
     "store_temporal": None,  # filled below: needs the per-case event time
     # Lexical *with* the mechanisms: the configuration the lexical/hybrid
     # question never tested. Grouping and promotion are orthogonal to which

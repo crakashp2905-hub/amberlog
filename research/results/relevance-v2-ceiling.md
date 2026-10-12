@@ -1,6 +1,6 @@
 # relevance_v2 — the ceiling, and what a harder benchmark found first
 
-**Headroom is +0.232 nDCG@5 on dev, and the first four things the benchmark
+**Headroom is +0.193 nDCG@5 on dev, and the first four things the benchmark
 found were defects in itself and in the thing it measures.** That is the
 result. A no-signal arm scores **0.000** here against **0.843** on v1, which is
 the only reason any of the other numbers mean anything.
@@ -14,6 +14,13 @@ the only reason any of the other numbers mean anything.
 
 ## 1. The numbers
 
+> **Corrected 2026-10-12.** The nDCG figures below were measured before the
+> quarantine-timing fix described in §7, which changed *which memories are
+> eligible* — a contested descendant of a retracted memory is withheld — and so
+> moved the ranking numbers as well as the stale-citation ones. §7 was
+> corrected at the time and this table was not. The original figures are kept
+> at the end of this section.
+
 | arm | nDCG@5 | R@5 | MRR | critical recall | critical omission |
 |---|---|---|---|---|---|
 | `none` | 0.000 | 0.000 | 0.000 | 0.000 | 1.000 |
@@ -22,24 +29,49 @@ the only reason any of the other numbers mean anything.
 | `hybrid` (hashing) | 0.490 | 0.552 | 0.529 | 0.552 | 0.542 |
 | `store_plain` (product, hybrid, mechanisms off) | 0.545 | 0.531 | 0.646 | 0.531 | 0.542 |
 | `lexical` (harness reference) | 0.654 | 0.802 | 0.615 | 0.802 | 0.333 |
-| `store_lexical` (product, lexical, mechanisms off) | 0.746 | 0.812 | 0.785 | 0.812 | 0.333 |
-| **`lexical_all`** (product, lexical, mechanisms on) | **0.768** | 0.812 | 0.812 | 0.812 | 0.333 |
+| `store_lexical` (product, lexical, mechanisms off) | **0.807** | 0.812 | 0.875 | 0.812 | 0.333 |
+| **`lexical_all`** (product, lexical, mechanisms on) | **0.807** | 0.812 | 0.875 | 0.812 | 0.333 |
 | `oracle` | 1.000 | 1.000 | 1.000 | 1.000 | 0.000 |
 
 ```
-best simple arm  B = 0.768   (lexical_all)
+best simple arm  B = 0.807   (store_lexical and lexical_all, identically)
 ceiling          C = 1.000   (oracle)
-headroom             +0.232
+headroom             +0.193
   ceiling check: no arm beat oracle (principle 8b)
 ```
 
-Decomposed, because three different things are often credited to one:
+Decomposed:
 
 | from | to | worth |
 |---|---|---|
-| harness reference `lexical` | the product's own lexical path | **+0.092** |
-| mechanisms off | source roots + premise promotion | **+0.022** |
-| best arm | oracle | **+0.232** still unclaimed |
+| harness reference `lexical` | the product's own lexical path | **+0.153** |
+| mechanisms off | source roots + premise promotion | **+0.000** |
+| best arm | oracle | **+0.193** still unclaimed |
+
+**The mechanisms' nDCG gain is now +0.000, where this document reported
++0.022.** `store_lexical` and `lexical_all` are identical on every column, and
+on every family: both score 1.000 on `direct`, `facet_trap`,
+`independent_support` and `superseded_rev`, 0.667 on `conflicting` and
+`budget_pressure`, 0.600 on `multi_hop_3` and 0.519 on `multi_hop_4`.
+
+That is the third time the same correction has landed on these mechanisms. R6's
++0.076 downstream gain did not replicate; their stale-citation advantage was an
+artifact of the quarantine timing; and their nDCG advantage goes the same way.
+**They have no measured benefit on this benchmark of any kind**, and they are
+kept on an argument from design, which §7 already says is weaker than a
+measurement.
+
+On the frozen split the same pattern: `store_lexical` and `lexical_all` both
+0.652, `store_plain` / `store_roots` / `store_all` all 0.499, `lexical` 0.549.
+
+The original table, measured before the fix:
+
+| arm | nDCG@5 (invalid) |
+|---|---|
+| `store_lexical` | 0.746 |
+| `lexical_all` | 0.768 |
+
+with a reported headroom of +0.232 and a mechanisms gain of +0.022.
 
 ## 2. The falsification, which is the point
 
@@ -107,12 +139,16 @@ because it is not similar.
 
 ## 4. Where the headroom actually is
 
-| family | `lexical` | `lexical_all` | what it tests |
+Re-measured after the quarantine-timing fix. `store_lexical` is identical to
+`lexical_all` on every row, so the column is labelled for the product's lexical
+path with or without the mechanisms:
+
+| family | `lexical` (reference) | the product | what it tests |
 |---|---|---|---|
 | `direct` | 1.000 | 1.000 | — solved |
 | `facet_trap` | 1.000 | 1.000 | — solved, and see §3 |
 | `superseded_rev` | 0.631 | **1.000** | validity intervals |
-| `independent_support` | 0.501 | **0.693** | one standing source among retracted ones |
+| `independent_support` | 0.501 | **1.000** | one standing source among retracted ones |
 | `conflicting` | 0.667 | 0.667 | both sides of a disagreement |
 | `budget_pressure` | 0.667 | 0.667 | the same task at ten times the corpus |
 | `multi_hop_3` | 0.437 | **0.600** | 3-hop chain, no direct statement |
@@ -156,7 +192,7 @@ requirements cannot be satisfied by anything, and abstention is the right
 answer. A sufficiency arm scoring above 0.800 would have exposed something it
 may not.
 
-**Sufficiency headroom is +0.267, larger than the ranking headroom of +0.232**,
+**Sufficiency headroom is +0.267, larger than the ranking headroom of +0.193**,
 and the two do not move together: `store_lexical` and `lexical_all` differ by
 0.022 nDCG and are identical on sufficiency, while `lexical` and `store_plain`
 differ by 0.166 on sufficiency and 0.109 on nDCG. Ranking well and assembling
@@ -250,9 +286,9 @@ arrives too late.
 > A no-signal arm scores **0.000** where it scored **0.843** on v1. That single
 > line is what the rebuild bought, and every other number depends on it.
 >
-> The ceiling says **+0.232 nDCG@5** is unclaimed on dev, and the per-family
-> breakdown says almost all of it is in **multi-hop chains and provenance**,
-> not in telling near-misses apart. `direct` and `facet_trap` are finished at
+> The ceiling says **+0.193 nDCG@5** is unclaimed on dev (corrected from
+> +0.232; see §1), and the per-family breakdown says almost all of it is in
+> **multi-hop chains**, not in telling near-misses apart. `direct` and `facet_trap` are finished at
 > 1.000 — including the family built to be hardest, which is a defect in my
 > design and is recorded as one.
 >

@@ -59,6 +59,10 @@ ENFORCED = {
 
 METADATA = {
     "lifecycle_of": "one memory's state, and no content — the safe way to ask",
+    "relations_of": (
+        "the memories one memory stands in a typed relation to, and no "
+        "content. Ids only, like `source_root` and `shared_with`"
+    ),
     "tenant_of": "which tenant owns a memory",
     "source_root": "the earliest observation a memory traces to",
     "shared_with": "which stores hold a copy",
@@ -89,6 +93,10 @@ INSPECTION = {
 
 MUTATION = {
     "remember": "write a new memory",
+    "relate": (
+        "declare a typed non-derivation relation between two memories. A "
+        "mutation because it appends an event the relation index projects from"
+    ),
     "derive": "write a memory with recorded premises",
     "revise": "new version of an existing memory",
     "validate": "candidate to active",

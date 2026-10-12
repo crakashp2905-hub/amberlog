@@ -29,6 +29,7 @@ class EventType:
     EXPERIMENT_RUN = "ExperimentRun"
     DUPLICATE_SUPPRESSED = "MemoryDuplicateSuppressed"
     COPY_RECOGNISED = "MemoryCopyRecognised"
+    MEMORIES_RELATED = "MemoriesRelated"
     STORE_IDENTIFIED = "StoreIdentified"
     RETRACTION_REQUESTED = "RetractionRequested"
     RETRACTION_APPLIED = "RetractionApplied"
@@ -550,6 +551,33 @@ def conflict_detected(
             "detector_id": detector_id,
             "confidence": confidence,
             "hypothesis_set": hypothesis_set,
+        },
+    )
+
+
+def memories_related(
+    ts: int,
+    actor: str,
+    subject_memory_id: str,
+    kind: str,
+    object_memory_id: str,
+) -> Event:
+    """A typed relation between two memories that is not a derivation.
+
+    An event rather than a field, for the reason every other relation here is:
+    the log is the source of truth and the relation index is a projection of
+    it, so a store rebuilt from the log has the same relations and a relation
+    added by one process is visible to another after a replay.
+    """
+    return Event(
+        type=EventType.MEMORIES_RELATED,
+        ts=ts,
+        agent_id=actor,
+        episode_id=None,
+        payload={
+            "subject_memory_id": subject_memory_id,
+            "kind": kind,
+            "object_memory_id": object_memory_id,
         },
     )
 

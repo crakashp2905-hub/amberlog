@@ -98,7 +98,7 @@ authorised memory can be irrelevant now and essential later.
 |---|---|---|---|
 | **R0** | Relevance contract and invariants | 10 invariants enforced in code, each with a test: task-scoped, exact-version-bound, no lifecycle authority, no gate override, explicit uncertainty, missing ≠ zero, auditable, budget-respecting, observed/inferred separable | ✅ **done** — [spec](docs/RELEVANCE_SPEC.md), 35 tests |
 | **R1** | Benchmark, baselines, **oracle ceiling** | A clean checkout runs it; deterministic arms repeat; a deliberately broken ranker fails it; the ceiling is measured *before* any threshold is registered | ✅ **done** — [relevance_v1](research/bench/relevance_v1/README.md), [ceiling **+0.222 nDCG**](research/results/relevance-v1-ceiling.md) |
-| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning | ⛔ **still not next, and now for a measured reason.** [relevance_v2](research/bench/relevance_v2/README.md) puts the unclaimed headroom at **+0.232 nDCG@5** and says almost all of it is in multi-hop chains (`multi_hop_4` at 0.519) and provenance, not in ranking near-misses: `direct` and `facet_trap` are already solved at 1.000 ([result](research/results/relevance-v2-ceiling.md)). Sufficiency has the larger headroom (+0.267) and is registered first. Earlier reason, still true: The benchmark grew to 50 cases and four arms still sit within 0.04 of each other; R6 measured the model recovering ~40% of what nDCG penalises, so a ranker chasing the last points is chasing something the model partly fixes for free. Fix the embedder first — SciFact puts the shipped one at **less than half** of lexical retrieval |
+| **R2** | Transparent hybrid ranker | Beats the strongest *simple* baseline by a registered share of the measured headroom, on a split frozen before tuning | ⛔ **still not next, and now for a measured reason.** [relevance_v2](research/bench/relevance_v2/README.md) puts the unclaimed headroom at **+0.193 nDCG@5** and says almost all of it is in multi-hop chains (`multi_hop_4` at 0.519), not in ranking near-misses: `direct` and `facet_trap` are already solved at 1.000 ([result](research/results/relevance-v2-ceiling.md)). Sufficiency has the larger headroom (+0.267) and is registered first. Earlier reason, still true: The benchmark grew to 50 cases and four arms still sit within 0.04 of each other; R6 measured the model recovering ~40% of what nDCG penalises, so a ranker chasing the last points is chasing something the model partly fixes for free. Fix the embedder first — SciFact puts the shipped one at **less than half** of lexical retrieval |
 | **R3** | Budget-aware context assembly | Better context sufficiency than top-k at equal budget; critical omissions within tolerance; every omission has a reason | 🔶 **unblocked and registered.** relevance_v2's `budget_pressure` family costs ~25,000 prompt tokens for the full corpus against ~400 for a selection, so a budget now binds. Ceiling measured, threshold pre-registered as a share of it ([prereg](research/prereg/p2-context-sufficiency.md)); the selector itself is not built. The gap it has to close: **no arm abstains even once** on the nine dev cases where abstention is the only correct answer |
 | **R4** | Bounded lineage-aware discovery | Improved indirect relevance with bounded false additions, runtime and candidate growth. No causal claim without causal evidence | ✅ **done** — premise promotion took the `indirect` family 0.613 → **1.000**; bounded by depth, limit and parents-only |
 | **R5** | Temporal / context dynamics (bitemporal) | Relevance reverses when context changes without memory mutation; stale data is never presented as current; `valid_time` distinct from recorded time | ✅ **done** — `valid_from`/`valid_to` on `Memory` (schema 0.7.0), `applies_at()`, `retrieve(as_of=…)`; +0.074 nDCG on the frozen split |
@@ -142,6 +142,49 @@ So if R1's oracle ceiling also comes out at ~5 points, the honest conclusion is
 that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
+
+### What the open-item sweep changed
+
+Five items were measured open; all five were worked, and four produced results
+rather than mechanisms.
+
+**The chain search is 2.9× faster, with recall unchanged.** 193 ms → 68 ms a
+query on LongMemEval. The cost tracked **query length** rather than corpus
+size, because `_bridge_terms` ran ~35,000 times a query with a regex per shared
+term. My first guess at the cause — per-candidate component recomputation —
+was worth 11 ms of the 193; the regex in the inner loop was worth 88.
+
+**Abstention is not a retrieval problem**
+([result](research/results/abstention-signals.md)). Four signal families
+eliminated with numbers: term absence sits at the base rate, chain coverage is
+1.000 on every instance, absolute match quality is right in **4 of 4 question
+types** and collapses to **AUC 0.319** when pooled because between-type spread
+is 2–10× the within-type gap, and three calibrations all made it worse. A
+global threshold's best achievable F1 is 0.206. I nearly published d = 0.68
+from a confounded sample and the full-population AUC caught it.
+
+**A feature reranker does make fusion safe, and that is not worth having**
+([result](research/results/r2a-feature-reranker.md)). On four benchmarks it
+converges both arms to within a point — which is exactly what was asked for —
+at a level below the better arm on three of four. The mode that keeps the
+retriever's score and adds phrase order and proximity changes **nothing
+anywhere**: those features are worth zero. A feature reranker cannot beat a
+retriever whose features are a superset of its own, so reranking needs a model.
+
+**Declared relations have a ceiling of 1.000**
+([result](research/results/relations-ceiling.md)). A `QUALIFIES` relation takes
+`multi_hop_4` from 0.000 to **1.000 sufficiency** on dev — the first arm ever
+sufficient there — and does nothing on the frozen split, because the chain
+picks the wrong axle rule and a qualifier can only attach to a memory the chain
+found. No extractor was built, deliberately: the target text is this project's
+own, so a pattern fitted to it would pass by construction.
+
+**And a published table was stale.** The quarantine-timing fix changed which
+memories are eligible, so it moved `relevance_v2`'s nDCG as well as its
+stale-citation numbers. §7 of that result was corrected at the time and §1 was
+not: headroom is **+0.193**, not +0.232, and the R4/R5 mechanisms' nDCG gain is
+**+0.000**, not +0.022. That is the third correction to land on those
+mechanisms, after R6's downstream gain and their stale-citation advantage.
 
 ### What LongMemEval changed
 
@@ -432,14 +475,14 @@ direct statement of the asked quantity, and labels that carry evidence
 
 The line everything else rests on: a deliberately broken arm returning storage
 order scores **0.000**, where on v1 it scored **0.843** and once beat the real
-baseline. Headroom is **+0.232 nDCG@5** on dev, and the per-family breakdown
+baseline. Headroom is **+0.193 nDCG@5** on dev (corrected from +0.232), and the per-family breakdown
 names where: `multi_hop_4` 0.519, `multi_hop_3` 0.600, `independent_support`
 0.693, against `direct` and `facet_trap` already at 1.000.
 
 Three results worth separating from the ranking number
 ([full result](research/results/relevance-v2-ceiling.md)):
 
-- **Sufficiency headroom is larger than ranking headroom** (+0.267 against +0.232) and the two do not move together. Ordering well and assembling enough are not the same question.
+- **Sufficiency headroom is larger than ranking headroom** (+0.267 against +0.193) and the two do not move together. Ordering well and assembling enough are not the same question.
 - **No arm abstains, ever** — 0.000 abstention precision on the nine dev cases where abstention is the only correct answer. Nothing in the retrieval path can say *the corpus does not answer this*, even when the reachable relevant set is empty and the store knows it.
 - **Stale evidence: the store already handles it completely, and an earlier version of this line said grouping cut it by 70%.** Every store-backed arm cites **zero** with every mechanism off, because quarantining contests descendants and contested memories are withheld. The 70% was measured against a store whose own propagation the fixture had prevented from running. The only arm that cites stale evidence is the harness's non-store reference implementation.
 

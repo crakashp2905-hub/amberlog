@@ -101,6 +101,16 @@ class ProjectionState:
     """
     copies: dict[str, set[str]] = field(default_factory=dict)
     """The reverse index, so retraction can follow copy edges outward."""
+    relations: dict[tuple[str, str], set[str]] = field(default_factory=dict)
+    """(subject, kind) -> the objects it stands in that relation to."""
+    related_to: dict[tuple[str, str], set[str]] = field(default_factory=dict)
+    """(object, kind) -> the subjects standing in that relation to it.
+
+    Both directions are indexed because retrieval needs both: a selected
+    memory drags in whatever *qualifies* it, which is a reverse lookup, and a
+    rule's applicability is decided by what *excepts* it, which is the same
+    lookup from the other side.
+    """
     # This store's own opaque identity, recorded in its log so it survives a
     # restore from backup. None until a StoreIdentified event has been seen.
     store_id: str | None = None
@@ -358,6 +368,14 @@ def _on_experiment_run(state: ProjectionState, event: Event) -> None:
         hset.resolved = True
 
 
+def _on_memories_related(state: ProjectionState, event: Event) -> None:
+    subject = event.payload["subject_memory_id"]
+    kind = event.payload["kind"]
+    obj = event.payload["object_memory_id"]
+    state.relations.setdefault((subject, kind), set()).add(obj)
+    state.related_to.setdefault((obj, kind), set()).add(subject)
+
+
 def _on_copy_recognised(state: ProjectionState, event: Event) -> None:
     memory_id = event.payload["memory_id"]
     original = event.payload["original_memory_id"]
@@ -379,6 +397,7 @@ _HANDLERS = {
     EventType.EXPERIMENT_RUN: _on_experiment_run,
     EventType.DUPLICATE_SUPPRESSED: _on_duplicate_suppressed,
     EventType.COPY_RECOGNISED: _on_copy_recognised,
+    EventType.MEMORIES_RELATED: _on_memories_related,
     EventType.STORE_IDENTIFIED: _on_store_identified,
     EventType.RETRACTION_REQUESTED: _on_retraction_requested,
     EventType.CONTENT_ERASED: _on_content_erased,

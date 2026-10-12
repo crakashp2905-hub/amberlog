@@ -126,13 +126,26 @@ A reranker scores candidates jointly against the query and does not care how
 strong the arm that proposed them was. It would dissolve the problem rather
 than manage it.
 
-**What it needs:** a cross-encoder is a model call per candidate, so it lands
-on the wrong side of the cost finding in
-[p4-envelope.md](results/p4-envelope.md) unless it reranks a small pool. The
-honest first step is a **feature-based reranker** with no model — query-term
-coverage, proximity, position — measured on LongMemEval, where
-`hybrid` already beats both single arms (0.851 against 0.817 and 0.820) and so
-the pool is good enough to be worth reordering.
+**Measured, and the cheap version is structurally incapable**
+([result](results/r2a-feature-reranker.md)). A feature-based reranker — IDF
+coverage, phrase order, proximity, no model — was registered and run. It
+**NOT SUPPORTED** at 7.8% of headroom against 40%, and the failure is the
+informative part:
+
+- On four benchmarks it **converges both arms to within a point** of each other (LongMemEval 0.707/0.717, SciFact 0.559/0.551, relevance_v2 0.752/0.752). That is literally fusion made safe — which arm fed the pool stops mattering — at a level **below the better arm on three of four**. It removes a risk by capping the upside.
+- The mode that keeps the retriever's score and adds only the features it lacks changes **nothing anywhere**. Phrase order and proximity are worth exactly zero.
+
+The reason generalises: `LexicalIndex` already scores with **length-normalised
+IDF**, so a surface-feature reranker's features are a subset plus two that
+never fire. Replacing substitutes a weaker scorer; tie-breaking substitutes
+nothing. **Reranking needs information the retriever lacks**, and for text that
+means a cross-encoder — so Hindsight's version is the right one and this is now
+an argument for it rather than an assumption.
+
+The convergence is also a measurement about fusion itself: the fused pool
+*contains* what the better arm's pool contains, or reranking could not reach
+the better arm's neighbourhood. Fusion's damage is entirely in the **ordering**,
+which is a sharper statement than five previous measurements produced.
 
 ### 3b. Typed graph edges — entity, temporal, causal
 
@@ -154,10 +167,24 @@ need. The project already has the machinery: a lineage graph with typed
 justification edges (`REQUIRED`, `ALTERNATIVE`), and `_derivation_related`
 walks it. What is missing is edges that are not derivation.
 
-**The cost to watch:** extraction means an LLM call per write. The project's own
-rule is that LLM calls go through one wrapper that logs model, prompt hash,
-tokens and cost, and R6 is a standing warning that a model in the loop can make
-a result less reproducible rather than better.
+**Measured as a ceiling, and it is 1.000**
+([result](results/relations-ceiling.md)). `QUALIFIES`, `EXCEPTS` and
+`PRECEDES` are implemented, with `relate()` and `follow_relations=`. Given
+declarations supplied by the fixture, a `QUALIFIES` edge takes `multi_hop_4`
+from 0.832 to **1.000 nDCG** and 0.000 to **1.000 sufficiency** — the first arm
+ever sufficient on that family, and exactly the memory P1 showed to be
+unreachable by coverage or connectedness.
+
+Three things qualify that:
+
+- **It does nothing on the frozen split**, because the chain picks the wrong axle rule there and a qualifier can only attach to a memory the chain found. The defect [P1 §4](results/p1-evidence-chain-reconstruction.md) disclosed now also blocks the mechanism that would close the family.
+- **`EXCEPTS` cannot address `implied_by_default`**, the other 0.000 family. Its exceptions name *sites*, not memories, so a memory-to-memory relation has nothing to attach to. That needs entity-scoped applicability, which is not built.
+- **No extractor exists, deliberately.** The target text is this project's own generators' output, so a pattern matching *"add N bar to the … figure"* would pass by construction — the `facet_trap` mistake in a new place. The ceiling says the extractor is worth building; nothing measured says one can be.
+
+**The cost to watch** when it is built: extraction means an LLM call per write,
+this project's rule is that those go through one wrapper logging model, prompt
+hash, tokens and cost, and R6 is a standing warning that a model in the loop
+can make a result less reproducible rather than better.
 
 ### 3c. Materialised standing answers
 
@@ -219,14 +246,28 @@ README is not absence from a product**.
 - **`reflect` as a retrieval path.** An LLM reasoning over memories to answer questions needing more than lookup is appealing and is exactly what [R6](results/r6-downstream.md) warns about: its dev finding that better retrieval improves answers **did not replicate**, and a model in the loop made the result less reproducible. If `reflect` arrives here it needs its own pre-registration, not an argument from plausibility.
 - **Breadth of integrations.** 60+ integrations and an LLM wrapper are a product-adoption strategy, not a memory-system property.
 
-## 6. The order I would do them in
+## 6. The order, and where it got to
 
-1. **LongMemEval on the `s` split** — done for `oracle`, running for `s`. The realistic haystack is ~500 turns a question against the oracle split's 23, and the oracle split is too small to be a retrieval test, which is the `relevance_v1` mistake again.
-2. **A feature-based reranker**, measured on LongMemEval. No model, bounded cost, and it attacks the fusion weakness directly rather than managing it.
-3. **Typed non-derivation edges** (`qualifies`, `excepts`, `precedes`), measured on `multi_hop_4` and `implied_by_default` — the two families where every arm scores 0.000 and where the diagnosis already says similarity is the wrong instrument.
-4. **Standing answers as a projection**, once there is a repeated-question workload to measure. Premature before that: it is a cache, and a cache without a measured hit rate is a liability.
-5. **Pattern-set comparison** for the sensitive-data screen. Small, bounded, and the current one is on record as untested adversarially.
+1. **LongMemEval** — ✅ done on both splits. It found `as_of` mis-specified within the hour, gave the first controlled demonstration of the fusion rule, and confirmed the abstention gap externally.
+2. **A feature-based reranker** — ✅ run, **NOT SUPPORTED**, and §3a is the result. The cheap version is structurally incapable, which makes a cross-encoder the next thing rather than a guess.
+3. **Typed non-derivation edges** — 🔶 implemented and measured as a **ceiling of 1.000** on dev. §3b has what it does not cover and why no extractor was built.
+4. **Standing answers as a projection** — not started, and still premature: it is a cache, and a cache without a measured hit rate is a liability. There is no repeated-question workload here to measure one.
+5. **Pattern-set comparison** for the sensitive-data screen — not started. Small, bounded, and the current screen is on record as untested adversarially. This is the cheapest remaining item.
 
-Consolidation into observations comes last, because the part of it that matters
-most — copies not counting as corroboration — is already measured closed here,
-and the rest is presentation.
+Consolidation into observations stays last, because the part that matters most —
+copies not counting as corroboration — is measured closed
+([p2b](results/p2b-copy-recognition.md)), and the rest is presentation.
+
+**What the two measured attempts have in common** is worth stating, because it
+is the most useful thing taken from reading Hindsight. Both of this project's
+0.000 families, and both failed mechanisms, come back to the same boundary:
+similarity and surface features cannot express what a memory *entails*, what it
+*modifies*, or whether it *answers a question at all*. A reranker without a
+model has no information the retriever lacks; relations have the information and
+nothing to extract them; abstention has no retrieval-stage signal at all
+([result](results/abstention-signals.md), four families eliminated). Hindsight's
+`retain` — an LLM extracting entities, relations and facts at ingest — is the
+one component that addresses all three, and it is the component this project
+has most carefully avoided building. R6 is the reason, and R6 is about the
+*reading* stage rather than the *writing* stage, which is a distinction worth
+testing rather than assuming.

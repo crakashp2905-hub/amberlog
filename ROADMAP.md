@@ -143,6 +143,50 @@ that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
 
+### What the agent-team comparison and the envelope sweep changed
+
+**[P3b](research/results/p3b-agent-teams.md) is the first end-to-end result:
+SUPPORTED at 86% of a registered 40% bar, and 85% with ten times the agents.**
+
+| metric | `local` | `shared` | `shared_blanket` | `fabric` | `oracle` |
+|---|---|---|---|---|---|
+| task success | 0.120 | 0.780 | 0.730 | **0.960** | 1.000 |
+| acted on withdrawn knowledge | 0.050 | **0.180** | 0.000 | **0.000** | 0.000 |
+| had to re-measure | 0.430 | 0.000 | **0.250** | **0.000** | 0.000 |
+| duplicate discoveries | **13.6** | 5.0 | **10.0** | **5.0** | 5.0 |
+| retrieval latency | 0.0 ms | 0.1 ms | 0.1 ms | **0.7 ms** | 0.0 ms |
+
+Verdict holds from 10 to 100 agents and 20 to 200 facts, with retrieval latency
+rising **1.6×** and the seed spread narrowing.
+
+Three things worth carrying:
+
+- **A plain shared store lets agents act on withdrawn knowledge in 18% of tasks and the fabric in none.** A correction in a plain store is just another write that ranks as well as it always did.
+- **The naive fix is worse than it looks.** `shared_blanket` eliminates stale actions and destroys the fact next door — which does not register as wrongful invalidation, because it *repairs itself* by sending someone out to re-measure. It is visible only as a 0.250 re-measure rate and twice the duplicate discoveries. A metric can be satisfied by a system that did the wrong thing and then paid to undo it.
+- **The world was wrong three times before it could pose the question**, each caught by principle 8c's check. The most useful: *a memory system's value is invisible in task success when the task can simply be redone.* With free rediscovery every baseline reached the ceiling.
+
+**The agent is deterministic**, so this measures whether the right evidence
+arrives and not whether a model uses it. R6 measured the other half and did not
+replicate; mixing them would hide which half moved.
+
+**[P4](research/results/p4-envelope.md) passes every condition and earned its
+place by finding a defect the correctness tests could not.** 500 appends from 50
+processes with nothing lost and no sequence gaps, per-write cost up only **22%
+for 5× the writers**, zero cross-tenant leaks across 1,600 exposures, and a log
+that reopens clean and writable after 16 of 50 writers are killed mid-write.
+
+Two departures from the naive expectation, in opposite directions: contention
+scales **better** than linear, and retrieval is flat to 1,000 memories and
+**linear beyond it** — 19 ms at 10,000, so the envelope has a knee and 100,000
+would need a different approach rather than a bigger budget.
+
+And the defect: **copy recognition cost 32 ms a write at 10,000 memories**,
+168× the baseline and linear in store size — right at a hundred memories and
+unusable at ten thousand. Now **1.27 ms** via a bounded index that covers both
+directions of the subset test and is checked against the exhaustive scan it
+replaced. The fix is in the product, not in a note advising people to switch it
+off.
+
 ### What copy recognition changed
 
 P3's residual was one family and it is now **zero on both splits**: the

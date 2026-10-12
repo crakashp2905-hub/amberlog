@@ -249,3 +249,75 @@ class TestIndependentKnowledgeSurvives(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class TestTheIndexAgreesWithTheExhaustiveScan(unittest.TestCase):
+    """The index narrows candidates; it must not change answers.
+
+    It returns a superset and `is_copy` still decides, so a bug in it can only
+    cost time -- but "can only cost time" is an argument, and this is the
+    measurement. The exhaustive `find_copy` is kept precisely so the bounded
+    path has something to be checked against.
+    """
+
+    def _corpus(self, n: int) -> dict[str, str]:
+        return {
+            f"m{i}": (f"unit-{i % 97} requires {1 + i % 9}.{i % 10} m of "
+                      f"clearance at the site-{i % 31} depot")
+            for i in range(n)
+        }
+
+    def test_the_two_paths_find_the_same_copy(self):
+        store = self._corpus(400)
+        index = duplicates.CopyIndex()
+        for mid, content in store.items():
+            index.add(mid, content)
+        target = "unit-5 requires 4.4 m of clearance at the site-12 depot"
+        store["orig"] = target
+        index.add("orig", target)
+
+        for suffix in ("", " (copy filed by the site office)", " [duplicate]"):
+            probe = target + suffix
+            with self.subTest(suffix=suffix):
+                exhaustive = duplicates.find_copy(probe, store)
+                indexed = index.find(probe)
+                self.assertEqual(
+                    (exhaustive and exhaustive.memory_id),
+                    (indexed and indexed.memory_id))
+
+    def test_the_two_paths_agree_that_a_near_miss_is_not_a_copy(self):
+        store = self._corpus(200)
+        index = duplicates.CopyIndex()
+        for mid, content in store.items():
+            index.add(mid, content)
+        probe = "unit-5 requires 9.9 m of clearance at the site-12 depot"
+        self.assertIsNone(duplicates.find_copy(probe, store))
+        self.assertIsNone(index.find(probe))
+
+    def test_it_finds_a_copy_in_both_directions(self):
+        """The incoming side may be the longer or the shorter one.
+
+        Indexing only the incoming content's own terms covers one direction and
+        not the other, which is why each memory is also anchored under a few of
+        its own terms.
+        """
+        short = BULLETIN
+        long = COPY
+        for first, second in ((short, long), (long, short)):
+            with self.subTest(first=first[:20]):
+                index = duplicates.CopyIndex()
+                index.add("held", first)
+                match = index.find(second)
+                self.assertIsNotNone(match)
+                self.assertEqual(match.memory_id, "held")
+
+    def test_the_candidate_set_is_a_small_share_of_the_store(self):
+        store = self._corpus(2000)
+        index = duplicates.CopyIndex()
+        for mid, content in store.items():
+            index.add(mid, content)
+        probe = ("unit-5 requires 4.4 m of clearance at the site-12 depot "
+                 "(copy filed by the site office)")
+        candidates = index.candidates(probe)
+        self.assertLess(len(candidates), len(store) // 4,
+                        f"{len(candidates)} of {len(store)} examined")

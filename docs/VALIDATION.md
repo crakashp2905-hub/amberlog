@@ -11,7 +11,7 @@ and did not.
 
 | | Check | Result |
 |---|---|---|
-| 1 | `pytest tests` | **1050 passed**, 839 subtests |
+| 1 | `pytest tests` | **1054 passed**, 844 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
 | 3 | `tools/scan_secrets.py` | 59 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
 | 4 | `compileall` over `memory_fabric`, `experiments`, `tests`, `tools` | clean |
@@ -82,6 +82,7 @@ because it is the honest argument for the checks existing:
 
 - **Nothing here is a performance claim.** The accuracy thesis was tested properly and failed; [SCORECARD.md](../research/SCORECARD.md) has that, and these checks say nothing about it.
 - **Concurrency is now tested, and the first account of it was wrong.** I added an explicit `busy_timeout` pragma and wrote that it fixed concurrent writers failing instantly, believing SQLite's default to be zero. That is true of the C library and false of Python: `sqlite3.connect` sets 5 seconds of its own accord, so writers had always serialised. The falsification run — remove the pragma, expect the contention tests to fail — passed instead, which is what caught it. The pragma stays because it makes the value visible and configurable, not because it repaired anything.
+- **The multi-process contention tests are weaker than they look, and `experiments/p4_envelope.py` is the answer to that.** The sweep runs 10, 25 and 50 real processes over 4.16 s, where overlap is no longer in doubt, and reports 500 appends landing with no sequence gaps and per-write cost rising 22% for 5× the writers ([result](../research/results/p4-envelope.md)). The original note stands for the tests themselves:
 - **The multi-process contention tests are weaker than they look.** They pass with the pragma removed, because the writers do not reliably overlap on a fast disk. They are strong evidence nothing is lost or corrupted under real load, and no evidence about timeout behaviour; the two deterministic tests that hold a write lock open are the ones that isolate that. The first version of *those* was also weak — `child.poll()` being None only proved the child had not finished importing — so the child now signals readiness before contending.
 - **No adversarial testing of the sensitive-data detector.** It is pattern-based and misses novel formats, as SECURITY.md says.
 - **Tenancy is checked as authorisation, not as isolation.** Every test here runs in one process against one file. Nothing demonstrates — or could demonstrate — isolation against a caller holding the database.

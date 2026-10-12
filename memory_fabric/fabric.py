@@ -191,6 +191,11 @@ class MemoryFabric:
         # which is why it is switchable for a store that ingests in bulk and
         # would rather run the check as a batch job.
         self.recognise_copies = recognise_copies
+        # Bounded candidate lookup for the subset test. The exhaustive scan it
+        # replaces cost 32.4 ms a write at 10,000 memories against 0.19 ms
+        # with the check off -- a 168x write cost growing linearly, which made
+        # the default indefensible (see research/results/p4-envelope.md).
+        self.copy_index = duplicates.CopyIndex()
         self.log = EventLog(path, busy_timeout_ms=busy_timeout_ms)
         # Everything after opening the log can fail — a missing key store
         # makes every sealed memory unreadable and `KeyUnavailable`
@@ -1182,11 +1187,20 @@ class MemoryFabric:
         return fuse(dense, sparse, k=k)
 
     def _index(self, memory_id: str, text: str) -> None:
-        """Both retrieval arms, always. A memory indexed in one and not the
-        other would make `retrieval_mode` change *what exists* rather than how
-        it is ranked."""
+        """Both retrieval arms, always, plus the copy index.
+
+        A memory indexed in one arm and not the other would make
+        `retrieval_mode` change *what exists* rather than how it is ranked.
+
+        The copy index is maintained here rather than in `remember` for the
+        same reason: it is built on replay too, and a store whose copy index
+        was populated only by live writes would stop recognising
+        re-ingestions after a restart.
+        """
         self.index.add(memory_id, text)
         self.lexical.add(memory_id, text)
+        if self.recognise_copies:
+            self.copy_index.add(memory_id, text)
 
     def _unindex(self, memory_id: str) -> None:
         self.index.remove(memory_id)
@@ -1352,10 +1366,7 @@ class MemoryFabric:
         # names a memory that exists.
         copy_of = None
         if self.recognise_copies:
-            copy_of = duplicates.find_copy(
-                content,
-                {mid: m.content for mid, m in self.state.memories.items()},
-            )
+            copy_of = self.copy_index.find(content)
 
         activate = self.auto_activate if auto_activate is None else auto_activate
         ruling = self.firewall.screen_ingest(content)

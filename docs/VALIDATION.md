@@ -11,9 +11,9 @@ and did not.
 
 | | Check | Result |
 |---|---|---|
-| 1 | `pytest tests` | **1054 passed**, 844 subtests |
+| 1 | `pytest tests` | **1059 passed**, 844 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
-| 3 | `tools/scan_secrets.py` | 59 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
+| 3 | `tools/scan_secrets.py` (now scoped to files git will commit) | 59 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
 | 4 | `compileall` over `memory_fabric`, `experiments`, `tests`, `tools` | clean |
 | 5 | Wheel contents | `py.typed`, `identity.py` and `dashboard.html` present; `experiments/` and `tests/` excluded; LICENSE recorded in `dist-info/licenses/` |
 | 6 | Install into a clean venv **outside the source tree**, then run the console script | `demo`, `tenants` and `doctor` all work; `doctor` reports **sound**, 9 ok and 0 warnings, on a store created fresh for the run |
@@ -86,6 +86,7 @@ because it is the honest argument for the checks existing:
 - **The multi-process contention tests are weaker than they look.** They pass with the pragma removed, because the writers do not reliably overlap on a fast disk. They are strong evidence nothing is lost or corrupted under real load, and no evidence about timeout behaviour; the two deterministic tests that hold a write lock open are the ones that isolate that. The first version of *those* was also weak — `child.poll()` being None only proved the child had not finished importing — so the child now signals readiness before contending.
 - **No adversarial testing of the sensitive-data detector.** It is pattern-based and misses novel formats, as SECURITY.md says.
 - **Tenancy is checked as authorisation, not as isolation.** Every test here runs in one process against one file. Nothing demonstrates — or could demonstrate — isolation against a caller holding the database.
+- **The secret scan was auditing files that cannot be committed.** Downloading LongMemEval produced ten high-severity findings inside a 277 MB chat corpus — simulated conversations about passwords and tokens, one containing a `-----BEGIN` block. All real matches, all in a gitignored file. The scan's purpose is that nothing secret reaches the repository, and a file git will not take cannot; auditing it buries the 59 allow-listed fixtures under noise. It now skips gitignored paths, and falls back to scanning everything if git is unavailable, because the safe failure for a secret scanner is to look at more rather than less.
 - **The internal benchmark is still mine**, but it is no longer the only one. SciFact's labels were written by third parties years earlier, and it immediately showed `relevance_v1` flattering the hashing embedder by a factor of four in the size of the gap.
 - **The test count in row 1 has been wrong once, by 9.** Three documents said 974 where the suite collects and passes **965**; re-running the documented command is what found it. The 974 cannot be reproduced at the commit that recorded it (959 collected there), so it was a transcription error, not a regression — and a table row is exactly where "no numbers in docs without a run" is easiest to violate without noticing.
 - **A single run on one machine.** CI covers rows 1–5 and 11 across six interpreter/OS pairs; rows 6–10 were run by hand, here.

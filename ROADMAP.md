@@ -143,6 +143,52 @@ that relevance ranking is not where the headroom is — and an oracle is a far
 cheaper way to learn that than a tuned ranker. That is the whole argument for
 this ordering.
 
+### What LongMemEval changed
+
+**A second external benchmark, and the first that tests what this project is
+for.** [LongMemEval](research/results/longmemeval.md) (Wu et al., ICLR 2025) is
+500 questions over long chat histories with turn-level gold evidence, covering
+knowledge updates (78), temporal reasoning (133), multi-session reasoning (133)
+and abstention (30) — four things SciFact cannot test and that had only ever
+been measured on fixtures written here. Found by way of
+[Hindsight](research/HINDSIGHT.md), which evaluates on it.
+
+It earned its place immediately, in three ways.
+
+**It found a shipped mechanism mis-specified.** `retrieve(as_of=T)` means state
+at a point, and its docstring recommended passing the task's own time. On
+ordering questions — *"which did I do first?"* — that costs **19 points of turn
+recall**, because a fifth of their evidence postdates the question. Every
+internal benchmark agreed with the old advice because **none ever placed
+evidence after the task's event time**; `relevance_v2` uses one event time for
+every case. `retrieve` and `reconstruct` now take `until` as well as `as_of`,
+so the three temporal questions are distinct, and `tests/test_bitemporal.py`
+pins them — a file that did not exist, though schema 0.7.0 added the fields.
+
+**It gave the first controlled demonstration of the fusion rule.** Same corpus,
+same queries, same two arms, varying only the haystack:
+
+| haystack | vector | lexical | hybrid | fusion worth |
+|---|---|---|---|---|
+| 23 turns | 0.820 | 0.817 | **0.851** | +0.034 |
+| 491 turns | 0.456 | **0.753** | 0.693 | −0.060 |
+
+Every earlier confirmation compared *across* benchmarks. This one holds
+everything else fixed, and reproduces the SciFact result on an independent
+corpus. It is also the clearest argument that the rule is a **workaround**: RRF
+gives every arm equal rank votes and cannot notice one has gone bad.
+
+**It confirmed the abstention gap externally.** On 30 deliberately unanswerable
+questions the fabric reports insufficiency **0–7%** of the time — the number
+`relevance_v2`, P1 and P2 all reported internally, now on data I did not write.
+LongMemEval's own retrieval evaluation *skips* these instances, so this is a
+metric defined here on their data rather than one they endorse.
+
+One encouraging number, and not the one I would have guessed:
+**knowledge-update is the easiest question type at 0.935.** The hardest are
+preference (0.528) and temporal reasoning (0.593), neither of which this project
+has a mechanism aimed at.
+
 ### What the agent-team comparison and the envelope sweep changed
 
 **[P3b](research/results/p3b-agent-teams.md) is the first end-to-end result:

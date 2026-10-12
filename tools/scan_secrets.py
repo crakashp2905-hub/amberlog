@@ -100,6 +100,47 @@ def is_allowed(path: str, kind: str, raw: str, line_text: str = "") -> bool:
     return any(stripped.startswith(p) for p in ALLOWED_PREFIXES)
 
 
+def _gitignored(root: Path) -> set[str]:
+    """Paths git will not commit, so the scan does not audit them.
+
+    This exists because of a false positive that was really a scope error.
+    Downloading LongMemEval produced **ten high-severity findings inside a
+    chat corpus** -- simulated conversations in which people discuss passwords
+    and tokens, and one containing a `-----BEGIN` block. All real matches, all
+    in a 277 MB file that is gitignored and can never be committed.
+
+    The scan's purpose is "nothing secret reaches the repository", and a file
+    git will not take cannot. Auditing it buries the findings that matter: ten
+    lines of noise against 59 allow-listed fixtures, and a reader who learns to
+    skim this output has lost the tool.
+
+    Falls back to scanning everything if git is unavailable, because the safe
+    failure for a secret scanner is to look at more rather than less.
+    """
+    import subprocess
+
+    try:
+        done = subprocess.run(
+            ["git", "-C", str(root), "ls-files", "--others", "--ignored",
+             "--exclude-standard", "--directory"],
+            capture_output=True, text=True, timeout=120, check=True)
+    except (OSError, subprocess.SubprocessError):
+        return set()
+    out: set[str] = set()
+    for line in done.stdout.splitlines():
+        entry = line.strip().rstrip("/")
+        if not entry:
+            continue
+        candidate = root / entry
+        if candidate.is_dir():
+            for child in candidate.rglob("*"):
+                if child.is_file():
+                    out.add(child.relative_to(root).as_posix())
+        else:
+            out.add(entry)
+    return out
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Scan the repo for secrets")
     parser.add_argument("--report", action="store_true", help="list every finding")
@@ -112,10 +153,13 @@ def main() -> int:
     unexpected: list[tuple[str, int, str, str]] = []
     seen = 0
 
+    ignored = _gitignored(root)
     for path in sorted(root.rglob("*")):
         if not path.is_file() or path.suffix in SKIP_SUFFIXES:
             continue
         if any(part in SKIP_DIRS for part in path.parts):
+            continue
+        if path.relative_to(root).as_posix() in ignored:
             continue
         try:
             text = path.read_text(encoding="utf-8")

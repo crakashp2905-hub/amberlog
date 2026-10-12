@@ -948,20 +948,40 @@ class MemoryFabric:
     # one on by assumption is how a mechanism gets credit it has not earned,
     # which is the H2/H3/H4a pattern this project keeps recording.
 
-    def _applicable_at(self, memory_ids: Iterable[str], when: int | None) -> set[str]:
-        """Drop memories whose validity window excludes `when`.
+    def _applicable_at(self, memory_ids: Iterable[str], when: int | None,
+                       until: int | None = None) -> set[str]:
+        """Narrow by validity: a point in time, or a history through a time.
 
-        `when` None does nothing, which is right for a task that does not say
-        what time it is about. A memory with no window applies always, so a
+        `when` is **state at a point** -- `valid_from <= when < valid_to` --
+        and `until` is **everything known through a point**, which ignores
+        `valid_to` and keeps a claim that has since been superseded.
+
+        The two are different questions and conflating them is measured to
+        cost. On LongMemEval's temporal-reasoning questions -- "which did I do
+        first, X or Y?" -- passing the question's own date as `when` discards
+        **20% of the turns and 19 points of turn recall**, because the evidence
+        for an ordering question is spread across the whole history and some of
+        it postdates the moment the question is asked. `applies_at` is right
+        and the call was wrong: a question about when things happened is not a
+        question about what was true at a moment.
+
+        Neither mode set does nothing, which is right for a task that does not
+        say what time it is about. A memory with no window applies always, so a
         store written before 0.7.0 is unaffected.
         """
-        if when is None:
+        if when is None and until is None:
             return set(memory_ids)
-        return {
-            memory_id
-            for memory_id in memory_ids
-            if self.state.memories[memory_id].applies_at(when)
-        }
+        out = set()
+        for memory_id in memory_ids:
+            memory = self.state.memories[memory_id]
+            if when is not None and not memory.applies_at(when):
+                continue
+            if until is not None:
+                begins = memory.valid_from
+                if begins is not None and begins > until:
+                    continue
+            out.add(memory_id)
+        return out
 
     def source_root(self, memory_id: str) -> str:
         """The earliest observation this memory traces back to.
@@ -1614,6 +1634,7 @@ class MemoryFabric:
         min_relevance: float = MIN_RELEVANCE,
         tenant_id: str | None = None,
         as_of: int | None = None,
+        until: int | None = None,
         group_by_source_root: bool = True,
         expand_lineage: int = 1,
     ) -> RetrievalResult:
@@ -1638,9 +1659,27 @@ class MemoryFabric:
         **`as_of` does not default**, and cannot. Defaulting it to `now` would
         make every historical question unanswerable — `temporal_drift-02` is
         the case: the same corpus, the opposite answer, because the task is
-        about last year. A caller that knows what time its task is about passes
-        it; one that does not gets no temporal filtering, which is the honest
-        behaviour rather than a guess.
+        about last year.
+
+        **And a caller that knows its task's time should still think about
+        which temporal question it is asking**, because passing the task's own
+        event time is not always right. `as_of` means *state at a point*:
+        `valid_from <= as_of < valid_to`. On LongMemEval's temporal-reasoning
+        questions — "which did I do first, X or Y?" — doing that discards
+        **20% of the turns and 19 points of turn recall**, because the evidence
+        for an ordering question is spread across the whole history and some of
+        it postdates the moment the question is asked
+        (`research/results/longmemeval.md`). An earlier version of this
+        docstring recommended passing the event time without qualification,
+        and every internal benchmark agreed with it because none of them put
+        evidence after the task's event time. It took an external benchmark to
+        show the gap.
+
+        So there are three temporal questions and the caller picks:
+
+        * **what is true now, or was true at T** — `as_of=T`. Supersession applies.
+        * **what did we know through T**, including claims since superseded — `until=T`. Half-open upper bounds are ignored.
+        * **when did things happen** — neither. An ordering question needs the whole history, and filtering it is how 19 points go missing.
         """
         eligible = self._eligible_ids(
             include_contested=include_contested, tenant_id=tenant_id
@@ -1650,7 +1689,7 @@ class MemoryFabric:
         # is queried, for the reason the tenant filter does: a memory excluded
         # before ranking cannot be ranked, scored, logged or leaked by a bug
         # in a policy.
-        eligible = self._applicable_at(eligible, as_of)
+        eligible = self._applicable_at(eligible, as_of, until)
         hits = self._search(query, pool_size, eligible, min_relevance)
         if expand_lineage:
             hits = self._expand_lineage(
@@ -1721,6 +1760,7 @@ class MemoryFabric:
         episode_id: str | None = None,
         tenant_id: str | None = None,
         as_of: int | None = None,
+        until: int | None = None,
         include_contested: bool = False,
         max_steps: int = chains.MAX_STEPS,
         beam: int = chains.BEAM,
@@ -1766,7 +1806,7 @@ class MemoryFabric:
         eligible = self._eligible_ids(
             include_contested=include_contested, tenant_id=tenant_id
         )
-        eligible = self._applicable_at(eligible, as_of)
+        eligible = self._applicable_at(eligible, as_of, until)
         if not eligible:
             return chains.EvidenceChain()
 

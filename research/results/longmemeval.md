@@ -175,6 +175,59 @@ My first guess at the cause was wrong and is worth recording: I expected the
 per-candidate component recomputation to dominate and it was worth 11 ms of the
 193. The regex in the inner loop was worth 88.
 
+## 5a. A trained embedder is *worse* here, and the cost closes P9
+
+The `oracle` split with the trained arms, 500 instances. The `s` split's
+~245,500 embeddings are ~32 hours even batched, so this is the tractable half
+and §7 says what stays untested because of it.
+
+| arm | turn recall | session recall | latency a query |
+|---|---|---|---|
+| `lexical` | 0.817 | 0.968 | 3.3 ms |
+| `vector` (hashing, 256-dim) | **0.820** | 0.970 | 3.2 ms |
+| **`hybrid`** (hashing) | **0.851** | 0.970 | 4.5 ms |
+| `real_vector` (trained, 768-dim) | **0.811** | 0.970 | **393.0 ms** |
+| `real_hybrid` (trained) | 0.836 | 0.970 | 2.8 ms* |
+| `oracle` | 1.000 | 1.000 | 0.0 ms |
+
+\* the query embedding was already cached from `real_vector`'s run, so this
+number is the scan alone and not a per-query cost.
+
+**The trained embedder loses to the hashed one** — 0.811 against 0.820 — and
+**hashing hybrid at 0.851 beats trained hybrid at 0.836.** On every question
+type bar one, `real_vector` is at or below `vector`.
+
+That is the opposite of SciFact, where the trained embedder scored **0.701
+against the hashed arm's 0.315** and the gap was the largest single effect this
+project had measured. Both are real, and together they say the embedder's value
+is a **property of the corpus**, not of the embedder:
+
+| corpus | documents | hashing | trained |
+|---|---|---|---|
+| SciFact abstracts | 5,183 long scientific paragraphs | 0.315 | **0.701** |
+| LongMemEval turns | ~23 short conversational utterances | **0.820** | 0.811 |
+
+A hashed bag of words is weak on a paraphrased abstract and strong on a short
+turn that shares most of its words with the question. "Fix the embedder" was
+the right conclusion from SciFact and is not a general one — which is the
+second time this benchmark has corrected a conclusion that every internal
+measurement agreed with.
+
+**And the latency closes P9.** That milestone declined distribution at
+**4.39 ms a retrieval**, measured with the 256-dimension hashing embedder, and
+`memory_fabric/vectors.py` has carried an open item ever since: the figure was
+taken at the wrong dimension. Here a trained-embedder retrieval costs
+**393 ms**, on a corpus of 23 documents — the cost is **embedding the query**,
+one model call, and is therefore independent of corpus size. That is **89× the
+figure the decision rested on**, before any scan. Taken with
+[p4-envelope.md](p4-envelope.md)'s 19 ms for lexical retrieval at 10,000
+memories, the ordering is now measured at three points and P9's conclusion does
+not transfer to the embedder SciFact recommends.
+
+**Abstention is identical across all five arms at 0.067**, trained arms
+included — one more confirmation that it is not a retrieval-side property
+([abstention-signals.md](abstention-signals.md)).
+
 ## 6. The oracle split is too small to be a retrieval test
 
 Reported because the mistake is one this project has already made:
@@ -193,7 +246,7 @@ as a wiring check only. Every headline number in §1 is from `s`.
 1. **Retrieval stage only.** No model reads the context, so nothing here is an answer-quality claim and nothing is comparable with the paper's or Hindsight's end-to-end accuracy.
 2. **Turn granularity is a choice.** Each turn is one memory. Session granularity would change every number, and the reference harness supports both.
 3. **The `m` split is not run.** ~500 sessions a question is the harder regime and is untouched.
-4. **No trained embedder.** The `real_*` arms need 500 × ~491 embeddings and were not run; given §2, a trained arm is exactly what should rescue fusion here, and that is a prediction rather than a result.
+4. **The trained arms ran on the `oracle` split only** (§5a). The `s` split needs ~245,500 embeddings at a measured 2.1 a second batched — about **32 hours** — and an unbatched 60-instance attempt timed out at 5,400 s. So the prediction §2 invites, that a trained arm rescues fusion at 491 turns a history where the hashed one collapses to 0.456, **remains untested**. §5a makes it less likely than it looked: on short conversational turns the trained embedder is the *weaker* arm.
 5. **Abstention scoring is mine.** LongMemEval skips these instances, so "reports insufficiency" is a metric I defined on their data, not one they endorse.
 6. **One run, no seeds.** The deterministic arms are byte-identical across runs; there is no sampling to vary.
 

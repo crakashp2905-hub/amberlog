@@ -213,8 +213,22 @@ class VectorIndex:
     That is ~50x at the same corpus size, and SciFact is the reason to want the
     trained embedder. So P9's conclusion holds for the embedder it was measured
     with and **does not transfer** to the one the evidence now recommends.
-    Re-measuring it is the open item; this docstring is not the place to
-    pre-judge it (AGENTS.md principle 9).
+
+    **Re-measured 2026-10-13, and the dominant cost is not the scan.** On
+    LongMemEval a trained-embedder retrieval costs **393 ms** on a corpus of
+    **23 documents** -- one model call to embed the *query*, which is
+    independent of corpus size and swamps the scan at any size this project
+    has measured. Against the **4.39 ms** P9 declined distribution on, that is
+    89x before a single document is compared
+    (`research/results/longmemeval.md` section 5a).
+
+    And the same run removed the premise: on short conversational turns the
+    trained embedder is the **weaker** arm, 0.811 against the hashed 0.820,
+    where on SciFact's abstracts it was 0.701 against 0.315. The embedder's
+    value is a property of the corpus, so "pay 393 ms for the trained one" is
+    not a general trade either. Principle 9 still applies -- nothing here says
+    distribution is needed, only that P9's number was taken at the wrong
+    dimension and is now measured at the right one.
 
     Two optimisations, because a linear scan in pure Python is where all the
     time goes: vectors are normalised once on insert rather than on every

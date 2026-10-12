@@ -261,6 +261,26 @@ def run_arm(arm: str, instances: Sequence[Mapping[str, Any]], k: int,
             **kwargs,
         )
         try:
+            if embedder is not None and arm.startswith("real_"):
+                # Batch the instance's turns rather than embedding one text
+                # per call. Measured on the same 90 texts:
+                #
+                #   one at a time   92.0 s   1.0 embeddings/s
+                #   warm(chunk=64)  43.1 s   2.1 embeddings/s
+                #
+                # 2.1x, which decides what is runnable. The `oracle` split's
+                # ~11,500 embeddings go from ~3.2 hours to ~91 minutes; the
+                # `s` split's ~245,500 stay infeasible either way, at ~32
+                # hours batched. The embedder's cache is shared across arms
+                # because `main` builds one, so `real_hybrid` costs almost
+                # nothing after `real_vector`.
+                texts = [
+                    f"{turn.get('role', 'user')}: {(turn.get('content') or '').strip()}"
+                    for session in instance["haystack_sessions"]
+                    for turn in session
+                    if (turn.get("content") or "").strip()
+                ]
+                embedder.warm(texts)
             mapping = _write_history(fabric, instance)
             as_of = parse_date(instance.get("question_date") or "")
             bounds: dict[str, Any] = {}

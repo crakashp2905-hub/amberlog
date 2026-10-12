@@ -196,6 +196,11 @@ class MemoryFabric:
         # with the check off -- a 168x write cost growing linearly, which made
         # the default indefensible (see research/results/p4-envelope.md).
         self.copy_index = duplicates.CopyIndex()
+        # memory id -> content terms, and the same minus bare numerals. The
+        # second is what an edge in a chain may be built from, and splitting
+        # it here keeps the numeric test out of the search's inner loop.
+        self.chain_terms: dict[str, frozenset[str]] = {}
+        self.chain_plain: dict[str, frozenset[str]] = {}
         self.log = EventLog(path, busy_timeout_ms=busy_timeout_ms)
         # Everything after opening the log can fail — a missing key store
         # makes every sealed memory unreadable and `KeyUnavailable`
@@ -1221,10 +1226,20 @@ class MemoryFabric:
         self.lexical.add(memory_id, text)
         if self.recognise_copies:
             self.copy_index.add(memory_id, text)
+        # Chain terms, cached for the same reason the IDF is: `reconstruct`
+        # tokenised every candidate on every call, so a question over 413
+        # turns cost 38.8 ms **before the search expanded a single node**.
+        # Tokenisation does not depend on the query, so none of it needed
+        # repeating.
+        self.chain_terms[memory_id] = frozenset(chains.tokens(text))
+        self.chain_plain[memory_id] = frozenset(
+            t for t in self.chain_terms[memory_id] if not chains.is_numeric(t))
 
     def _unindex(self, memory_id: str) -> None:
         self.index.remove(memory_id)
         self.lexical.remove(memory_id)
+        self.chain_terms.pop(memory_id, None)
+        self.chain_plain.pop(memory_id, None)
 
     @staticmethod
     def _index_text(memory: Memory) -> str:
@@ -1820,8 +1835,11 @@ class MemoryFabric:
 
         # `chains.tokens`, not the lexical index's: identifiers must stay
         # whole or the graph's edges stop meaning "about the same thing".
+        # Read from the cache `_index` maintains, falling back for a memory
+        # written before the cache existed in this process.
         terms = {
-            memory_id: chains.tokens(self.state.memories[memory_id].content)
+            memory_id: self.chain_terms.get(memory_id)
+            or frozenset(chains.tokens(self.state.memories[memory_id].content))
             for memory_id in ordered
         }
         # Query terms some candidate actually contains. A term nothing supplies
@@ -1837,6 +1855,7 @@ class MemoryFabric:
             ordered, terms, need,
             max_steps=max_steps, beam=beam, node_budget=node_budget,
             relevance=relevance,
+            plain=self.chain_plain,
         )
         if k is not None and len(chain.steps) > k:
             # Truncating can only break a chain, so `connected` is
@@ -1850,8 +1869,13 @@ class MemoryFabric:
                 budget_exhausted=chain.budget_exhausted,
                 connected=chains._connected(
                     [s.memory_id for s in kept],
-                    {s.memory_id: frozenset(terms[s.memory_id]) for s in kept},
-                    frozenset(need),
+                    {
+                        s.memory_id: (
+                            self.chain_plain.get(s.memory_id, frozenset())
+                            - set(need)
+                        )
+                        for s in kept
+                    },
                 ),
             )
 

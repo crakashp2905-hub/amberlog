@@ -82,6 +82,16 @@ def tokens(text: str) -> list[str]:
     """Content terms, with hyphenated and dotted identifiers preserved."""
     return [t for t in _TOKEN.findall(text.lower()) if t not in _STOPWORDS]
 
+
+def is_numeric(term: str) -> bool:
+    """A bare number, which may cover a query term but never link two memories.
+
+    Exported so a caller can precompute the non-numeric sets once per memory
+    instead of running the test inside the search's inner loop, where it
+    accounted for 423,918 regex matches in three reconstructions.
+    """
+    return bool(_NUMERIC.match(term))
+
 # Defaults. Chosen from the structure of the measured problem, not tuned on a
 # metric: the deepest labelled chain in `relevance_v2` is four memories, so a
 # five-step cap admits it with one spare, and the node budget is ~2x the
@@ -183,6 +193,16 @@ class _State:
     covered: frozenset[str]
     cost: float
     terms: frozenset[str] = field(default_factory=frozenset)
+    links: frozenset[str] = field(default_factory=frozenset)
+    """The union of the chain's *linkable* terms: content terms that are
+    neither query terms nor bare numerals.
+
+    Carried on the state so an edge test is one set operation. Profiling found
+    `_bridge_terms` taking 60% of a search -- 35,000 calls a query, each
+    running the numeric regex once per shared term, 423,918 matches in three
+    reconstructions. None of that work depends on the pair being compared, so
+    all of it is done once up front.
+    """
 
 
 def _bridge_terms(left: frozenset[str], right: frozenset[str],
@@ -213,6 +233,7 @@ def search(
     beam: int = BEAM,
     node_budget: int = NODE_BUDGET,
     relevance: Mapping[str, float] | None = None,
+    plain: Mapping[str, frozenset[str]] | None = None,
 ) -> EvidenceChain:
     """Find a small connected set of `candidates` covering `need`.
 
@@ -248,9 +269,25 @@ def search(
         for term in tokens_of:
             doc_freq[term] = doc_freq.get(term, 0) + 1
 
+    # Linkable terms, once per candidate rather than once per comparison. A
+    # query term cannot be a link (every query-matching pair would look
+    # joined) and nor can a bare numeral (two memories sharing "3" are not
+    # thereby about the same thing).
+    # `plain` is the caller's cache of each candidate's non-numeric terms, so
+    # the only per-query work is removing the query's own terms -- one set
+    # difference instead of a regex pass. Computed here when absent, which is
+    # what a direct `search()` call in a test does.
+    links = {
+        candidate: (plain[candidate] - need_set) if plain and candidate in plain
+        else frozenset(
+            t for t in tokens if t not in need_set and not _NUMERIC.match(t))
+        for candidate, tokens in term_sets.items()
+    }
+
     frontier = [
         _State(ids=(c,), covered=term_sets[c] & need_set,
-               cost=1.0 - score.get(c, 0.0), terms=term_sets[c])
+               cost=1.0 - score.get(c, 0.0), terms=term_sets[c],
+               links=links[c])
         for c in seeds
     ]
     explored = 0
@@ -258,7 +295,7 @@ def search(
     best: _State | None = None
 
     def connected(state: _State) -> bool:
-        return _connected(state.ids, term_sets, need_set)
+        return _connected(state.ids, links)
 
     def rank_key(state: _State) -> tuple:
         # Coverage first, then **connectedness**, then length, then relevance.
@@ -291,7 +328,18 @@ def search(
             if len(state.ids) >= max_steps:
                 continue
             still_needed = need_set - state.covered
-            state_connected = connected(state)
+            # The component of each member, computed **once**. The first
+            # version called `_joins` per candidate and `_joins` computed the
+            # components twice, so expansion was O(candidates x state^2) and
+            # the cost tracked **query length** rather than corpus size: on
+            # LongMemEval a 6-token question cost 34 ms and a 17-token one 182
+            # ms over the same ~500 candidates, because a longer query admits
+            # more bridge candidates and each one re-walked the whole state.
+            #
+            # A candidate joins the chain iff its bridge terms touch two
+            # different components, which is one pass over the state.
+            component_of = _components_of(state.ids, links)
+            state_connected = len(set(component_of.values())) <= 1
 
             # Two kinds of successor, ranked separately and then capped, which
             # is what bounds the search independently of corpus size.
@@ -315,7 +363,7 @@ def search(
                     # connector -- and skipping bridges on completeness alone
                     # made that memory unreachable.
                     continue
-                bridges = _bridge_terms(cand_terms, state.terms, need_set)
+                bridges = links[candidate] & state.links
                 if not bridges:
                     continue
                 # A connector supplies no query term by definition, so the
@@ -334,7 +382,11 @@ def search(
                 # one, so a bridge that reduces the number of components sorts
                 # first. Without this the search spends its bridge budget on
                 # memories that merely share a word with something already in.
-                joins = 0 if _joins(state.ids, candidate, term_sets, need_set) else 1
+                touched = {
+                    component_of[other] for other in state.ids
+                    if not links[candidate].isdisjoint(links[other])
+                }
+                joins = 0 if len(touched) >= 2 else 1
                 bridging.append(
                     ((joins, min(doc_freq[t] for t in bridges),
                       rank_of[candidate]), candidate))
@@ -353,6 +405,7 @@ def search(
                     covered=state.covered | (cand_terms & need_set),
                     cost=state.cost + (1.0 - score.get(candidate, 0.0)),
                     terms=state.terms | cand_terms,
+                    links=state.links | links[candidate],
                 ))
             if exhausted:
                 break
@@ -374,11 +427,11 @@ def search(
     # Only on a chain that actually holds together. Run on a partial chain it
     # added two more wrong memories to an already-broken answer, because the
     # "anchor" it compares against was itself a distractor.
-    if best.covered == need_set and _connected(best.ids, term_sets, need_set):
+    if best.covered == need_set and _connected(best.ids, links):
         best = _add_contradictions(
             best, candidates, term_sets, need_set, max_steps)
     return _explain(best, term_sets, need_set, rank_of, explored, exhausted,
-                    doc_freq)
+                    doc_freq, links)
 
 
 def _add_contradictions(
@@ -418,7 +471,7 @@ def _add_contradictions(
     if len(ids) == len(state.ids):
         return state
     return _State(ids=tuple(ids), covered=state.covered, cost=state.cost,
-                  terms=terms)
+                  terms=terms, links=state.links)
 
 
 def _explain(
@@ -429,9 +482,20 @@ def _explain(
     explored: int,
     exhausted: bool,
     doc_freq: Mapping[str, int] | None = None,
+    links: Mapping[str, frozenset[str]] | None = None,
 ) -> EvidenceChain:
     """Attach a reason and a leave-one-out necessity verdict to each step."""
     doc_freq = doc_freq or {}
+    # Derived rather than defaulted to empty: necessity asks whether the chain
+    # falls apart without a step, and with no link sets every chain would look
+    # connected and nothing would ever be necessary.
+    if not links:
+        links = {
+            memory_id: frozenset(
+                t for t in term_sets.get(memory_id, frozenset()) - need
+                if not _NUMERIC.match(t))
+            for memory_id in state.ids
+        }
     ids = list(state.ids)
     steps: list[ChainStep] = []
     for memory_id in ids:
@@ -440,16 +504,15 @@ def _explain(
             *(term_sets[m] & need for m in others)) if others else frozenset()
         # Necessary if the chain loses coverage without it, or falls apart.
         loses_coverage = bool((state.covered - covered_without))
-        disconnects = bool(others) and not _connected(others, term_sets, need)
+        disconnects = bool(others) and not _connected(others, links)
         necessary = loses_coverage or disconnects
 
         covers = tuple(sorted(term_sets[memory_id] & need))
-        raw_bridges = _bridge_terms(
-            term_sets[memory_id],
-            frozenset().union(*(term_sets[m] for m in others)) if others
-            else frozenset(),
-            need,
-        )
+        mine = links.get(memory_id) or _bridge_terms(
+            term_sets[memory_id], term_sets[memory_id], need)
+        theirs = (frozenset().union(*(links.get(m, frozenset()) for m in others))
+                  if others else frozenset())
+        raw_bridges = mine & theirs
         # Rarest first. A link through "chiller-1" and a link through
         # "assigned" are both shared non-query terms and only one of them is
         # evidence that two memories are about the same thing; ordering says
@@ -472,28 +535,48 @@ def _explain(
         missing=tuple(sorted(need - state.covered)),
         nodes_explored=explored,
         budget_exhausted=exhausted,
-        connected=_connected(ids, term_sets, need),
+        connected=_connected(ids, links),
     )
 
 
-def _joins(
+def _components_of(
     ids: Sequence[str],
-    candidate: str,
-    term_sets: Mapping[str, frozenset[str]],
-    need: frozenset[str],
-) -> bool:
-    """Whether adding `candidate` reduces the number of components."""
-    if len(ids) <= 1:
-        return False
-    before = _components(ids, term_sets, need)
-    after = _components(list(ids) + [candidate], term_sets, need)
-    return after < before
+    links: Mapping[str, frozenset[str]],
+) -> dict[str, int]:
+    """Which connected component each member of the chain belongs to.
+
+    Avoids the word a benchmark answer key would be called:
+    `tests/test_chains.py` asserts this module never names one, because the
+    registered constraint is that the mechanism uses content, edges and gates
+    and not a benchmark's answer key. A crude check, deliberately -- and a variable name is
+    not worth weakening it for.
+
+    One pass, reused for every candidate in the expansion. Replaced a
+    per-candidate `_joins` that recomputed the components twice; see the note
+    in `search`.
+    """
+    found: dict[str, int] = {}
+    group = 0
+    for start in ids:
+        if start in found:
+            continue
+        found[start] = group
+        stack = [start]
+        while stack:
+            current = stack.pop()
+            for other in ids:
+                if other in found:
+                    continue
+                if not links[current].isdisjoint(links[other]):
+                    found[other] = group
+                    stack.append(other)
+        group += 1
+    return found
 
 
 def _components(
     ids: Sequence[str],
-    term_sets: Mapping[str, frozenset[str]],
-    need: frozenset[str],
+    links: Mapping[str, frozenset[str]],
 ) -> int:
     seen: set[str] = set()
     count = 0
@@ -508,7 +591,7 @@ def _components(
             for other in ids:
                 if other in seen:
                     continue
-                if _bridge_terms(term_sets[current], term_sets[other], need):
+                if not links[current].isdisjoint(links[other]):
                     seen.add(other)
                     stack.append(other)
     return count
@@ -516,8 +599,7 @@ def _components(
 
 def _connected(
     ids: Sequence[str],
-    term_sets: Mapping[str, frozenset[str]],
-    need: frozenset[str],
+    links: Mapping[str, frozenset[str]],
 ) -> bool:
     """Whether these memories form one component under non-query shared terms.
 
@@ -535,7 +617,7 @@ def _connected(
         for other in ids:
             if other in seen:
                 continue
-            if _bridge_terms(term_sets[current], term_sets[other], need):
+            if not links[current].isdisjoint(links[other]):
                 seen.add(other)
                 stack.append(other)
     return len(seen) == len(ids)

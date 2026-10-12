@@ -20,7 +20,7 @@ essentially never says it does not know.**
 |---|---|---|---|---|---|
 | **`lexical`** | **0.753** | **0.921** | 0.847 | 9.9 | 11.2 |
 | `hybrid` | 0.693 | 0.911 | 0.813 | 10.0 | 12.2 |
-| `chain` | 0.460 | **0.898** | 0.617 | **3.6** | **193.2** |
+| `chain` | 0.460 | **0.898** | 0.617 | **3.6** | **67.7** |
 | `vector` (hashing) | 0.456 | 0.811 | 0.598 | 10.0 | 4.3 |
 | `oracle` | 1.000 | 1.000 | 1.000 | 1.8 | 0.1 |
 
@@ -149,11 +149,31 @@ an arm that returns 3.6 items cannot win, and that is a property of the metric
 rather than a verdict on the mechanism — P1 registered sufficiency as its
 primary metric for this reason.
 
-What is a verdict: **193 ms a query** against lexical's 11 ms, at ~491
-candidates. P1 measured the search at 13 ms over ~495 candidates on
-`relevance_v2`, so something about this corpus — short conversational turns
-sharing many common words — makes the bridge candidate lists much longer. That
-is a real cost finding and it is not explained yet.
+**The cost finding is now explained and largely fixed.** The first run cost
+**193 ms a query** against lexical's 11 ms, where P1 had measured the same
+search at 13 ms over ~495 candidates on `relevance_v2`. Profiling found the
+cost tracking **query length rather than corpus size** — a 6-token question
+cost 34 ms and a 17-token one 182 ms over the same ~500 candidates — because
+`_bridge_terms` ran 35,000 times a query with a regex per shared term, 423,918
+matches in three reconstructions.
+
+Three changes, none of which alter what the search returns:
+
+| | worst case |
+|---|---|
+| as first measured | 193 ms |
+| components computed once per state, not twice per candidate | 182 ms |
+| linkable term sets precomputed, so an edge test is one set operation | 94 ms |
+| tokenisation cached on the fabric, as the IDF already was | **68 ms** |
+
+**2.9× faster with turn recall and session recall unchanged to three decimals**
+(0.460 and 0.898), which is how a behaviour-preserving change should look. The
+floor is now 8.3 ms on a question that expands no search nodes, against
+lexical's 11 ms.
+
+My first guess at the cause was wrong and is worth recording: I expected the
+per-candidate component recomputation to dominate and it was worth 11 ms of the
+193. The regex in the inner loop was worth 88.
 
 ## 6. The oracle split is too small to be a retrieval test
 

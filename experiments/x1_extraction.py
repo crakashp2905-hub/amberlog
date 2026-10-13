@@ -290,6 +290,13 @@ def run(split: str, k: int = 5, model: str = "qwen2.5:7b",
             "ndcg": mean(lambda r: r.result.ndcg),
             "critical_recall": mean(lambda r: r.result.critical_recall),
             "latency_ms": mean(lambda r: r.latency_ms),
+            # Registered in section 5 as a gate rather than a metric: any
+            # non-zero value fails the run. It was missing from this summary
+            # for the first dev run, which is recorded in the result -- a
+            # registered pass/fail condition that is not printed is not
+            # checked, whatever the gate pipeline guarantees structurally.
+            "must_not_expose_rate": mean(
+                lambda r: float(bool(r.result.exposed_forbidden))),
         }
 
     out: dict[str, Any] = {

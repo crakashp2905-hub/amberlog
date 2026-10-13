@@ -142,6 +142,18 @@ ALLOWED_SNIPPETS = {
     ("memory_fabric/observability/auth.py", "password_assignment", "name, sep, token = line.partition"),
     ("memory_fabric/observability/auth.py", "password_assignment", "name, token = name.strip()"),
     ("memory_fabric/observability/server.py", "password_assignment", "token='<your-token>'"),
+    # The System One client takes an optional bearer token for a remote
+    # endpoint. `password_assignment` fires on the two lines that move the
+    # caller's parameter into the instance and read it back, neither of which
+    # contains a value: `self.api_key = api_key` and `if self.api_key:`. The
+    # detector is left alone -- a pattern that stopped firing on
+    # `api_key = <identifier>` would also stop firing on
+    # `api_key = "hunter2"`, and weakening a governance rule so that my own
+    # file passes the repository scan is the wrong direction.
+    ("memory_fabric/adapters/systemone.py", "password_assignment",
+     "self.api_key = api_key"),
+    ("memory_fabric/adapters/systemone.py", "password_assignment",
+     "if self.api_key:"),
 }
 
 

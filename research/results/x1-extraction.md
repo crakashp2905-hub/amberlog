@@ -1,6 +1,12 @@
-# X1 — extraction at ingest: the registration was invalid, and the cost decides the product
+# X1 — extraction at ingest: NOT SUPPORTED at 0.000, and three faults in the apparatus
 
-**Three findings, and two of them are about this project's own apparatus
+**The registered primary scores 0.000 against a bar of 0.400 — 0% of the
+headroom — and the mechanism proposed zero relations out of three.** The model
+is not why: `gemma2` extracted both sides of the relation correctly. The
+matcher that was supposed to join them is a string-containment test whose unit
+test supplied both strings (§11).
+
+**Four findings, and three of them are about this project's own apparatus
 rather than about extraction.**
 
 1. **The registered primary metric was trivially maximised by a registered baseline, and the 8c check that exists to catch exactly that was performed and answered wrongly.** `B = 0.000` was quoted from a table reporting a *different metric at a different budget*. On the registered metric a plain lexical baseline scores **1.000** on one of the two registered families. The family is abandoned under the registration's own clause. This was found by running the baselines before the model, and it is now [principle 8d](../../AGENTS.md).
@@ -216,10 +222,65 @@ mechanism, not away from it:
 
 ---
 
-## 4. The primary
+## 4. The primary: NOT SUPPORTED at 0.000
 
-_Pending: the `extraction` arm, `gemma2:latest`, dev, `multi_hop_4`, reduced to
-60 memories a case. 172 unique statements, ~2.6 h._
+**Run 2026-10-14**, `gemma2:latest` free-form, dev, `multi_hop_4`, reduced to
+60 memories a case. 172 unique statements, **172 model calls, 57,974 tokens,
+8,962 s (2.49 h)**.
+
+| arm | sufficiency | nDCG | critical recall |
+|---|---|---|---|
+| `baseline` | 0.000 | 0.832 | 0.750 |
+| **`extraction`** | **0.000** | 0.832 | 0.750 |
+| `declared` (ceiling, fixture-supplied) | 1.000 | 1.000 | 1.000 |
+| `oracle` | 1.000 | 1.000 | 1.000 |
+
+```
+B = 0.000   C = 1.000   bar = B + 0.40 * (C - B) = 0.400
+extraction  = 0.000     share of headroom = 0.0%
+```
+
+**8b check — did any arm beat the oracle?** No; 1.000 bounds the table.
+
+**The second bar, which §4 of the registration insisted on:** `extraction`
+had to recover a meaningful share of what *declared* relations achieve.
+Declared relations score 1.000. Extraction recovered **0%** of it, and the
+reason is in the next line rather than in the score.
+
+**Relations inferred: 0, against 3 declared.** Recall 0.000, precision
+undefined because nothing was proposed. `extraction` did not rank the wrong
+memory or propose a wrong edge; it proposed **no edge at all**, in three cases
+out of three, having extracted all 172 statements successfully.
+
+So the arm is identical to `baseline` on every metric, to three decimal places,
+because the mechanism contributed nothing to the context. The 2.49 hours bought
+a set of structured records that the consumer could not use — §11 is why, and
+it predicted this exactly, from six model calls instead of 172.
+
+**Prediction 1 is refuted.** It said *"`multi_hop_4` will recover most of the
+declared ceiling — `at the depot-12 site, add 0.35 bar to the axle-set figure`
+is about as clear a modification as text gets, and a model that cannot see it
+cannot see any."* The model **did** see it: `gemma2` extracted
+`modifies='axle-set figure'`, which is correct. The prediction was right about
+the model and wrong about what seeing it was worth, because it assumed the
+matcher could join two correct extractions. §11 is that assumption, measured.
+
+**Prediction 4 is confirmed and was the more useful one.** 8,962 s for three
+cases on a deliberately reduced store, to produce zero edges.
+
+### What this run adds over §11
+
+§11 established from six calls that no model forms the edge. This establishes
+that the full registered arm, on the full reduced store, with the best
+available model and every statement extracted, scores exactly the baseline. It
+is worth having measured rather than inferred: an arm that proposes nothing is
+distinguishable from an arm that proposes wrongly only by running it, and
+`relation_quality` reporting `0 inferred` rather than `0 correct of 12` is the
+line that tells those apart.
+
+It is also, at 2.49 hours against roughly nine seconds, an argument for
+building the cheap diagnostic first. The edge check was written **after** the
+primary was launched.
 
 ---
 

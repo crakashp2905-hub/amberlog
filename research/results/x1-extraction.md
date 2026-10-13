@@ -90,13 +90,21 @@ supposed to bound it.
 
 ## 2. Can a model supply the declarations? Yes — one of these three can
 
-> **§8 supersedes the model ranking here.** These three were decoded
-> **free-form**, because the client wrapper passed no schema, and one of
-> them was a domain fine-tune rather than a general instruct model. Under
-> schema-constrained decoding a **1.5B** model reaches 18/19 at 5.8× the
-> speed. The finding that survives unchanged is the one this section was
-> built to make: the `plain` column, and that a model's *target* has to be
-> read rather than its class.
+> **§8 supersedes the model ranking here, and §10 corrects the `plain`
+> column.** These three were decoded **free-form**, because the client wrapper
+> passed no schema, and one of them was a domain fine-tune rather than a
+> general instruct model.
+>
+> More seriously: **an unparseable reply was counted as `plain`**, so the
+> `plain` figures below are a floor rather than a measurement — a model that
+> simply failed would appear in that column as well behaved. `gemma2`'s and
+> `qwen2.5:7b`'s 17/17 are credible on other evidence (both returned usable
+> structure elsewhere, so they were parsing), and `finsenti`'s 0/17 is
+> unaffected because producing 17 false modifiers requires parsing. The
+> numbers are left as measured and re-measured in §10.
+>
+> What survives unchanged is the point this section was built to make: a
+> model's extracted **target** has to be read rather than its class.
 
 19 statements, chosen **using the labels** so the two interesting ones are
 included, because a random sample of 500 would spend an hour to reach two. An
@@ -380,6 +388,11 @@ cost a default setting and two docstrings.
 a cold load is 20–35 s against a per-call figure in seconds, so without it the
 first statement of each model carries the load.
 
+> **The `plain` column here carries the same flaw as §2's and is re-measured
+> in §10.** An unparseable reply classified as `plain`. `llama3.2:3b`'s 3/17
+> is unaffected in direction — it was producing modifiers, so it was
+> parsing — and the two Qwen figures are the ones to treat as floors.
+
 | model | params | modifier | default | plain | s each | vs `gemma2` |
 |---|---|---|---|---|---|---|
 | `qwen2.5:1.5b` | 1.5B | 0/1 | **1/1** | **17/17** | **9.4 s** | **5.8× faster** |
@@ -455,5 +468,12 @@ exists to make that deliberate. The hostname is now parsed and compared
 exactly. A containment check is the wrong tool for an authorisation boundary,
 which is the same lesson [p2b-copy-recognition.md](p2b-copy-recognition.md)
 reached about Jaccard from the other direction.
+
+---
+
+## 10. The `plain` column, re-measured
+
+_Pending: seven models × two decoding modes × 19 statements, with `unparsed`
+and `truncated` reported separately and reasoning traces off._
 
 ---

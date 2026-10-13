@@ -1,14 +1,15 @@
 # X1 — extraction at ingest: the registration was invalid, and the cost decides the product
 
-**Two findings, and the first one is about this project's own method rather
-than about extraction.**
+**Three findings, and two of them are about this project's own apparatus
+rather than about extraction.**
 
 1. **The registered primary metric was trivially maximised by a registered baseline, and the 8c check that exists to catch exactly that was performed and answered wrongly.** `B = 0.000` was quoted from a table reporting a *different metric at a different budget*. On the registered metric a plain lexical baseline scores **1.000** on one of the two registered families. The family is abandoned under the registration's own clause. This was found by running the baselines before the model, and it is now [principle 8d](../../AGENTS.md).
 2. **A model can supply the declarations, and the cost is the product conclusion.** `gemma2` classified **19/19** statements correctly with usable targets. It costs **54.5 s each** on this hardware, which runs it on CPU — **20.8 hours** for one arm of one split at full corpus size. Prediction 4 of the registration said the cost would make extraction a batch job rather than an ingest-path step. It does, and by a wider margin than the prediction assumed.
+3. **Checking prediction 3 found a published AUC reported as its own complement.** `abstention-signals.md`'s pooled AUC is **0.682, not 0.319** — above chance, not below. Every other figure in that result reproduces exactly. Its practical verdict survives untouched, which means the right decision was reached on the strength of a number that was upside down. It cited no harness, which is why it survived; there is one now.
 
 - **Registration:** [x1-extraction-at-ingest.md](../prereg/x1-extraction-at-ingest.md), amended in §8 before any model call of the primary arm
 - **Mechanism:** `memory_fabric/extraction.py`, `MemoryFabric.index_extraction()`, `applicable_defaults()`, `infer_relations()`
-- **Harnesses:** `experiments/x1_extraction_quality.py` (extraction quality), `experiments/x1_extraction.py` (the retrieval arms)
+- **Harnesses:** `experiments/x1_extraction_quality.py` (extraction quality), `experiments/x1_extraction.py` (the retrieval arms), `experiments/x1_abstention_premise.py` (prediction 3, and §5's correction)
 - **Runs:** 2026-10-13, `gemma2:latest` / `qwen2.5:7b` / `finsenti-llama3.2-1b:latest` via Ollama, k=5
 - **Off by default.** Nothing in `remember` calls a model.
 
@@ -198,7 +199,80 @@ _Pending: the `extraction` arm, `gemma2:latest`, dev, `multi_hop_4`, reduced to
 
 ---
 
-## 5. What the mechanism is, and two schema errors found by building it
+## 5. Prediction 3, and an upside-down AUC found on the way
+
+Prediction 3 said the abstention candidate would not work, and gave a reason
+rather than a hunch: LongMemEval's unanswerable cases are *partially*
+answerable — *"you mentioned the fence but not the cows"* — so memories about
+the subject **do** exist, and *"nothing asserts anything about the subject"* is
+the wrong question.
+
+That reason is a claim about the **fixture**, so it can be checked without
+extracting anything, which matters because the signal it describes needs
+extraction over hundreds of thousands of turns and §3 makes that impossible
+here. Harness: `experiments/x1_abstention_premise.py`.
+
+| split | group | n | median turns | top-1 relevance | content-term coverage |
+|---|---|---|---|---|---|
+| `s` | unanswerable (`_abs`) | 30 | 506 | 1.939 | **0.788** |
+| `s` | answerable | 470 | 490 | 2.894 | 0.883 |
+| `oracle` | unanswerable (`_abs`) | 30 | 24 | 0.727 | **0.694** |
+| `oracle` | answerable | 470 | 22 | 1.007 | 0.757 |
+
+**Prediction 3's premise is confirmed.** On the real `s` haystacks an
+unanswerable question's top-10 turns already contain **79% of its distinctive
+content terms**. Turns about the subject are there in quantity, so a detector
+asking "does anything here assert something about the subject" would answer
+*yes* on nearly every unanswerable case. The registered signal was never going
+to work, for the reason registered.
+
+### And the thing that was not predicted
+
+Measuring the premise meant recomputing the plain retrieval-score signal on the
+same population, and it does not agree with what
+[abstention-signals.md](abstention-signals.md) reported:
+
+| figure | published | reproduced |
+|---|---|---|
+| best F1 | 0.206 | **0.2065** |
+| recall / TPR | 0.533 | **0.5333** |
+| FPR | 23.2% | **23.19%** |
+| precision | 0.128 | **0.128** |
+| threshold | 0.2656 | **0.2671** |
+| **pooled AUC** | **0.319** | **0.6819** |
+
+Everything reproduces to rounding **except the AUC, which reproduces as its
+complement** — `1 - 0.3181 = 0.6819`. The published figure was the probability
+that an *unanswerable* instance outscores an answerable one, reported as the
+detector's discrimination. The signal is **above** chance, not below it, and it
+replicates on the `s` split at **AUC 0.711**, which closes a limit that result
+listed as untested.
+
+Two of that document's own numbers were mutually impossible and said so: an
+operating point at TPR 0.533 / FPR 0.232 is above the ROC diagonal and cannot
+come from a signal at AUC 0.319, and §2's table had the effect in the right
+direction in **4 of 4** question types. Principle 8b's last clause —
+contradictions in the apparatus's own metrics are the signal — reached from a
+new direction: not an arm beating the oracle, but a result disagreeing with
+itself.
+
+**The verdict there does not change.** F1 0.206 was correct, and a system that
+abstains on 23% of the questions it could answer to catch 53% of those it
+should refuse is worse than one that always answers — at AUC 0.682 exactly as
+at 0.319. The decision was right on the strength of a number that was upside
+down. What changes is the diagnosis: the family is rejected on its **operating
+point**, not on its discrimination, and `abstention-signals.md`'s title claim
+that pooling destroys the signal is withdrawn (§7 there).
+
+**Why it survived**: that result cited **no harness**, alone among the results
+in `research/`. AGENTS.md requires tables to cite the experiment config that
+produced them, and the reason is exactly this — a number with no re-runnable
+harness cannot be checked by rereading the document. `auc()` now carries
+known-answer tests whose first assertion is the direction.
+
+---
+
+## 6. What the mechanism is, and two schema errors found by building it
 
 One model call per **write**, not per **pair** — O(n) rather than O(n²), which
 is what makes it tractable at all. Relations are then inferred by matching
@@ -225,11 +299,12 @@ frozen dataclass — the records would compare unequal and hash differently, and
 
 ---
 
-## 6. Limits
+## 7. Limits
 
 - **One model per conclusion.** `gemma2`'s 19/19 is 19 statements, two of them the interesting ones. It is evidence the structure is extractable, not a precision/recall estimate.
 - **Statements chosen with the labels.** §2 is an extraction-quality measurement and is not scored as retrieval anywhere.
 - **These fixtures state things plainly.** A real corpus does not, and nothing here measures an extractor on content it finds ambiguous.
 - **The reduced store is not the product's store.** §3 says what it licenses.
-- **Prediction 3 is unaddressed.** The abstention candidate — "no retrieved memory asserts anything about the asked subject" — is not measured here. It needs LongMemEval's 30 unanswerable instances, and the registration already predicts it will fail for a stated reason.
+- **Prediction 3's premise is confirmed; the registered signal itself is not measured.** §5 shows subject-relevant turns are present in the unanswerable cases, which is the reason the signal would fail. It does not run an extraction-based detector over LongMemEval, and §3 says why that is not possible here.
+- **The abstention numbers are lexical.** A trained embedder's score distribution could calibrate differently, as `abstention-signals.md` limit 2 already noted; the correction in §5 is to the arithmetic, not to the retrieval.
 - **R6's warning still stands** for anything downstream. Nothing here measures whether an agent given a structurally-indexed context answers better.

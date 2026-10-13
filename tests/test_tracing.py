@@ -156,5 +156,88 @@ class TestSinksCannotBreakTheCall(unittest.TestCase):
         self.assertIs(seen[0], client.calls[0])
 
 
+class TestSummarise(unittest.TestCase):
+    """`summarise` reports median and p90 beside the mean because every
+    latency figure in this project was measured on a shared CPU machine. The
+    same model and prompt measured 19.3 s quiet and 38.0 s while a test suite
+    ran, so a table of means gives no way to tell which figure is which."""
+
+    def _write(self, path, rows):
+        # `print` rather than `handle.write`, so this file needs no newline
+        # escapes -- the first version lost them to a shell heredoc and the
+        # module would not parse.
+        with path.open("w", encoding="utf-8") as handle:
+            for row in rows:
+                print(json.dumps(row), file=handle)
+
+    def _row(self, model, seconds, constrained=True):
+        return {"model": model, "seconds": seconds,
+                "constrained": constrained, "prompt_tokens": 100,
+                "completion_tokens": 50}
+
+    def test_the_spread_is_reported_not_just_the_mean(self):
+        from memory_fabric.adapters.tracing import summarise
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "t.jsonl"
+            # One contended outlier among nine quiet calls: the mean moves a
+            # little and the max moves a lot, which is the point.
+            self._write(path, [self._row("m", s) for s in
+                               [10, 10, 10, 10, 10, 10, 10, 10, 10, 100]])
+            out = summarise(path)["m (constrained)"]
+            self.assertEqual(out["calls"], 10)
+            self.assertEqual(out["seconds_median"], 10.0)
+            self.assertEqual(out["seconds_max"], 100.0)
+            self.assertEqual(out["seconds_min"], 10.0)
+            self.assertEqual(out["seconds_mean"], 19.0)
+
+    def test_the_two_decoding_modes_are_separate_buckets(self):
+        """They are not comparable -- measured at +49% to +54% wall time for
+        identical output -- so averaging across them would invent a figure
+        describing neither."""
+        from memory_fabric.adapters.tracing import summarise
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "t.jsonl"
+            self._write(path, [self._row("m", 10, True),
+                               self._row("m", 20, False)])
+            out = summarise(path)
+            self.assertEqual(sorted(out), ["m (constrained)", "m (free-form)"])
+            self.assertEqual(out["m (constrained)"]["seconds_mean"], 10.0)
+            self.assertEqual(out["m (free-form)"]["seconds_mean"], 20.0)
+
+    def test_tokens_are_totalled_per_bucket(self):
+        from memory_fabric.adapters.tracing import summarise
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "t.jsonl"
+            self._write(path, [self._row("m", 10)] * 3)
+            out = summarise(path)["m (constrained)"]
+            self.assertEqual(out["prompt_tokens"], 300)
+            self.assertEqual(out["completion_tokens"], 150)
+
+    def test_a_torn_line_does_not_lose_the_rest_of_the_trace(self):
+        """A run long enough to need a trace is long enough to be killed
+        mid-write, and one bad line should cost one call, not the file."""
+        from memory_fabric.adapters.tracing import summarise
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "t.jsonl"
+            with path.open("w", encoding="utf-8") as handle:
+                print(json.dumps(self._row("m", 10)), file=handle)
+                print('{"model": "m", "seco', file=handle)
+                print(json.dumps(self._row("m", 12)), file=handle)
+            self.assertEqual(summarise(path)["m (constrained)"]["calls"], 2)
+
+    def test_a_single_call_does_not_index_out_of_range(self):
+        from memory_fabric.adapters.tracing import summarise
+
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "t.jsonl"
+            self._write(path, [self._row("m", 7)])
+            out = summarise(path)["m (constrained)"]
+            self.assertEqual(out["seconds_p90"], 7.0)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

@@ -107,6 +107,52 @@ class JsonlSink:
                 handle.write(line + "\n")
 
 
+def summarise(path: str | pathlib.Path) -> dict[str, dict[str, Any]]:
+    """Per-model latency and token totals from a `JsonlSink` file.
+
+    Reports the **median and p90** alongside the mean, because every latency
+    figure in this project was measured on a shared CPU machine while other
+    work ran. A mean over nineteen calls hides that: the same model and prompt
+    measured 19.3 s on a quiet machine and 38.0 s while a test suite ran, and
+    a table of means gives no way to see which figure is which. The spread is
+    the warning label.
+
+    Keyed by `(model, constrained)`, since the two decoding modes are not
+    comparable -- measured at +49% to +54% wall time for identical output.
+    """
+    import statistics
+
+    buckets: dict[tuple[str, bool], list[dict[str, Any]]] = {}
+    for line in pathlib.Path(path).read_text(encoding="utf-8").splitlines():
+        if not line.strip():
+            continue
+        try:
+            row = json.loads(line)
+        except ValueError:
+            # One torn line should not lose a run's whole trace.
+            continue
+        key = (str(row.get("model")), bool(row.get("constrained")))
+        buckets.setdefault(key, []).append(row)
+
+    out: dict[str, dict[str, Any]] = {}
+    for (model, constrained), rows in sorted(buckets.items()):
+        seconds = sorted(float(r.get("seconds") or 0.0) for r in rows)
+        name = f"{model} ({'constrained' if constrained else 'free-form'})"
+        out[name] = {
+            "calls": len(rows),
+            "seconds_mean": round(statistics.mean(seconds), 1),
+            "seconds_median": round(statistics.median(seconds), 1),
+            "seconds_p90": round(seconds[min(len(seconds) - 1,
+                                             int(0.9 * len(seconds)))], 1),
+            "seconds_min": round(seconds[0], 1),
+            "seconds_max": round(seconds[-1], 1),
+            "prompt_tokens": sum(int(r.get("prompt_tokens") or 0) for r in rows),
+            "completion_tokens": sum(
+                int(r.get("completion_tokens") or 0) for r in rows),
+        }
+    return out
+
+
 class LangfuseSink:
     """Export recorded model calls to Langfuse.
 

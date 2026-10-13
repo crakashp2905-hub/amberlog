@@ -186,6 +186,8 @@ the F1 and the verdict stand — the right call was made on the strength of an
 upside-down number ([abstention-signals.md §7](research/results/abstention-signals.md),
 [x1-extraction.md §5](research/results/x1-extraction.md)).
 
+**A model can extract the declarations, and the mechanism still scores 0.000** ([result](research/results/x1-extraction.md)). X1 put one model call on every write and measured the registered primary at **0.000 against a bar of 0.400**, proposing **zero** relations out of three. `gemma2` extracted both sides correctly; `infer_relations` matches `modifies` against `predicate` by string containment, and an *axle-set figure* and a *tyre pressure* do not contain one another. Zero of seven models form the edge. The matcher's own unit test supplied both strings. Extraction is also a batch job and not an ingest-path step: no discrete GPU here, so 10,000 memories cost 26 to 151 hours depending on the model.
+
 **A feature reranker does make fusion safe, and that is not worth having**
 ([result](research/results/r2a-feature-reranker.md)). On four benchmarks it
 converges both arms to within a point — which is exactly what was asked for —

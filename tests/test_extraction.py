@@ -1,0 +1,226 @@
+"""Extraction: the structural half, with no model in the loop.
+
+`memory_fabric/extraction.py` has two halves. One calls a model; the other
+turns its output into relations and applicability, and that half is pure. Every
+test here exercises the pure half, using `StubExtractor` or hand-built records.
+
+`StubExtractor` is **not an arm** — a stub fitted to this project's fixtures is
+the pattern problem the registration rejected, and no result may quote it. It
+is here so the structural half has tests that do not need a model reachable,
+which is also why CI never calls one.
+"""
+
+from __future__ import annotations
+
+import pathlib
+import sys
+import unittest
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from memory_fabric import MemoryFabric  # noqa: E402
+from memory_fabric.extraction import (  # noqa: E402
+    Extracted, StubExtractor, _entities, applicable_defaults, infer_relations,
+    parse,
+)
+from memory_fabric.relations import RelationKind  # noqa: E402
+
+RULE = "All yard vehicles run 3.9 bar in winter, except at the harbour and quarry sites."
+MARGIN = "At the depot-12 site, add 0.35 bar to the axle-set figure as a salt-corrosion margin."
+PRESSURE = "Vehicles with the standard axle set run 4.0 bar in summer."
+
+
+class TestParsingModelOutput(unittest.TestCase):
+    """Models wrap JSON in prose, fences and preambles. That is the normal
+    case, not an error."""
+
+    def test_a_fenced_object_is_read(self):
+        record = parse("m", '```json\n{"asserts": false, "modifies": "x"}\n```')
+        self.assertFalse(record.asserts)
+        self.assertEqual(record.modifies, "x")
+
+    def test_a_preamble_is_tolerated(self):
+        record = parse("m", 'Sure! Here is the JSON:\n{"subject": "Crane-5"}')
+        self.assertEqual(record.subject, "crane-5")
+
+    def test_an_unparseable_reply_asserts_nothing(self):
+        """Distinguishable from a memory that asserts nothing: this one has no
+        structure at all, which is the honest representation of a model with
+        nothing to say."""
+        record = parse("m", "I am not able to help with that.")
+        self.assertFalse(record.asserts)
+        self.assertIsNone(record.predicate)
+        self.assertEqual(record.excepts, ())
+
+    def test_a_string_where_a_list_was_asked_for_is_accepted(self):
+        record = parse("m", '{"excepts": "at the harbour and quarry sites"}')
+        self.assertEqual(record.excepts, ("harbour", "quarry"))
+
+
+class TestEntitySplitting(unittest.TestCase):
+    def test_a_prose_exclusion_becomes_entities(self):
+        self.assertEqual(_entities("at the harbour and quarry sites"),
+                         ["harbour", "quarry"])
+
+    def test_a_list_is_left_alone(self):
+        self.assertEqual(_entities("harbour, quarry"), ["harbour", "quarry"])
+
+    def test_word_boundaries_are_respected(self):
+        """A regression with a visible cause: `\\b` is a valid Python escape
+        for backspace, so a single-backslash occurrence reached the module as
+        an invisible control character and the split matched inside words."""
+        self.assertEqual(_entities("the island site"), ["the island"])
+        self.assertEqual(_entities("in the northern or southern depots"),
+                         ["northern", "southern"])
+
+
+class TestClassification(unittest.TestCase):
+    def test_a_modifier_target_is_read_from_either_field(self):
+        """Models disagree about where it goes: `gemma2` fills `modifies`,
+        `qwen2.5:7b` recognises the statement asserts nothing and puts the
+        target in `predicate`. Reading both is robustness across models."""
+        explicit = Extracted("a", asserts=False, modifies="axle-set figure")
+        implicit = Extracted("b", asserts=False, predicate="axle-set figure")
+        self.assertEqual(explicit.modify_target, "axle-set figure")
+        self.assertEqual(implicit.modify_target, "axle-set figure")
+        self.assertTrue(explicit.is_modifier)
+        self.assertTrue(implicit.is_modifier)
+
+    def test_an_assertion_is_not_a_modifier_whatever_its_predicate(self):
+        record = Extracted("a", asserts=True, predicate="axle-set figure")
+        self.assertIsNone(record.modify_target)
+        self.assertFalse(record.is_modifier)
+
+    def test_a_default_may_also_be_scoped(self):
+        """The schema error the first version made. "All vehicles run X in
+        winter, except at two sites" is scoped to a season *and* excepts two
+        sites, and every model tested reported the season as scope."""
+        record = Extracted("a", asserts=True, scope=("winter",),
+                           excepts=("harbour",))
+        self.assertTrue(record.is_default)
+
+
+class TestApplicability(unittest.TestCase):
+    RULE = Extracted("rule", asserts=True, scope=("winter",),
+                     excepts=("harbour", "quarry"))
+
+    def test_a_default_applies_where_it_is_not_excepted(self):
+        self.assertTrue(self.RULE.applies_to(["crane-5", "depot-7"]))
+
+    def test_a_default_does_not_apply_where_it_is_excepted(self):
+        self.assertFalse(self.RULE.applies_to(["crane-5", "harbour"]))
+
+    def test_applicable_defaults_selects_only_defaults(self):
+        plain = Extracted("plain", asserts=True, predicate="clearance")
+        found = applicable_defaults([self.RULE, plain], ["depot-7"])
+        self.assertEqual(found, ["rule"])
+
+    def test_no_entities_means_no_defaults(self):
+        """A query naming nothing cannot have a default's scope checked
+        against it, and guessing would admit every rule in the store."""
+        self.assertEqual(applicable_defaults([self.RULE], []), [])
+
+
+class TestRelationInference(unittest.TestCase):
+    def test_a_modifier_qualifies_what_it_adjusts(self):
+        records = [
+            Extracted("h3", asserts=True, predicate="tyre pressure for the axle set"),
+            Extracted("h4", asserts=False, modifies="axle-set"),
+        ]
+        self.assertEqual(infer_relations(records),
+                         [("h4", RelationKind.QUALIFIES, "h3")])
+
+    def test_nothing_is_inferred_without_a_modifier(self):
+        records = [
+            Extracted("a", asserts=True, predicate="clearance"),
+            Extracted("b", asserts=True, predicate="tyre pressure"),
+        ]
+        self.assertEqual(infer_relations(records), [])
+
+    def test_a_memory_cannot_qualify_itself(self):
+        records = [Extracted("a", asserts=False, modifies="clearance",
+                             predicate="clearance")]
+        self.assertEqual(infer_relations(records), [])
+
+
+class TestInTheStore(unittest.TestCase):
+    def _fabric(self):
+        return MemoryFabric(":memory:", auto_activate=True,
+                            encrypt_content=False, retrieval="lexical")
+
+    def test_an_applicable_default_is_admitted(self):
+        fabric = self._fabric()
+        stub = StubExtractor()
+        try:
+            rule = fabric.remember(agent_id="a", content=RULE)
+            fabric.index_extraction(stub.extract(rule, RULE))
+            result = fabric.retrieve(
+                agent_id="a",
+                query="What is the winter tyre pressure for crane-5 at the depot-7 site?",
+                k=5, min_relevance=0.0, entities=["crane-5", "depot-7"],
+                use_extraction=True)
+            self.assertIn(rule, [m.id for m in result.exposed])
+        finally:
+            fabric.close()
+
+    def test_an_excepted_default_is_withheld_even_when_it_ranks(self):
+        """The half the first implementation missed.
+
+        A rule saying "except at the harbour site" shares enough words with a
+        question about the harbour site to be retrieved by similarity, and
+        serving it there is a wrong answer rather than an incomplete one.
+        """
+        fabric = self._fabric()
+        stub = StubExtractor()
+        try:
+            rule = fabric.remember(agent_id="a", content=RULE)
+            fabric.index_extraction(stub.extract(rule, RULE))
+            without = fabric.retrieve(
+                agent_id="a", query="winter tyre pressure for yard vehicles",
+                k=5, min_relevance=0.0)
+            self.assertIn(rule, [m.id for m in without.exposed],
+                          "the rule must rank, or this proves nothing")
+            withheld = fabric.retrieve(
+                agent_id="a", query="winter tyre pressure for yard vehicles",
+                k=5, min_relevance=0.0, entities=["harbour"],
+                use_extraction=True)
+            self.assertNotIn(rule, [m.id for m in withheld.exposed])
+        finally:
+            fabric.close()
+
+    def test_an_inferred_relation_pulls_the_modifier_in(self):
+        fabric = self._fabric()
+        try:
+            rule = fabric.remember(agent_id="a", content=PRESSURE)
+            margin = fabric.remember(agent_id="a", content=MARGIN)
+            records = [
+                Extracted(rule, asserts=True, predicate="tyre pressure for the axle set"),
+                Extracted(margin, asserts=False, modifies="axle-set"),
+            ]
+            for record in records:
+                fabric.index_extraction(record)
+            for subject, kind, obj in infer_relations(records):
+                fabric.relate(subject, kind, obj, actor="extraction")
+            self.assertEqual(fabric.relations_of(margin, "qualifies"), [rule])
+        finally:
+            fabric.close()
+
+    def test_extraction_is_off_unless_asked_for(self):
+        """One model call per memory is not something a write should do by
+        default, and the registered prediction is that the cost makes it a
+        batch job."""
+        fabric = self._fabric()
+        try:
+            rule = fabric.remember(agent_id="a", content=RULE)
+            self.assertEqual(fabric.extracted, {})
+            result = fabric.retrieve(
+                agent_id="a", query="winter tyre pressure for yard vehicles",
+                k=5, min_relevance=0.0, entities=["harbour"])
+            self.assertIn(rule, [m.id for m in result.exposed])
+        finally:
+            fabric.close()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()

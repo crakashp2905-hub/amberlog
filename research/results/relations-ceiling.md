@@ -75,6 +75,13 @@ whatever the relation adds.
 The other 0.000 family, `implied_by_default`, is **not covered**, and the
 relation vocabulary is the reason.
 
+> **Note added 2026-10-13.** "0.000" here is k=3. At k=5 a plain lexical
+> baseline solves this family on dev and not on test
+> ([facet-v1-implied.md §11](facet-v1-implied.md#11-correction-the-k3-boundary-and-what-it-cost)),
+> so it is no longer usable as evidence of a limit of similarity. The point
+> below — that `EXCEPTS` relates memories and the exception names sites — is
+> unaffected, because it is about the vocabulary rather than the scores.
+
 Its answer is *"all yard vehicles run 3.9 bar in winter, except at the harbour
 and quarry sites"*. The exception names **sites**, not memories, and `EXCEPTS`
 as defined relates one memory to another — there are no memories for the

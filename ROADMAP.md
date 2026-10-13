@@ -154,14 +154,23 @@ size, because `_bridge_terms` ran ~35,000 times a query with a regex per shared
 term. My first guess at the cause — per-candidate component recomputation —
 was worth 11 ms of the 193; the regex in the inner loop was worth 88.
 
-**Abstention is not a retrieval problem**
-([result](research/results/abstention-signals.md)). Four signal families
-eliminated with numbers: term absence sits at the base rate, chain coverage is
-1.000 on every instance, absolute match quality is right in **4 of 4 question
-types** and collapses to **AUC 0.319** when pooled because between-type spread
-is 2–10× the within-type gap, and three calibrations all made it worse. A
-global threshold's best achievable F1 is 0.206. I nearly published d = 0.68
-from a confounded sample and the full-population AUC caught it.
+**Abstention is not a retrieval problem at any operating point worth having**
+([result](research/results/abstention-signals.md)). Three signal families
+eliminated with numbers — term absence sits at the base rate, chain coverage is
+1.000 on every instance, and three calibrations all made the score worse — and
+a fourth, absolute match quality, rejected on its operating point: a global
+threshold's best achievable F1 is 0.206, abstaining on 23% of answerable
+questions to catch 53% of unanswerable ones.
+
+**Corrected 2026-10-13.** That result reported absolute match quality
+collapsing to **AUC 0.319** when pooled, and said I had nearly published
+d = 0.68 from a confounded sample which the full-population AUC caught. Both
+statements are wrong and in the same way: the pooled AUC is **0.682**, the
+published figure being its own complement, and the sample agreed with the full
+population all along. Every other figure in that result reproduces exactly, so
+the F1 and the verdict stand — the right call was made on the strength of an
+upside-down number ([abstention-signals.md §7](research/results/abstention-signals.md),
+[x1-extraction.md §5](research/results/x1-extraction.md)).
 
 **A feature reranker does make fusion safe, and that is not worth having**
 ([result](research/results/r2a-feature-reranker.md)). On four benchmarks it

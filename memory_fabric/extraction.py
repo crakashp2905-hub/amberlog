@@ -98,16 +98,29 @@ SCHEMA: dict[str, Any] = {
 }
 """The same nine keys, as a schema Ollama enforces **during** sampling.
 
-Why this is not a tidying-up. The first measurement of this module blamed model
-size for a catastrophic result: a 1B model marked 17 of 17 ordinary statements
-as modifiers. Under this schema a 1.5B model returned the correct
-`modifies` target that a 7B model got wrong unconstrained. An unconstrained
-model spends output budget choosing a shape -- prose, fences, a preamble -- and
-`parse()` exists to clean up after it. On CPU that budget is the latency, so
-constraining the shape is both the accuracy fix and the cost fix.
+**What this buys, measured rather than assumed.** It guarantees the *shape* of
+the reply. It does **not** improve accuracy and it is **not** free: the
+controlled comparison in `research/results/x1-extraction.md` section 8 ran
+`qwen2.5:7b` and `gemma2` both ways on the same 19 statements and found
+identical classifications and identical extracted targets -- `qwen2.5:7b`
+returns the useless target `'add'` under constraint exactly as it does without
+it -- at **+54% and +49% wall time** respectively.
 
-`parse()` is kept regardless, because a schema is enforced by the server and a
-caller may be pointed at one that does not enforce it.
+I introduced this believing the opposite, on the strength of one observation:
+a 1.5B model under the schema produced the correct `modifies` target that the
+7B model got wrong free-form. The control says that was a property of **that
+model**, not of the constraint. The first version of this docstring claimed
+constraining the shape was "both the accuracy fix and the cost fix", and it is
+neither.
+
+It is kept, on narrower grounds: a guaranteed shape means `parse()` never has
+to recover from prose, which removes a failure mode from the ingest path even
+though it does not change what the measured models extract. Where latency
+matters more than that guarantee, `constrained=False` is the faster setting on
+this hardware.
+
+`parse()` is kept regardless, because the schema is enforced by the server and
+a caller may be pointed at one that does not enforce it.
 """
 
 

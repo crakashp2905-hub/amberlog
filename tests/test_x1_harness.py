@@ -100,8 +100,9 @@ class TestReducedStore(unittest.TestCase):
 
 class TestCache(unittest.TestCase):
     class _Extractor:
-        def __init__(self, model):
+        def __init__(self, model, constrained=True):
             self.model = model
+            self.constrained = constrained
             self._cache: dict[str, Extracted] = {}
 
     def test_a_record_survives_a_round_trip(self):
@@ -130,6 +131,30 @@ class TestCache(unittest.TestCase):
             other = self._Extractor("qwen2.5:7b")
             self.assertEqual(x1.load_cache(other, path), 0)
             self.assertEqual(other._cache, {})
+
+    def test_a_cache_from_the_other_decoding_mode_is_refused(self):
+        """Schema-constrained and free-form decoding produce different records
+        from the same statement, so a cache that crossed that boundary would
+        make an arm a mixture of two mechanisms."""
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "c.json"
+            out = self._Extractor("gemma2:latest", constrained=True)
+            out._cache["s"] = Extracted("m")
+            x1.save_cache(out, path)
+            free = self._Extractor("gemma2:latest", constrained=False)
+            self.assertEqual(x1.load_cache(free, path), 0)
+            self.assertEqual(free._cache, {})
+            same = self._Extractor("gemma2:latest", constrained=True)
+            self.assertEqual(x1.load_cache(same, path), 1)
+
+    def test_the_decoding_mode_is_recorded_beside_the_records(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = pathlib.Path(tmp) / "c.json"
+            extractor = self._Extractor("m", constrained=False)
+            extractor._cache["s"] = Extracted("m")
+            x1.save_cache(extractor, path)
+            self.assertFalse(
+                json.loads(path.read_text(encoding="utf-8"))["constrained"])
 
     def test_a_missing_cache_is_not_an_error(self):
         extractor = self._Extractor("gemma2:latest")

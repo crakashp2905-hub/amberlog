@@ -156,13 +156,13 @@ class OllamaClient:
         """One chat call, recorded.
 
         `schema` constrains decoding to a JSON schema, which Ollama enforces
-        during sampling rather than checking afterwards. It is not a
-        convenience: the extraction measurement in
-        `research/results/x1-extraction.md` attributed a catastrophic
-        false-positive rate to model size, and a 1.5B model under this
-        constraint produced the field a 9B model got right unconstrained. An
-        unconstrained model spends its output budget deciding what shape to
-        reply in, and on CPU that budget is the latency.
+        during sampling rather than checking afterwards. It guarantees the
+        reply's **shape** and, measured, nothing else: section 8 of
+        `research/results/x1-extraction.md` ran two models both ways over the
+        same statements and got identical extractions at **+49% to +54% wall
+        time**. Worth passing when a caller would otherwise have to parse
+        whatever a model chose to emit; not a way to make a model more
+        accurate, and not free.
         """
         payload: dict[str, Any] = {
             "model": model,

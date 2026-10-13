@@ -127,15 +127,22 @@ def build_extractor(model: str, cache: str | None = None,
 
 
 def load_cache(extractor: Any, path: pathlib.Path) -> int:
-    """Re-use extractions from an earlier run of the same model.
+    """Re-use extractions from an earlier run of the same model and mode.
 
-    Keyed on model *and* content: a cache shared between models would make the
-    result a property of whichever model happened to run first.
+    Keyed on model, **decoding mode** and content. A cache shared between
+    models would make the result a property of whichever ran first, and the
+    mode belongs in the key for the same reason: schema-constrained and
+    free-form decoding produce different records from the same statement, as
+    the two measurements in `research/results/x1-extraction.md` sections 2 and
+    8 show directly. A mixed cache is a mixed arm.
     """
     if not path.exists():
         return 0
     stored = json.loads(path.read_text(encoding="utf-8"))
     if stored.get("model") != extractor.model:
+        return 0
+    if bool(stored.get("constrained")) != bool(
+            getattr(extractor, "constrained", True)):
         return 0
     for content, fields in stored.get("records", {}).items():
         # JSON has no tuples. Without this coercion a resumed run holds lists
@@ -154,6 +161,7 @@ def save_cache(extractor: Any, path: pathlib.Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({
         "model": extractor.model,
+        "constrained": bool(getattr(extractor, "constrained", True)),
         "records": {content: record.__dict__
                     for content, record in extractor._cache.items()},
     }, indent=1), encoding="utf-8")

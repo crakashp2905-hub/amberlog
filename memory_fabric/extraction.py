@@ -98,13 +98,16 @@ SCHEMA: dict[str, Any] = {
 }
 """The same nine keys, as a schema Ollama enforces **during** sampling.
 
-**What this buys, measured rather than assumed.** It guarantees the *shape* of
-the reply. It does **not** improve accuracy and it is **not** free: the
-controlled comparison in `research/results/x1-extraction.md` section 8 ran
-`qwen2.5:7b` and `gemma2` both ways on the same 19 statements and found
-identical classifications and identical extracted targets -- `qwen2.5:7b`
-returns the useless target `'add'` under constraint exactly as it does without
-it -- at **+54% and +49% wall time** respectively.
+**What this buys, measured rather than assumed: nothing, at a price.** It
+guarantees the *shape* of the reply and improves no figure. Across **seven
+models in both modes** (`research/results/x1-extraction.md` section 10) the
+schema never helped, made the false-positive column **worse** on three models,
+and cost `gemma2` **58%** more wall time.
+
+The mechanism is worth stating because it is the opposite of the intuition:
+a schema that permits a `modifies` field does not stop a model filling it in,
+and forcing the shape makes a model **more** willing to guess. `llama3.2:3b`
+goes from 12/17 to 3/17 on ordinary statements under it.
 
 I introduced this believing the opposite, on the strength of one observation:
 a 1.5B model under the schema produced the correct `modifies` target that the
@@ -307,15 +310,22 @@ class ModelExtractor:
     Temperature 0 and a JSON-only instruction, because the output is an index
     and an index that varies between runs cannot be compared across them.
 
-    `constrained` passes `SCHEMA` to the client, which is the measured default
-    rather than an option: see `SCHEMA`. It is still a flag, because the
-    unconstrained path is what the first results measured and a comparison
-    between the two modes has to be able to run both.
+    `constrained` passes `SCHEMA` to the client and defaults to **off**, which
+    is where the measurement put it. Across seven models in both modes
+    (`research/results/x1-extraction.md` section 10) the schema never improved
+    a figure, made the false-positive column **worse** on three models, and
+    cost `gemma2` 58% more wall time. It is kept as a flag because a caller
+    whose parser cannot tolerate prose may still want the guaranteed shape.
     """
 
     client: Any
-    model: str = "qwen2.5:7b"
-    constrained: bool = True
+    model: str = "gemma2:latest"
+    """The only model measured to produce a usable extraction of both sides of
+    a relation; see sections 10 and 11 of the result. `qwen2.5:7b` was the
+    first default and extracts `modifies` as the verb `'add'`, which no
+    predicate matches."""
+
+    constrained: bool = False
     think: bool | None = False
     """Reasoning trace off by default, because this task has no use for one.
 

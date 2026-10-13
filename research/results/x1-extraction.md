@@ -471,9 +471,164 @@ reached about Jaccard from the other direction.
 
 ---
 
-## 10. The `plain` column, re-measured
+## 10. Seven models, both decoding modes, and the column that was lying
 
-_Pending: seven models × two decoding modes × 19 statements, with `unparsed`
-and `truncated` reported separately and reasoning traces off._
+**Added 2026-10-13.** §2 and §8 are superseded by this section, which fixes
+three measurement faults at once: an unparseable reply counted as `plain`, a
+reasoning model's truncated replies were scored as answers, and no model had
+been measured in both decoding modes except the two in §8.
+
+Seven models × two modes × the same 19 statements, warmed, reasoning traces
+off. `unparsed` and `truncated` are now separate columns.
+
+### Schema-constrained
+
+| model | modifier | default | plain | unparsed | s each |
+|---|---|---|---|---|---|
+| `gemma2:latest` | **1/1** | **1/1** | **17/17** | 0 | 75.0 |
+| `qwen2.5:7b` | **1/1** | 0/1 | **17/17** | 0 | 15.9 |
+| `gemma3:4b` | 0/1 | **1/1** | **17/17** | 0 | 14.9 |
+| `qwen2.5:1.5b` | 0/1 | **1/1** | **17/17** | 0 | **4.2** |
+| `qwen2.5:3b` | **1/1** | **1/1** | 14/17 | 0 | 8.1 |
+| `qwen3:1.7b` | **1/1** | **1/1** | 9/17 | 0 | 8.2 |
+| `llama3.2:3b` | **1/1** | **1/1** | 3/17 | 0 | 6.6 |
+
+### Free-form
+
+| model | modifier | default | plain | unparsed | s each |
+|---|---|---|---|---|---|
+| `gemma2:latest` | **1/1** | **1/1** | **17/17** | 0 | **47.5** |
+| `qwen2.5:7b` | **1/1** | 0/1 | **17/17** | 0 | 17.6 |
+| `gemma3:4b` | 0/1 | **1/1** | **17/17** | 0 | 16.8 |
+| `qwen2.5:1.5b` | 0/1 | **1/1** | **17/17** | 0 | **4.0** |
+| `qwen2.5:3b` | **1/1** | **1/1** | 15/17 | 0 | 7.9 |
+| `qwen3:1.7b` | **1/1** | **1/1** | 11/17 | 0 | 7.9 |
+| `llama3.2:3b` | **1/1** | **1/1** | 12/17 | 0 | 7.1 |
+
+**`unparsed` is 0 in all fourteen runs, so §2's and §8's `plain` figures were
+floors that happened to be tight.** They were not wrong; they were
+unfalsifiable, and that is a different defect. The flag stays on those tables
+because a reader cannot tell a tight floor from a loose one by looking.
+
+### The constraint question, now with seven models instead of two
+
+§8 found identical accuracy and +49–54% time on two models. Across seven, the
+conclusion holds and sharpens: **constraint never improves a figure, and on
+three models it makes the `plain` column worse** — `llama3.2:3b` 12/17 → 3/17,
+`qwen3:1.7b` 11/17 → 9/17, `qwen2.5:3b` 15/17 → 14/17. `gemma2` costs **58%
+more** under it (47.5 s against 75.0 s).
+
+The mechanism is visible in the targets: constrained, `llama3.2:3b` must emit
+`modifies` as a string and fills it for ordinary statements rather than
+returning `null`. **A schema that permits a field does not stop a model
+filling it in, and forcing the shape makes a model *more* willing to guess.**
+That is the opposite of what I expected when I made it the default, and it is
+now `constrained=False` for the measured path.
+
+### The truncation column earns its place immediately
+
+`qwen3:1.7b` is a reasoning model. With its reasoning trace **on** — the
+server default, and what every figure measured before this flag existed used:
+
+| run | modifier | default | plain | unparsed | truncated | s each |
+|---|---|---|---|---|---|---|
+| thinking **off** | 1/1 | 1/1 | 9/17 | 0 | 0 | 8.2 |
+| thinking **on** | 0/1 | 0/1 | **0/17** | **19** | **19** | 26.6 |
+
+It spends the whole 220-token budget reasoning and never emits the object, on
+**19 of 19** statements. **Under the old classifier this exact configuration
+scored `17/17` on `plain`** — a complete failure recorded as a model behaving
+impeccably, because an unparseable reply had no target and no exclusions and so
+read as an ordinary statement. The two columns added in §10 turn that into 19
+unparsed and 19 truncated, which is what it was.
+
+This is the clearest thing in the result about method: **the harness scored
+silence as success for the majority class.** A benchmark whose failure mode is
+indistinguishable from its most common correct answer cannot detect the
+failure, and nothing but a deliberate check for "did the model actually reply"
+would have caught it. The fixture was fine; the scorer was not.
+
+### What this means for model choice
+
+Only the *class* is tabulated above, and the primary needs the **edge**: the
+modifier's extracted `modifies` must meet another memory's extracted
+`predicate`, with both sides produced by the model. `§11` measures that
+directly, because judging it from the target string was wrong twice —
+`'axle-set figure'` reads like the right answer and is not contained in
+`'tyre pressure for the axle set'` either way round, while the vaguer
+`'tyre pressure'` is.
+
+---
+
+## 11. Not one of seven models produces the edge, and the models are not why
+
+**This is the result.** The primary needs one `QUALIFIES` edge:
+[relations-ceiling.md](relations-ceiling.md) measured that it takes
+`multi_hop_4` from 0.000 to **1.000**. `infer_relations` builds it by matching
+a modifier's extracted `modifies` against a stated memory's extracted
+`predicate`. Both sides come from the model.
+
+Measured on the real pair — `h4` *"At the depot-12 site, add 0.35 bar to the
+axle-set figure as a salt-corrosion margin"* and `h3` *"Vehicles with the
+standard axle set run 4.0 bar in summer"* — harness
+`experiments/x1_edge_check.py`:
+
+| model | `modifies` from h4 | `predicate` from h3 | edge | why not |
+|---|---|---|---|---|
+| `gemma2:latest` | `'axle-set figure'` | `'tyre pressure'` | **no** | no containment either way |
+| `qwen2.5:7b` | `'add'` | `'tyre pressure'` | no | target is a verb |
+| `llama3.2:3b` | `'axle-set figure'` | `'axle set'` | no | called h3 a non-assertion |
+| `gemma3:4b` | `'tyre pressure'` | `'tyre pressure'` | no | called h4 an assertion |
+| `qwen3:1.7b` | `'salt-corrosion margin'` | `'tyre pressure'` | no | target is the reason, not the quantity |
+| `qwen2.5:3b` | `'bar'` | `'tyre pressure'` | no | target is a unit; h3 a non-assertion |
+| `qwen2.5:1.5b` | `'add'` | `'run'` | no | both are verbs |
+
+**Zero of seven.** And the top row is the finding: `gemma2` extracts **both
+sides correctly**. The modifier *does* adjust the axle-set figure. The
+assertion's predicate *is* tyre pressure. A human reads the link immediately,
+because an axle-set figure is a tyre pressure for the axle set — and that is a
+**semantic** relation, not a lexical one. String containment cannot represent
+it, so the mechanism fails on correct inputs.
+
+### The matcher was fitted to my phrasing, and a unit test hid it
+
+The registration's central argument for using a model was that the earlier
+refusal to build a *pattern* extractor did not transfer:
+
+> *I declined to build a pattern extractor because the target text is this
+> project's own generated phrasing, so a regex for "except at the … and …
+> sites" would pass by construction and measure its own fit. **A
+> general-purpose model is not fitted to my phrasing**, so the objection does
+> not transfer. The circularity was a property of the pattern.*
+
+That is right about the extractor and **wrong about the mechanism**, because
+`infer_relations` is a pattern too — a containment test over strings — and its
+unit test supplied both of those strings. It asserts an edge from
+`modifies="axle-set"` against `predicate="tyre pressure for the axle set"`.
+Measured against the four combinations of {hand-written, model-produced} ×
+{target, predicate}:
+
+| target | predicate | match |
+|---|---|---|
+| `'axle-set'` *(mine)* | `'tyre pressure for the axle set'` *(mine)* | **yes** |
+| `'axle-set figure'` *(measured)* | `'tyre pressure for the axle set'` *(mine)* | no |
+| `'axle-set'` *(mine)* | `'tyre pressure'` *(measured)* | no |
+| `'axle-set figure'` *(measured)* | `'tyre pressure'` *(measured)* | no |
+
+**One of four, and it is the one where I chose both halves.** The fixture is
+not approximately right; both sides are load-bearing. My target was shorter
+than any model produces and my predicate longer, and the two errors met in the
+middle. `tests/test_extraction.py` now pins all four, so the next change to
+the matcher has to confront this rather than rediscover it.
+
+So the circularity did not go away when the extractor became a model. **It
+moved to the step after it**, where nothing was looking, and the registration's
+own argument explains exactly why that step was the dangerous one.
+
+### What follows
+
+- **The registered primary cannot pass with this matcher**, and the reason is in the matcher. §4 reports the measured arm.
+- **A repair is not in scope here.** Matching the target against the other memory's *content* instead of its predicate, or matching with an embedder, or extracting a relation per *pair*, are all plausible and all post-hoc. Choosing one after seeing which failure to fix, and then reporting the result as the registered primary, is fitting the mechanism to the test — the thing §1 and this section are both about. Any of them needs its own registration.
+- **The extraction half is vindicated and that is worth separating.** The registration asked whether a model could supply the declarations. On the evidence of `gemma2`: **yes** — 19/19 classes, zero unparsed, and both sides of this relation extracted correctly. The failure is downstream of the question the registration asked.
 
 ---

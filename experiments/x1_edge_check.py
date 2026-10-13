@@ -50,7 +50,8 @@ def pair(split: str = "dev") -> tuple[str, str]:
     raise SystemExit("no multi_hop_4 case found")
 
 
-def check(model: str, modifier: str, stated: str, constrained: bool = True,
+def check(model: str, modifier: str, stated: str,
+          constrained: bool = False,
           think: bool | None = False) -> dict[str, Any]:
     from memory_fabric.adapters.ollama import OllamaClient
 
@@ -91,7 +92,7 @@ def check(model: str, modifier: str, stated: str, constrained: bool = True,
 
 
 def run(models: Sequence[str], split: str = "dev",
-        constrained: bool = True) -> dict[str, Any]:
+        constrained: bool = False) -> dict[str, Any]:
     modifier, stated = pair(split)
     rows = []
     for model in models:
@@ -147,11 +148,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         "qwen2.5:1.5b", "qwen2.5:3b", "qwen3:1.7b", "gemma3:4b",
         "llama3.2:3b", "qwen2.5:7b", "gemma2:latest"])
     parser.add_argument("--split", default="dev", choices=["dev", "test"])
-    parser.add_argument("--unconstrained", action="store_true")
+    parser.add_argument("--constrained", action="store_true",
+                        help="constrain decoding to the JSON schema; measured "
+                             "to help nothing, so free-form is the default")
     parser.add_argument("--out")
     parser.add_argument("--json", dest="as_json", action="store_true")
     args = parser.parse_args(argv)
-    result = run(args.models, args.split, not args.unconstrained)
+    result = run(args.models, args.split, args.constrained)
     print(json.dumps(result, indent=2) if args.as_json
           else to_markdown(result))
     if args.out:

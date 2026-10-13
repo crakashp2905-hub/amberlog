@@ -174,6 +174,68 @@ class TestApplicability(unittest.TestCase):
         self.assertEqual(applicable_defaults([self.RULE], []), [])
 
 
+class TestTheMatcherIsFittedToMyPhrasing(unittest.TestCase):
+    """The circularity the registration thought it had escaped.
+
+    `research/prereg/x1-extraction-at-ingest.md` declined a *pattern*
+    extractor because the target text is this project's own generated phrasing,
+    so a regex would pass by construction; a general-purpose model is not
+    fitted to my phrasing, so the objection did not transfer. True of the
+    extractor — and **the matcher was still fitted to it.**
+
+    `infer_relations` joins a modifier's `modifies` to a stated memory's
+    `predicate` by containment. `test_a_modifier_qualifies_what_it_adjusts`
+    below passes on `modifies="axle-set"` against
+    `predicate="tyre pressure for the axle set"`. Measured, `gemma2` extracts
+    `modifies='axle-set figure'` and `predicate='tyre pressure'`, and **no
+    containment exists between them**: the modifier names the quantity being
+    adjusted and the assertion names the property, which is a semantic link and
+    not a lexical one.
+
+    Both halves of that fixture were hand-written by me, and the pairing
+    matches on exactly one of the four combinations of
+    {fixture, measured} x {target, predicate} — the one where I chose both.
+    Not one of seven models produced the edge
+    (`research/results/x1-extraction.md` section 11).
+
+    These tests pin the gap so the next change to the matcher has to confront
+    it rather than rediscover it.
+    """
+
+    FIXTURE_TARGET, FIXTURE_PREDICATE = "axle-set", "tyre pressure for the axle set"
+    MEASURED_TARGET, MEASURED_PREDICATE = "axle-set figure", "tyre pressure"
+
+    def _edge(self, target, predicate):
+        records = [
+            Extracted("h3", asserts=True, predicate=predicate),
+            Extracted("h4", asserts=False, modifies=target),
+        ]
+        return infer_relations(records)
+
+    def test_the_hand_written_pair_matches(self):
+        """The combination the unit test below uses, and the only one of four
+        that works."""
+        self.assertEqual(
+            self._edge(self.FIXTURE_TARGET, self.FIXTURE_PREDICATE),
+            [("h4", RelationKind.QUALIFIES, "h3")])
+
+    def test_what_a_model_actually_produces_does_not_match(self):
+        """`gemma2`'s own extraction of the two memories, which is correct on
+        both sides and yields no edge."""
+        self.assertEqual(
+            self._edge(self.MEASURED_TARGET, self.MEASURED_PREDICATE), [],
+            "if this now passes, the matcher was changed and section 11 of "
+            "the result needs re-measuring")
+
+    def test_changing_either_side_alone_also_fails(self):
+        """So the fixture is not merely approximate -- both halves are
+        load-bearing, which is what 'fitted' means."""
+        self.assertEqual(
+            self._edge(self.MEASURED_TARGET, self.FIXTURE_PREDICATE), [])
+        self.assertEqual(
+            self._edge(self.FIXTURE_TARGET, self.MEASURED_PREDICATE), [])
+
+
 class TestRelationInference(unittest.TestCase):
     def test_a_modifier_qualifies_what_it_adjusts(self):
         records = [

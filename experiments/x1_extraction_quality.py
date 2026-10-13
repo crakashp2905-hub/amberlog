@@ -168,7 +168,7 @@ def sample(split: str, seed: int = 1) -> list[tuple[str, str]]:
 
 
 def run(models: Sequence[str], split: str = "dev",
-        constrained: bool = True, warm: bool = True,
+        constrained: bool = False, warm: bool = True,
         trace: str | None = None,
         think: bool | None = False) -> dict[str, Any]:
     from memory_fabric.adapters.ollama import OllamaClient
@@ -280,8 +280,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                         default=["qwen2.5:7b", "gemma2:latest",
                                  "finsenti-llama3.2-1b:latest"])
     parser.add_argument("--split", default="dev", choices=["dev", "test"])
-    parser.add_argument("--unconstrained", action="store_true",
-                        help="free-form decoding, as the first run measured")
+    parser.add_argument("--constrained", action="store_true",
+                        help="constrain decoding to the JSON schema. Measured "
+                             "to improve nothing and to make the "
+                             "false-positive column worse on three models "
+                             "(result section 10), so free-form is default")
     parser.add_argument("--cold", action="store_true",
                         help="do not warm the model first")
     parser.add_argument("--trace",
@@ -296,7 +299,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--json", dest="as_json", action="store_true")
     args = parser.parse_args(argv)
     result = run(args.models, args.split,
-                 constrained=not args.unconstrained, warm=not args.cold,
+                 constrained=args.constrained, warm=not args.cold,
                  trace=args.trace, think=True if args.think else False)
     print(json.dumps(result, indent=2) if args.as_json
           else to_markdown(result))

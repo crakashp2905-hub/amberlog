@@ -426,11 +426,22 @@ def main(argv: Sequence[str] | None = None) -> int:
                  max_corpus=args.max_corpus, cache=args.cache,
                  families=args.family, trace=args.trace,
                  constrained=args.constrained)
-    text = json.dumps(result, indent=2) if args.as_json else to_markdown(result)
-    print(text)
+    # Persist before formatting, and persist the **JSON**. This wrote
+    # `to_markdown(result)` to `--out`, so the one file a multi-hour run left
+    # behind held the summary table and not the per-case detail, and nothing
+    # downstream could read it. A 32-minute X2 run was separately lost when
+    # formatting raised before `--out` was reached, which is the other half of
+    # the same mistake: the display path must never be able to discard or
+    # degrade the measurement.
     if args.out:
         pathlib.Path(args.out).write_text(
-            to_markdown(result) + "\n", encoding="utf-8")
+            json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    text = json.dumps(result, indent=2) if args.as_json else to_markdown(result)
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        encoding = sys.stdout.encoding or "ascii"
+        print(text.encode(encoding, "replace").decode(encoding, "replace"))
     return 0
 
 

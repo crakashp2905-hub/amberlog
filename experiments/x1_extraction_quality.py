@@ -301,11 +301,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = run(args.models, args.split,
                  constrained=args.constrained, warm=not args.cold,
                  trace=args.trace, think=True if args.think else False)
-    print(json.dumps(result, indent=2) if args.as_json
-          else to_markdown(result))
+    # Persist before formatting. A 32-minute X2 run was lost when
+    # `to_markdown` hit a Unicode minus sign against a cp1252 console and
+    # raised before `--out` was written: the display path must never be able to
+    # discard the measurement. Writing first also means a failed `print` costs
+    # the summary rather than the run.
     if args.out:
         pathlib.Path(args.out).write_text(
             json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    text = json.dumps(result, indent=2) if args.as_json else to_markdown(result)
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        encoding = sys.stdout.encoding or "ascii"
+        print(text.encode(encoding, "replace").decode(encoding, "replace"))
     return 0
 
 

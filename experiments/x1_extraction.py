@@ -111,7 +111,7 @@ class Cost:
 
 def build_extractor(model: str, cache: str | None = None,
                     trace: str | None = None,
-                    constrained: bool = True) -> tuple[Any, Cost]:
+                    constrained: bool = False) -> tuple[Any, Cost]:
     from memory_fabric.adapters.ollama import OllamaClient
 
     client = OllamaClient()
@@ -259,12 +259,12 @@ def run_case(case: Mapping[str, Any], arm: str, k: int,
     )
 
 
-def run(split: str, k: int = 5, model: str = "qwen2.5:7b",
+def run(split: str, k: int = 5, model: str = "gemma2:latest",
         arms: Sequence[str] = ARMS, max_corpus: int = 0,
         cache: str | None = None,
         families: Sequence[str] | None = None,
         trace: str | None = None,
-        constrained: bool = True) -> dict[str, Any]:
+        constrained: bool = False) -> dict[str, Any]:
     extractor, cost = (
         build_extractor(model, cache, trace, constrained)
         if "extraction" in arms else (None, Cost()))
@@ -398,7 +398,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--split", default="dev", choices=["dev", "test"])
     parser.add_argument("--k", type=int, default=5)
-    parser.add_argument("--model", default="qwen2.5:7b")
+    parser.add_argument("--model", default="gemma2:latest")
     parser.add_argument("--arms", nargs="*", default=list(ARMS))
     parser.add_argument("--max-corpus", type=int, default=0,
                         help="sample fillers down to this many memories per "
@@ -407,8 +407,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--trace",
                         help="append one JSON object per model call to this "
                              "file (metadata only, no content)")
-    parser.add_argument("--unconstrained", action="store_true",
-                        help="free-form decoding, as the first runs measured")
+    parser.add_argument("--constrained", action="store_true",
+                        help="constrain decoding to the JSON schema. Measured "
+                             "to improve nothing and to cost gemma2 58% more "
+                             "wall time (result section 10), so free-form is "
+                             "the default here")
     parser.add_argument("--family", nargs="*",
                         help="restrict to these families. The registration "
                              "pooled two; `implied_by_default` is abandoned on "
@@ -422,7 +425,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     result = run(args.split, args.k, args.model, args.arms,
                  max_corpus=args.max_corpus, cache=args.cache,
                  families=args.family, trace=args.trace,
-                 constrained=not args.unconstrained)
+                 constrained=args.constrained)
     text = json.dumps(result, indent=2) if args.as_json else to_markdown(result)
     print(text)
     if args.out:

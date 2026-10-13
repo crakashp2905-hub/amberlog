@@ -61,6 +61,15 @@ class CallRecord:
     prompt_tokens: int
     completion_tokens: int
     seconds: float
+    truncated: bool = False
+    """Whether the reply used the whole output budget.
+
+    A reply at exactly `num_predict` tokens is usually a model that never
+    finished -- `qwen3:1.7b` hit 220 of 220 on every call, thinking rather
+    than answering. Without this recorded, the run looks like a model that
+    cannot extract rather than a budget that was never reached, which is a
+    different bug with a different fix.
+    """
     constrained: bool = False
     """Whether decoding was constrained to a JSON schema.
 
@@ -152,6 +161,7 @@ class OllamaClient:
         temperature: float = 0.0,
         num_predict: int = 256,
         schema: Mapping[str, Any] | None = None,
+        think: bool | None = None,
     ) -> dict[str, Any]:
         """One chat call, recorded.
 
@@ -163,6 +173,15 @@ class OllamaClient:
         time**. Worth passing when a caller would otherwise have to parse
         whatever a model chose to emit; not a way to make a model more
         accurate, and not free.
+
+        `think=False` turns off the reasoning trace on models that emit one.
+        It is not a tuning knob; without it a reasoning model cannot be
+        measured on this task at all. `qwen3:1.7b` spent **exactly** its 220
+        output tokens on thinking in 12 of 12 calls and never reached the
+        JSON, so every reply was truncated and the model would have scored
+        zero for a reason that has nothing to do with whether it can extract.
+        Left as None, the server's default applies -- which is what every
+        figure measured before this flag existed used.
         """
         payload: dict[str, Any] = {
             "model": model,
@@ -174,6 +193,8 @@ class OllamaClient:
             payload["tools"] = list(tools)
         if schema:
             payload["format"] = dict(schema)
+        if think is not None:
+            payload["think"] = think
 
         started = time.perf_counter()
         result = self._post("/api/chat", payload)
@@ -187,6 +208,7 @@ class OllamaClient:
             prompt_tokens=int(result.get("prompt_eval_count") or 0),
             completion_tokens=int(result.get("eval_count") or 0),
             seconds=time.perf_counter() - started,
+            truncated=int(result.get("eval_count") or 0) >= num_predict,
             constrained=bool(schema),
         )
         self.calls.append(record)

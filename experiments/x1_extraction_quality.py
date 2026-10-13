@@ -67,6 +67,14 @@ class Judged:
     detail: str
     seconds: float
 
+    truncated: bool = False
+    """Whether the reply used the whole output budget.
+
+    A reasoning model spends it reasoning: `qwen3:1.7b` hit 220 of 220 output
+    tokens on 12 of 12 calls. Reported so that "this model cannot extract" and
+    "this model never reached the JSON" are different rows.
+    """
+
     target: str | None = None
     """The extracted `modify_target`, verbatim.
 
@@ -96,6 +104,8 @@ class ModelResult:
             by_expect.setdefault(row.expect, []).append(row)
         out: dict[str, Any] = {
             "statements": len(self.judged),
+            "unparsed": sum(1 for r in self.judged if r.got == "unparsed"),
+            "truncated": sum(1 for r in self.judged if r.truncated),
             "seconds_total": round(sum(r.seconds for r in self.judged), 1),
             "seconds_each": round(
                 sum(r.seconds for r in self.judged) / len(self.judged), 1)
@@ -107,6 +117,17 @@ class ModelResult:
 
 
 def classify(record: extracting.Extracted) -> tuple[str, str]:
+    """The class, and enough detail to tell a success from a silence.
+
+    `unparsed` is reported **before** anything else and is never `plain`. It
+    used to be: an unparseable reply became `Extracted(asserts=False)` with no
+    target and no exclusions, which read as an ordinary statement -- so a model
+    that failed on every call scored 17/17 on the column that exists to catch
+    models behaving badly. The figures in sections 2 and 8 of the result were
+    measured before this distinction existed and are re-measured with it.
+    """
+    if not record.parsed:
+        return "unparsed", "no JSON object in the reply"
     if record.is_modifier:
         return "modifier", f"target={record.modify_target!r}"
     if record.is_default:
@@ -148,7 +169,8 @@ def sample(split: str, seed: int = 1) -> list[tuple[str, str]]:
 
 def run(models: Sequence[str], split: str = "dev",
         constrained: bool = True, warm: bool = True,
-        trace: str | None = None) -> dict[str, Any]:
+        trace: str | None = None,
+        think: bool | None = False) -> dict[str, Any]:
     from memory_fabric.adapters.ollama import OllamaClient
 
     statements = sample(split)
@@ -163,7 +185,7 @@ def run(models: Sequence[str], split: str = "dev",
 
             client.add_sink(JsonlSink(trace))
         extractor = extracting.ModelExtractor(
-            client=client, model=model, constrained=constrained)
+            client=client, model=model, constrained=constrained, think=think)
         if warm:
             # A cold load costs 20-35s against a per-call figure of seconds,
             # so without this the first statement of each model carries the
@@ -185,9 +207,11 @@ def run(models: Sequence[str], split: str = "dev",
                     seconds=time.perf_counter() - started))
                 continue
             got, detail = classify(record)
+            calls = getattr(client, "calls", [])
             result.judged.append(Judged(
                 content=content, expect=expect, got=got, detail=detail,
                 seconds=time.perf_counter() - started,
+                truncated=bool(calls and calls[-1].truncated),
                 target=record.modify_target))
         results.append(result)
         print(f"  {model}: {result.summary()}", file=sys.stderr)
@@ -197,6 +221,7 @@ def run(models: Sequence[str], split: str = "dev",
         "split": split,
         "constrained": constrained,
         "warmed": warm,
+        "think": think,
         "statements": len(statements),
         "models": {r.model: r.summary() for r in results},
         "detail": {
@@ -216,21 +241,30 @@ def to_markdown(result: Mapping[str, Any]) -> str:
         f"# X1 — can a model supply the declarations? · {result['split']} split",
         "",
         f"- Decoding: **{'schema-constrained' if result.get('constrained') else 'free-form'}**"
-        f"{', models warmed first' if result.get('warmed') else ', cold'}",
+        f"{', models warmed first' if result.get('warmed') else ', cold'}"
+        f"{', reasoning trace ON' if result.get('think') else ', no reasoning trace'}",
         f"- {result['statements']} statements, chosen with the labels so the "
         f"interesting ones are included; see the module docstring",
         "- An extraction-quality measurement, **not** a retrieval arm",
         "",
-        "| model | modifier | default | plain (false positives) | seconds each | total |",
-        "|---|---|---|---|---|---|",
+        "| model | modifier | default | plain (false positives) | unparsed | "
+        "truncated | seconds each | total |",
+        "|---|---|---|---|---|---|---|---|",
     ]
     for model, row in result["models"].items():
         lines.append(
             f"| `{model}` | {row.get('modifier_correct', '—')} | "
             f"{row.get('default_correct', '—')} | "
-            f"{row.get('plain_correct', '—')} | {row['seconds_each']:.1f} s | "
+            f"{row.get('plain_correct', '—')} | {row.get('unparsed', 0)} | "
+            f"{row.get('truncated', 0)} | {row['seconds_each']:.1f} s | "
             f"{row['seconds_total']:.0f} s |")
     lines += [
+        "",
+        "`unparsed` and `truncated` are the columns that make the rest "
+        "readable. An unparseable reply used to classify as `plain`, so a "
+        "model that failed every call scored full marks on the column meant "
+        "to catch it; and a reasoning model spends its whole output budget "
+        "reasoning, which is a truncated reply rather than a wrong one.",
         "",
         "`plain` counts statements that must be left alone. A model marking "
         "ordinary memories as modifiers or defaults would inject edges and "
@@ -253,12 +287,17 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--trace",
                         help="append one JSON object per model call to this "
                              "file (metadata only, no content)")
+    parser.add_argument("--think", action="store_true",
+                        help="leave the reasoning trace on. A reasoning model "
+                             "spends the whole output budget on it and never "
+                             "reaches the JSON, so this is for measuring that "
+                             "rather than for using it")
     parser.add_argument("--out")
     parser.add_argument("--json", dest="as_json", action="store_true")
     args = parser.parse_args(argv)
     result = run(args.models, args.split,
                  constrained=not args.unconstrained, warm=not args.cold,
-                 trace=args.trace)
+                 trace=args.trace, think=True if args.think else False)
     print(json.dumps(result, indent=2) if args.as_json
           else to_markdown(result))
     if args.out:

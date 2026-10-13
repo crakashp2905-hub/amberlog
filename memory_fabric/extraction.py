@@ -137,6 +137,17 @@ class Extracted:
     excepts: tuple[str, ...] = ()
     modifies: str | None = None
     adjustment: str | None = None
+    parsed: bool = True
+    """Whether a structured record was recovered from the model's reply.
+
+    The module docstring for `parse()` claimed a caller could tell "the
+    extractor had nothing to say" from "the memory asserts nothing" **by this
+    field**, and the field did not exist. The consequence was not cosmetic: an
+    unparseable reply became `Extracted(asserts=False)`, which has no
+    `modify_target` and no `excepts`, so every downstream classifier read it as
+    an ordinary statement -- the majority class. A model that failed on every
+    call scored **17/17** on the column built to catch bad behaviour.
+    """
 
     @property
     def is_default(self) -> bool:
@@ -152,7 +163,7 @@ class Extracted:
         **and** excepts two sites, and every model tested reported the season
         as scope. Exclusions are what make a default a default.
         """
-        return bool(self.excepts)
+        return self.parsed and bool(self.excepts)
 
     @property
     def modify_target(self) -> str | None:
@@ -173,7 +184,7 @@ class Extracted:
 
     @property
     def is_modifier(self) -> bool:
-        return bool(self.modify_target) and not self.asserts
+        return self.parsed and bool(self.modify_target) and not self.asserts
 
     def applies_to(self, entities: Iterable[str]) -> bool:
         """Whether this record covers a query about these entities.
@@ -258,17 +269,24 @@ def parse(memory_id: str, raw: str) -> Extracted:
     is taken. A reply with none yields a record that asserts nothing and
     carries no structure, which is the honest representation of "the extractor
     had nothing to say" and is distinguishable from "the memory asserts
-    nothing" by `parsed`.
+    nothing" by `parsed`, which is now a field rather than an aspiration.
     """
     found = re.search(r"\{.*\}", raw or "", re.DOTALL)
     if not found:
-        return Extracted(memory_id=memory_id, asserts=False)
+        return Extracted(memory_id=memory_id, asserts=False, parsed=False)
     try:
         data = json.loads(found.group(0))
     except (ValueError, TypeError):
-        return Extracted(memory_id=memory_id, asserts=False)
+        return Extracted(memory_id=memory_id, asserts=False, parsed=False)
     if not isinstance(data, Mapping):
-        return Extracted(memory_id=memory_id, asserts=False)
+        return Extracted(memory_id=memory_id, asserts=False, parsed=False)
+    if not any(key in data for key in SCHEMA["properties"]):
+        # An object, but not *this* object. A model that replies
+        # `{"answer": "3.9 bar"}` has not extracted a record, and counting it
+        # as one would put it in the majority class with everything that
+        # genuinely asserts nothing -- the same error `parsed` exists to fix,
+        # one level in.
+        return Extracted(memory_id=memory_id, asserts=False, parsed=False)
     return Extracted(
         memory_id=memory_id,
         asserts=bool(data.get("asserts", True)),
@@ -298,6 +316,15 @@ class ModelExtractor:
     client: Any
     model: str = "qwen2.5:7b"
     constrained: bool = True
+    think: bool | None = False
+    """Reasoning trace off by default, because this task has no use for one.
+
+    A reasoning model given 220 output tokens spends them reasoning:
+    `qwen3:1.7b` hit the cap on 12 of 12 calls and never emitted the object.
+    `None` leaves the server's default, which is what the figures measured
+    before this existed used; `True` is here for completeness and is not a
+    configuration any measurement recommends.
+    """
     _cache: dict[str, Extracted] = field(default_factory=dict)
 
     def extract(self, memory_id: str, content: str) -> Extracted:
@@ -310,6 +337,8 @@ class ModelExtractor:
         kwargs: dict[str, Any] = {}
         if self.constrained:
             kwargs["schema"] = SCHEMA
+        if self.think is not None:
+            kwargs["think"] = self.think
         reply = self.client.chat(
             model=self.model,
             messages=[{"role": "user",

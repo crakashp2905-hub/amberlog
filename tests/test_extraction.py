@@ -75,6 +75,58 @@ class TestEntitySplitting(unittest.TestCase):
                          ["northern", "southern"])
 
 
+class TestAFailedParseIsNotASilentSuccess(unittest.TestCase):
+    """The flaw that inflated a published column.
+
+    An unparseable reply became `Extracted(asserts=False)`, which has no
+    `modify_target` and no `excepts` -- so every classifier read it as an
+    ordinary statement, the majority class. A model that failed on all 19
+    statements scored **17/17** on the `plain` column, which exists precisely
+    to catch a model behaving badly. The module docstring had claimed the two
+    cases were distinguishable "by `parsed`" since before the field existed.
+    """
+
+    def test_an_unparseable_reply_is_marked_unparsed(self):
+        self.assertFalse(parse("m", "I am not able to help with that.").parsed)
+
+    def test_malformed_json_is_marked_unparsed(self):
+        self.assertFalse(parse("m", '{"asserts": tru').parsed)
+
+    def test_an_object_with_none_of_the_schema_keys_is_unparsed(self):
+        """A model replying `{"answer": "3.9 bar"}` has produced an object but
+        not a record, and counting it as one would file it in the majority
+        class beside everything that genuinely asserts nothing."""
+        self.assertFalse(parse("m", '{"answer": "3.9 bar"}').parsed)
+
+    def test_a_record_wrapped_in_a_list_still_parses(self):
+        """Tolerance worth keeping, and the reason the check is on the keys
+        rather than on the top-level type: models wrap the object."""
+        record = parse("m", '[{"asserts": false, "modifies": "axle-set"}]')
+        self.assertTrue(record.parsed)
+        self.assertEqual(record.modifies, "axle-set")
+
+    def test_a_real_record_is_marked_parsed(self):
+        self.assertTrue(parse("m", '{"asserts": true}').parsed)
+
+    def test_an_unparsed_record_cannot_be_a_default(self):
+        """Otherwise a garbled reply that happened to contain the word
+        "except" would add an applicability rule nothing asserted."""
+        record = Extracted("m", excepts=("harbour",), parsed=False)
+        self.assertFalse(record.is_default)
+
+    def test_an_unparsed_record_cannot_be_a_modifier(self):
+        record = Extracted("m", asserts=False, modifies="axle-set",
+                           parsed=False)
+        self.assertFalse(record.is_modifier)
+
+    def test_a_memory_that_genuinely_asserts_nothing_is_still_parsed(self):
+        """The distinction the field is for: the model replied, and what it
+        replied was that this statement asserts nothing."""
+        record = parse("m", '{"asserts": false, "predicate": null}')
+        self.assertTrue(record.parsed)
+        self.assertFalse(record.asserts)
+
+
 class TestClassification(unittest.TestCase):
     def test_a_modifier_target_is_read_from_either_field(self):
         """Models disagree about where it goes: `gemma2` fills `modifies`,

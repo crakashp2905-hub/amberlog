@@ -109,12 +109,18 @@ class Cost:
     reused_from_cache: int = 0
 
 
-def build_extractor(model: str,
-                    cache: str | None = None) -> tuple[Any, Cost]:
+def build_extractor(model: str, cache: str | None = None,
+                    trace: str | None = None,
+                    constrained: bool = True) -> tuple[Any, Cost]:
     from memory_fabric.adapters.ollama import OllamaClient
 
     client = OllamaClient()
-    extractor = extracting.ModelExtractor(client=client, model=model)
+    if trace:
+        from memory_fabric.adapters.tracing import JsonlSink
+
+        client.add_sink(JsonlSink(trace))
+    extractor = extracting.ModelExtractor(
+        client=client, model=model, constrained=constrained)
     if cache:
         load_cache(extractor, pathlib.Path(cache))
     return extractor, Cost()
@@ -248,9 +254,12 @@ def run_case(case: Mapping[str, Any], arm: str, k: int,
 def run(split: str, k: int = 5, model: str = "qwen2.5:7b",
         arms: Sequence[str] = ARMS, max_corpus: int = 0,
         cache: str | None = None,
-        families: Sequence[str] | None = None) -> dict[str, Any]:
-    extractor, cost = (build_extractor(model, cache) if "extraction" in arms
-                       else (None, Cost()))
+        families: Sequence[str] | None = None,
+        trace: str | None = None,
+        constrained: bool = True) -> dict[str, Any]:
+    extractor, cost = (
+        build_extractor(model, cache, trace, constrained)
+        if "extraction" in arms else (None, Cost()))
     reused = len(extractor._cache) if extractor is not None else 0
     cases: list[tuple[str, Mapping[str, Any]]] = []
     wanted = set(families) if families else None
@@ -302,6 +311,7 @@ def run(split: str, k: int = 5, model: str = "qwen2.5:7b",
     out: dict[str, Any] = {
         "experiment": "x1-extraction-at-ingest",
         "split": split, "k": k, "model": model,
+        "constrained": constrained,
         "max_corpus": max_corpus,
         "families": sorted({c["family"] for _b, c in cases}),
         "corpus_sizes": sorted(len(c["corpus"]) for _b, c in cases),
@@ -386,6 +396,11 @@ def main(argv: Sequence[str] | None = None) -> int:
                         help="sample fillers down to this many memories per "
                              "case, keeping every labelled one; 0 = full store")
     parser.add_argument("--cache", help="path to a resumable extraction cache")
+    parser.add_argument("--trace",
+                        help="append one JSON object per model call to this "
+                             "file (metadata only, no content)")
+    parser.add_argument("--unconstrained", action="store_true",
+                        help="free-form decoding, as the first runs measured")
     parser.add_argument("--family", nargs="*",
                         help="restrict to these families. The registration "
                              "pooled two; `implied_by_default` is abandoned on "
@@ -398,7 +413,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     result = run(args.split, args.k, args.model, args.arms,
                  max_corpus=args.max_corpus, cache=args.cache,
-                 families=args.family)
+                 families=args.family, trace=args.trace,
+                 constrained=not args.unconstrained)
     text = json.dumps(result, indent=2) if args.as_json else to_markdown(result)
     print(text)
     if args.out:

@@ -61,6 +61,13 @@ class CallRecord:
     prompt_tokens: int
     completion_tokens: int
     seconds: float
+    constrained: bool = False
+    """Whether decoding was constrained to a JSON schema.
+
+    Recorded because it changes both the output distribution and the token
+    count, so a cost or quality figure that does not say which mode produced
+    it is not comparable with one that does.
+    """
 
     @property
     def tokens(self) -> int:
@@ -84,6 +91,7 @@ class OllamaClient:
         self.timeout = timeout
         self.keep_alive = keep_alive
         self.retries = retries
+        self._sinks: list[Any] = []
         self.calls: list[CallRecord] = []
         """Every chat call this client has made. Kept on the client rather than
         returned per call so that a caller who never looks still accumulates the
@@ -143,7 +151,19 @@ class OllamaClient:
         tools: Sequence[Mapping[str, Any]] | None = None,
         temperature: float = 0.0,
         num_predict: int = 256,
+        schema: Mapping[str, Any] | None = None,
     ) -> dict[str, Any]:
+        """One chat call, recorded.
+
+        `schema` constrains decoding to a JSON schema, which Ollama enforces
+        during sampling rather than checking afterwards. It is not a
+        convenience: the extraction measurement in
+        `research/results/x1-extraction.md` attributed a catastrophic
+        false-positive rate to model size, and a 1.5B model under this
+        constraint produced the field a 9B model got right unconstrained. An
+        unconstrained model spends its output budget deciding what shape to
+        reply in, and on CPU that budget is the latency.
+        """
         payload: dict[str, Any] = {
             "model": model,
             "messages": list(messages),
@@ -152,23 +172,42 @@ class OllamaClient:
         }
         if tools:
             payload["tools"] = list(tools)
+        if schema:
+            payload["format"] = dict(schema)
 
         started = time.perf_counter()
         result = self._post("/api/chat", payload)
         # Ollama reports these on a non-streamed response. Missing counts are
         # recorded as 0 rather than guessed, so a total is always a floor.
-        self.calls.append(
-            CallRecord(
-                model=model,
-                prompt_sha256=hashlib.sha256(
-                    json.dumps(list(messages), sort_keys=True, default=str).encode("utf-8")
-                ).hexdigest(),
-                prompt_tokens=int(result.get("prompt_eval_count") or 0),
-                completion_tokens=int(result.get("eval_count") or 0),
-                seconds=time.perf_counter() - started,
-            )
+        record = CallRecord(
+            model=model,
+            prompt_sha256=hashlib.sha256(
+                json.dumps(list(messages), sort_keys=True, default=str).encode("utf-8")
+            ).hexdigest(),
+            prompt_tokens=int(result.get("prompt_eval_count") or 0),
+            completion_tokens=int(result.get("eval_count") or 0),
+            seconds=time.perf_counter() - started,
+            constrained=bool(schema),
         )
+        self.calls.append(record)
+        for sink in self._sinks:
+            # A tracing sink must never be able to fail a model call: the
+            # ledger is the record AGENTS.md requires, and an exporter is a
+            # convenience on top of it.
+            try:
+                sink(record, model, list(messages), result)
+            except Exception:  # pragma: no cover - exporter is best-effort
+                pass
         return result
+
+    def add_sink(self, sink: Any) -> None:
+        """Register a tracing callback, called after every recorded call.
+
+        The ledger in `self.calls` stays the source of truth. A sink receives
+        the `CallRecord`, the model, the messages and the raw reply, and is
+        wrapped so that it cannot fail the call it is observing.
+        """
+        self._sinks.append(sink)
 
     def usage(self, since: int = 0) -> dict[str, float]:
         """Totals over `self.calls[since:]`, so a caller can bracket one episode

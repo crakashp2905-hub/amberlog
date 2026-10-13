@@ -4,7 +4,7 @@
 rather than about extraction.**
 
 1. **The registered primary metric was trivially maximised by a registered baseline, and the 8c check that exists to catch exactly that was performed and answered wrongly.** `B = 0.000` was quoted from a table reporting a *different metric at a different budget*. On the registered metric a plain lexical baseline scores **1.000** on one of the two registered families. The family is abandoned under the registration's own clause. This was found by running the baselines before the model, and it is now [principle 8d](../../AGENTS.md).
-2. **A model can supply the declarations, and the cost is the product conclusion.** `gemma2` classified **19/19** statements correctly with usable targets. It costs **54.5 s each** on this hardware, which runs it on CPU — **20.8 hours** for one arm of one split at full corpus size. Prediction 4 of the registration said the cost would make extraction a batch job rather than an ingest-path step. It does, and by a wider margin than the prediction assumed.
+2. **A model can supply the declarations, and the cost is the product conclusion — because of the hardware, not the model.** `gemma2` classified **19/19** statements correctly with usable targets at **54.5 s each**. Under schema-constrained decoding, which the client wrapper was never passing, a **1.5B** model reaches 18/19 at **9.4 s** — 5.8× faster. It does not matter: there is **no discrete GPU** on this machine, so every model that extracts correctly runs at seconds per statement and 10,000 memories cost 26 hours rather than 151. Prediction 4 said cost would make extraction a batch job rather than an ingest-path step; it does, and the reason is the hardware floor (§8).
 3. **Checking prediction 3 found a published AUC reported as its own complement.** `abstention-signals.md`'s pooled AUC is **0.682, not 0.319** — above chance, not below. Every other figure in that result reproduces exactly. Its practical verdict survives untouched, which means the right decision was reached on the strength of a number that was upside down. It cited no harness, which is why it survived; there is one now.
 
 - **Registration:** [x1-extraction-at-ingest.md](../prereg/x1-extraction-at-ingest.md), amended in §8 before any model call of the primary arm
@@ -87,7 +87,15 @@ supposed to bound it.
 
 ---
 
-## 2. Can a model supply the declarations? Yes — one of the three can
+## 2. Can a model supply the declarations? Yes — one of these three can
+
+> **§8 supersedes the model ranking here.** These three were decoded
+> **free-form**, because the client wrapper passed no schema, and one of
+> them was a domain fine-tune rather than a general instruct model. Under
+> schema-constrained decoding a **1.5B** model reaches 18/19 at 5.8× the
+> speed. The finding that survives unchanged is the one this section was
+> built to make: the `plain` column, and that a model's *target* has to be
+> read rather than its class.
 
 19 statements, chosen **using the labels** so the two interesting ones are
 included, because a random sample of 500 would spend an hour to reach two. An
@@ -120,8 +128,15 @@ is 11× faster than `gemma2` and marks **every one of 17 ordinary statements** a
 modifier — `'fuel'`, `'weight'`, `'permit'`, `'adjusts'`. It would inject 17
 false `QUALIFIES` edges per 19 memories. An end-to-end score would have shown
 this as a mild degradation of unclear origin; the column shows it as what it
-is. A model this size is not merely worse at the task, it is unaware there is
-one.
+is.
+
+> **Corrected 2026-10-13.** This paragraph originally concluded *"a model this
+> size is not merely worse at the task, it is unaware there is one"*, which the
+> arm does not support: **`finsenti-llama3.2-1b` is a financial-sentiment
+> fine-tune**, not a general instruct model, and the name says so. Attributing
+> its behaviour to *size* was reading a parameter count off a model that had
+> been specialised away from instruction-following. §8 measures general models
+> at 1.5B and 3B instead, and a 1.5B one reaches 17/17 on this column.
 
 `qwen2.5:7b` also missed the default outright, classifying *"all yard vehicles
 run 2.7 bar in monsoon, except at the harbour and quarry sites"* as a modifier
@@ -310,3 +325,106 @@ frozen dataclass — the records would compare unequal and hash differently, and
 - **Prediction 3's premise is confirmed; the registered signal itself is not measured.** §5 shows subject-relevant turns are present in the unanswerable cases, which is the reason the signal would fail. It does not run an extraction-based detector over LongMemEval, and §3 says why that is not possible here.
 - **The abstention numbers are lexical.** A trained embedder's score distribution could calibrate differently, as `abstention-signals.md` limit 2 already noted; the correction in §5 is to the arithmetic, not to the retrieval.
 - **R6's warning still stands** for anything downstream. Nothing here measures whether an agent given a structurally-indexed context answers better.
+
+## 8. Choosing a model, and where the latency floor actually is
+
+**Added 2026-10-13.** §2 compared three models, one of which was
+mis-specified (above) and all three of which were decoded **free-form**. Both
+gaps are closed here, and the answer moves: the binding constraint is the
+hardware, and the model choice is a 5.8× trade against one error.
+
+### Decoding was never constrained, and that was a real omission
+
+Ollama enforces a JSON schema **during** sampling. The client wrapper did not
+pass one, so every figure in §2 came from a model free-forming its way to JSON
+with `parse()` cleaning up after it. `memory_fabric/extraction.py` now defines
+`SCHEMA` and `ModelExtractor(constrained=True)` is the default; the
+unconstrained path is kept so the two modes can be compared.
+
+The first constrained call made the point on its own: **`qwen2.5:1.5b` returned
+`modifies: "axle-set figure"`** — the correct, usable target that `qwen2.5:7b`
+got wrong free-form (`'add'`) and that only the 9B `gemma2` had produced.
+
+### Measured, schema-constrained, models warmed first
+
+19 statements, same sample as §2. Warming matters and was also missing before:
+a cold load is 20–35 s against a per-call figure in seconds, so without it the
+first statement of each model carries the load.
+
+| model | params | modifier | default | plain | s each | vs `gemma2` |
+|---|---|---|---|---|---|---|
+| `qwen2.5:1.5b` | 1.5B | 0/1 | **1/1** | **17/17** | **9.4 s** | **5.8× faster** |
+| `qwen2.5:3b` | 3.1B | **1/1** | **1/1** | 14/17 | 15.0 s | 3.6× faster |
+| `llama3.2:3b` | 3.2B | **1/1** | **1/1** | 3/17 | 16.5 s | 3.3× faster |
+
+Three things worth separating:
+
+- **`qwen2.5:1.5b` is 18/19 at 9.4 s** and gets the *default* right, which the 7B model failed free-form. Its one error is the modifier: it extracts the right target and then reports `asserts: true`, so `is_modifier` is false. That is the family `multi_hop_4` needs, so the error is in the worst possible place for the primary.
+- **`qwen2.5:3b` gets both interesting statements** and pays with 3 false positives on ordinary ones.
+- **`llama3.2:3b` is unusable at 3/17**, and this is the honest replacement for the claim §2 made about size: a *general* 3B model from a different family still marks 14 of 17 ordinary statements as modifiers. The failure tracks the family, not the parameter count — both Qwen sizes are fine on that column and both Llamas are not.
+
+### The latency floor is the hardware
+
+`/api/ps` reports **0 MB VRAM** and the machine has **no discrete GPU** —
+`Win32_VideoController` lists only Intel Iris Xe integrated graphics, which
+Ollama does not meaningfully accelerate. Every figure here is CPU inference.
+
+So the search for a lower-latency model has a floor that no model choice
+crosses: the fastest configuration that extracts correctly on this hardware is
+**~9–15 s a statement**, three to five orders of magnitude away from the
+sub-second cost that would make extraction an ingest-path step.
+
+| configuration | s/statement | 1,160 statements (`multi_hop_4` dev, full) | 10,000 memories |
+|---|---|---|---|
+| `gemma2`, free-form | 54.5 | 17.6 h | 151 h |
+| `qwen2.5:3b`, constrained | 15.0 | 4.8 h | 42 h |
+| `qwen2.5:1.5b`, constrained | 9.4 | **3.0 h** | 26 h |
+
+**The product conclusion does not change, and now rests on something firmer
+than one model.** Prediction 4 said cost would make extraction a batch job.
+A 5.8× speedup moves 151 hours to 26 and leaves the conclusion exactly where
+it was. What changes is the *reason*: it is no longer "the only model that
+works is slow" but "this hardware runs every model that works at seconds per
+statement, and the fix is a GPU or a hosted endpoint, not a smaller model".
+
+### What this does not settle
+
+- **Only locally available models were measured.** Newer small models (Gemma 3, Qwen 3 at 1.7B/4B) are not installed, and published comparisons do not settle the 1–4B range for schema-guided extraction — the one small-model report found at this size measures JSON *parse rate* on a generation task rather than field accuracy on extraction. Pulling them is a download and has not been done.
+- **19 statements.** Every caveat in §2 applies unchanged: this is evidence about extractability and model ranking, not a precision/recall estimate.
+- **One quantisation each.** All local models are Q4 except `gemma2` (Q4_0) and `llama-guard3` (Q8_0, unused). The one published small-model result found parse rates differing noticeably between quantisations of the same model, so a Q8 `qwen2.5:1.5b` is an untested and plausible improvement.
+
+---
+
+## 9. Tracing every model call
+
+AGENTS.md requires LLM calls to go through one wrapper logging model, prompt
+hash, token counts and cost. `OllamaClient.calls` is that ledger and remains
+the record of truth; `memory_fabric/adapters/tracing.py` adds exporters on top
+of it, registered with `client.add_sink()`.
+
+- **`JsonlSink`** — one JSON object per call, appended. **No dependencies**, because CI runs this project with none installed and the zero-dependency claim is only true if it is checked. Both X1 harnesses take `--trace PATH`.
+- **`LangfuseSink`** — the same records to Langfuse, with the SDK imported lazily so an absent package is a clear error at construction rather than an import failure in the fabric.
+
+**Content is off by default on both, and `CallRecord` is why.** It stores a
+hash of the prompt rather than the prompt, and its own docstring gives the
+reason: a prompt here contains memory content, which may contain exactly what
+the governance layer exists to keep out of secondary surfaces. **A trace
+exporter is a secondary surface**, and Langfuse's default host is a service
+this project does not run. So:
+
+- metadata only unless `send_content=True`;
+- with content **and** a non-local host, construction **fails** unless `allow_remote_content=True` — enabling that is the one place in this project where memory content crosses a network boundary on purpose;
+- with content enabled, the project's own sensitive-data detector runs over every string before it leaves the process and the content is dropped entirely if anything is found. Dropped rather than redacted, because a partial redaction is a guess about which half mattered. This is a mitigation, not a guarantee: a detector that catches credentials does not catch a customer's name in a sentence.
+
+A sink cannot break the call it observes — every sink is wrapped, and a raising
+sink leaves the ledger intact, which is tested.
+
+**One bug found by its own test.** `_is_local` first matched substrings, so
+`https://localhost.evil.com` passed as local and would have carried memory
+content to someone else's host **without** the `allow_remote_content` gate that
+exists to make that deliberate. The hostname is now parsed and compared
+exactly. A containment check is the wrong tool for an authorisation boundary,
+which is the same lesson [p2b-copy-recognition.md](p2b-copy-recognition.md)
+reached about Jaccard from the other direction.
+
+---

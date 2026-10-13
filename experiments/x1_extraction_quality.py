@@ -67,6 +67,19 @@ class Judged:
     detail: str
     seconds: float
 
+    target: str | None = None
+    """The extracted `modify_target`, verbatim.
+
+    Reported rather than scored. `classify` reads the class and not the
+    target, and the first run showed why that has to be visible: two models
+    scored 1/1 on the modifier with targets of `'add'` and
+    `'salt-corrosion margin'`, neither of which any predicate can match. A
+    usability metric invented after seeing three targets would be fitted to
+    them -- a substring test rejects `'add'` and accepts
+    `'salt-corrosion margin'`, which is wrong for a reason a substring cannot
+    see.
+    """
+
     @property
     def correct(self) -> bool:
         return self.got == self.expect
@@ -133,13 +146,33 @@ def sample(split: str, seed: int = 1) -> list[tuple[str, str]]:
     return out
 
 
-def run(models: Sequence[str], split: str = "dev") -> dict[str, Any]:
+def run(models: Sequence[str], split: str = "dev",
+        constrained: bool = True, warm: bool = True,
+        trace: str | None = None) -> dict[str, Any]:
     from memory_fabric.adapters.ollama import OllamaClient
 
     statements = sample(split)
     results: list[ModelResult] = []
     for model in models:
-        extractor = extracting.ModelExtractor(client=OllamaClient(), model=model)
+        client = OllamaClient()
+        if trace:
+            # Metadata only. `JsonlSink` sends no content unless asked, and
+            # this comparison has no reason to ask: what it needs from a trace
+            # is latency and token counts per model.
+            from memory_fabric.adapters.tracing import JsonlSink
+
+            client.add_sink(JsonlSink(trace))
+        extractor = extracting.ModelExtractor(
+            client=client, model=model, constrained=constrained)
+        if warm:
+            # A cold load costs 20-35s against a per-call figure of seconds,
+            # so without this the first statement of each model carries the
+            # load and the per-statement mean is a load time divided by 19.
+            try:
+                extractor.extract("warmup", "Bay 1 is assigned to unit-1.")
+                extractor._cache.clear()
+            except Exception as exc:  # pragma: no cover - environment
+                print(f"  {model}: warmup failed: {exc}", file=sys.stderr)
         result = ModelResult(model=model)
         for content, expect in statements:
             started = time.perf_counter()
@@ -154,19 +187,23 @@ def run(models: Sequence[str], split: str = "dev") -> dict[str, Any]:
             got, detail = classify(record)
             result.judged.append(Judged(
                 content=content, expect=expect, got=got, detail=detail,
-                seconds=time.perf_counter() - started))
+                seconds=time.perf_counter() - started,
+                target=record.modify_target))
         results.append(result)
         print(f"  {model}: {result.summary()}", file=sys.stderr)
 
     return {
         "experiment": "x1-extraction-quality",
         "split": split,
+        "constrained": constrained,
+        "warmed": warm,
         "statements": len(statements),
         "models": {r.model: r.summary() for r in results},
         "detail": {
             r.model: [
                 {"expect": j.expect, "got": j.got, "detail": j.detail,
-                 "seconds": round(j.seconds, 1), "content": j.content[:90]}
+                 "target": j.target, "seconds": round(j.seconds, 1),
+                 "content": j.content[:90]}
                 for j in r.judged
             ]
             for r in results
@@ -178,6 +215,8 @@ def to_markdown(result: Mapping[str, Any]) -> str:
     lines = [
         f"# X1 — can a model supply the declarations? · {result['split']} split",
         "",
+        f"- Decoding: **{'schema-constrained' if result.get('constrained') else 'free-form'}**"
+        f"{', models warmed first' if result.get('warmed') else ', cold'}",
         f"- {result['statements']} statements, chosen with the labels so the "
         f"interesting ones are included; see the module docstring",
         "- An extraction-quality measurement, **not** a retrieval arm",
@@ -207,10 +246,19 @@ def main(argv: Sequence[str] | None = None) -> int:
                         default=["qwen2.5:7b", "gemma2:latest",
                                  "finsenti-llama3.2-1b:latest"])
     parser.add_argument("--split", default="dev", choices=["dev", "test"])
+    parser.add_argument("--unconstrained", action="store_true",
+                        help="free-form decoding, as the first run measured")
+    parser.add_argument("--cold", action="store_true",
+                        help="do not warm the model first")
+    parser.add_argument("--trace",
+                        help="append one JSON object per model call to this "
+                             "file (metadata only, no content)")
     parser.add_argument("--out")
     parser.add_argument("--json", dest="as_json", action="store_true")
     args = parser.parse_args(argv)
-    result = run(args.models, args.split)
+    result = run(args.models, args.split,
+                 constrained=not args.unconstrained, warm=not args.cold,
+                 trace=args.trace)
     print(json.dumps(result, indent=2) if args.as_json
           else to_markdown(result))
     if args.out:

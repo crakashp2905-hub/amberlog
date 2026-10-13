@@ -81,6 +81,35 @@ Statement: {content}
 
 JSON:"""
 
+SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "asserts": {"type": "boolean"},
+        "subject": {"type": ["string", "null"]},
+        "predicate": {"type": ["string", "null"]},
+        "value": {"type": ["string", "null"]},
+        "scope": {"type": "array", "items": {"type": "string"}},
+        "excepts": {"type": "array", "items": {"type": "string"}},
+        "modifies": {"type": ["string", "null"]},
+        "adjustment": {"type": ["string", "null"]},
+    },
+    "required": ["asserts", "subject", "predicate", "scope", "excepts",
+                 "modifies"],
+}
+"""The same nine keys, as a schema Ollama enforces **during** sampling.
+
+Why this is not a tidying-up. The first measurement of this module blamed model
+size for a catastrophic result: a 1B model marked 17 of 17 ordinary statements
+as modifiers. Under this schema a 1.5B model returned the correct
+`modifies` target that a 7B model got wrong unconstrained. An unconstrained
+model spends output budget choosing a shape -- prose, fences, a preamble -- and
+`parse()` exists to clean up after it. On CPU that budget is the latency, so
+constraining the shape is both the accuracy fix and the cost fix.
+
+`parse()` is kept regardless, because a schema is enforced by the server and a
+caller may be pointed at one that does not enforce it.
+"""
+
 
 @dataclass(frozen=True)
 class Extracted:
@@ -246,10 +275,16 @@ class ModelExtractor:
 
     Temperature 0 and a JSON-only instruction, because the output is an index
     and an index that varies between runs cannot be compared across them.
+
+    `constrained` passes `SCHEMA` to the client, which is the measured default
+    rather than an option: see `SCHEMA`. It is still a flag, because the
+    unconstrained path is what the first results measured and a comparison
+    between the two modes has to be able to run both.
     """
 
     client: Any
     model: str = "qwen2.5:7b"
+    constrained: bool = True
     _cache: dict[str, Extracted] = field(default_factory=dict)
 
     def extract(self, memory_id: str, content: str) -> Extracted:
@@ -259,6 +294,9 @@ class ModelExtractor:
             # structure, and a benchmark writes the same filler into hundreds
             # of corpora. Without this the cost is the measurement.
             return Extracted(**{**cached.__dict__, "memory_id": memory_id})
+        kwargs: dict[str, Any] = {}
+        if self.constrained:
+            kwargs["schema"] = SCHEMA
         reply = self.client.chat(
             model=self.model,
             messages=[{"role": "user",
@@ -268,6 +306,7 @@ class ModelExtractor:
             # that runs long is a model narrating rather than extracting, and
             # paying for the narration would put it in the cost column.
             num_predict=220,
+            **kwargs,
         )
         text = reply if isinstance(reply, str) else _reply_text(reply)
         record = parse(memory_id, text)

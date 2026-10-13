@@ -324,7 +324,7 @@ def to_markdown(result: Mapping[str, Any]) -> str:
         f"- `{result['model']}`, {result['typed_on']} of {result['instances']} "
         f"instances scored by the model, {result['unanswerable']} unanswerable",
         f"- Registered bar: **{reg['bar_40pc_of_headroom']}** "
-        f"= B {reg['B_best_baseline_f1']} + 0.40 × (1.000 − B)",
+        f"= B {reg['B_best_baseline_f1']} + 0.40 × (1.000 - B)",
         "",
         "| arm | AUC | best F1 | precision | TPR | FPR |",
         "|---|---|---|---|---|---|",
@@ -385,11 +385,20 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parser.parse_args(argv)
     result = run(args.split, args.answerable, args.k, args.host, args.model,
                  args.limit_typed, args.trace)
-    print(json.dumps(result, indent=2) if args.as_json
-          else to_markdown(result))
+    # Persist before formatting. A 32-minute X2 run was lost when
+    # `to_markdown` hit a Unicode minus sign against a cp1252 console and
+    # raised before `--out` was written: the display path must never be able to
+    # discard the measurement. Writing first also means a failed `print` costs
+    # the summary rather than the run.
     if args.out:
         pathlib.Path(args.out).write_text(
             json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    text = json.dumps(result, indent=2) if args.as_json else to_markdown(result)
+    try:
+        print(text)
+    except UnicodeEncodeError:
+        encoding = sys.stdout.encoding or "ascii"
+        print(text.encode(encoding, "replace").decode(encoding, "replace"))
     return 0
 
 

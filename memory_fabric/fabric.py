@@ -28,6 +28,7 @@ from .ids import new_ulid
 from . import chains
 from . import duplicates
 from . import rerank as reranking
+from . import extraction as extracting
 from .relations import PULLS_IN_SUBJECT, RelationKind
 from .relevance import ReasonCode as _ReasonCode
 from .lineage import LineageGraph, LineageView
@@ -213,6 +214,12 @@ class MemoryFabric:
         # it here keeps the numeric test out of the search's inner loop.
         self.chain_terms: dict[str, frozenset[str]] = {}
         self.chain_plain: dict[str, frozenset[str]] = {}
+        # Structure extracted from a memory's content, when a caller supplies
+        # it. An index like any other, and not populated on the write path:
+        # extraction costs a model call per memory, and
+        # `research/prereg/x1-extraction-at-ingest.md` predicts the measurement
+        # will make it a batch job rather than an ingest-path step.
+        self.extracted: dict[str, "extracting.Extracted"] = {}
         self.log = EventLog(path, busy_timeout_ms=busy_timeout_ms)
         # Everything after opening the log can fail — a missing key store
         # makes every sealed memory unreadable and `KeyUnavailable`
@@ -1665,6 +1672,8 @@ class MemoryFabric:
         group_by_source_root: bool = True,
         expand_lineage: int = 1,
         follow_relations: bool = False,
+        entities: Sequence[str] = (),
+        use_extraction: bool = False,
     ) -> RetrievalResult:
         """Retrieve, decide exposure, log both, return what was exposed.
 
@@ -1734,6 +1743,10 @@ class MemoryFabric:
             hits = self._expand_lineage(
                 hits, eligible, limit=pool_size, depth=expand_lineage
             )
+        if use_extraction:
+            # Before relation-following, so a default admitted here can then
+            # drag in whatever qualifies it.
+            hits = self._admit_defaults(hits, eligible, entities, pool_size)
         if follow_relations:
             # After lineage expansion and before grouping: a qualifier should
             # travel with whatever it qualifies even if that arrived by
@@ -1978,6 +1991,65 @@ class MemoryFabric:
             ))
         self._emit(*emitted)
         return chain
+
+    def index_extraction(self, record: "extracting.Extracted") -> None:
+        """Record the structure extracted from a memory.
+
+        Separate from `remember` on purpose. Extraction is one model call per
+        memory, so putting it on the write path would make every write depend
+        on a model being reachable — and the registered prediction is that the
+        cost makes it a batch job. Indexing it afterwards keeps that a
+        deployment's decision.
+        """
+        self._require(record.memory_id)
+        self.extracted[record.memory_id] = record
+
+    def _admit_defaults(
+        self, ranked: Sequence[tuple[str, float]], eligible: set[str],
+        entities: Sequence[str], limit: int,
+    ) -> list[tuple[str, float]]:
+        """Add default rules that cover the asked entities.
+
+        The `implied_by_default` mechanism, and the one a memory-to-memory
+        relation could not provide: *"all yard vehicles run 3.9 bar in winter,
+        except at the harbour and quarry sites"* names neither the unit nor the
+        site asked about, so it is **not similar to the query** and no ranking
+        can surface it. Its applicability is a property of what it *excludes*,
+        which is a fact about the record rather than a relation between two
+        memories (`research/results/relations-ceiling.md` section 3).
+
+        Appended rather than ranked: a default has no similarity score to
+        compete on, and giving it a made-up one would be a tuned weight.
+
+        **And it drops a default that does not apply**, which is the half the
+        first version missed. A rule saying *"except at the harbour site"*
+        shares enough words with a question about the harbour site to be
+        retrieved by similarity, and serving it there is not an incomplete
+        answer but a wrong one. Applicability has to exclude as well as admit,
+        or the mechanism only ever adds.
+        """
+        if not entities or not self.extracted:
+            return list(ranked)
+        wanted = [e for e in entities if e]
+        out: list[tuple[str, float]] = []
+        for memory_id, score in ranked:
+            record = self.extracted.get(memory_id)
+            if (record is not None and record.is_default
+                    and not record.applies_to(wanted)):
+                continue
+            out.append((memory_id, score))
+        present = {memory_id for memory_id, _ in out}
+        candidates = extracting.applicable_defaults(
+            [r for mid, r in self.extracted.items() if mid in eligible],
+            wanted,
+        )
+        tail = out[-1][1] if out else 1.0
+        for memory_id in candidates:
+            if memory_id in present:
+                continue
+            present.add(memory_id)
+            out.append((memory_id, tail * (1 - 1e-6)))
+        return out[:limit]
 
     def relate(
         self,

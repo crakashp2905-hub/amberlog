@@ -330,7 +330,7 @@ contract with no producer anywhere in the codebase since R0.
 
 Three things it does not do, all measured:
 
-- **`multi_hop_4` fails for an instructive reason.** Its missing memory says *"add 0.35 bar as a salt-corrosion margin"*: it supplies no query term and links nothing, so a chain that is already complete and connected has no reason to want it. It **modifies** the answer. The mechanism solves distributed evidence needing a connector and not evidence that qualifies a conclusion — and `implied_by_default`, still 0.000 for every arm, is the same gap from another angle.
+- **`multi_hop_4` fails for an instructive reason.** Its missing memory says *"add 0.35 bar as a salt-corrosion margin"*: it supplies no query term and links nothing, so a chain that is already complete and connected has no reason to want it. It **modifies** the answer. The mechanism solves distributed evidence needing a connector and not evidence that qualifies a conclusion — and `implied_by_default` was read as the same gap from another angle — **wrongly**, as it turns out: that family's 0.000 was a k=3 result and plain lexical solves it on dev at k=5 ([x1-extraction.md §1](research/results/x1-extraction.md)). `multi_hop_4` is 0.000 at k=3, 5 and 10 on both splits and stands on its own.
 - **Abstention is still unsolved**: 1 of 9 dev cases, 0 of 9 on test, and it reports `complete` on `unanswerable` cases because token coverage can be completed from memories that are not about the question.
 - **It is not a default.** `reconstruct` is opt-in, beside `retrieve`, because a mechanism that misses its registered bar does not become the default and chain reconstruction is a different operation from ranking.
 
@@ -364,7 +364,7 @@ easy or the whole benchmark was.
 
 Two findings beyond the separation:
 
-- **`implied_by_default` is 0.000 for every arm on both splits**, trained embedder included. The answer — "all yard vehicles run 3.9 bar in winter, except at the harbour and quarry sites" — names neither the unit nor the site, so it is not similar to the query and no similarity measure can rank it. Reaching it means knowing a default applies unless an exception says otherwise.
+- **`implied_by_default` is 0.000 for every arm on both splits** at **k=3**, trained embedder included. The answer — "all yard vehicles run 3.9 bar in winter, except at the harbour and quarry sites" — names neither the unit nor the site, so it ranks below four distractors that name both. **Corrected 2026-10-13:** at k=5 it ranks 4th and plain `lexical` reaches 1.000 sufficiency on dev (0.000 on test), so the claim that no similarity measure can rank it is withdrawn, and the family is abandoned as an X1 target ([facet-v1-implied.md §11](research/results/facet-v1-implied.md), [x1-extraction.md §1](research/results/x1-extraction.md)).
 - **A trained embedder refutes a prediction written into the generator.** It was expected to close `implied_by_paraphrase` and not the others; it does the opposite, recovering `implied_by_exclusion` (0.250 dev, 0.816 test) and leaving the paraphrase family near zero.
 
 Taken with relevance_v2's headroom sitting in multi-hop chains, the shape of

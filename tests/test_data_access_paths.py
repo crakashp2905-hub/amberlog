@@ -93,6 +93,11 @@ INSPECTION = {
 
 MUTATION = {
     "remember": "write a new memory",
+    "index_extraction": (
+        "record the structure extracted from a memory's content. A mutation "
+        "because it populates an index; deliberately not on the write path, "
+        "since extraction is a model call per memory"
+    ),
     "relate": (
         "declare a typed non-derivation relation between two memories. A "
         "mutation because it appends an event the relation index projects from"

@@ -133,9 +133,16 @@ the deciding facet implied rather than stated, `lexical` scores **1.000 on a
 matched stated control and 0.000 on all three implied families, on both
 splits** — same questions, same facts, same values, same distractors. One
 family, `implied_by_default`, is **0.000 for every arm including a trained
-embedder**: a rule reading "all vehicles, except at these two sites" names
-neither the unit nor the site asked about, so no similarity measure can rank it
-because it is not similar.
+embedder** *at k=3*: a rule reading "all vehicles, except at these two sites"
+names neither the unit nor the site asked about, so it ranks below distractors
+that name both.
+
+> **Corrected 2026-10-13.** The clause "no similarity measure can rank it
+> because it is not similar" is struck. At **k=5** plain `lexical` ranks the
+> rule **4th** and reaches 1.000 sufficiency on dev, while staying at 0.000 on
+> test. See [facet-v1-implied.md §11](facet-v1-implied.md#11-correction-the-k3-boundary-and-what-it-cost)
+> — the overreach was quoted into a pre-registration as a baseline for a
+> metric that run never measured.
 
 ## 4. Where the headroom actually is
 

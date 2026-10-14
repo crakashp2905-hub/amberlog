@@ -122,6 +122,33 @@ That is the kind of fault worth naming a habit around. It was invisible in
 every arm's score, visible immediately in a two-size comparison, and it cost
 nothing to check.
 
+## 3a. No-regression, as §5 of the registration requires
+
+The admission path is shared with defaults, so changing it could move any arm
+that enables extraction, and the gate ordering matters for `must_not_expose`.
+Measured after the change, `dev`:
+
+| benchmark | arm | nDCG | published | `must_not_expose_rate` |
+|---|---|---|---|---|
+| `relevance_v2` | `lexical` | 0.654 | — | 0.000 |
+| `relevance_v2` | `store_lexical` | **0.8066** | **0.807** | 0.000 |
+| `relevance_v2` | `chain` | 0.8733 | — | 0.000 |
+| `relevance_v2` | `oracle` | 1.000 | 1.000 | 0.000 |
+| `facet_v1` | `lexical` | **0.250** | **0.250** | 0.000 |
+| `facet_v1` | `store_lexical` | 0.250 | 0.250 | 0.000 |
+
+`store_lexical` matches [relevance-v2-ceiling.md](relevance-v2-ceiling.md)'s
+0.807 to three decimals, and `facet_v1`'s 0.250 is exactly the mean of its
+documented 1.000 stated control and three 0.000 implied families. **No arm
+moved, and `must_not_expose_rate` is 0.000 everywhere**, which is the gate
+condition that fails a run.
+
+Nothing moved because extraction is off unless a caller asks: the admission
+path only runs under `use_extraction=True`, and no standard arm passes it. The
+corollary is the uncomfortable one — **the only arms that ever exercised this
+code are X1's**, which is how a path inert in any store with a candidate pool
+survived from the commit that added defaults until now.
+
 ## 4. What this does not establish
 
 - **Dev only, and the registration said so first.** The ceiling on test is 0.000 and was abandoned in advance. A dev-only pass is not a replication, and this is the third mechanism in this project with exactly that shape ([P1](p1-evidence-chain-reconstruction.md), [relations-ceiling](relations-ceiling.md)).

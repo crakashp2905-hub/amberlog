@@ -229,10 +229,41 @@ def _stratified(instances: Sequence[Mapping[str, Any]],
     return set(out)
 
 
+def load_cache(path: pathlib.Path, model: str) -> dict[str, float]:
+    """Model answers from an earlier run of the same model.
+
+    Keyed on model and question id. A cache shared between checkpoints would
+    make the result a property of whichever ran first, which is the same key
+    discipline `x1_extraction.py` needed.
+    """
+    if not path.exists():
+        return {}
+    try:
+        stored = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return {}
+    if stored.get("model") != model:
+        return {}
+    return {str(k): float(v) for k, v in (stored.get("answers") or {}).items()}
+
+
+def save_cache(path: pathlib.Path, model: str,
+               answers: Mapping[str, float]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps({"model": model, "answers": dict(answers)},
+                              indent=1), encoding="utf-8")
+    # Replace rather than write in place: a crash during the write would
+    # otherwise leave a truncated cache, which is worse than none because it
+    # loads and looks complete.
+    tmp.replace(path)
+
+
 def run(split: str = "s", answerable: int = 500, k: int = 10,
         host: str | None = None, model: str = "kev-latest",
         limit_typed: int | None = None,
-        trace: str | None = None) -> dict[str, Any]:
+        trace: str | None = None,
+        cache: str | None = None) -> dict[str, Any]:
     client = SystemOneClient(host=host or "http://127.0.0.1:8009", model=model)
     if trace:
         from memory_fabric.adapters.tracing import JsonlSink
@@ -242,6 +273,18 @@ def run(split: str = "s", answerable: int = 500, k: int = 10,
 
     instances = premise.sample(split, answerable)
     typed_on = _stratified(instances, limit_typed)
+
+    # Resume. Two runs of this experiment have been lost whole: one to a
+    # formatting error after 500 instances, one to the server going away at
+    # 175 of 500 after 100 minutes of CPU. The first was fixed by writing
+    # `--out` before formatting, which does not help the second, because the
+    # run itself had nothing on disk until it finished. At 35 s a call a
+    # 500-instance run is five hours, and anything that long needs to survive
+    # being interrupted.
+    cache_path = pathlib.Path(cache) if cache else None
+    answered: dict[str, float] = (
+        load_cache(cache_path, model) if cache_path else {})
+    reused = len(answered)
     rows: list[Row] = []
     started = time.perf_counter()
     for position, instance in enumerate(instances):
@@ -254,8 +297,15 @@ def run(split: str = "s", answerable: int = 500, k: int = 10,
             coverage=round(coverage, 4),
         )
         if instance["question_id"] in typed_on:
-            row.p_answerable, row.seconds, row.error = ask(
-                client, instance, excerpts)
+            cached = answered.get(instance["question_id"])
+            if cached is not None:
+                row.p_answerable, row.seconds = cached, 0.0
+            else:
+                row.p_answerable, row.seconds, row.error = ask(
+                    client, instance, excerpts)
+                if row.p_answerable is not None and cache_path:
+                    answered[instance["question_id"]] = row.p_answerable
+                    save_cache(cache_path, model, answered)
         rows.append(row)
         if (position + 1) % 25 == 0:
             done = sum(1 for r in rows if r.p_answerable is not None)
@@ -296,6 +346,7 @@ def run(split: str = "s", answerable: int = 500, k: int = 10,
         "experiment": "x2-typed-abstention",
         "split": split, "k": k, "model": model, "served": served,
         "instances": len(rows), "typed_on": len(scored),
+        "reused_from_cache": reused,
         "unanswerable": unanswerable,
         "arms": results,
         "registered": {
@@ -380,11 +431,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                              "model; the baselines are then scored on that "
                              "same subset so the populations match")
     parser.add_argument("--trace")
+    parser.add_argument("--cache",
+                        help="path to a resumable answer cache, written after "
+                             "every model call so an interrupted run resumes")
     parser.add_argument("--out")
     parser.add_argument("--json", dest="as_json", action="store_true")
     args = parser.parse_args(argv)
     result = run(args.split, args.answerable, args.k, args.host, args.model,
-                 args.limit_typed, args.trace)
+                 args.limit_typed, args.trace, args.cache)
     # Persist before formatting. A 32-minute X2 run was lost when
     # `to_markdown` hit a Unicode minus sign against a cp1252 console and
     # raised before `--out` was written: the display path must never be able to

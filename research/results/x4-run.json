@@ -1,0 +1,237 @@
+{
+  "experiment": "x4-governed-vs-pooled",
+  "model": "qwen2.5:3b",
+  "seeds": 5,
+  "episodes": 24,
+  "rates": [
+    0.0,
+    0.5,
+    1.0
+  ],
+  "arms": {
+    "no_memory": {
+      "arm": "no_memory",
+      "rate": null,
+      "n": 120,
+      "success": 0.0917,
+      "right_memory": 0.0,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "oracle@0.0": {
+      "arm": "oracle",
+      "rate": 0.0,
+      "n": 120,
+      "success": 0.65,
+      "right_memory": 0.6,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "shared_memory@0.0": {
+      "arm": "shared_memory",
+      "rate": 0.0,
+      "n": 120,
+      "success": 0.6,
+      "right_memory": 0.6,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "shared_memory_delete@0.0": {
+      "arm": "shared_memory_delete",
+      "rate": 0.0,
+      "n": 120,
+      "success": 0.6,
+      "right_memory": 0.6,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "fabric_governed@0.0": {
+      "arm": "fabric_governed",
+      "rate": 0.0,
+      "n": 120,
+      "success": 0.5667,
+      "right_memory": 0.6417,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "oracle@0.5": {
+      "arm": "oracle",
+      "rate": 0.5,
+      "n": 120,
+      "success": 0.6083,
+      "right_memory": 0.6,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "shared_memory@0.5": {
+      "arm": "shared_memory",
+      "rate": 0.5,
+      "n": 120,
+      "success": 0.5833,
+      "right_memory": 0.6,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "shared_memory_delete@0.5": {
+      "arm": "shared_memory_delete",
+      "rate": 0.5,
+      "n": 120,
+      "success": 0.5833,
+      "right_memory": 0.6,
+      "wrongly_removed": 1,
+      "withdrawals": 0
+    },
+    "fabric_governed@0.5": {
+      "arm": "fabric_governed",
+      "rate": 0.5,
+      "n": 120,
+      "success": 0.5667,
+      "right_memory": 0.6417,
+      "wrongly_removed": 0,
+      "withdrawals": 8
+    },
+    "oracle@1.0": {
+      "arm": "oracle",
+      "rate": 1.0,
+      "n": 120,
+      "success": 0.6083,
+      "right_memory": 0.6,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "shared_memory@1.0": {
+      "arm": "shared_memory",
+      "rate": 1.0,
+      "n": 120,
+      "success": 0.5833,
+      "right_memory": 0.6,
+      "wrongly_removed": 0,
+      "withdrawals": 0
+    },
+    "shared_memory_delete@1.0": {
+      "arm": "shared_memory_delete",
+      "rate": 1.0,
+      "n": 120,
+      "success": 0.5833,
+      "right_memory": 0.6,
+      "wrongly_removed": 4,
+      "withdrawals": 0
+    },
+    "fabric_governed@1.0": {
+      "arm": "fabric_governed",
+      "rate": 1.0,
+      "n": 120,
+      "success": 0.5833,
+      "right_memory": 0.6333,
+      "wrongly_removed": 0,
+      "withdrawals": 14
+    }
+  },
+  "registered": {
+    "by_rate": {
+      "0.0": {
+        "C_oracle": 0.65,
+        "B_best_pooled": 0.6,
+        "headroom": 0.05,
+        "bar": 0.62,
+        "fabric_governed": 0.5667,
+        "passes_bar": false,
+        "abandoned_degenerate_headroom": true,
+        "delta_vs_best_pooled": -0.0333
+      },
+      "0.5": {
+        "C_oracle": 0.6083,
+        "B_best_pooled": 0.5833,
+        "headroom": 0.025,
+        "bar": 0.5933,
+        "fabric_governed": 0.5667,
+        "passes_bar": false,
+        "abandoned_degenerate_headroom": true,
+        "delta_vs_best_pooled": -0.0166
+      },
+      "1.0": {
+        "C_oracle": 0.6083,
+        "B_best_pooled": 0.5833,
+        "headroom": 0.025,
+        "bar": 0.5933,
+        "fabric_governed": 0.5833,
+        "passes_bar": false,
+        "abandoned_degenerate_headroom": true,
+        "delta_vs_best_pooled": 0.0
+      }
+    },
+    "rate_zero_near_neutral": true,
+    "supported": false,
+    "rates_passing": []
+  },
+  "checks": {
+    "ok": false,
+    "failed": [
+      "baseline_max_at_0.0",
+      "baseline_max_at_0.5",
+      "baseline_max_at_1.0"
+    ],
+    "ceiling_at_0.0": {
+      "ok": true,
+      "ceiling_arm": "oracle@0.0",
+      "ceiling": 0.65,
+      "arms_above_ceiling": {},
+      "note": ""
+    },
+    "ceiling_at_0.5": {
+      "ok": true,
+      "ceiling_arm": "oracle@0.5",
+      "ceiling": 0.6083,
+      "arms_above_ceiling": {},
+      "note": ""
+    },
+    "ceiling_at_1.0": {
+      "ok": true,
+      "ceiling_arm": "oracle@1.0",
+      "ceiling": 0.6083,
+      "arms_above_ceiling": {},
+      "note": ""
+    },
+    "baseline_max_at_0.0": {
+      "ok": false,
+      "metric": "success",
+      "baselines_measured": [
+        "shared_memory@0.0",
+        "shared_memory_delete@0.0"
+      ],
+      "B_best_baseline": 0.6,
+      "C_ceiling": 0.65,
+      "headroom": 0.05,
+      "note": "headroom 0.05 <= 0.05: the metric is maxed by a baseline and the abandonment clause applies (principle 8c)"
+    },
+    "baseline_max_at_0.5": {
+      "ok": false,
+      "metric": "success",
+      "baselines_measured": [
+        "shared_memory@0.5",
+        "shared_memory_delete@0.5"
+      ],
+      "B_best_baseline": 0.5833,
+      "C_ceiling": 0.6083,
+      "headroom": 0.025,
+      "note": "headroom 0.025 <= 0.05: the metric is maxed by a baseline and the abandonment clause applies (principle 8c)"
+    },
+    "baseline_max_at_1.0": {
+      "ok": false,
+      "metric": "success",
+      "baselines_measured": [
+        "shared_memory@1.0",
+        "shared_memory_delete@1.0"
+      ],
+      "B_best_baseline": 0.5833,
+      "C_ceiling": 0.6083,
+      "headroom": 0.025,
+      "note": "headroom 0.025 <= 0.05: the metric is maxed by a baseline and the abandonment clause applies (principle 8c)"
+    }
+  },
+  "cost": {
+    "calls": 1746.0,
+    "tokens": 520730.0,
+    "wall_s": 6205.0
+  }
+}

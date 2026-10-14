@@ -304,6 +304,13 @@ def run(split: str = "s", answerable: int = 500, k: int = 10,
             else:
                 row.p_answerable, row.seconds, row.error = ask(
                     client, instance, excerpts)
+                # Rounded because 16 significant figures of wall time is
+                # not a measurement -- and because the secret scanner
+                # correctly flagged one such float for containing a
+                # Luhn-valid digit run, then flagged this comment too when it
+                # quoted the number. The data was wrong; the detector was
+                # not, in either case.
+                row.seconds = round(row.seconds, 2)
                 if row.p_answerable is not None and cache_path:
                     answered[instance["question_id"]] = row.p_answerable
                     save_cache(cache_path, model, answered)

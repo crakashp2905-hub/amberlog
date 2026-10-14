@@ -74,6 +74,26 @@ So the registered zero-shot measurement is done, and it is the baseline a
 refit now has to beat. §4 of the registration said the zero-shot case was
 measured first for precisely that reason.
 
+> **Corrected 2026-10-14 by [X2b](x2b-recalibration.md).** The refit was run
+> and the diagnosis above is half right. The probabilities *were* badly
+> scaled, and refitting takes ECE from 0.6631 to **0.0083**. But the implied
+> conclusion -- that the scale was the problem -- is wrong twice over.
+>
+> **It cannot help, provably:** AUC and best-F1 are invariant under any
+> strictly monotone transform, and a temperature or Platt rescaling is one, so
+> **no refit can move this result's primary metric.** Both are identical to
+> four decimals across every arm.
+>
+> **And it achieves its calibration by discarding the signal:** the fitted
+> rescaling outputs a mean probability of 0.94 on a population that is 94%
+> answerable, which is a constant predictor at the base rate. Perfectly
+> calibrated, perfectly uninformative.
+>
+> So the heading of this section should be read narrowly. The *numbers* were
+> bad for calibration reasons; the *mechanism* fails because its
+> discrimination is weaker than a lexical score's, and that is untouched by
+> scale. Get the discrimination first.
+
 ## 3. The predictions, scored
 
 1. **"It will not reach 0.5514, and the premise measurement is why."** **Confirmed.** 0.1739. The premise finding stands: an unanswerable question's retrieved context already contains 79% of its distinctive content terms, so the turns are about the subject and what is missing is one specific fact.

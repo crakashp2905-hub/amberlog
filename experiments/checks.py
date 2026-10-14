@@ -175,6 +175,37 @@ def class_collapse(counts: Mapping[str, int],
     }
 
 
+def collapsed_to_prior(mean_probability: float, base_rate: float,
+                       accuracy_at_half: float,
+                       tolerance: float = 0.02) -> dict[str, Any]:
+    """Did a recalibration buy its calibration by predicting the base rate?
+
+    Added after X2b. A Platt rescaling of Kev-0.8B's answers reached
+    **ECE 0.0083** -- better than the vendor's own reported figure for a
+    refit -- with a mean probability of **0.94** on a population that is 94%
+    answerable. It had learned the prior and thrown away the signal: a
+    detector that always says "answerable" is perfectly calibrated and
+    perfectly useless.
+
+    ECE and Brier cannot see this. A constant predictor at the base rate is
+    *optimally* calibrated by construction, and on a skewed population its
+    Brier looks excellent too -- 0.0563 here, purely because 94% is far from
+    0.5. So a calibration figure quoted without this check is not evidence
+    that anything was learned.
+    """
+    collapsed = (abs(mean_probability - base_rate) <= tolerance
+                 and abs(accuracy_at_half - base_rate) <= tolerance)
+    return {
+        "ok": not collapsed,
+        "mean_probability": round(mean_probability, 4),
+        "base_rate": round(base_rate, 4),
+        "accuracy_at_half": round(accuracy_at_half, 4),
+        "note": ("the rescaling predicts the base rate: perfectly calibrated "
+                 "and uninformative, so ECE and Brier say nothing here")
+                if collapsed else "",
+    }
+
+
 def fixture_independence(match: Any, measured: Mapping[str, Any],
                          fixture: Mapping[str, Any]) -> dict[str, Any]:
     """Does a matcher pass only on the pair whose halves were both chosen?

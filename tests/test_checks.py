@@ -159,6 +159,37 @@ class TestClassCollapse(unittest.TestCase):
             {"plain": 17, "unparsed": 0})["ok"])
 
 
+class TestCollapsedToPrior(unittest.TestCase):
+    """A Platt refit of Kev-0.8B reached ECE 0.0083 by predicting the base
+    rate: perfectly calibrated and perfectly useless."""
+
+    def test_the_real_collapse_is_caught(self):
+        out = checks.collapsed_to_prior(
+            mean_probability=0.94, base_rate=0.94, accuracy_at_half=0.94)
+        self.assertFalse(out["ok"])
+        self.assertIn("predicts the base rate", out["note"])
+
+    def test_a_predictor_that_learned_something_passes(self):
+        """Mean near the base rate is fine when the fixed-threshold accuracy
+        beats it -- that is a calibrated detector rather than a constant."""
+        self.assertTrue(checks.collapsed_to_prior(
+            mean_probability=0.94, base_rate=0.94,
+            accuracy_at_half=0.99)["ok"])
+
+    def test_a_distribution_centred_elsewhere_passes(self):
+        """The temperature arm: mean moved to 0.497 and accuracy stayed at
+        0.116, which is uninformative but not a collapse onto the prior --
+        and the two failures want different fixes."""
+        self.assertTrue(checks.collapsed_to_prior(
+            mean_probability=0.4974, base_rate=0.94,
+            accuracy_at_half=0.116)["ok"])
+
+    def test_a_balanced_population_is_handled(self):
+        """At a 0.5 base rate, a constant predictor is still a collapse."""
+        self.assertFalse(checks.collapsed_to_prior(
+            mean_probability=0.5, base_rate=0.5, accuracy_at_half=0.5)["ok"])
+
+
 class TestFixtureIndependence(unittest.TestCase):
     """`infer_relations` matched on one of four combinations — the one whose
     every half was hand-written."""

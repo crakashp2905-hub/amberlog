@@ -1,0 +1,295 @@
+{
+  "experiment": "x2b-recalibrate",
+  "source": "research/results/x2-run.json",
+  "instances": 500,
+  "seeds": 5,
+  "summary": {
+    "as_shipped": {
+      "ece": 0.6631,
+      "brier": 0.5037,
+      "accuracy_at_half": 0.116,
+      "auc": 0.6488,
+      "best_f1": 0.1986,
+      "mean_p": 0.2769
+    },
+    "temperature": {
+      "ece": 0.4426,
+      "brier": 0.2522,
+      "accuracy_at_half": 0.116,
+      "auc": 0.6488,
+      "best_f1": 0.1986,
+      "mean_p": 0.4974
+    },
+    "platt": {
+      "ece": 0.0083,
+      "brier": 0.0563,
+      "accuracy_at_half": 0.94,
+      "auc": 0.6488,
+      "best_f1": 0.1986,
+      "mean_p": 0.94
+    }
+  },
+  "invariance": {
+    "auc": {
+      "as_shipped": 0.6488,
+      "temperature": 0.6488,
+      "platt": 0.6488,
+      "unchanged": true
+    },
+    "best_f1": {
+      "as_shipped": 0.1986,
+      "temperature": 0.1986,
+      "platt": 0.1986,
+      "unchanged": true
+    }
+  },
+  "base_rate_answerable": 0.94,
+  "checks": {
+    "ok": false,
+    "failed": [
+      "collapsed_to_prior_platt"
+    ],
+    "collapsed_to_prior_temperature": {
+      "ok": true,
+      "mean_probability": 0.4974,
+      "base_rate": 0.94,
+      "accuracy_at_half": 0.116,
+      "note": ""
+    },
+    "collapsed_to_prior_platt": {
+      "ok": false,
+      "mean_probability": 0.94,
+      "base_rate": 0.94,
+      "accuracy_at_half": 0.94,
+      "note": "the rescaling predicts the base rate: perfectly calibrated and uninformative, so ECE and Brier say nothing here"
+    },
+    "monotone_invariance": {
+      "ok": true,
+      "note": "AUC and best-F1 must be identical across arms: a strictly monotone rescaling permutes no scores. A difference means the transform is not monotone or the metric is not threshold-free.",
+      "auc": {
+        "as_shipped": 0.6488,
+        "temperature": 0.6488,
+        "platt": 0.6488,
+        "unchanged": true
+      },
+      "best_f1": {
+        "as_shipped": 0.1986,
+        "temperature": 0.1986,
+        "platt": 0.1986,
+        "unchanged": true
+      }
+    }
+  },
+  "per_seed": [
+    {
+      "seed": 1,
+      "fitted": {
+        "temperature": {
+          "a": 0.01,
+          "implied_T": 100.0
+        },
+        "platt": {
+          "a": 0.8506,
+          "b": 3.7254
+        }
+      },
+      "held_out": {
+        "as_shipped": {
+          "n": 250,
+          "ece": 0.6645,
+          "brier": 0.5081,
+          "accuracy_at_half": 0.104,
+          "auc": 0.6054,
+          "best_f1": 0.1897,
+          "mean_p": 0.2755
+        },
+        "temperature": {
+          "n": 250,
+          "ece": 0.4426,
+          "brier": 0.2523,
+          "accuracy_at_half": 0.104,
+          "auc": 0.6054,
+          "best_f1": 0.1897,
+          "mean_p": 0.4974
+        },
+        "platt": {
+          "n": 250,
+          "ece": 0.0163,
+          "brier": 0.0563,
+          "accuracy_at_half": 0.94,
+          "auc": 0.6054,
+          "best_f1": 0.1897,
+          "mean_p": 0.9375
+        }
+      }
+    },
+    {
+      "seed": 2,
+      "fitted": {
+        "temperature": {
+          "a": 0.01,
+          "implied_T": 100.0
+        },
+        "platt": {
+          "a": 0.8434,
+          "b": 3.763
+        }
+      },
+      "held_out": {
+        "as_shipped": {
+          "n": 250,
+          "ece": 0.6576,
+          "brier": 0.499,
+          "accuracy_at_half": 0.14,
+          "auc": 0.5993,
+          "best_f1": 0.1832,
+          "mean_p": 0.2824
+        },
+        "temperature": {
+          "n": 250,
+          "ece": 0.4425,
+          "brier": 0.2522,
+          "accuracy_at_half": 0.14,
+          "auc": 0.5993,
+          "best_f1": 0.1832,
+          "mean_p": 0.4975
+        },
+        "platt": {
+          "n": 250,
+          "ece": 0.0186,
+          "brier": 0.0571,
+          "accuracy_at_half": 0.94,
+          "auc": 0.5993,
+          "best_f1": 0.1832,
+          "mean_p": 0.9426
+        }
+      }
+    },
+    {
+      "seed": 3,
+      "fitted": {
+        "temperature": {
+          "a": 0.01,
+          "implied_T": 100.0
+        },
+        "platt": {
+          "a": 0.0537,
+          "b": 2.8069
+        }
+      },
+      "held_out": {
+        "as_shipped": {
+          "n": 250,
+          "ece": 0.665,
+          "brier": 0.5019,
+          "accuracy_at_half": 0.104,
+          "auc": 0.7194,
+          "best_f1": 0.24,
+          "mean_p": 0.275
+        },
+        "temperature": {
+          "n": 250,
+          "ece": 0.4426,
+          "brier": 0.2522,
+          "accuracy_at_half": 0.104,
+          "auc": 0.7194,
+          "best_f1": 0.24,
+          "mean_p": 0.4974
+        },
+        "platt": {
+          "n": 250,
+          "ece": 0.0001,
+          "brier": 0.0562,
+          "accuracy_at_half": 0.94,
+          "auc": 0.7194,
+          "best_f1": 0.24,
+          "mean_p": 0.9399
+        }
+      }
+    },
+    {
+      "seed": 4,
+      "fitted": {
+        "temperature": {
+          "a": 0.01,
+          "implied_T": 100.0
+        },
+        "platt": {
+          "a": 0.6638,
+          "b": 3.5121
+        }
+      },
+      "held_out": {
+        "as_shipped": {
+          "n": 250,
+          "ece": 0.6641,
+          "brier": 0.5059,
+          "accuracy_at_half": 0.116,
+          "auc": 0.6363,
+          "best_f1": 0.1802,
+          "mean_p": 0.2759
+        },
+        "temperature": {
+          "n": 250,
+          "ece": 0.4426,
+          "brier": 0.2522,
+          "accuracy_at_half": 0.116,
+          "auc": 0.6363,
+          "best_f1": 0.1802,
+          "mean_p": 0.4974
+        },
+        "platt": {
+          "n": 250,
+          "ece": 0.0036,
+          "brier": 0.056,
+          "accuracy_at_half": 0.94,
+          "auc": 0.6363,
+          "best_f1": 0.1802,
+          "mean_p": 0.9403
+        }
+      }
+    },
+    {
+      "seed": 5,
+      "fitted": {
+        "temperature": {
+          "a": 0.01,
+          "implied_T": 100.0
+        },
+        "platt": {
+          "a": 0.4087,
+          "b": 3.2
+        }
+      },
+      "held_out": {
+        "as_shipped": {
+          "n": 250,
+          "ece": 0.6642,
+          "brier": 0.5036,
+          "accuracy_at_half": 0.116,
+          "auc": 0.6837,
+          "best_f1": 0.2,
+          "mean_p": 0.2758
+        },
+        "temperature": {
+          "n": 250,
+          "ece": 0.4426,
+          "brier": 0.2522,
+          "accuracy_at_half": 0.116,
+          "auc": 0.6837,
+          "best_f1": 0.2,
+          "mean_p": 0.4974
+        },
+        "platt": {
+          "n": 250,
+          "ece": 0.0027,
+          "brier": 0.0558,
+          "accuracy_at_half": 0.94,
+          "auc": 0.6837,
+          "best_f1": 0.2,
+          "mean_p": 0.9399
+        }
+      }
+    }
+  ]
+}

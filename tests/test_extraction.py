@@ -320,6 +320,94 @@ class TestInTheStore(unittest.TestCase):
         finally:
             fabric.close()
 
+    def test_a_scoped_adjustment_is_admitted_for_its_own_site(self):
+        """Gap 1, end to end through the public API.
+
+        X1's mechanism scored 0.000 with *correct* extractions because an
+        adjustment carrying a scope and no exceptions had no path into a
+        context: `_admit_defaults` admitted only records with exceptions. The
+        adjustment is not similar to the query -- it names a site and a
+        quantity, not the unit asked about -- and it is not a relation to one
+        rule rather than another, because twelve of them differ only by site.
+        """
+        fabric = self._fabric()
+        try:
+            margin = fabric.remember(agent_id="a", content=MARGIN)
+            fabric.index_extraction(Extracted(
+                margin, asserts=False, modifies="axle-set figure",
+                scope=("depot-12",), adjustment="0.35 bar"))
+            without = fabric.retrieve(
+                agent_id="a", query="winter tyre pressure for crane-5",
+                k=5, min_relevance=0.0)
+            self.assertNotIn(margin, [m.id for m in without.exposed],
+                             "it must not rank, or this proves nothing")
+            with_it = fabric.retrieve(
+                agent_id="a", query="winter tyre pressure for crane-5",
+                k=5, min_relevance=0.0, entities=["crane-5", "depot-12"],
+                use_extraction=True)
+            self.assertIn(margin, [m.id for m in with_it.exposed])
+        finally:
+            fabric.close()
+
+    def test_an_adjustment_for_another_site_is_withheld(self):
+        """The half that matters more. Twelve adjustments differ only by site
+        name, so admitting on the quantity alone would add eleven wrong
+        figures to every context -- which is a wrong answer rather than an
+        incomplete one."""
+        fabric = self._fabric()
+        try:
+            margin = fabric.remember(agent_id="a", content=MARGIN)
+            fabric.index_extraction(Extracted(
+                margin, asserts=False, modifies="axle-set figure",
+                scope=("harbour",)))
+            result = fabric.retrieve(
+                agent_id="a", query="winter tyre pressure for crane-5",
+                k=5, min_relevance=0.0, entities=["crane-5", "depot-12"],
+                use_extraction=True)
+            self.assertNotIn(margin, [m.id for m in result.exposed])
+        finally:
+            fabric.close()
+
+    def test_an_unscoped_modifier_is_not_admitted_as_an_adjustment(self):
+        """`is_adjustment` requires a scope. A modifier that names no site
+        cannot be selected by the query's entities, and admitting it for every
+        query would be a mechanism that only ever adds."""
+        fabric = self._fabric()
+        try:
+            margin = fabric.remember(agent_id="a", content=MARGIN)
+            fabric.index_extraction(Extracted(
+                margin, asserts=False, modifies="axle-set figure"))
+            result = fabric.retrieve(
+                agent_id="a", query="winter tyre pressure for crane-5",
+                k=5, min_relevance=0.0, entities=["crane-5", "depot-12"],
+                use_extraction=True)
+            self.assertNotIn(margin, [m.id for m in result.exposed])
+        finally:
+            fabric.close()
+
+    def test_a_default_and_an_adjustment_are_both_admitted(self):
+        """They are different shapes reached by the same rule, and a context
+        needing both must get both."""
+        fabric = self._fabric()
+        stub = StubExtractor()
+        try:
+            rule = fabric.remember(agent_id="a", content=RULE)
+            margin = fabric.remember(agent_id="a", content=MARGIN)
+            fabric.index_extraction(stub.extract(rule, RULE))
+            fabric.index_extraction(Extracted(
+                margin, asserts=False, modifies="axle-set figure",
+                scope=("depot-12",)))
+            result = fabric.retrieve(
+                agent_id="a",
+                query="winter tyre pressure for crane-5 at depot-12",
+                k=5, min_relevance=0.0, entities=["crane-5", "depot-12"],
+                use_extraction=True)
+            exposed = [m.id for m in result.exposed]
+            self.assertIn(rule, exposed)
+            self.assertIn(margin, exposed)
+        finally:
+            fabric.close()
+
     def test_extraction_is_off_unless_asked_for(self):
         """One model call per memory is not something a write should do by
         default, and the registered prediction is that the cost makes it a

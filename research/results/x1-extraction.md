@@ -268,6 +268,16 @@ matcher could join two correct extractions. §11 is that assumption, measured.
 **Prediction 4 is confirmed and was the more useful one.** 8,962 s for three
 cases on a deliberately reduced store, to produce zero edges.
 
+> **Attribution corrected 2026-10-14 by [X3](x3-scoped-adjustments.md).** The
+> 0.000 above is what the registered arm scored and it stands. Its **cause**
+> was not the matcher of §11 but a missing consumer: `_admit_defaults`
+> admitted records carrying **exceptions** only, so the scoped adjustment
+> `gemma2` had extracted correctly -- `modifies='axle-set figure'`,
+> `scope=('depot-12',)` -- could not enter a context by any path. With that
+> one condition fixed, **this same arm, same model, same cached records,
+> scores 1.000 on dev.** §11's finding about the matcher is unchanged and
+> still tested; what changes is that this family never needed a relation.
+
 ### What this run adds over §11
 
 §11 established from six calls that no model forms the edge. This establishes

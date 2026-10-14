@@ -87,7 +87,17 @@ FAMILIES = {
 }
 # The fixture-declared relations, for the `declared` ceiling only.
 DECLARED = {"multi_hop_4": [("h4", "h3")]}
-ARMS = ("baseline", "extraction", "declared", "oracle")
+ARMS = ("baseline", "extraction", "declared", "adjust_declared",
+        "adjust_extracted", "oracle")
+
+# X3's admission rule, registered in
+# `research/prereg/x3-scoped-adjustments.md`. The fixture's own structure for
+# the one memory the family turns on, so `adjust_declared` measures the
+# admission rule with extraction held perfect, and `adjust_extracted` measures
+# it with the records a model actually produces.
+DECLARED_ADJUSTMENTS = {
+    "multi_hop_4": {"h4": {"modifies": "axle-set figure"}},
+}
 
 
 @dataclass
@@ -206,6 +216,27 @@ def run_case(case: Mapping[str, Any], arm: str, k: int,
                 if subject in local and obj in local:
                     fabric.relate(local[subject], RelationKind.QUALIFIES,
                                   local[obj], actor="fixture")
+        elif arm == "adjust_declared":
+            # The scope comes from the case's own entities, which is what
+            # makes this a ceiling for the admission rule rather than for the
+            # extractor: it holds the record perfect and asks only whether the
+            # rule reaches it.
+            sites = [e for e in (case["task"].get("entities") or ())]
+            for bench_id, fields in DECLARED_ADJUSTMENTS.get(
+                    case["family"], {}).items():
+                if bench_id not in local:
+                    continue
+                fabric.index_extraction(extracting.Extracted(
+                    local[bench_id], asserts=False,
+                    scope=tuple(sites), **fields))
+        elif arm == "adjust_extracted":
+            # Every memory, with no reference to the labels, exactly as the
+            # `extraction` arm does -- the only difference is which consumer
+            # reads the records.
+            for store_id, bench_id in ids.items():
+                record = extractor.extract(
+                    store_id, fabric.state.memories[store_id].content)
+                fabric.index_extraction(record)
         elif arm == "extraction":
             # Every memory, with no reference to the labels. The cache is on
             # the extractor, so a statement seen in an earlier case costs
@@ -221,7 +252,8 @@ def run_case(case: Mapping[str, Any], arm: str, k: int,
                 fabric.relate(subject, kind, obj, actor="extraction")
             defaults = sum(1 for r in records if r.is_default)
 
-        use = arm in ("declared", "extraction")
+        use = arm in ("declared", "extraction", "adjust_declared",
+                      "adjust_extracted")
         if arm == "oracle":
             returned = list(case["labels"]["relevant"])[:k]
         else:
@@ -230,21 +262,36 @@ def run_case(case: Mapping[str, Any], arm: str, k: int,
                 k=k, tenant_id=case["task"].get("tenant_id", "tn_default"),
                 as_of=rb._as_of(case), follow_relations=use)
             returned = [ids[s.memory_id] for s in chain.steps]
-            if arm == "extraction":
-                # The defaults mechanism lives on `retrieve`, so a family whose
-                # answer is a default rule needs that path as well as the
-                # chain. Union, because the two mechanisms address different
-                # families and an arm that had to pick one would measure the
-                # choice.
+            if arm in ("extraction", "adjust_declared", "adjust_extracted"):
+                # The admission mechanism lives on `retrieve`, so a family
+                # whose answer is a scoped record needs that path as well as
+                # the chain.
+                #
+                # **Only the admitted records are taken**, not the whole of
+                # `retrieve`'s ranking. The first version unioned both and
+                # truncated to k, which replaced the chain's own hops with
+                # retrieve's similarity order and dropped `h2` -- so the arm
+                # scored 1 of 3 on dev against a simulated ceiling of 3 of 3,
+                # and the gap was the composition rather than the mechanism.
+                # Taking the ranking too would also mean this arm measures
+                # "chain or retrieve, whichever ranks better", which is not
+                # what is registered.
+                entities = list(case["task"].get("entities") or ())
                 result = fabric.retrieve(
                     agent_id=case["task"]["agent_id"],
                     query=rb.query_text(case), k=k,
                     tenant_id=case["task"].get("tenant_id", "tn_default"),
                     min_relevance=0.0, as_of=rb._as_of(case),
-                    entities=list(case["task"].get("entities") or ()),
+                    entities=entities,
                     use_extraction=True, follow_relations=True,
                 )
+                records = list(fabric.extracted.values())
+                admitted = set(
+                    extracting.applicable_defaults(records, entities)
+                ) | set(extracting.applicable_adjustments(records, entities))
                 for memory in result.exposed:
+                    if memory.id not in admitted:
+                        continue
                     bench_id = ids[memory.id]
                     if bench_id not in returned:
                         returned.append(bench_id)
@@ -266,9 +313,10 @@ def run(split: str, k: int = 5, model: str = "gemma2:latest",
         families: Sequence[str] | None = None,
         trace: str | None = None,
         constrained: bool = False) -> dict[str, Any]:
+    needs_model = bool({"extraction", "adjust_extracted"} & set(arms))
     extractor, cost = (
         build_extractor(model, cache, trace, constrained)
-        if "extraction" in arms else (None, Cost()))
+        if needs_model else (None, Cost()))
     reused = len(extractor._cache) if extractor is not None else 0
     cases: list[tuple[str, Mapping[str, Any]]] = []
     wanted = set(families) if families else None
@@ -358,6 +406,11 @@ def run(split: str, k: int = 5, model: str = "gemma2:latest",
         ceiling=checks.ceiling(out["arms"], "sufficient"),
         baseline_max=checks.baseline_max(
             out["arms"], "sufficient", ["baseline"]),
+        # X3's ceiling is the simulated-admission figure, not the oracle: an
+        # admission rule cannot beat admitting the labelled memory by hand.
+        adjustment_ceiling=checks.ceiling(
+            out["arms"], "sufficient", "adjust_declared")
+        if "adjust_declared" in out["arms"] else {"ok": True},
     )
     return out
 

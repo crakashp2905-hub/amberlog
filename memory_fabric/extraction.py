@@ -189,6 +189,31 @@ class Extracted:
     def is_modifier(self) -> bool:
         return self.parsed and bool(self.modify_target) and not self.asserts
 
+    @property
+    def is_adjustment(self) -> bool:
+        """A modifier that applies to named entities rather than generally.
+
+        *"At the depot-12 site, add 0.35 bar to the axle-set figure as a
+        salt-corrosion margin"* adjusts a quantity **and** names where it
+        applies. `gemma2` extracts exactly that:
+        `modifies='axle-set figure'`, `scope=('depot-12',)`.
+
+        This is the distinction X1 was missing, and the reason its mechanism
+        scored 0.000. X1 tried to reach such a record through a
+        memory-to-memory `QUALIFIES` relation, inferred by matching `modifies`
+        against another memory's `predicate`. That cannot work, and not because
+        of the models: the corpus holds **twelve** of these adjustments
+        differing only by site name, so an adjustment does not qualify one rule
+        rather than another -- all twelve qualify every rule equally. Which one
+        applies is a property of the **query's** entities, exactly as a
+        default's applicability is a property of what it excludes
+        (`research/results/x1-extraction.md` section 11).
+
+        So it is admitted the way a default is, and not related the way a
+        premise is.
+        """
+        return self.is_modifier and bool(self.scope)
+
     def applies_to(self, entities: Iterable[str]) -> bool:
         """Whether this record covers a query about these entities.
 
@@ -459,6 +484,31 @@ def infer_relations(records: Sequence[Extracted]
                         out.append(
                             (record.memory_id, RelationKind.QUALIFIES, memory_id))
     return out
+
+
+def applicable_adjustments(records: Sequence[Extracted],
+                           entities: Iterable[str]) -> list[str]:
+    """Scoped adjustments that apply to a query about these entities.
+
+    The counterpart of `applicable_defaults`, and the gap that measurement
+    found: `_admit_defaults` admitted only records with **exceptions**, so a
+    record carrying a scope and no exceptions -- which is what every
+    site-scoped adjustment is -- had no path into a context at all. The
+    extraction was correct and nothing consumed it.
+
+    Measured ceiling for admitting these: `multi_hop_4` sufficiency 0.000 ->
+    **1.000** on dev, 3 of 3 cases, and 0 of 3 on test where the chain
+    retrieves the wrong sibling rule
+    (`research/prereg/x3-scoped-adjustments.md`).
+    """
+    wanted = {e.lower() for e in entities}
+    if not wanted:
+        return []
+    return [
+        record.memory_id
+        for record in records
+        if record.is_adjustment and record.applies_to(wanted)
+    ]
 
 
 def applicable_defaults(records: Sequence[Extracted],

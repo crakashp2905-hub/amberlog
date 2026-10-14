@@ -61,9 +61,21 @@ from memory_fabric.adapters.context import build_context  # noqa: E402
 
 ARMS = ("no_memory", "shared_memory", "shared_memory_delete",
         "fabric_governed", "oracle")
-RATE_FREE = ("no_memory", "oracle")
-"""Arms whose behaviour cannot depend on the correction rate, so they are run
-once rather than per rate."""
+RATE_FREE = ("no_memory",)
+"""Arms whose behaviour cannot depend on the correction rate.
+
+**`oracle` is not one of them**, and the pilot proved it: `shared_memory` at
+rate 1.0 scored 1.000 against the oracle's 0.917, and `checks.ceiling` failed
+on the run. The cause was mine. The correction stream hands every other arm an
+explicit instruction -- *"the lesson about E03 at coastal is wrong, disregard
+it"* -- and the oracle, which only *filters* wrong lessons out, never saw that
+text. An arm with information the ceiling lacks is not bounded by it.
+
+This is Phase A's amendment 3 recurring in a new form. There the oracle showed
+one memory where every arm showed three; here it sees one fewer document than
+every arm at a non-zero rate. Principle 8b: the oracle gets the same budget,
+the same k and the same mechanisms, differing only in knowing the answer. So
+it is swept too, and receives the same corrections."""
 
 RATES = (0.0, 0.5, 1.0)
 
@@ -296,6 +308,56 @@ def run_pooled(
     return run
 
 
+def run_oracle(
+    seed: int, lessons: Sequence[PA.Lesson],
+    episodes: Sequence[W.EvalEpisode], schedule: Sequence[int],
+    corrections: Sequence[Correction], client: Any, embedder: Any,
+    model: str, k: int = 3, verbose: bool = False,
+) -> PA.ArmRun:
+    """Perfect filtering, the same budget, **and the same corrections**.
+
+    Phase A's amendment 3 fixed this arm once, by giving it the same k as the
+    arms it bounds rather than a single perfect memory. The correction stream
+    broke it again from the other side: at a non-zero rate every other arm gets
+    a document the oracle did not, and an arm with information the ceiling
+    lacks is not bounded by it. So the oracle receives the corrections too, and
+    keeps only its real advantage -- knowing which lessons are wrong for this
+    episode.
+    """
+    from memory_fabric.vectors import VectorIndex
+
+    run = PA.ArmRun(result=PA.ArmResult("oracle"))
+    index = VectorIndex(embedder)
+    admitted: set[int] = set()
+    extra: list[str] = []
+    applied: set[int] = set()
+    pending = {c.lesson_index: c for c in corrections}
+
+    for position, episode in enumerate(episodes):
+        released = list(range(schedule[position]))
+        for i in released:
+            if i not in admitted:
+                index.add(str(i), lessons[i].content)
+                admitted.add(i)
+        for lesson_index, correction in list(pending.items()):
+            if lesson_index in released and lesson_index not in applied:
+                extra.append(correction.text)
+                applied.add(lesson_index)
+
+        eligible = {str(i) for i in released
+                    if not lessons[i].wrong_for(episode)}
+        hits = index.search(W.recall_query(episode), k=k,
+                            restrict_to=eligible) if eligible else []
+        shown = [lessons[int(key)] for key, _score in hits]
+        pieces = [l.content for l in shown] + extra[-k:]
+        memory_text = W.render_plain(pieces) if pieces else ""
+        text, tokens, model_ms = PA._ask(client, model, memory_text, episode)
+        run.result.decisions.append(PA._score(
+            "oracle", seed, position, episode, shown, text, tokens, 0.0,
+            model_ms, store_size=len(released)))
+    return run
+
+
 def run_seed(seed: int, client: Any, embedder: Any, model: str,
              rates: Sequence[float], episodes: int,
              verbose: bool) -> dict[tuple[str, float | None], PA.ArmRun]:
@@ -328,6 +390,12 @@ def run_seed(seed: int, client: Any, embedder: Any, model: str,
         # rate: the arms must see the same corrections or the comparison is
         # partly between correction sets.
         corrections = corrections_for(lessons, rate, random.Random(seed * 97))
+        out[("oracle", rate)] = run_oracle(
+            seed, lessons, evaluation, schedule, corrections, client,
+            embedder, model, verbose=verbose)
+        print(f"  seed {seed} rate {rate:<4} {'oracle':<22} success "
+              f"{stats.mean(out[('oracle', rate)].result.success):>5.0%}",
+              flush=True)
         for arm in ("shared_memory", "shared_memory_delete", "fabric_governed"):
             started = time.perf_counter()
             if arm == "fabric_governed":
@@ -365,9 +433,10 @@ def summarise(pooled: dict[tuple[str, float | None], list[PA.ArmRun]]
 
 
 def verdict(rows: dict[str, Any], rates: Sequence[float]) -> dict[str, Any]:
-    oracle = (rows.get("oracle") or {}).get("success")
-    out: dict[str, Any] = {"C_oracle": oracle, "by_rate": {}}
+    out: dict[str, Any] = {"by_rate": {}}
     for rate in rates:
+        # The oracle at this rate, because it is swept too -- see RATE_FREE.
+        oracle = rows.get(f"oracle@{rate}", {}).get("success")
         baselines = [rows.get(f"{a}@{rate}", {}).get("success")
                      for a in ("shared_memory", "shared_memory_delete")]
         baselines = [b for b in baselines if b is not None]
@@ -378,6 +447,7 @@ def verdict(rows: dict[str, Any], rates: Sequence[float]) -> dict[str, Any]:
         headroom = round(oracle - best, 4)
         bar = round(best + 0.40 * (oracle - best), 4)
         out["by_rate"][str(rate)] = {
+            "C_oracle": oracle,
             "B_best_pooled": round(best, 4),
             "headroom": headroom,
             "bar": bar,
@@ -412,20 +482,30 @@ def run(seeds: int, episodes: int, rates: Sequence[float], model: str,
 
     rows = summarise(pooled)
     decision = verdict(rows, rates)
-    arms_for_ceiling = {k: {"success": v["success"]} for k, v in rows.items()}
     return {
         "experiment": "x4-governed-vs-pooled",
         "model": model, "seeds": seeds, "episodes": episodes,
         "rates": list(rates),
         "arms": rows,
         "registered": decision,
-        "checks": checks.verify(
-            ceiling=checks.ceiling(arms_for_ceiling, "success", "oracle"),
-            baseline_max=checks.baseline_max(
-                arms_for_ceiling, "success",
-                [f"shared_memory@{r}" for r in rates]
-                + [f"shared_memory_delete@{r}" for r in rates]),
-        ),
+        # Per rate, because the oracle is swept: comparing an arm at one rate
+        # against a ceiling measured at another is how a ceiling stops being
+        # one, which the pilot demonstrated.
+        "checks": checks.verify(**{
+            f"ceiling_at_{r}": checks.ceiling(
+                {k: {"success": v["success"]} for k, v in rows.items()
+                 if v["rate"] == r},
+                "success", f"oracle@{r}")
+            for r in rates
+        }, **{
+            f"baseline_max_at_{r}": checks.baseline_max(
+                {k: {"success": v["success"]} for k, v in rows.items()
+                 if v["rate"] == r},
+                "success",
+                [f"shared_memory@{r}", f"shared_memory_delete@{r}"],
+                ceiling_arm=f"oracle@{r}")
+            for r in rates
+        }),
         "cost": {
             "calls": float(len(client.calls)),
             "tokens": float(sum(c.tokens for c in client.calls)),
@@ -441,7 +521,7 @@ def to_markdown(result: Any) -> str:
         "",
         f"- `{result['model']}`, {result['seeds']} seeds x "
         f"{result['episodes']} episodes, correction rates {result['rates']}",
-        f"- Oracle (C) = {reg['C_oracle']}",
+        "- The oracle is swept with the arms, so C is per rate; see RATE_FREE",
         "",
         "| arm | rate | success | right memory | wrongly removed | retractions |",
         "|---|---|---|---|---|---|",
@@ -452,11 +532,14 @@ def to_markdown(result: Any) -> str:
             f"| `{row['arm']}` | {rate} | **{row['success']}** | "
             f"{row['right_memory']} | {row['wrongly_removed']} | "
             f"{row['withdrawals']} |")
-    lines += ["", "| rate | B (best pooled) | bar | fabric_governed | delta | passes |",
-              "|---|---|---|---|---|---|"]
+    lines += ["", "| rate | C (oracle) | B (best pooled) | headroom | bar | "
+              "fabric_governed | delta | passes |",
+              "|---|---|---|---|---|---|---|---|"]
     for rate, row in reg["by_rate"].items():
+        note = " (abandoned)" if row["abandoned_degenerate_headroom"] else ""
         lines.append(
-            f"| {rate} | {row['B_best_pooled']} | {row['bar']} | "
+            f"| {rate} | {row['C_oracle']} | {row['B_best_pooled']} | "
+            f"{row['headroom']}{note} | {row['bar']} | "
             f"**{row['fabric_governed']}** | {row['delta_vs_best_pooled']:+} | "
             f"{'YES' if row['passes_bar'] else 'no'} |")
     lines += [

@@ -60,6 +60,7 @@ from typing import Any, Mapping, Sequence
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+from experiments import checks as harness_checks  # noqa: E402
 from experiments import x1_abstention_premise as premise  # noqa: E402
 from memory_fabric.adapters.systemone import (  # noqa: E402
     SystemOneClient, brier_score, expected_calibration_error, noul,
@@ -340,7 +341,24 @@ def run(split: str = "s", answerable: int = 500, k: int = 10,
     baseline_f1 = max(results[a].get("f1") or 0.0 for a in BASELINES)
     bar = baseline_f1 + 0.40 * (1.0 - baseline_f1)
     typed_f1 = (results.get("typed") or {}).get("f1")
-    beat_oracle = [a for a in arms if (results[a].get("f1") or 0.0) > 1.0]
+
+    # The shared checks rather than four hand-rolled comparisons. The
+    # direction check is the one that matters here: this experiment's own
+    # baseline is the signal `abstention-signals.md` reported as its own
+    # complement, so an AUC convention error would reproduce the published
+    # fault in the experiment built to correct it.
+    audit = harness_checks.verify(
+        ceiling=harness_checks.ceiling(results, "f1"),
+        baseline_max=harness_checks.baseline_max(
+            results, "f1", list(BASELINES)),
+        direction=harness_checks.direction(
+            [r.signal("typed") for r in population if r.unanswerable],
+            [r.signal("typed") for r in population if not r.unanswerable])
+        if scored else {"ok": True, "note": "no typed arm in this run"},
+        class_collapse=harness_checks.class_collapse(
+            {"answered": len(scored),
+             "error": sum(1 for r in rows if r.error)}),
+    )
 
     return {
         "experiment": "x2-typed-abstention",
@@ -358,8 +376,10 @@ def run(split: str = "s", answerable: int = 500, k: int = 10,
             "share_of_headroom": (
                 round((typed_f1 - baseline_f1) / (1.0 - baseline_f1), 4)
                 if typed_f1 is not None else None),
-            "any_arm_beat_the_oracle": beat_oracle,
+            "any_arm_beat_the_oracle": (
+                audit["ceiling"].get("arms_above_ceiling") or {}),
         },
+        "checks": audit,
         "calibration": calibration(rows),
         "cost": client.usage(),
         "errors": [r.error for r in rows if r.error][:5],
@@ -412,6 +432,10 @@ def to_markdown(result: Mapping[str, Any]) -> str:
             "mode to detect is *confident and wrong*, and an average over all "
             "instances hides it.",
         ]
+    audit = result.get("checks") or {}
+    if not audit.get("ok", True):
+        lines += ["", f"**Checks failed: {audit.get('failed')}.** "
+                      f"See the `checks` block in the JSON."]
     if reg["any_arm_beat_the_oracle"]:
         lines += ["", f"**An arm beat the oracle: "
                       f"{reg['any_arm_beat_the_oracle']}. The ceiling is "

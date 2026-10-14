@@ -56,6 +56,7 @@ from typing import Any, Mapping, Sequence
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+from experiments import checks as harness_checks  # noqa: E402
 from experiments import longmemeval_bench as lb  # noqa: E402
 from memory_fabric.vectors import LexicalIndex  # noqa: E402
 
@@ -263,6 +264,15 @@ def run(split: str = "s", answerable: int = 30, k: int = 10) -> dict[str, Any]:
                           [getattr(r, name) for r in present])
             for name in ("top1", "coverage", "mean_top10")
         },
+        "checks": harness_checks.verify(
+            # This result's whole point is an AUC that was published as its
+            # own complement, so the direction check belongs here above all.
+            direction_top1=harness_checks.direction(
+                [r.top1 for r in absent], [r.top1 for r in present]),
+            direction_mean_top10=harness_checks.direction(
+                [r.mean_top10 for r in absent],
+                [r.mean_top10 for r in present]),
+        ),
         "rows": [r.__dict__ for r in rows],
     }
 

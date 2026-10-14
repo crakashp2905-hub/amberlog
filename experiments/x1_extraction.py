@@ -76,6 +76,7 @@ from typing import Any, Mapping, Sequence
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
+from experiments import checks  # noqa: E402
 from experiments import relevance_bench as rb  # noqa: E402
 from memory_fabric import extraction as extracting  # noqa: E402
 from memory_fabric.relations import RelationKind  # noqa: E402
@@ -318,6 +319,10 @@ def run(split: str, k: int = 5, model: str = "gemma2:latest",
 
     out: dict[str, Any] = {
         "experiment": "x1-extraction-at-ingest",
+        # Every run carries its own audit, because these faults are invisible
+        # on inspection -- principle 8b says the ceiling check runs on every
+        # run for that reason.
+        "checks": None,
         "split": split, "k": k, "model": model,
         "constrained": constrained,
         "max_corpus": max_corpus,
@@ -349,6 +354,11 @@ def run(split: str, k: int = 5, model: str = "gemma2:latest",
         "precision": round(hits / found, 4) if found else None,
         "defaults_found": sum(o.defaults_found for o in extracted),
     }
+    out["checks"] = checks.verify(
+        ceiling=checks.ceiling(out["arms"], "sufficient"),
+        baseline_max=checks.baseline_max(
+            out["arms"], "sufficient", ["baseline"]),
+    )
     return out
 
 

@@ -1746,7 +1746,8 @@ class MemoryFabric:
         if use_extraction:
             # Before relation-following, so a default admitted here can then
             # drag in whatever qualifies it.
-            hits = self._admit_defaults(hits, eligible, entities, pool_size)
+            hits = self._admit_defaults(
+                hits, eligible, entities, pool_size, k)
         if follow_relations:
             # After lineage expansion and before grouping: a qualifier should
             # travel with whatever it qualifies even if that arrived by
@@ -2006,9 +2007,9 @@ class MemoryFabric:
 
     def _admit_defaults(
         self, ranked: Sequence[tuple[str, float]], eligible: set[str],
-        entities: Sequence[str], limit: int,
+        entities: Sequence[str], limit: int, k: int | None = None,
     ) -> list[tuple[str, float]]:
-        """Add default rules that cover the asked entities.
+        """Add default rules and scoped adjustments that cover the asked entities.
 
         The `implied_by_default` mechanism, and the one a memory-to-memory
         relation could not provide: *"all yard vehicles run 3.9 bar in winter,
@@ -2018,8 +2019,26 @@ class MemoryFabric:
         which is a fact about the record rather than a relation between two
         memories (`research/results/relations-ceiling.md` section 3).
 
-        Appended rather than ranked: a default has no similarity score to
-        compete on, and giving it a made-up one would be a tuned weight.
+        **Admitted inside the exposed set, which the first version was not.**
+        A default has no similarity score to compete on, so the first version
+        appended it below everything in the candidate pool and called that
+        neutral. It is not neutral: the pool is `max(k * 4, k)` and the policy
+        then exposes the top `k`, so an admitted memory was ranked 21st of 21
+        for a k of 5 and could never be exposed. The mechanism was inert in any
+        store large enough to have a pool, and its unit test passed because
+        that store held **one memory**.
+
+        So an admitted record is placed just above the weakest candidate that
+        would otherwise be exposed, which makes a design claim worth stating
+        rather than burying: **an applicable rule is worth more than the k-th
+        similarity match.** That is the whole point of admitting it — a rule
+        that names neither the unit nor the site asked about cannot win on
+        similarity, and if it loses to the k-th nearest neighbour it will never
+        be seen.
+
+        At most `k - 1` records are admitted, so at least one similarity match
+        survives and a query matching many rules cannot have its context
+        replaced by them.
 
         **And it drops a default that does not apply**, which is the half the
         first version missed. A rule saying *"except at the harbour site"*
@@ -2039,16 +2058,61 @@ class MemoryFabric:
                 continue
             out.append((memory_id, score))
         present = {memory_id for memory_id, _ in out}
-        candidates = extracting.applicable_defaults(
-            [r for mid, r in self.extracted.items() if mid in eligible],
-            wanted,
-        )
-        tail = out[-1][1] if out else 1.0
-        for memory_id in candidates:
-            if memory_id in present:
-                continue
+        records = [r for mid, r in self.extracted.items() if mid in eligible]
+        # Defaults *and* scoped adjustments, by the same rule and for the same
+        # reason. A default is reached through what it excludes; an adjustment
+        # through what it scopes to. Neither is similar to the query and
+        # neither is a relation between two memories -- twelve adjustments in
+        # one corpus differ only by site name, so each qualifies every rule
+        # equally and only the query says which applies. Admitting defaults
+        # alone left every adjustment unreachable, which is why X1's mechanism
+        # scored 0.000 with correct extractions
+        # (`research/results/x1-extraction.md` section 11).
+        candidates = list(extracting.applicable_defaults(records, wanted))
+        candidates += [
+            memory_id
+            for memory_id in extracting.applicable_adjustments(records, wanted)
+            if memory_id not in candidates
+        ]
+        # Every applicable record is promoted, **not only the ones similarity
+        # missed entirely**. The first version appended only records absent
+        # from the pool, so a record that ranked 6th of 60 -- inside the pool
+        # of 20, outside the exposed 5 -- kept its losing similarity score and
+        # was cut, while the same record in a larger store ranked below the
+        # pool, counted as new, and was admitted. The mechanism helped only
+        # when similarity failed *completely*, and the symptom was a
+        # sufficiency that went **down** as the corpus grew: 1.000 at 486
+        # memories and 0.333 at 60. Admission is a statement that the record
+        # applies, which does not depend on where similarity put it.
+        fresh = list(candidates)
+        if not fresh:
+            return out[:limit]
+        out = [(m, score) for m, score in out if m not in set(fresh)]
+
+        # The score that lands a record inside the exposed set: just above the
+        # weakest candidate the policy would otherwise expose. Without `k` --
+        # an older caller -- fall back to the previous behaviour rather than
+        # guessing a budget.
+        if k is None or k <= 0:
+            floor = out[-1][1] if out else 1.0
+            bump = 0.0
+        else:
+            exposed = [score for _m, score in out[:k]]
+            floor = exposed[-1] if exposed else 1.0
+            bump = 1e-6
+
+        # Recompute the floor after removing the promoted records, so a
+        # record already in the exposed set does not set its own floor.
+        if k is not None and k > 0:
+            exposed = [score for _m, score in out[:k]]
+            floor = exposed[-1] if exposed else floor
+        room = max(0, (k - 1) if k else len(fresh))
+        for position, memory_id in enumerate(fresh[:room] if k else fresh):
             present.add(memory_id)
-            out.append((memory_id, tail * (1 - 1e-6)))
+            # Descending by a hair so the admitted records keep a stable order
+            # among themselves and the sort is deterministic.
+            out.append((memory_id, floor + bump * (len(fresh) - position)))
+        out.sort(key=lambda row: (-row[1], row[0]))
         return out[:limit]
 
     def relate(

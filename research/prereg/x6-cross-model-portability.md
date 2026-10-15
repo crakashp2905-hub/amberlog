@@ -112,6 +112,26 @@ writer and reader effects and **no** own-memory bonus gives D = 0 exactly,
 including one where a single writer's lessons help every reader. That is the
 confound the naive off-diagonal measure would have reported as portability.
 
+### Amendment, after the pilot and before the registered run: the oracle may not bound presentation
+
+The pilot (1 seed × 8 episodes) failed the 8b check: **three cells scored above
+their reader's oracle**, each by exactly one episode. At n=8 a one-episode
+excess is within noise, so nothing is concluded from it. But principle 8b says
+an arm above the ceiling is evidence the ceiling is wrong, and the cause is
+plausible enough to commit to now, before the data that could test it.
+
+The oracle corpus has **perfect facts** — every lesson correct, against the
+writers' measured 88–89% — **in one terse template**: *"Fault E03 at the
+coastal site: swap pilot cable."* A model's own lesson may carry phrasing that
+is easier to retrieve or to read. If so, the oracle bounds **factual
+correctness**, not everything a writer contributes, and §2's claim that it
+*"bounds what any writer could give that reader"* overstates it.
+
+Committed in advance:
+
+- If cells still exceed their reader's oracle on the registered run, §2's claim is **withdrawn** and the oracle is reported as a bound on correctness only. It is not redesigned after the fact to restore the bound.
+- **The primary verdict is unaffected either way.** D is computed over the model-written corpora only and excludes the oracle column, which a known-answer test pins (`test_the_oracle_column_is_excluded`). An oracle defect can change the headroom display and the 8b check; it cannot change NOT PORTABLE / PORTABLE / INCONCLUSIVE.
+
 ## 5. Secondary, reported always
 
 - **The full 3 × 3 matrix** and the oracle row.

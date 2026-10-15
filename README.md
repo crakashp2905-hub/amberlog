@@ -13,6 +13,8 @@
 
 ---
 
+**New here?** [docs/PIPELINE.md](docs/PIPELINE.md) walks one memory from the write that creates it to the erasure that destroys its content, and says plainly what is measured to work, what is measured not to, and what is still open.
+
 ## Overview
 
 Memory Fabric is a memory layer for LLM agents that answers the questions a

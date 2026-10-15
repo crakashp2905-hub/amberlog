@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memeval"
+version = "0.1.0"
+description = "An evaluation harness for agent memory that refuses to give a verdict when the run made one of the usual mistakes."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+
+[tool.setuptools]
+# The package is this directory; it lives inside the Memory Fabric repository
+# but is built and installed on its own, with no dependency on it.
+package-dir = { "memeval" = "." }
+packages = ["memeval"]

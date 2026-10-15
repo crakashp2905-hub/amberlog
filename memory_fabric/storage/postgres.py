@@ -215,7 +215,7 @@ def _psycopg() -> Any:
         raise RuntimeError(
             "PostgresEventLog needs psycopg, which the core does not depend "
             "on. Install it where you need Postgres: pip install "
-            "'psycopg[binary]'") from exc
+            "'memory-fabric[postgres]'") from exc
     return psycopg
 
 

@@ -28,6 +28,9 @@ dependencies = []
 [project.optional-dependencies]
 # Adapters only. `ollama` needs nothing — it speaks HTTP over urllib.
 claude = ["anthropic>=0.40"]
+# The multi-writer event log (memory_fabric.storage.postgres). Not imported by
+# the core: a SQLite install never loads it.
+postgres = ["psycopg[binary]>=3.1"]
 
 [project.scripts]
 memory-fabric = "memory_fabric.cli:main"

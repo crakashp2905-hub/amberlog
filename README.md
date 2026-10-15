@@ -23,7 +23,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**1,207 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**1,305 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including
@@ -239,10 +239,13 @@ would have been scored as governance.
 | Claude API adapter, transcript ingestion | [adapters/](memory_fabric/adapters/) |
 | Federation across store boundaries | [federation.py](memory_fabric/federation.py) |
 | Local models + real embeddings | [adapters/ollama.py](memory_fabric/adapters/ollama.py) |
+| MCP server (2026-07-28, with legacy negotiation), identity-bound tools | [mcp/](memory_fabric/mcp/), [docs/MCP.md](docs/MCP.md) |
+| Postgres event log: commit-ordered, one hash chain, append-only triggers. Not yet reachable from `Fabric`, see [ROADMAP.md](ROADMAP.md) | [storage/postgres.py](memory_fabric/storage/postgres.py) |
+| **memeval**: a separate, zero-dependency evaluation harness that refuses verdicts from runs with a quoted baseline, a beaten ceiling, no headroom or too little power | [memeval/](memeval/README.md) |
 
 ### Not built yet
 
-Paired-replay estimator, topology effects (P7), learned controller (P8), Postgres. See [ROADMAP.md](ROADMAP.md).
+Paired-replay estimator, topology effects (P7), learned controller (P8), `Fabric` on Postgres (the log exists, the vault, outbox and identity tables do not). See [ROADMAP.md](ROADMAP.md).
 
 **The Claude adapter has not been run against the live API** — there is no key in the development environment, so its loop is covered by a stub client. See the P3 gate note in [ROADMAP.md](ROADMAP.md).
 

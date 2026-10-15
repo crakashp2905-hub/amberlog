@@ -1,0 +1,99 @@
+{
+  "experiment": "mcp-efficiency",
+  "note": "in-process, no model; latency is the server's own cost and words are what a model reads per recall",
+  "rows": [
+    {
+      "store_size": 100,
+      "recalls": 200,
+      "arms": {
+        "naive": {
+          "write_ms_median": 0.007,
+          "write_ms_p95": 0.01,
+          "recall_ms_median": 0.133,
+          "recall_ms_p95": 0.254,
+          "recall_words_mean": 63.6
+        },
+        "governed_compact": {
+          "write_ms_median": 0.417,
+          "write_ms_p95": 0.926,
+          "recall_ms_median": 1.11,
+          "recall_ms_p95": 1.943,
+          "recall_words_mean": 103.7,
+          "recall_overhead_ms": 0.977,
+          "words_vs_naive": 1.631
+        },
+        "governed_full": {
+          "write_ms_median": 0.326,
+          "write_ms_p95": 0.439,
+          "recall_ms_median": 0.985,
+          "recall_ms_p95": 1.451,
+          "recall_words_mean": 155.7,
+          "recall_overhead_ms": 0.852,
+          "words_vs_naive": 2.448
+        }
+      }
+    },
+    {
+      "store_size": 1000,
+      "recalls": 200,
+      "arms": {
+        "naive": {
+          "write_ms_median": 0.008,
+          "write_ms_p95": 0.014,
+          "recall_ms_median": 1.044,
+          "recall_ms_p95": 1.717,
+          "recall_words_mean": 63.5
+        },
+        "governed_compact": {
+          "write_ms_median": 0.83,
+          "write_ms_p95": 1.603,
+          "recall_ms_median": 2.403,
+          "recall_ms_p95": 4.127,
+          "recall_words_mean": 103.5,
+          "recall_overhead_ms": 1.359,
+          "words_vs_naive": 1.63
+        },
+        "governed_full": {
+          "write_ms_median": 0.825,
+          "write_ms_p95": 1.639,
+          "recall_ms_median": 4.366,
+          "recall_ms_p95": 8.304,
+          "recall_words_mean": 155.5,
+          "recall_overhead_ms": 3.322,
+          "words_vs_naive": 2.449
+        }
+      }
+    },
+    {
+      "store_size": 5000,
+      "recalls": 200,
+      "arms": {
+        "naive": {
+          "write_ms_median": 0.008,
+          "write_ms_p95": 0.014,
+          "recall_ms_median": 7.888,
+          "recall_ms_p95": 11.873,
+          "recall_words_mean": 56.2
+        },
+        "governed_compact": {
+          "write_ms_median": 3.235,
+          "write_ms_p95": 7.549,
+          "recall_ms_median": 11.514,
+          "recall_ms_p95": 15.702,
+          "recall_words_mean": 96.2,
+          "recall_overhead_ms": 3.626,
+          "words_vs_naive": 1.712
+        },
+        "governed_full": {
+          "write_ms_median": 3.238,
+          "write_ms_p95": 7.317,
+          "recall_ms_median": 11.757,
+          "recall_ms_p95": 15.049,
+          "recall_words_mean": 148.2,
+          "recall_overhead_ms": 3.869,
+          "words_vs_naive": 2.637
+        }
+      }
+    }
+  ]
+}

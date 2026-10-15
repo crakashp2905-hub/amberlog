@@ -1355,6 +1355,18 @@ CREATING_COMMANDS = frozenset({"demo"})
 
 
 def main(argv: Sequence[str] | None = None) -> int:
+    # `mcp` is dispatched before anything else runs, and that ordering is the
+    # whole point. On stdio, stdout *is* the protocol: one stray byte and the
+    # host sees a parse failure and drops the server. `configure_output()`
+    # adjusts console encoding and colour, and the shared parser and store
+    # setup below were written for a human at a terminal. None of it may run
+    # first, so the server gets a clean stream and owns its own arguments.
+    raw = list(sys.argv[1:] if argv is None else argv)
+    if raw and raw[0] == "mcp":
+        from .mcp.stdio import main as mcp_main
+
+        return mcp_main(raw[1:])
+
     configure_output()
     parser = build_parser()
     args = parser.parse_args(argv)

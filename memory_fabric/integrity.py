@@ -246,90 +246,17 @@ class IntegrityChain:
         whether it is verifying the live log, a backup, or a restored copy — and
         so this cannot accidentally verify a different log from the one the
         caller cares about.
+
+        The algorithm is `verify_records`, shared with every storage backend.
+        This method only loads the recorded links.
         """
-        rows = {
+        records = {
             int(row["seq"]): (str(row["event_digest"]), str(row["chain_digest"]))
             for row in self._conn.execute(
                 "SELECT seq, event_digest, chain_digest FROM integrity_chain ORDER BY seq"
             )
         }
-        low, high = self.coverage()
-        if low is None:
-            return Verification(
-                ok=True, checked=0,
-                detail="no chain recorded; nothing to verify and nothing claimed",
-            )
-
-        previous = GENESIS
-        anchored = False
-        checked = 0
-        unchained = 0
-        for event in events:
-            if event.seq is None:
-                continue
-            if event.seq < low:
-                unchained += 1
-                continue
-            if event.seq > high:
-                # Events appended after the last link. Not a failure: the
-                # caller may be verifying a backup taken before them.
-                break
-            recorded = rows.get(event.seq)
-            if recorded is None:
-                return Verification(
-                    ok=False, checked=checked, first_bad_seq=event.seq,
-                    detail=f"event {event.seq} is inside the chained range but has no link",
-                    covered_from=low, covered_to=high, unchained_before=unchained,
-                )
-            expected_event_digest, expected_chain = recorded
-            actual = event_digest(event)
-            if actual != expected_event_digest:
-                return Verification(
-                    ok=False, checked=checked, first_bad_seq=event.seq,
-                    detail=f"event {event.seq} does not match its recorded digest",
-                    covered_from=low, covered_to=high, unchained_before=unchained,
-                )
-            if not anchored:
-                anchored = True
-                if unchained:
-                    # The chain starts above the log's first event, so its
-                    # first link was computed over history nobody hashed and
-                    # cannot be re-derived. Anchor on the recorded digest and
-                    # verify every link *after* it; `unchained_before` reports
-                    # the size of what is therefore not covered.
-                    #
-                    # The alternative — recomputing from GENESIS over a partial
-                    # range — reported a divergence at the first covered event
-                    # on every late-adopting store, which is a false alarm and
-                    # the worst kind: it would teach an operator to ignore the
-                    # check.
-                    previous = expected_chain
-                    checked += 1
-                    continue
-            previous = link(previous, actual)
-            if previous != expected_chain:
-                return Verification(
-                    ok=False, checked=checked, first_bad_seq=event.seq,
-                    detail=(
-                        f"the chain diverges at event {event.seq}: a link was "
-                        "recomputed or an earlier event was removed"
-                    ),
-                    covered_from=low, covered_to=high, unchained_before=unchained,
-                )
-            checked += 1
-
-        missing = len(rows) - checked
-        if missing > 0:
-            return Verification(
-                ok=False, checked=checked, first_bad_seq=None,
-                detail=f"{missing} chained event(s) are no longer in the log",
-                covered_from=low, covered_to=high, unchained_before=unchained,
-            )
-        return Verification(
-            ok=True, checked=checked,
-            detail=f"{checked} event(s) verified",
-            covered_from=low, covered_to=high, unchained_before=unchained,
-        )
+        return verify_records(records, events)
 
     def verify_against(self, checkpoint: Checkpoint) -> Verification:
         """Compare the live chain with a checkpoint taken earlier.
@@ -363,3 +290,97 @@ class IntegrityChain:
             ok=True, checked=1,
             detail=f"the chain matches the checkpoint at sequence {checkpoint.seq}",
         )
+
+
+def verify_records(records: dict[int, tuple[str, str]],
+                   events: Iterator[Event]) -> Verification:
+    """The chain verification algorithm, independent of where links are stored.
+
+    `records` maps each chained `seq` to `(event_digest, chain_digest)` as
+    recorded; `events` is the log to check them against. Extracted from
+    `IntegrityChain.verify` so that a second storage backend is verified by
+    **this** definition of intact rather than by a reimplementation of it --
+    two backends verified by two algorithms would each pass their own check
+    while disagreeing about what the check means.
+
+    Behaviour is unchanged by the extraction; the existing integrity tests
+    are what establish that.
+    """
+    low = min(records) if records else None
+    high = max(records) if records else None
+    if low is None:
+        return Verification(
+            ok=True, checked=0,
+            detail="no chain recorded; nothing to verify and nothing claimed",
+        )
+
+    previous = GENESIS
+    anchored = False
+    checked = 0
+    unchained = 0
+    for event in events:
+        if event.seq is None:
+            continue
+        if event.seq < low:
+            unchained += 1
+            continue
+        if event.seq > high:
+            # Events appended after the last link. Not a failure: the
+            # caller may be verifying a backup taken before them.
+            break
+        recorded = records.get(event.seq)
+        if recorded is None:
+            return Verification(
+                ok=False, checked=checked, first_bad_seq=event.seq,
+                detail=f"event {event.seq} is inside the chained range but has no link",
+                covered_from=low, covered_to=high, unchained_before=unchained,
+            )
+        expected_event_digest, expected_chain = recorded
+        actual = event_digest(event)
+        if actual != expected_event_digest:
+            return Verification(
+                ok=False, checked=checked, first_bad_seq=event.seq,
+                detail=f"event {event.seq} does not match its recorded digest",
+                covered_from=low, covered_to=high, unchained_before=unchained,
+            )
+        if not anchored:
+            anchored = True
+            if unchained:
+                # The chain starts above the log's first event, so its
+                # first link was computed over history nobody hashed and
+                # cannot be re-derived. Anchor on the recorded digest and
+                # verify every link *after* it; `unchained_before` reports
+                # the size of what is therefore not covered.
+                #
+                # The alternative — recomputing from GENESIS over a partial
+                # range — reported a divergence at the first covered event
+                # on every late-adopting store, which is a false alarm and
+                # the worst kind: it would teach an operator to ignore the
+                # check.
+                previous = expected_chain
+                checked += 1
+                continue
+        previous = link(previous, actual)
+        if previous != expected_chain:
+            return Verification(
+                ok=False, checked=checked, first_bad_seq=event.seq,
+                detail=(
+                    f"the chain diverges at event {event.seq}: a link was "
+                    "recomputed or an earlier event was removed"
+                ),
+                covered_from=low, covered_to=high, unchained_before=unchained,
+            )
+        checked += 1
+
+    missing = len(records) - checked
+    if missing > 0:
+        return Verification(
+            ok=False, checked=checked, first_bad_seq=None,
+            detail=f"{missing} chained event(s) are no longer in the log",
+            covered_from=low, covered_to=high, unchained_before=unchained,
+        )
+    return Verification(
+        ok=True, checked=checked,
+        detail=f"{checked} event(s) verified",
+        covered_from=low, covered_to=high, unchained_before=unchained,
+    )

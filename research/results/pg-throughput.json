@@ -1,0 +1,79 @@
+{
+  "experiment": "pg-throughput",
+  "seconds_per_cell": 5.0,
+  "note": "single-event transactions, one connection per writer, one machine; a remote Postgres adds a network round trip per append that this does not measure",
+  "rows": [
+    {
+      "backend": "sqlite",
+      "writers": 1,
+      "appends": 5403,
+      "per_second": 1080.6,
+      "p50_ms": 0.827,
+      "p95_ms": 1.532,
+      "errors": []
+    },
+    {
+      "backend": "sqlite",
+      "writers": 2,
+      "appends": 6658,
+      "per_second": 1331.6,
+      "p50_ms": 0.676,
+      "p95_ms": 1.194,
+      "errors": []
+    },
+    {
+      "backend": "sqlite",
+      "writers": 4,
+      "appends": 2923,
+      "per_second": 584.6,
+      "p50_ms": 2.011,
+      "p95_ms": 2.644,
+      "errors": []
+    },
+    {
+      "backend": "sqlite",
+      "writers": 8,
+      "appends": 2313,
+      "per_second": 462.6,
+      "p50_ms": 2.08,
+      "p95_ms": 2.86,
+      "errors": []
+    },
+    {
+      "backend": "postgres",
+      "writers": 1,
+      "appends": 3287,
+      "per_second": 657.4,
+      "p50_ms": 1.262,
+      "p95_ms": 2.401,
+      "errors": []
+    },
+    {
+      "backend": "postgres",
+      "writers": 2,
+      "appends": 3469,
+      "per_second": 693.8,
+      "p50_ms": 2.65,
+      "p95_ms": 4.095,
+      "errors": []
+    },
+    {
+      "backend": "postgres",
+      "writers": 4,
+      "appends": 3847,
+      "per_second": 769.4,
+      "p50_ms": 4.854,
+      "p95_ms": 7.16,
+      "errors": []
+    },
+    {
+      "backend": "postgres",
+      "writers": 8,
+      "appends": 3598,
+      "per_second": 719.6,
+      "p50_ms": 10.262,
+      "p95_ms": 14.846,
+      "errors": []
+    }
+  ]
+}

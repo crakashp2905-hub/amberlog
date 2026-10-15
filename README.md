@@ -9,6 +9,8 @@ and they are the most reusable thing here.
 
 > Working name only. "MemOS" and "MemoryOS" are taken by 2025 projects; see [research/CRITICAL_REVIEW.md](research/CRITICAL_REVIEW.md) §1.
 
+**New here?** [docs/PIPELINE.md](docs/PIPELINE.md) walks one memory from the write that creates it to the erasure that destroys its content, and says plainly what is measured to work, what is measured not to, and what is still open.
+
 ## What this does, and what it costs
 
 | Guarantee | Evidence |
@@ -21,7 +23,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**965 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**1,207 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including

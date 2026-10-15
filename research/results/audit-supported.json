@@ -1,0 +1,131 @@
+{
+  "audit": "supported-claims",
+  "standard": "power at the reported n, headroom per principles 8a/8c, seeds per AGENTS.md, and replication",
+  "claims": 7,
+  "hold_under_current_standards": 7,
+  "rows": [
+    {
+      "name": "PB2 \u2014 retraction propagation",
+      "source": "research/results/phase-b-federated-agents.md",
+      "kind": "difference",
+      "n": 240,
+      "seeds": 5,
+      "replicated": "both sharing policies",
+      "effect": 0.17,
+      "mde_at_this_n": 0.0745,
+      "B": null,
+      "C": null,
+      "headroom": null,
+      "issues": [],
+      "holds": true,
+      "note": "17% -> 0% acting on origin-retracted memory, 240 decisions per arm. The effect is large relative to n and it held under two policies, which is the nearest thing here to a replication."
+    },
+    {
+      "name": "H4b \u2014 contested hypotheses preserved",
+      "source": "research/results/h4-topology-and-diversity.md",
+      "kind": "difference",
+      "n": 200,
+      "seeds": 200,
+      "replicated": "live run with three real models",
+      "effect": 0.095,
+      "mde_at_this_n": 0.061,
+      "B": null,
+      "C": null,
+      "headroom": null,
+      "issues": [
+        "effect 0.095 is under 2x its MDE 0.061: real but thin"
+      ],
+      "holds": true,
+      "note": "P(correct) 0.905 -> 1.000, 200 replications per cell. Simulation, but the live multi-agent run tested the same mechanism with models that genuinely disagreed."
+    },
+    {
+      "name": "H1 \u2014 causal value is estimable",
+      "source": "research/results/h1-causal-credit.md",
+      "kind": "difference",
+      "n": 2000,
+      "seeds": 10,
+      "replicated": "two corpus sizes",
+      "effect": 0.29,
+      "mde_at_this_n": 0.0337,
+      "B": null,
+      "C": null,
+      "headroom": null,
+      "issues": [],
+      "holds": true,
+      "note": "rho 0.76 against a naive 0.47. The only supported result whose own document discusses power."
+    },
+    {
+      "name": "P3b \u2014 agent teams",
+      "source": "research/results/p3b-agent-teams.md",
+      "kind": "difference",
+      "n": 300,
+      "seeds": 5,
+      "replicated": "agent-count sweep to 100",
+      "effect": 0.19,
+      "mde_at_this_n": 0.0705,
+      "B": 0.78,
+      "C": 1.0,
+      "headroom": 0.22,
+      "issues": [],
+      "holds": true,
+      "note": "fabric 0.970 against the best baseline's 0.780, oracle 1.000. The agent is deterministic, so seed variance is the only noise and the 19-point gap is far outside it. Nothing here is evidence about model behaviour, which section 6 of that result states as a choice."
+    },
+    {
+      "name": "Copy recognition \u2014 no double-counted support",
+      "source": "research/results/p2b-copy-recognition.md",
+      "kind": "absence",
+      "n": 30,
+      "seeds": 5,
+      "replicated": "both splits",
+      "smallest_rate_95pc_detectable": 0.095,
+      "B": null,
+      "C": null,
+      "headroom": null,
+      "issues": [
+        "a zero at n=30 is consistent with a true rate up to 9.5%"
+      ],
+      "holds": true,
+      "note": "0.000 stale citations and 0.000 unrecognised copies, matching the oracle on both splits. An absence claim: the question is what rate a zero at this n could hide."
+    },
+    {
+      "name": "Live multi-agent \u2014 disagreement preserved",
+      "source": "research/results/live-multi-agent.md",
+      "kind": "difference",
+      "n": 10,
+      "seeds": 1,
+      "replicated": "no",
+      "effect": 0.8,
+      "mde_at_this_n": 0.792,
+      "B": null,
+      "C": null,
+      "headroom": null,
+      "issues": [
+        "effect 0.8 is under 2x its MDE 0.792: real but thin",
+        "1 seeds against AGENTS.md's requirement of 5",
+        "not replicated on a second split or population"
+      ],
+      "holds": true,
+      "note": "80% confidently wrong -> 0% with three real disagreeing models. The effect is enormous, and it is one run with no seeds: it is the demonstration that H4b's mechanism survives real disagreement, not an independent measurement of its size."
+    },
+    {
+      "name": "X3 \u2014 scoped adjustments",
+      "source": "research/results/x3-scoped-adjustments.md",
+      "kind": "difference",
+      "n": 3,
+      "seeds": 1,
+      "replicated": "no \u2014 test split is 0.000 at a ceiling of 0.000",
+      "effect": 1.0,
+      "mde_at_this_n": null,
+      "cases": 3,
+      "B": 0.0,
+      "C": 1.0,
+      "headroom": 1.0,
+      "issues": [
+        "deterministic, so power does not apply; the uncertainty is generalisation from 3 case(s) and needs a held-out split rather than a larger n",
+        "1 seeds against AGENTS.md's requirement of 5"
+      ],
+      "holds": true,
+      "note": "0.000 -> 1.000 on dev, 3 cases of 3. Deterministic, so there is no sampling noise, but three cases is three cases and the test split was abandoned in advance at a zero ceiling."
+    }
+  ]
+}

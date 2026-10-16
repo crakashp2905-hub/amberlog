@@ -138,3 +138,24 @@ different reading of "enough evidence" could order the arms differently.
 
 Minimum 5 seeds for `random@400` and for any arm with a stochastic component;
 the rest are deterministic and will be reported as such.
+
+## Amendment 1 — 2026-10-16, before any P2b number
+
+§6 required that the arm under test value a connector by path-finding before
+the comparison was worth running. That now exists: `MemoryFabric.reconstruct`
+(P1), whose link-strength selection P1d supported on a fresh holdout. Nothing
+below was chosen after seeing a P2b number; none exists yet.
+
+- **Arm under test: `chain@400`.** It takes the steps of
+  `reconstruct(k = 5)` in chain order, applies the same gates as every other
+  arm, then fills the rest of the 400-token budget by the shared ranking. It
+  never abstains, so prediction 4 is tested as stated (abstention stays at
+  0.000). The measured `sufficiency_aware` selector is reported alongside,
+  unchanged, so the §6 defect stays visible.
+- **Evaluation split: a fresh holdout, `holdout_p2b`.** It is built by the
+  frozen generator at indices 400–405 for all 11 families (66 cases) and
+  scored once. dev is reported for comparison. test is reported as
+  **contaminated**, because P1 inspected it when the chain was designed.
+- `random@400` uses seeds 0–4. Every other arm is deterministic.
+- Thresholds, abandonment and the ceiling and budget-compliance checks are
+  exactly §5, computed on `holdout_p2b`.

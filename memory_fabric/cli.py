@@ -705,11 +705,12 @@ def _agent_service(fabric: MemoryFabric, agents_file: str):
 
 def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Serve agents over authenticated HTTP. See `agent_api.py`."""
-    from .agent_api import AgentApi, ConfigurationError, build_agent_server
+    from .agent_api import AgentApi, ConfigurationError, RateLimit, build_agent_server
 
     try:
         service = _agent_service(fabric, args.agents_file)
-        server = build_agent_server(AgentApi(service), host=args.host,
+        limits = RateLimit(rate=args.rate_limit, burst=args.burst)
+        server = build_agent_server(AgentApi(service, limits), host=args.host,
                                     port=args.port, behind_tls=args.behind_tls)
     except (ConfigurationError, OSError) as exc:
         print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
@@ -1628,6 +1629,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=8766)
     p.add_argument("--behind-tls", action="store_true",
                    help="allow a non-loopback bind because TLS terminates in front")
+    p.add_argument("--rate-limit", type=float, default=20.0,
+                   help="requests a second per agent, on average (0 turns it off)")
+    p.add_argument("--burst", type=int, default=40, help="requests per agent at once")
 
     p = add("agent-api-issue", cmd_agent_api_issue,
             "Print a signed, expiring credential for one agent")

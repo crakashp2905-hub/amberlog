@@ -30,7 +30,18 @@ What it adds for being on a network:
   a caller cannot tell an unknown agent from an expired or revoked credential.
 
 Exposure tokens stay on the server, keyed by agent and memory, exactly as in
-the MCP server: a caller names a memory by id and cannot forge a token.
+the MCP server: a caller names a memory by id and cannot forge a token. They
+are bounded per agent (`MAX_TOKENS_PER_AGENT`, oldest evicted), so a caller
+cannot grow the server's memory by recalling without end; an evicted memory
+is simply recalled again before `verify`.
+
+**Rate limits.** Each authenticated agent has a token bucket
+(`RateLimit`, default 20 requests a second with a burst of 40), and failed
+authentications are limited per remote address, so a flood is refused with
+`429` and `Retry-After` before it reaches the store's single write lock.
+Before this, nothing limited a caller: P12 measured that the store queues
+rather than fails under contention, so one agent in a loop could make every
+other agent wait.
 """
 
 from __future__ import annotations
@@ -38,11 +49,14 @@ from __future__ import annotations
 import base64
 import json
 import logging
+import math
 import threading
-from dataclasses import dataclass
+import time
+from collections import OrderedDict
+from dataclasses import dataclass, field
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from .enforcement import ExposureToken, RiskLevel
 from .identity import Credential, IdentityError, ROLE_AGENT
@@ -52,6 +66,7 @@ from .service import MemoryService
 MAX_BODY = 64 * 1024
 LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
 MIN_KEY_BYTES = 32
+MAX_TOKENS_PER_AGENT = 4096
 
 
 class ConfigurationError(Exception):
@@ -137,37 +152,104 @@ def check_bind(host: str, behind_tls: bool) -> None:
 
 
 class _ApiError(Exception):
-    def __init__(self, status: HTTPStatus, message: str) -> None:
+    def __init__(self, status: HTTPStatus, message: str,
+                 retry_after: float | None = None) -> None:
         super().__init__(message)
         self.status = status
         self.message = message
+        self.retry_after = retry_after
+
+
+@dataclass(frozen=True)
+class RateLimit:
+    """A token bucket: `rate` requests a second on average, `burst` at once.
+
+    `rate <= 0` turns limiting off. `auth_failures` is the same budget a
+    second for failed authentications from one remote address.
+    """
+
+    rate: float = 20.0
+    burst: int = 40
+    auth_failures: float = 5.0
+
+
+@dataclass
+class _Bucket:
+    tokens: float
+    stamp: float
+
+
+@dataclass
+class RateLimiter:
+    """Token buckets by key. Thread-safe; the clock is injectable for tests."""
+
+    rate: float
+    burst: int
+    clock: Callable[[], float] = time.monotonic
+    max_keys: int = 100_000
+    _buckets: "OrderedDict[str, _Bucket]" = field(default_factory=OrderedDict)
+    _lock: threading.Lock = field(default_factory=threading.Lock)
+
+    def acquire(self, key: str) -> float:
+        """0.0 if the request may proceed, else the seconds until it could."""
+        if self.rate <= 0:
+            return 0.0
+        now = self.clock()
+        with self._lock:
+            bucket = self._buckets.pop(key, None) or _Bucket(float(self.burst), now)
+            bucket.tokens = min(float(self.burst),
+                                bucket.tokens + (now - bucket.stamp) * self.rate)
+            bucket.stamp = now
+            self._buckets[key] = bucket
+            while len(self._buckets) > self.max_keys:
+                self._buckets.popitem(last=False)
+            if bucket.tokens >= 1.0:
+                bucket.tokens -= 1.0
+                return 0.0
+            return (1.0 - bucket.tokens) / self.rate
 
 
 class AgentApi:
     """Request handling, separate from HTTP so it can be tested with dicts."""
 
-    def __init__(self, service: MemoryService) -> None:
+    def __init__(self, service: MemoryService, limits: RateLimit | None = None,
+                 clock: Callable[[], float] = time.monotonic) -> None:
         self.service = service
         # The server owns the service; reaching its fabric here is the server
         # building the narrow per-agent client, not a caller bypassing it.
         self._fabric = service._fabric
         self._lock = threading.Lock()
-        self._issued: dict[tuple[str, str], ExposureToken] = {}
+        self._issued: dict[str, OrderedDict[str, ExposureToken]] = {}
+        limits = limits or RateLimit()
+        self._per_agent = RateLimiter(limits.rate, limits.burst, clock)
+        self._per_address = RateLimiter(limits.auth_failures,
+                                        max(1, int(limits.auth_failures * 2)), clock)
 
-    def client_for(self, bearer: str | None) -> AgentClient:
-        if not bearer:
-            raise _ApiError(HTTPStatus.UNAUTHORIZED, "authentication required")
+    def client_for(self, bearer: str | None, remote: str = "") -> AgentClient:
         try:
+            if not bearer:
+                raise IdentityError("no credential")
             principal = self.service.session(decode_credential(bearer)).principal()
         except IdentityError:
             # One answer for every failure: unknown agent, bad signature,
             # expired, revoked. Distinguishing them tells an attacker which.
+            wait = self._per_address.acquire(remote)
+            if wait:
+                raise _ApiError(HTTPStatus.TOO_MANY_REQUESTS, "too many requests",
+                                retry_after=wait) from None
             raise _ApiError(HTTPStatus.UNAUTHORIZED, "authentication required") from None
+        wait = self._per_agent.acquire(principal.agent_id)
+        if wait:
+            raise _ApiError(HTTPStatus.TOO_MANY_REQUESTS, "too many requests",
+                            retry_after=wait)
         return AgentClient(self._fabric, principal.agent_id, principal.tenant_id)
 
-    def handle(self, operation: str, bearer: str | None, body: Mapping[str, Any]) -> Any:
+    def handle(self, operation: str, bearer: str | None, body: Mapping[str, Any],
+               remote: str = "") -> Any:
+        # Authentication and the rate check run before the store lock, so a
+        # refused caller never queues behind it.
+        client = self.client_for(bearer, remote)
         with self._lock:
-            client = self.client_for(bearer)
             if operation == "recall":
                 return self._recall(client, body)
             if operation == "fetch":
@@ -199,7 +281,7 @@ class AgentApi:
 
     def _verify(self, client: AgentClient, body: Mapping[str, Any]) -> dict[str, Any]:
         memory_id = _string(body, "memory_id")
-        issued = self._issued.get((client.agent_id, memory_id))
+        issued = self._issued.get(client.agent_id, {}).get(memory_id)
         if issued is None:
             raise _ApiError(HTTPStatus.CONFLICT,
                             "recall or fetch this memory before verifying it")
@@ -218,7 +300,11 @@ class AgentApi:
                 "state": self._fabric.lifecycle_of(memory_id).value}
 
     def _present(self, client: AgentClient, memory: UsableMemory) -> dict[str, Any]:
-        self._issued[(client.agent_id, memory.memory_id)] = memory.token
+        issued = self._issued.setdefault(client.agent_id, OrderedDict())
+        issued.pop(memory.memory_id, None)
+        issued[memory.memory_id] = memory.token
+        while len(issued) > MAX_TOKENS_PER_AGENT:
+            issued.popitem(last=False)
         out: dict[str, Any] = {"memory_id": memory.memory_id, "version": memory.version,
                                "type": memory.type, "content": memory.content}
         if memory.warnings:
@@ -247,7 +333,8 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
         def log_message(self, *args: Any) -> None:  # never log headers or bodies
             return
 
-        def _reply(self, status: HTTPStatus, payload: Any) -> None:
+        def _reply(self, status: HTTPStatus, payload: Any,
+                   retry_after: float | None = None) -> None:
             body = json.dumps(payload).encode()
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
@@ -255,6 +342,8 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
             self.send_header("Cache-Control", "no-store")
             if status == HTTPStatus.UNAUTHORIZED:
                 self.send_header("WWW-Authenticate", 'Bearer realm="memory-fabric-agents"')
+            if retry_after is not None:
+                self.send_header("Retry-After", str(max(1, math.ceil(retry_after))))
             self.end_headers()
             self.wfile.write(body)
 
@@ -295,9 +384,10 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
             scheme, _, value = header.partition(" ")
             bearer = value.strip() if scheme.lower() == "bearer" else None
             try:
-                result = api.handle(self.path[len("/v1/"):], bearer, body)
+                result = api.handle(self.path[len("/v1/"):], bearer, body,
+                                    remote=self.client_address[0])
             except _ApiError as exc:
-                self._reply(exc.status, {"error": exc.message})
+                self._reply(exc.status, {"error": exc.message}, exc.retry_after)
             except Exception as exc:  # a refused write is an answer, not a crash
                 logging.getLogger(__name__).warning("request refused", exc_info=exc)
                 self._reply(HTTPStatus.UNPROCESSABLE_ENTITY, {"error": public_error(exc)})

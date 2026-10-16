@@ -1,0 +1,60 @@
+{
+  "holdout3": {
+    "split": "holdout_p1d",
+    "chain_before": {
+      "sufficiency": 0.4166666666666667,
+      "by_family": {
+        "multi_hop_3": 0.4166666666666667,
+        "multi_hop_4": 0.0
+      },
+      "nodes_explored": 208.0,
+      "mean_steps": 3.0,
+      "cases": 24
+    },
+    "chain_after": {
+      "sufficiency": 0.9166666666666666,
+      "by_family": {
+        "multi_hop_3": 0.9166666666666666,
+        "multi_hop_4": 0.0
+      },
+      "nodes_explored": 208.0,
+      "mean_steps": 3.0,
+      "cases": 24
+    },
+    "lexical": 0.0,
+    "oracle": 1.0
+  },
+  "dev": {
+    "split": "dev",
+    "chain_before": {
+      "sufficiency": 0.3333333333333333,
+      "by_family": {
+        "multi_hop_3": 0.6666666666666666,
+        "multi_hop_4": 0.0
+      },
+      "nodes_explored": 208.0,
+      "mean_steps": 3.0,
+      "cases": 6
+    },
+    "chain_after": {
+      "sufficiency": 0.5,
+      "by_family": {
+        "multi_hop_3": 1.0,
+        "multi_hop_4": 0.0
+      },
+      "nodes_explored": 208.0,
+      "mean_steps": 3.0,
+      "cases": 6
+    },
+    "lexical": 0.0,
+    "oracle": 1.0
+  },
+  "B": 0.4166666666666667,
+  "S": 0.9166666666666666,
+  "C": 1.0,
+  "threshold": 0.65,
+  "dev_mh4_not_worse": true,
+  "verdict": "SUPPORTED",
+  "commit": "ec32f62",
+  "cases": 24
+}

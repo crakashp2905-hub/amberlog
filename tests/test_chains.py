@@ -213,6 +213,41 @@ class TestItNeverReadsLabels(unittest.TestCase):
             self.assertNotIn(forbidden, source)
 
 
+# A chain can be "connected" through a word that connects everything. The wrong
+# rule (standard axle) ranks first by relevance, and an unrelated memory using
+# "set" as a verb joins it to the bay. Found by P1b/P1c, fixed by choosing the
+# chain whose weakest link is strongest (P1d, research/results/p1d-*).
+WEAK_LINK = {
+    "c_std": "vehicles standard axle set run 4.2 bar monsoon",
+    "h1": "bay 16 harbour site assigned genset-4",
+    "h2": "genset-4 re-fitted heavy axle set march",
+    "h3": "vehicles heavy axle set run 3.6 bar monsoon",
+    "f_oil": "summer genset-4 oil-temperature trip is set at 104",
+    # More axle rules, as any real rule book has: they make "axle" common.
+    "c_light": "vehicles light axle set run 2.8 bar winter",
+    "c_med": "vehicles medium axle set run 3.2 bar summer",
+}
+WEAK_NEED = ["bay", "16", "harbour", "site", "run", "monsoon"]
+
+
+class TestLinkStrength(unittest.TestCase):
+    def test_a_chain_joined_only_by_a_ubiquitous_word_loses(self):
+        chain = chains.search(list(WEAK_LINK), terms_of(WEAK_LINK), WEAK_NEED)
+        self.assertTrue(chain.complete)
+        self.assertIn("h3", chain.memory_ids)
+        self.assertNotIn("c_std", chain.memory_ids)
+
+    def test_the_weakest_link_is_the_rarest_shared_term_bottleneck(self):
+        links = {k: frozenset(v) for k, v in terms_of(WEAK_LINK).items()}
+        freq: dict[str, int] = {}
+        for terms in links.values():
+            for t in terms:
+                freq[t] = freq.get(t, 0) + 1
+        right = chains._weakest_link(("h1", "h2", "h3"), links, freq)
+        wrong = chains._weakest_link(("h1", "c_std", "f_oil"), links, freq)
+        self.assertLess(right, wrong)
+
+
 class TestInAStore(unittest.TestCase):
     """The chain runs inside the same gates as retrieval (plan Task 7)."""
 

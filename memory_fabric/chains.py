@@ -107,9 +107,13 @@ by how discriminating their link to the chain is. NOT SUPPORTED on a fresh
 holdout -- it changed nothing, because the wrong chain survives the beam and
 loses only at goal selection. Kept off; retained so the result reproduces."""
 
-LINK_STRENGTH_SELECTION = False
-"""P1c (research/prereg/p1c-link-strength.md): among complete, connected
-chains, prefer the one whose weakest link is strongest. Off until its verdict."""
+LINK_STRENGTH_SELECTION = True
+"""Among complete, connected chains, prefer the one whose weakest link is
+strongest. P1c missed its pooled bar (research/results/p1c-strength.md); P1d,
+registered in advance on a third fresh holdout, SUPPORTED it on three-hop
+chains: sufficiency 0.417 -> 0.917 against an oracle of 1.000
+(research/results/p1d-strength-mh3.md). On by default since then. It fixes a
+chain "connected" only through a ubiquitous word such as "set"."""
 """Backstop on generated successor states.
 
 It used to be the primary bound and was wrong twice over. Expansion scanned

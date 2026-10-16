@@ -46,7 +46,7 @@
 
 | Concern | As built (P1) | Upgrade path |
 |---|---|---|
-| Event log | SQLite, append-only table, update/delete blocked by trigger | Postgres; Kafka/Redpanda only if multi-process |
+| Event log | SQLite, append-only table, update/delete blocked by trigger. **Optional PostgreSQL** (`pgcompat.py`, 2026-10-16) for writers on several machines: same modules and SQL, triggers in the database, writers serialised on a table lock | Kafka/Redpanda only if write throughput, not just writer count, is ever measured as the limit |
 | Projections | in-memory, rebuilt from the log on open | Postgres materialized views |
 | Vectors | in-process, pure-Python flat index | numpy/FAISS, then pgvector / Qdrant |
 | Lineage graph | in-memory adjacency from provenance edges | a graph DB only if queries demand it |

@@ -120,6 +120,7 @@ MUTATION = {
 
 PLUMBING = {
     "close": "release the database handle",
+    "refresh": "fold in other processes' log writes; returns no data",
     "now": "the clock",
     "for_tenant": "a tenant-scoped handle; asserted, not verified",
     "as_principal": "a tenant-scoped handle from a verified credential",

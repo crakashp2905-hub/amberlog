@@ -13,6 +13,7 @@ import time
 from pathlib import Path
 from typing import Iterable, Iterator
 
+from . import pgcompat
 from .events import Event
 from .integrity import IntegrityChain
 from .txn import depth as txn_depth
@@ -54,6 +55,16 @@ class EventLog:
         self, path: str | Path = ":memory:", busy_timeout_ms: int = 5_000
     ) -> None:
         self.path = str(path)
+        self.dialect = "sqlite"
+        if pgcompat.is_postgres_url(self.path):
+            # Optional backend; see pgcompat.py for what it changes and what it
+            # does not. `path` is kept password-free because it is displayed.
+            self._conn = pgcompat.connect(self.path, busy_timeout_ms=busy_timeout_ms)
+            self.path = pgcompat.redact(self.path)
+            self.dialect = "postgresql"
+            self._conn.executescript(_SCHEMA)
+            self.chain = IntegrityChain(self._conn)
+            return
         if self.path != ":memory:":
             Path(self.path).parent.mkdir(parents=True, exist_ok=True)
         # `isolation_level=None` turns off sqlite3's implicit transaction

@@ -98,17 +98,53 @@ nothing raising anywhere.
 
 ### Answering a subject-access or erasure request
 
-```python
-fabric.erasure_scope(memory_id)
+A runbook, because erasure is the one operation where "done" has to be true in
+places this store cannot see.
+
+**1. Find every memory about the subject.**
+
+```bash
+memory-fabric --db store.db list -q "<name, email or id>" --limit 500
+memory-fabric --db store.db search "<name, email or id>" --limit 50
 ```
 
-Three parts, and the third is the one usually omitted: what the erasure
-reached (verified, not asserted), what is kept deliberately, and what is
-**outside this store's reach** — backups taken before the key was destroyed,
-exports and model traces, and federated copies that hold their own keys. Those
-are reported as unknown rather than guessed. A retraction withdraws a remote
-copy from use; it does not destroy it, and the recipient must erase
-independently.
+`list -q` is a substring match over content and ids; `search` uses the index
+and finds paraphrases. Neither is exhaustive for a subject described only
+indirectly — record the queries you ran as part of the request.
+
+**2. Withdraw before erasing, if the content was wrong.** Erasure removes
+content, not the fact that agents may have acted on it. If the memory was
+also incorrect, `quarantine` it first so its descendants are recomputed and the
+retraction propagates to every store it was shared with.
+
+**3. Erase each one.**
+
+```bash
+memory-fabric --db store.db erase <memory-id> --reason "<ticket id>" --actor <you>
+```
+
+This destroys the memory's content key and prints the scope report: what the
+erasure **reached** (key destroyed, log payload is ciphertext, content reads as
+the marker, both indexes purged — verified, not asserted), what it **kept
+deliberately** (provenance, lineage, withdrawal basis, propagation record, the
+erasure event with your reason), and what is **outside this store**. Re-print it
+any time with `erasure-scope <memory-id>`. If the report says the provider
+cannot destroy keys, the content is unreadable here but the key still exists in
+your KMS: destroy it there.
+
+**4. Act on what is outside this store** — the report lists it as unknown
+because nothing here can see it:
+
+| Outside the store | What to do |
+|---|---|
+| Federated copies | The report names the recipient stores. Each holds its **own** key: ask each operator to run step 3 on their copy. A retraction withdrew the copy from use; it did not destroy it. |
+| Backups taken before the erasure | They hold the ciphertext **and** the key (or, with external custody, the key-directory backup does). Expire them on your retention schedule, or restore-erase-rebackup if the request cannot wait. Record which. |
+| Key-directory backups (external custody) | A backup of the key directory taken before step 3 still holds the key. Same treatment as above. |
+| Exports, logs, model traces | Anything that left before the erasure: prompts sent to a model provider, exported reports, application logs. Out of crypto-erasure's reach; handle under your provider and logging policies. |
+
+**5. Record the outcome.** The erasure events (`audit <memory-id>`) and the
+scope report together are the evidence that the request was handled; the
+store keeps them by design. Attach both to the ticket.
 
 ### "A store will not open: KeyUnavailable"
 

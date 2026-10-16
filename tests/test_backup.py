@@ -173,3 +173,41 @@ class TestInMemoryStoreIsRefused(unittest.TestCase):
             target = Path(tmp) / "copy.db"
             main(["--db", ":memory:", "backup", str(target)])
             self.assertFalse(target.exists())
+
+
+class TestExternalKeys(unittest.TestCase):
+    """Backup crashed with a traceback on any store whose keys are outside the
+    database -- the custody SECURITY.md recommends for production. Its
+    verification replay opened the copy with the default in-database key
+    provider, which holds nothing for such a store."""
+
+    def setUp(self) -> None:
+        from memory_fabric.governance.erasure import DirectoryKeyProvider
+
+        self.tmp = TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.source = str(Path(self.tmp.name) / "store.db")
+        self.target = str(Path(self.tmp.name) / "copy.db")
+        self.keys = str(Path(self.tmp.name) / "keys")
+        fabric = MemoryFabric(self.source, key_provider=DirectoryKeyProvider(self.keys))
+        fabric.remember("agent-a", "a sealed lesson about valve 7")
+        self.events = len(fabric.log)
+        fabric.close()
+
+    def test_backup_verifies_with_the_same_keys(self) -> None:
+        from memory_fabric.governance.erasure import DirectoryKeyProvider
+
+        self.assertEqual(
+            main(["--db", self.source, "--keys", self.keys, "backup", self.target]), 0)
+        copy = MemoryFabric(self.target, key_provider=DirectoryKeyProvider(self.keys))
+        self.addCleanup(copy.close)
+        self.assertEqual(len(copy.log), self.events)
+
+    def test_it_says_the_keys_are_not_in_the_backup(self) -> None:
+        import contextlib
+        import io
+
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            main(["--db", self.source, "--keys", self.keys, "backup", self.target])
+        self.assertIn("key directory", out.getvalue())

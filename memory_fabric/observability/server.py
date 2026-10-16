@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import re
 import threading
+import time
 from dataclasses import is_dataclass
 from functools import partial
 from http import HTTPStatus
@@ -126,6 +127,9 @@ class Api:
         rest = parts[1:]
 
         with self._lock:
+            # A dashboard runs for hours while operators act from the CLI. It
+            # must show what the log says now, not what it said at startup.
+            self.fabric.refresh()
             try:
                 return self._route(rest, params)
             except NotFound as exc:
@@ -202,6 +206,39 @@ class Api:
         raise ApiError(HTTPStatus.NOT_FOUND, "not found")
 
 
+class AccessLog:
+    """Who looked at what, one JSON line per request, in its own file.
+
+    DEPLOYMENT.md listed "no audit of *who looked*" as a limit of the dashboard.
+    This is that audit. It is deliberately **not** the event log: browsing
+    must not write events, because the event log is the evidence every value
+    estimate is computed from, and an operator's reading is not evidence about
+    any memory. Refused and unauthenticated requests are recorded too -- they
+    are the ones an investigation most wants. Tokens never appear in it.
+    """
+
+    def __init__(self, path: str) -> None:
+        self.path = path
+        self._lock = threading.Lock()
+        # Fail at startup, not at the first request, if it cannot be written.
+        with open(self.path, "a", encoding="utf-8"):
+            pass
+
+    def record(self, operator: str | None, method: str, path: str, status: int,
+               client: str) -> None:
+        entry = {
+            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "operator": operator,
+            "method": method,
+            "path": redact_token(path),
+            "status": status,
+            "client": client,
+        }
+        line = json.dumps(entry, sort_keys=True) + "\n"
+        with self._lock, open(self.path, "a", encoding="utf-8") as handle:
+            handle.write(line)
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "MemoryFabricObservability/0.1"
     protocol_version = "HTTP/1.1"
@@ -212,11 +249,14 @@ class Handler(BaseHTTPRequestHandler):
         api: Api,
         authenticator: Authenticator,
         quiet: bool = False,
+        access_log: AccessLog | None = None,
         **kwargs: Any,
     ) -> None:
         self.api = api
         self.authenticator = authenticator
         self.quiet = quiet
+        self.access_log = access_log
+        self.operator: str | None = None
         super().__init__(*args, **kwargs)
 
     # Only GET and HEAD exist. Anything else is refused explicitly.
@@ -255,6 +295,7 @@ class Handler(BaseHTTPRequestHandler):
         # Authenticate before routing, so an unauthenticated caller cannot learn
         # which paths exist from the difference between 404 and 401.
         outcome = self.authenticator.authenticate(self.path, self.headers)
+        self.operator = outcome.operator
         if not outcome.ok:
             self._send_auth_failure(outcome, body)
             return
@@ -325,6 +366,9 @@ class Handler(BaseHTTPRequestHandler):
         body: bool,
         extra_headers: dict[str, str] | None = None,
     ) -> None:
+        if self.access_log is not None:
+            self.access_log.record(self.operator, self.command, self.path,
+                                   int(status), self.client_address[0])
         self.send_response(status)
         self.send_header("Content-Type", content_type)
         self.send_header("Content-Length", str(len(payload)))
@@ -361,6 +405,7 @@ def build_server(
     port: int = 8765,
     quiet: bool = False,
     auth: AuthConfig | None = None,
+    access_log: str | None = None,
 ) -> ThreadingHTTPServer:
     """Build the server.
 
@@ -382,7 +427,8 @@ def build_server(
         else build_config(host, token=None, no_auth=True)
     )
     handler = partial(
-        Handler, api=Api(fabric), authenticator=Authenticator(config), quiet=quiet
+        Handler, api=Api(fabric), authenticator=Authenticator(config), quiet=quiet,
+        access_log=AccessLog(access_log) if access_log else None,
     )
     server = ThreadingHTTPServer((host, port), handler)
     server.daemon_threads = True
@@ -395,16 +441,25 @@ def serve(
     port: int = 8765,
     quiet: bool = False,
     auth: AuthConfig | None = None,
+    access_log: str | None = None,
 ) -> None:
     config = auth if auth is not None else build_config(host, token=None, no_auth=False)
-    server = build_server(fabric, host, port, quiet, config)
+    server = build_server(fabric, host, port, quiet, config, access_log=access_log)
     authenticator = Authenticator(config)
     actual_host, actual_port = server.server_address[:2]
 
     print("Memory Fabric dashboard")
     print(f"  store:  {fabric.log.path}")
     print("  mode:   read-only")
-    if config.enabled:
+    if config.operators:
+        # Each operator's token is that person's secret: never printed here.
+        names = ", ".join(sorted(config.operators))
+        print(f"  auth:   named operators ({names})")
+        print(f"\n  {authenticator.bootstrap_url(host, actual_port, token='<your-token>')}\n")
+        print("  For scripts:  Authorization: Bearer <your-token>")
+        if access_log:
+            print(f"  access log:   {access_log}")
+    elif config.enabled:
         print(f"  auth:   token (open this URL once; it sets a session cookie)")
         print(f"\n  {authenticator.bootstrap_url(host, actual_port)}\n")
         print(f"  For scripts:  Authorization: Bearer {config.token}")

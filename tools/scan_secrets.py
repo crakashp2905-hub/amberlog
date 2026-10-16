@@ -88,6 +88,25 @@ ALLOWED_LINES = {
     ("tests/test_sensitive_patterns.py", "password_assignment"),
     ("tests/test_sensitive_patterns.py", "credit_card"),
     ("tests/test_sensitive_patterns.py", "ssn_us"),
+    ("tests/test_sensitive_patterns.py", "password_in_prose"),
+
+    # Tests of the agent API and dashboard operators, whose subject is tokens:
+    # the same reason test_auth.py is listed. Values are generated or repeated
+    # characters, never real credentials.
+    ("tests/test_agent_api.py", "password_assignment"),
+    ("tests/test_operator_access.py", "password_assignment"),
+    # Builds database URLs around a random per-run password to prove the CLI
+    # never prints one. The value is generated at test time; the fixture is
+    # the URL shape.
+    ("tests/test_postgres.py", "password_assignment"),
+    ("tests/test_postgres.py", "connection_string"),
+
+    # The obfuscation red team: invented values deliberately disguised -- split,
+    # encoded, look-alike characters -- so the detector's variant scan can be
+    # shown to catch them. A corpus that tests evasion has to contain evasions.
+    ("tests/test_sensitive_redteam.py", "aws_access_key"),
+    ("tests/test_sensitive_redteam.py", "password_in_prose"),
+    ("tests/test_sensitive_redteam.py", "private_key"),
 
     # This file names the fixtures it allows, so it matches its own patterns.
     ("tools/scan_secrets.py", "password_assignment"),
@@ -115,6 +134,11 @@ ALLOWED_SNIPPETS = {
     ("memory_fabric/transport.py", "password_assignment", "retraction.sign"),
     ("memory_fabric/sdk.py", "password_assignment", "ExposureToken"),
     ("memory_fabric/sdk.py", "password_assignment", "read.token"),
+    # Named dashboard operators: the code parses and passes tokens by name.
+    ("memory_fabric/observability/auth.py", "password_assignment", "token=token,"),
+    ("memory_fabric/observability/auth.py", "password_assignment", "name, sep, token = line.partition"),
+    ("memory_fabric/observability/auth.py", "password_assignment", "name, token = name.strip()"),
+    ("memory_fabric/observability/server.py", "password_assignment", "token='<your-token>'"),
 }
 
 

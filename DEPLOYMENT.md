@@ -38,6 +38,26 @@ there, failing with a non-zero exit if they do not match the source. That check
 is the point: a truncated backup opens perfectly well and reports fewer events,
 and nothing else would tell you.
 
+**With external keys, back up the key directory too.** The log backup holds no
+keys when they live outside the database, and says so. Content in a backup is
+readable only with the key directory as it was when the backup was taken — and
+a key destroyed by erasure after that backup is still in an older key backup,
+which is the backup-retention question in [SECURITY.md](SECURITY.md).
+
+### Key custody: keep keys outside the database in production
+
+```bash
+memory-fabric --db store.db migrate-keys /secure/keys      # once, for an existing store
+memory-fabric --db store.db --keys /secure/keys overview   # or set MEMORY_FABRIC_KEYS
+```
+
+By default a store keeps content keys in its own file, which makes erasure
+possible and does nothing against someone holding the file. `migrate-keys`
+copies the keys out, proves a replay with the directory alone reads every
+memory, and only then clears them from the database; a failed proof clears
+nothing. Put the directory on a different volume or under different
+credentials from the database. The container image does this by default.
+
 ### Restore
 
 ```bash
@@ -85,14 +105,21 @@ is visible in the process list to every user on the box.
 
 ```bash
 docker build -t memory-fabric .
-docker run -p 8765:8765 -v mf-data:/data \
+docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
   -e MEMORY_FABRIC_TOKEN=... memory-fabric
 ```
 
-Runs as uid 10001, not root. The volume is not optional — without it the first
-`docker rm` takes the event log, and §1 is why that is unrecoverable. CI builds
-this image and checks it answers on the published port and refuses an
-unauthenticated request.
+Runs as uid 10001, not root. **Both volumes are required.** Without `/data` the
+first `docker rm` takes the event log, and §1 is why that is unrecoverable.
+Without `/keys` it takes the content keys, and the content in `/data` becomes
+unreadable — the same mechanism erasure relies on, triggered by accident.
+
+A new store keeps its keys on `/keys`. A store created by an earlier image keeps
+them in the database and still starts, with a warning naming the
+`migrate-keys` command to run. CI builds this image and checks that it answers
+on the published port, refuses an unauthenticated request, writes keys to
+`/keys` and none to the database, and that the running dashboard sees writes
+made by another process.
 
 ## 3. Capacity, as measured
 
@@ -159,17 +186,36 @@ retrieved on easier tasks.
 
 Stated plainly, because a list of features is not a deployment plan.
 
-**One writer.** SQLite with WAL. Concurrent readers are fine; concurrent writers
-to one store are not supported and are not tested. The storage seam exists
-([ARCHITECTURE.md](ARCHITECTURE.md) §4) and Postgres belongs with the first
-deployment that actually needs it — adding a driver now would cost the
-zero-dependency property for no measured gain
-([ROADMAP.md](ROADMAP.md)).
+**Writers serialise; they do not run in parallel.** On SQLite (the default),
+processes on one machine share a store safely — writers queue on the file lock,
+tested with 4 processes × 20 appends landing gapless with a verifying chain —
+but every process must reach the same file, so one machine. For writers on
+**several machines**, use the optional PostgreSQL backend:
 
-**One token, no users — on the HTTP surface.** The observability server's auth
-is a single shared bearer token with no identity, roles, expiry or revocation
-beyond restarting with a new one. There is no audit of *who looked*, only of
-what the store did. Put it behind something with a user model.
+```bash
+pip install "memory-fabric[postgres]"
+memory-fabric --db postgresql://user@db.internal:5432/memory overview
+```
+
+Every module runs unchanged against it (every storage-touching test module
+runs on Postgres in CI; only the research benchmarks are left out), with append-only enforced by database triggers and the hash chain
+intact. It does **not** add write throughput: writers still serialise, on a
+table lock instead of a file lock, because the chain needs a total order and
+`seq` must stay gapless. Readers never block. Back it up with `pg_dump`;
+`memory-fabric backup` refuses and says so. Passwords in the URL are never
+printed — but prefer a `.pgpass` file or `PGPASSWORD` over putting one in a
+command line, which other users on the host can see.
+
+**Named operators, but no roles or expiry — on the HTTP surface.** By default
+the dashboard has one shared bearer token. With `serve --operators-file FILE`
+(one `name:token` per line, tokens of 32+ characters, each person their own)
+every request is attributed, and an access log records who looked at what —
+including refused requests — one JSON line each, in `<db>.access.jsonl` by
+default. Tokens are never printed or logged. The log is deliberately a separate
+file and not the event log, because browsing must not become evidence in value
+estimates. What it still does not have: roles, token expiry, or revocation
+short of editing the file and restarting. For those, put it behind something
+with a user model.
 
 That is separate from the library's own identity, which does have one:
 `PrincipalRegistry` issues signed, expiring per-agent credentials and

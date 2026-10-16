@@ -86,6 +86,15 @@ _ASCII_GLYPHS = {
 _PROBE = "─│└├…·"
 
 
+def _shown(db: str) -> str:
+    """The store argument as it may be displayed: a database URL loses its
+    password. Every message that names the store goes through this, because
+    the store argument is the one place a credential reaches the CLI."""
+    from .pgcompat import is_postgres_url, redact
+
+    return redact(db) if is_postgres_url(db) else db
+
+
 def configure_output() -> None:
     """Make stdout able to carry the output, or fall back to ASCII.
 
@@ -581,21 +590,39 @@ def cmd_quarantine(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 
 
 def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
-    from .observability.auth import ENV_TOKEN, InsecureConfiguration, build_config
+    from .observability.auth import (
+        ENV_TOKEN, InsecureConfiguration, build_config, load_operators,
+    )
     from .observability.server import serve
 
     try:
+        operators = load_operators(args.operators_file) if args.operators_file else None
         config = build_config(
             bind_host=args.host,
             token=args.token or os.environ.get(ENV_TOKEN),
             no_auth=args.no_auth,
             allowed_hosts=args.allowed_host,
+            operators=operators,
         )
-    except InsecureConfiguration as exc:
+    except (InsecureConfiguration, OSError) as exc:
         print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
         return 5
 
-    serve(fabric, host=args.host, port=args.port, quiet=args.quiet, auth=config)
+    access_log = args.access_log
+    if access_log is None and operators and args.db != ":memory:":
+        # Named operators exist to make access attributable; recording it is
+        # the point, so it is on unless explicitly turned off.
+        # A database URL is not a path, and would carry its password into a
+        # filename.
+        from .pgcompat import is_postgres_url
+
+        access_log = ("memory-fabric.access.jsonl" if is_postgres_url(args.db)
+                      else f"{args.db}.access.jsonl")
+    if access_log == "-":
+        access_log = None
+
+    serve(fabric, host=args.host, port=args.port, quiet=args.quiet, auth=config,
+          access_log=access_log)
     return 0
 
 
@@ -612,10 +639,159 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     client = agent(fabric, args.agent, args.tenant)
     print(
         f"memory-fabric MCP server: agent {args.agent}, tenant {args.tenant}, "
-        f"store {args.db}",
+        f"store {_shown(args.db)}",
         file=sys.stderr,
     )
-    return serve_stdio(McpServer(client, fabric))
+    if args.trusted_local:
+        print(
+            "trusted-local: this agent's clean writes become active WITHOUT "
+            "review and feed back into its own recall. Use only for a single "
+            "user's local assistant, never for a shared or federated store.",
+            file=sys.stderr,
+        )
+    return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
+
+
+def _print_scope(fabric: MemoryFabric, memory_id: str, as_json: bool) -> None:
+    scope = fabric.erasure_scope(memory_id)
+    if as_json:
+        print(json.dumps(scope, indent=2, default=str))
+        return
+    heading(f"Erasure scope — {memory_id}")
+    state = "ERASED" if scope["erased"] else "not erased"
+    print(f"  {state}" + (f" ({scope['reason']})" if scope["reason"] else ""))
+    print(f"  key custody: {scope['key_custody']}"
+          + ("" if scope["provider_can_destroy"] else "  (provider CANNOT destroy keys)"))
+    print("\n  Reached, verified:")
+    for check, ok in scope["reached"].items():
+        print(f"    {'yes' if ok else 'NO '}  {check.replace('_', ' ')}")
+    print("\n  Kept deliberately:")
+    for item in scope["kept_deliberately"]:
+        print(f"    - {item}")
+    print("\n  Outside this store — act on these separately:")
+    outside = scope["outside_this_store"]
+    print(f"    backups before erasure: {outside['backups_taken_before_erasure']}")
+    print(f"    exports, logs, traces:  {outside['exports_logs_and_model_traces']}")
+    print(f"    federated copies:       {outside['federated_copies']}")
+    if outside["federated_copies"] != "none recorded":
+        print(f"      {outside['federated_copies_note']}")
+
+
+def cmd_erase(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Crypto-erase one memory's content, then report what that reached."""
+    erased = fabric.erase_content(args.id, reason=args.reason, actor=args.actor)
+    if not erased and not fabric.erasure_scope(args.id)["erased"]:
+        print(f"{C.RED}{args.id} was not erased: the key provider could not "
+              f"destroy its key{C.RESET}", file=sys.stderr)
+        _print_scope(fabric, args.id, args.json)
+        return 4
+    _print_scope(fabric, args.id, args.json)
+    return 0
+
+
+def cmd_erasure_scope(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    _print_scope(fabric, args.id, args.json)
+    return 0
+
+
+def _agent_service(fabric: MemoryFabric, agents_file: str):
+    from .agent_api import load_agents, register_all
+    from .service import MemoryService
+
+    service = MemoryService(fabric=fabric)
+    register_all(service, load_agents(agents_file))
+    return service
+
+
+def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Serve agents over authenticated HTTP. See `agent_api.py`."""
+    from .agent_api import AgentApi, ConfigurationError, build_agent_server
+
+    try:
+        service = _agent_service(fabric, args.agents_file)
+        server = build_agent_server(AgentApi(service), host=args.host,
+                                    port=args.port, behind_tls=args.behind_tls)
+    except (ConfigurationError, OSError) as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 5
+    host, port = server.server_address[:2]
+    print(f"Memory Fabric agent API on http://{host}:{port}/v1/  (store {_shown(args.db)})")
+    print("  POST /v1/recall | fetch | verify | remember   with  Authorization: Bearer <credential>")
+    print(f"  Issue a credential:  memory-fabric --db {_shown(args.db)} agent-api-issue "
+          f"--agents-file {args.agents_file} --agent <id>")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nstopped")
+    finally:
+        server.server_close()
+    return 0
+
+
+def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Mint a signed, expiring credential for one agent in the agents file."""
+    from .agent_api import ConfigurationError, encode_credential
+    from .identity import IdentityError
+
+    try:
+        service = _agent_service(fabric, args.agents_file)
+        credential = service.issue(args.agent, ttl_seconds=args.ttl)
+    except (ConfigurationError, IdentityError, OSError) as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 5
+    print(encode_credential(credential))
+    return 0
+
+
+def cmd_migrate_keys(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Move this store's content keys out of the database into a directory.
+
+    Copy, then prove a full replay with only the directory reads every memory,
+    then clear the material from the database. If the proof fails nothing is
+    cleared, so the store is never left unreadable.
+    """
+    from .governance.erasure import (
+        DirectoryKeyProvider, SqliteKeyProvider, clear_database_keys,
+        copy_keys_to_directory,
+    )
+
+    if args.db == ":memory:":
+        print(f"{C.RED}an in-memory store has no file to protect{C.RESET}", file=sys.stderr)
+        return 2
+    if not isinstance(fabric.vault.keys, SqliteKeyProvider):
+        print(f"{C.RED}this store was opened with external keys already; "
+              f"run without --keys / MEMORY_FABRIC_KEYS to migrate it{C.RESET}",
+              file=sys.stderr)
+        return 2
+    try:
+        copied = copy_keys_to_directory(fabric.log._conn, args.directory)
+    except ValueError as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 4
+    events, memories = len(fabric.log), len(fabric.state.memories)
+    fabric.close()
+
+    try:
+        proof = MemoryFabric(args.db, key_provider=DirectoryKeyProvider(args.directory))
+    except Exception as exc:  # noqa: BLE001 - any failure means do not clear
+        print(f"{C.RED}verification failed, database keys left in place: {exc}{C.RESET}",
+              file=sys.stderr)
+        return 5
+    try:
+        if len(proof.log) != events or len(proof.state.memories) != memories:
+            print(f"{C.RED}verification replay disagreed with the source; "
+                  f"database keys left in place{C.RESET}", file=sys.stderr)
+            return 5
+        cleared = clear_database_keys(proof.log._conn)
+    finally:
+        proof.close()
+
+    print(f"copied {len(copied)} key(s) to {args.directory}; replay with the "
+          f"directory alone read all {memories} memories")
+    print(f"cleared {cleared} key(s) from the database. From now on open this "
+          f"store with --keys {args.directory} (or MEMORY_FABRIC_KEYS), and back "
+          f"the key directory up separately from the database.")
+    return 0
 
 
 def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
@@ -646,6 +822,13 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
               f"{C.RESET}", file=sys.stderr)
         return 6
 
+    if getattr(fabric.log, "dialect", "sqlite") == "postgresql":
+        print(f"{C.RED}A PostgreSQL store is backed up with the database's own "
+              f"tools, which are consistent and incremental where this copy is "
+              f"not:\n  pg_dump --format=custom --file=<out> <database>{C.RESET}",
+              file=sys.stderr)
+        return 6
+
     target = Path(args.path)
     if target.exists() and not args.force:
         print(f"{C.RED}{target} exists. Pass --force to overwrite it.{C.RESET}",
@@ -664,7 +847,21 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         # next operation, including the verification read below.
         destination.close()
 
-    verifier = MemoryFabric(str(target))
+    # The replay needs the same keys as the source, or every sealed memory
+    # reads as missing. The in-database provider is bound to the source's
+    # connection, so the copy must use its own; any external provider is
+    # shared as-is. Without this, backup crashed on every store whose keys are
+    # outside the database -- the custody recommended for production.
+    from .governance.erasure import SqliteKeyProvider
+
+    external = not isinstance(fabric.vault.keys, SqliteKeyProvider)
+    try:
+        verifier = MemoryFabric(
+            str(target), key_provider=fabric.vault.keys if external else None)
+    except KeyUnavailable as exc:
+        print(f"{C.RED}The copy could not be read back: {exc}. "
+              f"Do not keep this backup.{C.RESET}", file=sys.stderr)
+        return 5
     try:
         copied = len(verifier.log)
         memories = len(verifier.state.memories)
@@ -673,6 +870,11 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 
     print(f"{fabric.log.path} -> {target}")
     print(f"  {copied} events, {memories} memories, replayed from the copy")
+    if external:
+        print(f"  {C.YELLOW}This store's content keys are outside the database, "
+              f"so this backup holds none of them. Back up the key directory "
+              f"too, separately -- without it the backup's content cannot be "
+              f"read.{C.RESET}")
     if copied != source_events:
         print(f"{C.RED}Source had {source_events} events; the copy has {copied}. "
               f"Do not keep this backup.{C.RESET}", file=sys.stderr)
@@ -1235,9 +1437,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--keys",
         metavar="DIR",
+        default=os.environ.get("MEMORY_FABRIC_KEYS") or None,
         help="directory holding this store's content keys, when they are kept "
-        "outside the database. Without it a store whose keys are external "
-        "cannot be opened at all — which is the correct refusal, not a bug.",
+        "outside the database (default: $MEMORY_FABRIC_KEYS). Without it a "
+        "store whose keys are external cannot be opened at all — which is the "
+        "correct refusal, not a bug. `migrate-keys` moves an existing store's "
+        "keys out.",
     )
     parser.add_argument(
         "--create",
@@ -1360,6 +1565,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="extra Host header value to accept; repeatable. Needed when reaching "
         "the server by a name or address other than localhost.",
     )
+    p.add_argument(
+        "--operators-file",
+        metavar="FILE",
+        help="one 'name:token' per line, so each operator has their own token "
+        "and every request is attributable. Tokens are never printed.",
+    )
+    p.add_argument(
+        "--access-log",
+        metavar="FILE",
+        help="append who looked at what, one JSON line per request (default with "
+        "--operators-file: <db>.access.jsonl; '-' turns it off)",
+    )
 
     p = add("mcp", cmd_mcp,
             "WRITES: serve this store to one agent over MCP (stdio). The agent "
@@ -1367,6 +1584,44 @@ def build_parser() -> argparse.ArgumentParser:
             "or see withdrawn memories")
     p.add_argument("--agent", required=True, help="the agent id every call is attributed to")
     p.add_argument("--tenant", default=DEFAULT_TENANT, help=f"tenant (default {DEFAULT_TENANT})")
+    p.add_argument(
+        "--trusted-local",
+        action="store_true",
+        help="the agent's clean writes become active without review (marked "
+        "in provenance). For one person's local assistant only.",
+    )
+
+    p = add("erase", cmd_erase,
+            "WRITES: crypto-erase one memory's content (provenance and audit "
+            "stay), then report what the erasure reached and what it could not")
+    p.add_argument("id")
+    p.add_argument("--reason", required=True, help="recorded with the erasure, e.g. a ticket id")
+    p.add_argument("--actor", default="operator")
+
+    p = add("erasure-scope", cmd_erasure_scope,
+            "What an erasure of one memory reached, kept, and could not reach")
+    p.add_argument("id")
+
+    p = add("agent-api", cmd_agent_api,
+            "WRITES: serve agents over authenticated HTTP (recall, fetch, verify, "
+            "remember), each request verified from a signed, expiring credential")
+    p.add_argument("--agents-file", required=True,
+                   help="agent_id:tenant_id:hex_key per line; secret, server-only")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8766)
+    p.add_argument("--behind-tls", action="store_true",
+                   help="allow a non-loopback bind because TLS terminates in front")
+
+    p = add("agent-api-issue", cmd_agent_api_issue,
+            "Print a signed, expiring credential for one agent")
+    p.add_argument("--agents-file", required=True)
+    p.add_argument("--agent", required=True)
+    p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
+
+    p = add("migrate-keys", cmd_migrate_keys,
+            "WRITES: move content keys out of the database into a directory, "
+            "verified by replay before anything is removed")
+    p.add_argument("directory", help="where the keys will live from now on")
 
     p = add("backup", cmd_backup,
             "Consistent snapshot of the event log, verified by replaying it")
@@ -1390,14 +1645,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     # tool that is the worst possible failure: it looks like an answer.
     if (
         args.db != ":memory:"
+        and not args.db.startswith(("postgresql://", "postgres://"))
         and args.command not in CREATING_COMMANDS
         and not args.create
         and not os.path.exists(args.db)
     ):
         print(
-            f"{C.RED}no store at {args.db}{C.RESET}\n"
+            f"{C.RED}no store at {_shown(args.db)}{C.RESET}\n"
             f"{C.DIM}Check the path, or pass --create to start an empty one. "
-            f"To populate a demo store: memory-fabric --db {args.db} demo{C.RESET}",
+            f"To populate a demo store: memory-fabric --db {_shown(args.db)} demo{C.RESET}",
             file=sys.stderr,
         )
         return 2
@@ -1415,14 +1671,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         # specific and the default message would send someone looking at the
         # database instead of at the key store they did not mount.
         print(
-            f"{C.RED}could not open {args.db}: {exc}{C.RESET}\n"
+            f"{C.RED}could not open {_shown(args.db)}: {exc}{C.RESET}\n"
             f"{C.DIM}If this store's content keys are kept outside the "
             f"database, point at them with --keys <dir>.{C.RESET}",
             file=sys.stderr,
         )
         return 2
     except Exception as exc:
-        print(f"{C.RED}could not open {args.db}: {exc}{C.RESET}", file=sys.stderr)
+        print(f"{C.RED}could not open {_shown(args.db)}: {exc}{C.RESET}", file=sys.stderr)
         return 2
 
     try:

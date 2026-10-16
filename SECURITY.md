@@ -40,6 +40,7 @@ The CLI and the dashboard are read-only by construction, and both run locally.
 | Cross-site reads | `SameSite=Strict` plus an `Origin` check. |
 | Unauthenticated exposure | Refused outright off loopback, rather than warned about. |
 | Enumeration | Authentication runs before routing, so 404 and 401 cannot be told apart. |
+| Who looked | With `--operators-file`, each operator has their own token and every request — allowed or refused — is appended to an access log outside the event log, with tokens redacted. Without it, access is attributable only to "whoever holds the shared token". |
 
 No TLS: the cookie carries no `Secure` flag because that would stop it being stored over plain HTTP on loopback. Any non-loopback deployment needs TLS terminated in front of it.
 
@@ -53,6 +54,18 @@ No TLS: the cookie carries no `Secure` flag because that would stop it being sto
 | An agent cannot score itself | Unchanged from T2: the session refuses a verifier equal to the acting agent, including on imported transcripts. |
 
 This is still scoping inside one process, not authentication: anything holding the raw `MemoryFabric` can write as any agent, which is correct — that is the host.
+
+## Agent API (2026-10-16)
+
+| Threat | Mitigation |
+|---|---|
+| An agent acts as another | Each request carries a credential signed with that agent's own key and is re-verified per call; the handler is an `AgentClient` bound to the verified principal. Exposure tokens are kept per agent, so one agent cannot verify on another's recall. |
+| A revoked or expired credential keeps working | Verified on every request through `MemoryService`, whose revocations are durable. |
+| Telling failure kinds apart | Unknown agent, bad signature, expired and revoked all return the same 401 body. |
+| Credentials sniffed on the wire | Refuses a non-loopback bind over plain HTTP unless `--behind-tls` says TLS terminates in front. |
+| A web page drives the API | Requests carrying `Origin` are refused; only browsers send it. No cookies, no CORS. |
+| Self-scored outcomes | No outcome endpoint. |
+| Resource exhaustion by body size | Bodies over 64 KiB are refused before parsing. There is **no rate limiting**; put it behind a proxy that has one. |
 
 ## Federation (Phase 2)
 
@@ -105,8 +118,8 @@ can read. **Erasure removes the content, not the accountability.**
 
 Four limits, stated rather than implied:
 
-- **The cipher is HMAC-SHA256 in counter mode**, because the core is zero-dependency and the standard library has no AEAD. It gives confidentiality against someone without the key and **no integrity guarantee of its own** — the append-only log provides that. A deployment needing AEAD should install `cryptography` and replace one function; the vault's interface does not change.
-- **The keys are in the same file as the ciphertext.** This is the weakest defensible arrangement: it makes erasure *possible*, and it does nothing against an attacker who has the file. The keys are in their own table so a deployment can move them without re-architecting.
+- **The cipher is authenticated.** New content is sealed with AES-256-GCM when `cryptography` is installed, and with HMAC-SHA256 counter mode plus an encrypt-then-MAC tag otherwise — the zero-dependency default. The original unauthenticated `enc:v1` envelope is read-only and never written again; details and history are in the bullets below and in SPEC.md §0.6.0.
+- **By default the keys are in the same file as the ciphertext.** That makes erasure *possible* and does nothing against an attacker who has the file. Production deployments should keep keys outside the database — see *Key custody* below and [DEPLOYMENT.md](DEPLOYMENT.md).
 - **Erasure is terminal for a memory's content.** `revise` is refused once content has been erased: writing a new version under the same id would make it readable again and defeat the erasure record. Record new information as a new memory. Found by a property-based walk, which hit the sequence (erase, then revise) and stored the new text in *plaintext*, because the destroyed key made the sealer fall back silently.
 - **Crypto-erasure cannot reach a backup taken before the key was destroyed.** Backup retention is an operational control; a test pins this behaviour rather than leaving it to be discovered.
 - **`fabric.erasure_scope(memory_id)` answers a subject-access request honestly**, in three parts. *Reached*, verified rather than asserted: the key destroyed, the log payload ciphertext, the content reading as the marker, and **both search indexes purged** — content left in an index is still matchable, which would make the erasure cosmetic exactly where a subject would notice. *Kept deliberately*: provenance, lineage, the withdrawal basis, the propagation record and the erasure event itself. *Outside this store*: backups taken before erasure hold both the ciphertext and the key; anything exported, logged or sent to a model provider left before erasure existed; and a federated copy at another store has **its own key** and must be erased there — a retraction withdraws it from use without destroying it. Those three are reported as **unknown rather than guessed**, because `doctor` cannot see them either.
@@ -134,16 +147,18 @@ before parsing. Both sentences predated the mechanism they named.
 
 ## Known gaps
 
-- **The sensitive-data detector is pattern-based**, so it misses novel secret formats and flags some harmless strings. It is one control among several, never the only one protecting a restricted memory. Its false-positive classes are documented in `tools/scan_secrets.py`.
+- **Prompt injection carried by memory is screened at ingest, coarsely.** A memory whose content is an instruction to whatever model reads it later is a *persistent* injection: once validated and shared it reaches every agent that recalls it. `governance/injection.py` quarantines high-confidence cases (instruction overrides, chat-template role tokens, requests to reveal a system prompt) on write and again at share time, and warns on persona-override phrasing. Pattern-based like the secret screen, with a positive and a near-miss negative per pattern (`tests/test_injection_patterns.py`); paraphrased or encoded injections will get through. The read-side delimiting in `adapters/context.py` remains the main defence.
+- **The sensitive-data detector is pattern-based**, so it misses novel secret formats and flags some harmless strings. It has now been red-teamed once (2026-10-16, `tests/test_sensitive_redteam.py`): of 13 obfuscations — invisible characters, spacing, base64/hex, full-width and look-alike letters, URL encoding, a password in a sentence, a mangled PEM header — it caught **0** at high severity before and **12** after variant scanning. A reversed key is still missed, and anything a fixed transformation cannot undo will be. It is one control among several, never the only one protecting a restricted memory. Its false-positive classes are documented in `tools/scan_secrets.py`.
 - **Application code should hold a `MemoryService`, not a `MemoryFabric`.** The service owns the fabric, exposes no public route to it, and hands out only `Session` handles derived from a verified credential. A session re-verifies on **every** operation rather than once at creation — otherwise a credential revoked at 10:00 would still be acting at 11:00 through a handle minted at 09:00, which is revocation that does not revoke. Registering agents and issuing credentials are not reachable from a session: a session that could issue credentials could issue itself a better one.
 - **That is an API boundary, not a sandbox.** Python has no private attributes and `service._fabric` is one underscore away. It makes the safe path the obvious one and the unsafe one visibly deliberate, which is all an in-process boundary can honestly offer. For a boundary that holds against the code on the other side, run the service in its own process; every operation already takes a credential and returns data, so that is a deployment change rather than a rewrite.
 - **Credentials can be revoked individually, and a `MemoryService` keeps revocations on disk.** Each credential carries a signed `credential_id`, so one leaked token is revoked without rotating the agent's key and taking every other credential offline with it. `revoke_agent` is the blunt instrument for a compromised agent and refuses credentials issued after it. The service stores revocations in the database by default (`SqliteRevocations`, sharing the event log's connection and transaction), so they survive a restart and are shared by every process on that file — `service.revocations_are_durable` says which you have. A bare `PrincipalRegistry` keeps the cheap in-memory default, because a one-process tool should not be made to write a table it will never read again. Short credential lifetimes remain the primary control either way: revocation is the fast remedy inside a lifetime, not a substitute for bounding one.
 - **Agent authentication exists at a handle, not inside the store.** `identity.PrincipalRegistry` issues HMAC-signed, expiring credentials and `fabric.as_principal` returns a handle bound to the verified principal. A caller holding the `MemoryFabric` itself can still act as anyone, and that is not a bug awaiting a patch: the check and the bypass would be on the same side of the boundary. Put the fabric behind a process that holds credentials, and hand agents views.
-- **Credentials are bearer tokens and there is no revocation list.** A leaked credential is usable until it expires, so lifetimes should be short. Rotating the agent's key in the registry invalidates every credential signed with it, which is the available revocation mechanism and a blunt one.
+- **Credentials are bearer tokens.** Anyone holding one can use it until it expires or is revoked, so lifetimes should be short and transport must be confidential. Revocation is per credential (above); rotating an agent's key remains available as the blunt instrument.
 - **Tenancy is an authorisation boundary, not a physical one.** Memories carry a `tenant_id` that the exposure path and the enforcement layer refuse to cross, which holds against a bug in a ranking policy, an index query or a federation import. It holds against nothing that can read the file: one SQLite database holding several tenants is one blast radius. Where isolation has to survive a compromised process, run one store per tenant — `memory-fabric tenants` and `doctor` both say which arrangement a store is actually in.
 - **A tenant id is local to a store.** Nothing in the federation protocol makes `tn_acme` at one store the same customer as `tn_acme` at another, so `offer` takes the recipient's tenant explicitly. Letting a matching string decide would turn a naming coincidence into a cross-customer disclosure.
 - **No encryption at rest for the database as a whole**, as above.
 - **The contradiction detector does not exist**, so `challenge()` is manual.
+- **Freshness across processes was not guaranteed until 2026-10-16.** A running fabric folded only its own writes, so a quarantine issued from the CLI did not reach an already-running MCP server, app or dashboard until restart. Every serving, enforcing and writing entry point now catches up on the log first (`MemoryFabric.refresh`, `tests/test_cross_process_freshness.py`). A deployment running a version before that should restart long-lived processes after any retraction.
 
 ## Principles
 - Default-deny for cross-scope sharing.

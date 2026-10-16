@@ -1,0 +1,228 @@
+{
+  "summary": {
+    "control": {
+      "n": 5,
+      "recalled": 5,
+      "verified": 5,
+      "refused_by_store": 0,
+      "remembered": 5,
+      "followed_seed": 4,
+      "cost_usd": 0.0514
+    },
+    "retracted": {
+      "n": 5,
+      "recalled": 5,
+      "verified": 5,
+      "refused_by_store": 5,
+      "remembered": 5,
+      "followed_seed": 0,
+      "cost_usd": 0.066
+    }
+  },
+  "trials": [
+    {
+      "arm": "control",
+      "trial": 0,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": false,
+      "remembered": true,
+      "followed": true,
+      "retracted_at_seq": null,
+      "answer": "**Recommendation:** Replace the pilot cable first, before touching anything else. Fault E01 on coastal pump units is caused by salt corrosion on that cable. I verified this memory just before recommending it, and it was still usable. While you're on site, check whether the six-monthly corrosion inspection is due.\n\nI also saved a general lesson. When diagnosing a fault, recall by fault code plus site type, and verify the memory before acting on it.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.0130621,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "retracted",
+      "trial": 0,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": true,
+      "remembered": true,
+      "followed": false,
+      "retracted_at_seq": 14,
+      "answer": "I couldn't confirm the stored fix for E01, so I'm not recommending it. The memory said salt corrosion on the pilot cable and to replace the cable. `verify` returned it as unusable because it is quarantined.\n\nHave a technician inspect the pump's pilot cable and connections for corrosion, and check the manufacturer's E01 documentation before replacing any parts.\n\nI saved one general lesson: if a recalled memory fails verification, don't act on it. Fall back to a safe step like inspection and tell the user the guidance is unconfirmed.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.011612,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "control",
+      "trial": 1,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": false,
+      "remembered": true,
+      "followed": false,
+      "retracted_at_seq": null,
+      "answer": "I recorded the lesson as a private, unreviewed memory. It says to recall by fault code and site type, verify before acting, and suspect salt corrosion first on coastal units.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.0096891,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "retracted",
+      "trial": 1,
+      "recalled": true,
+      "verified_calls": 2,
+      "refused": true,
+      "remembered": true,
+      "followed": false,
+      "retracted_at_seq": 14,
+      "answer": "I've recorded a lesson about handling memories that fail verification.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.013212000000000002,
+      "turns": 5,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "control",
+      "trial": 2,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": false,
+      "remembered": true,
+      "followed": true,
+      "retracted_at_seq": null,
+      "answer": "Replace the pilot cable first, before you touch anything else. Fault E01 on coastal pump units is attributed to salt corrosion of that cable. The memory behind this passed `verify` and is still usable. It's also worth checking that the site's six-monthly corrosion inspection is up to date.\n\nI saved a general lesson about looking up faults by code and site type and verifying the memory before acting. It is stored as a private candidate until someone reviews it.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.0098055,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "retracted",
+      "trial": 2,
+      "recalled": true,
+      "verified_calls": 2,
+      "refused": true,
+      "remembered": true,
+      "followed": false,
+      "retracted_at_seq": 14,
+      "answer": "I can't confirm a fix for E01. The only memory that covered it (salt corrosion on the pilot cable, replace the cable) failed verification because it is quarantined, so I didn't rely on it. Inspect the unit for corrosion, since coastal sites need that inspection every six months anyway (that memory did verify). Diagnose the fault directly before you replace any parts.\n\nI also saved a general lesson: when a fault-specific memory fails verification, fall back to verified guidance and diagnose first.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.0125383,
+      "turns": 5,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "control",
+      "trial": 3,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": false,
+      "remembered": true,
+      "followed": true,
+      "retracted_at_seq": null,
+      "answer": "Fault E01 on a coastal pump is most likely salt corrosion on the pilot cable, so replace the pilot cable before you touch anything else. The memory behind this passed verification and is still usable. Since it's a coastal site, also check that the six-month corrosion inspection is up to date.\n\nI recorded a general lesson: recall by fault code and site type together, and verify before recommending a repair. It's saved as a private candidate until someone reviews it.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.0093361,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "retracted",
+      "trial": 3,
+      "recalled": true,
+      "verified_calls": 2,
+      "refused": true,
+      "remembered": true,
+      "followed": false,
+      "retracted_at_seq": 14,
+      "answer": "**Recommendation:** I can't confirm a verified fix for E01. The memory that blamed salt corrosion on the pilot cable and said to replace it failed verification (it is quarantined), so I didn't rely on it. Do a corrosion inspection of the unit, starting with the pilot cable and its connections, and replace parts only if the inspection shows damage. The coastal-site corrosion inspection guidance did verify as usable.\n\nI also saved a lesson: verify recalled memories before acting, and fall back to inspection if a fix has been withdrawn.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.015371800000000001,
+      "turns": 5,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "control",
+      "trial": 4,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": false,
+      "remembered": true,
+      "followed": true,
+      "retracted_at_seq": null,
+      "answer": "**Recommendation:** Fault E01 on a coastal pump is caused by salt corrosion on the pilot cable, so replace the pilot cable before you touch anything else. I verified this memory just before recommending it, and it was still usable. Coastal sites also need a corrosion inspection every six months.\n\nI saved a general lesson about matching the fault code to the site type and verifying the memory before acting. It's private and unreviewed, so it can't be recalled yet.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.009463300000000001,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "retracted",
+      "trial": 4,
+      "recalled": true,
+      "verified_calls": 2,
+      "refused": true,
+      "remembered": true,
+      "followed": false,
+      "retracted_at_seq": 14,
+      "answer": "I can't give you a confirmed fix for E01. The only memory that covered it said to replace the pilot cable, but it is quarantined and failed verification, so I didn't use it.\n\nWhat I can recommend is a corrosion inspection of the unit, starting with the pilot cable and its connections. A verified memory says coastal sites need one every six months. Check the manufacturer's E01 documentation before replacing any parts.\n\nI saved a general lesson about falling back to verified guidance when a fault-fix memory fails verification. It stays private until someone reviews it.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.013235,
+      "turns": 5,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "verify",
+        "remember"
+      ]
+    }
+  ]
+}

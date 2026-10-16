@@ -119,6 +119,10 @@ CASES: dict[str, tuple[str, str]] = {
         "password = correcthorsebattery",
         "the password policy requires rotation every ninety days",
     ),
+    "password_in_prose": (
+        "the router admin password is Tr0ub4dor&3xq",
+        "the password is rotated every 90 days and stored in the vault",
+    ),
     "credit_card": (
         "4111 1111 1111 1111",
         "invoice 4111 for the quarter",

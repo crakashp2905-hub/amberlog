@@ -300,3 +300,38 @@ class TestBackupTakenBeforeErasure(ErasureCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class TestEraseFromTheCommandLine(unittest.TestCase):
+    """An operator handling an erasure request needs a command, not a script."""
+
+    def test_erase_then_report(self) -> None:
+        import json
+        import os
+        import tempfile
+
+        from memory_fabric.cli import main
+
+        with tempfile.TemporaryDirectory() as tmp:
+            db = os.path.join(tmp, "s.db")
+            fabric = MemoryFabric(db)
+            mid = fabric.remember("ag", "the customer lives at 4 Elm Road")
+            fabric.close()
+
+            import contextlib
+            import io
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                code = main(["--db", db, "--json", "erase", mid,
+                             "--reason", "ticket SAR-17", "--actor", "dpo"])
+            self.assertEqual(code, 0)
+            scope = json.loads(out.getvalue())
+            self.assertTrue(scope["erased"])
+            self.assertTrue(all(scope["reached"].values()))
+
+            reopened = MemoryFabric(db)
+            try:
+                self.assertNotIn("Elm Road", reopened.get(mid).content)
+                self.assertEqual(reopened.erasure_status(mid).reason, "ticket SAR-17")
+            finally:
+                reopened.close()

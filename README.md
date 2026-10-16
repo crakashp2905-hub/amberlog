@@ -58,8 +58,8 @@ pip install .                 # core: zero runtime dependencies
 pip install ".[claude]"       # optional: Claude API adapter
 ```
 
-Python 3.11–3.13. Linux and Windows are tested in CI; macOS is expected to work
-but is untested. Installing provides the `memory-fabric` command, which is also
+Python 3.11–3.13 on Linux, macOS and Windows, all tested in CI with nothing
+installed. Installing provides the `memory-fabric` command, which is also
 available as `python -m memory_fabric`.
 
 ### Try the demo
@@ -137,6 +137,28 @@ outcome tool**, because the model is the agent being scored.
 > memory-fabric --db memory.db attention                       # what is waiting
 > memory-fabric --db memory.db validate <id> --actor <you>     # promote one
 > ```
+>
+> For a single user's local assistant, where you are both the user and the
+> reviewer, `mcp --trusted-local` makes the agent's clean writes active at once.
+> Each is marked `trusted-local` in its provenance, and the sensitive-data
+> screen still applies. Never use it for a shared or federated store.
+
+### Over HTTP, for agents anywhere
+
+```bash
+# agents.txt (server-only, owner-readable): agent_id:tenant_id:hex_key per line
+memory-fabric --db memory.db agent-api --agents-file agents.txt          # serves on 127.0.0.1:8766
+memory-fabric --db memory.db agent-api-issue --agents-file agents.txt --agent my-bot
+curl -s -X POST http://127.0.0.1:8766/v1/recall \
+  -H "Authorization: Bearer <credential>" -d '{"query": "pump fault E01"}'
+```
+
+The same four operations as MCP, for agents in other processes, languages or
+machines. Every request is verified from a signed, expiring credential, so
+revocation and expiry take effect at the next call. It is a separate server
+from the read-only dashboard, refuses browser-originated requests, and will not
+bind beyond loopback over plain HTTP unless told TLS terminates in front of it
+(`--behind-tls`).
 
 ### Multiple tenants
 
@@ -182,14 +204,19 @@ nothing else would surface.
 
 ```bash
 docker build -t memory-fabric .
-docker run -p 8765:8765 -v mf-data:/data -e MEMORY_FABRIC_TOKEN=<token> memory-fabric
+docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
+  -e MEMORY_FABRIC_TOKEN=<token> memory-fabric
 ```
 
 The container runs as a non-root user and serves the read-only dashboard with
-token authentication. **Mount the volume:** the event log is the source of
-truth. Back it up with `memory-fabric backup`, which replays the copy to verify
-it. See [DEPLOYMENT.md](DEPLOYMENT.md) for backup, serving, capacity, upgrades
-and current limits (notably: one writer per store).
+token authentication. **Mount both volumes:** `/data` holds the event log, the
+source of truth, and `/keys` holds the content keys, kept apart so a copy of the
+database alone cannot read content. Back up both: `memory-fabric backup` copies
+and verifies the log, and the key directory needs its own backup. A store
+created before keys moved out can be migrated with `memory-fabric migrate-keys`;
+the container tells you how at startup. See [DEPLOYMENT.md](DEPLOYMENT.md) for backup, serving, capacity, upgrades
+and current limits. Writers on more than one machine need the optional
+PostgreSQL backend (`pip install ".[postgres]"`, then `--db postgresql://...`).
 
 ### Examples
 
@@ -259,7 +286,6 @@ More: [SCORECARD.md](research/SCORECARD.md) (every claim and its outcome) and
 MCP server are built and tested. Open items:
 
 - The Claude adapter has not yet been run against the live API (P3 gate).
-- Postgres storage is deferred until a deployment needs concurrent writers.
 - Developer-experience (R8) and release-qualification (R9) gates are in progress.
 - Not yet published to PyPI, pending a name.
 

@@ -86,8 +86,8 @@ reproducible counterexample is a bug rather than a statistic.
 | Invariants partial | 7 | 0 |
 | Invariants with no route to a test | 3 | 0 |
 
-965 unit/integration/property tests, 17 deterministic multi-store fault
-scenarios, eleven testing layers. Full matrix in
+1086 unit/integration/property tests, 17 deterministic multi-store fault
+scenarios, fourteen testing layers. Full matrix in
 [docs/INVARIANTS.md](../docs/INVARIANTS.md).
 
 ---

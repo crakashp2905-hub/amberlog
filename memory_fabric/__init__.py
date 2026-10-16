@@ -92,7 +92,7 @@ from .service import MemoryService, Session
 from .session import AgentSession, SessionClosed
 from .vectors import Embedder, HashingEmbedder, VectorIndex
 
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
 __all__ = [
     "RevocationStore",

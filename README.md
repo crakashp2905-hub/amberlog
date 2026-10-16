@@ -21,7 +21,7 @@ and they are the most reusable thing here.
 | A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
 | **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
 
-**965 tests**, 17 deterministic multi-store fault scenarios, six testing layers,
+**1086 tests**, 17 deterministic multi-store fault scenarios, fourteen testing layers,
 zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
 the suite runs in CI with **nothing installed**, because a zero-dependency claim
 is only true if it is tested that way. What was run and what it showed, including
@@ -95,8 +95,9 @@ preservation, and the negative results themselves.
 pip install .
 ```
 
-Zero runtime dependencies, Python 3.11–3.13, Linux/macOS/Windows — all four checked in CI with
+Zero runtime dependencies, Python 3.11–3.13 on Linux and Windows — both checked in CI with
 nothing installed, because a zero-dependency claim is only true if it is tested that way.
+macOS is expected to work and is not tested.
 The adapters are extras: `pip install ".[claude]"`. The Ollama adapter needs nothing, since
 Ollama speaks HTTP.
 
@@ -235,6 +236,7 @@ would have been scored as governance.
 | Capability-scoped agent sessions | [session.py](memory_fabric/session.py) |
 | Prompt context with injection defences | [adapters/context.py](memory_fabric/adapters/context.py) |
 | Claude API adapter, transcript ingestion | [adapters/](memory_fabric/adapters/) |
+| MCP server over stdio, on the agent's narrow surface | [adapters/mcp.py](memory_fabric/adapters/mcp.py) |
 | Federation across store boundaries | [federation.py](memory_fabric/federation.py) |
 | Local models + real embeddings | [adapters/ollama.py](memory_fabric/adapters/ollama.py) |
 
@@ -269,6 +271,10 @@ fabric.share(mid, "team")                          # default-deny; returns a rea
 ## One store, several customers
 
 ```python
+import secrets
+from memory_fabric import MemoryService
+
+ACME_KEY = secrets.token_bytes(32)                   # per-agent signing key; keep it out of the store
 service = MemoryService(path="memory.db")            # owns the fabric; does not expose it
 service.register_agent("acme-bot", key=ACME_KEY, tenant_id="tn_acme")
 
@@ -296,6 +302,45 @@ it holds against nothing that can read the file, and a caller holding the
 happen — the check and the bypass would be on the same side of that boundary —
 and [SECURITY.md](SECURITY.md) says so plainly. `memory-fabric tenants` says
 which arrangement a store is actually in.
+
+## From any MCP client
+
+```bash
+memory-fabric --db memory.db --create mcp --agent my-assistant
+```
+
+serves the store to one agent over MCP on stdio, so Claude Code, Claude
+Desktop, an IDE assistant or a TypeScript agent can use it without the Python
+SDK. In a client's MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "memory-fabric": {
+      "command": "memory-fabric",
+      "args": ["--db", "/path/to/memory.db", "--create", "mcp", "--agent", "my-assistant"]
+    }
+  }
+}
+```
+
+Four tools — `recall`, `fetch`, `verify`, `remember` — and nothing else. The
+server is built on the SDK's narrow `AgentClient`, so the model cannot read a
+withdrawn memory, choose a scope, or act as another agent; the identity is
+fixed at launch. There is deliberately **no outcome tool**: the model on the
+pipe is the agent being scored, and outcomes need a third-party verifier.
+
+**What a new user trips on:** a memory the agent `remember`s is a private
+*candidate* and is **not returned by `recall` until someone validates it**:
+
+```bash
+memory-fabric --db memory.db attention                       # what is waiting
+memory-fabric --db memory.db validate <id> --actor <you>     # promote one
+```
+
+That review step is the governance, not a missing feature. A store where an
+agent's own unreviewed writes feed straight back into its context is the
+ungoverned vector store this project measured against.
 
 ## Is this installation sound?
 

@@ -193,10 +193,16 @@ deployment that actually needs it — adding a driver now would cost the
 zero-dependency property for no measured gain
 ([ROADMAP.md](ROADMAP.md)).
 
-**One token, no users — on the HTTP surface.** The observability server's auth
-is a single shared bearer token with no identity, roles, expiry or revocation
-beyond restarting with a new one. There is no audit of *who looked*, only of
-what the store did. Put it behind something with a user model.
+**Named operators, but no roles or expiry — on the HTTP surface.** By default
+the dashboard has one shared bearer token. With `serve --operators-file FILE`
+(one `name:token` per line, tokens of 32+ characters, each person their own)
+every request is attributed, and an access log records who looked at what —
+including refused requests — one JSON line each, in `<db>.access.jsonl` by
+default. Tokens are never printed or logged. The log is deliberately a separate
+file and not the event log, because browsing must not become evidence in value
+estimates. What it still does not have: roles, token expiry, or revocation
+short of editing the file and restarting. For those, put it behind something
+with a user model.
 
 That is separate from the library's own identity, which does have one:
 `PrincipalRegistry` issues signed, expiring per-agent credentials and

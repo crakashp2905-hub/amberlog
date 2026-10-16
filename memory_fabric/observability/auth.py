@@ -73,6 +73,8 @@ class AuthOutcome:
     message: str = ""
     set_cookie: str | None = None
     redirect_to: str | None = None
+    operator: str | None = None
+    """Who this request is, when authentication identified someone."""
 
 
 @dataclass
@@ -82,10 +84,22 @@ class AuthConfig:
     token: str | None
     allowed_hosts: frozenset[str] = field(default_factory=lambda: frozenset(LOOPBACK_NAMES))
     check_origin: bool = True
+    operators: dict[str, str] = field(default_factory=dict)
+    """Named tokens, name -> token. With them, every request is attributable to
+    a person, which one shared token never was: DEPLOYMENT.md recorded "no audit
+    of *who looked*" as a limit. The shared `token`, when also set, is the
+    operator named `shared`."""
 
     @property
     def enabled(self) -> bool:
-        return self.token is not None
+        return self.token is not None or bool(self.operators)
+
+    def credentials(self) -> list[tuple[str, str]]:
+        named = list(self.operators.items())
+        return named + ([("shared", self.token)] if self.token is not None else [])
+
+
+MIN_OPERATOR_TOKEN = 32
 
 
 class InsecureConfiguration(Exception):
@@ -97,6 +111,7 @@ def build_config(
     token: str | None,
     no_auth: bool,
     allowed_hosts: Iterable[str] = (),
+    operators: dict[str, str] | None = None,
 ) -> AuthConfig:
     """Decide the server's auth configuration, refusing the unsafe combination.
 
@@ -112,12 +127,58 @@ def build_config(
                 "anyone who can reach the port could read every memory in the store. "
                 "Bind to 127.0.0.1, or drop --no-auth."
             )
+        if operators:
+            raise InsecureConfiguration("--no-auth and named operators contradict each other")
         return AuthConfig(token=None, allowed_hosts=default_allowed_hosts(bind_host, allowed_hosts))
 
+    if operators:
+        # Named operators replace the shared token unless one is given
+        # explicitly: an auto-generated shared token alongside named ones would
+        # be an unattributed way in.
+        return AuthConfig(
+            token=token,
+            allowed_hosts=default_allowed_hosts(bind_host, allowed_hosts),
+            operators=dict(operators),
+        )
     return AuthConfig(
         token=token or generate_token(),
         allowed_hosts=default_allowed_hosts(bind_host, allowed_hosts),
     )
+
+
+def load_operators(path: str) -> dict[str, str]:
+    """Read `name:token` lines. Blank lines and `#` comments are ignored.
+
+    Refuses short tokens and duplicate names or tokens rather than warning:
+    a guessable or shared token defeats the attribution this file exists for.
+    """
+    operators: dict[str, str] = {}
+    seen: set[str] = set()
+    with open(path, encoding="utf-8") as handle:
+        for number, raw in enumerate(handle, 1):
+            line = raw.strip()
+            if not line or line.startswith("#"):
+                continue
+            name, sep, token = line.partition(":")
+            name, token = name.strip(), token.strip()
+            if not sep or not name or not token:
+                raise InsecureConfiguration(f"{path}:{number}: expected name:token")
+            if not re.fullmatch(r"[A-Za-z0-9._@-]{1,64}", name):
+                raise InsecureConfiguration(f"{path}:{number}: invalid operator name {name!r}")
+            if len(token) < MIN_OPERATOR_TOKEN:
+                raise InsecureConfiguration(
+                    f"{path}:{number}: token for {name!r} is shorter than "
+                    f"{MIN_OPERATOR_TOKEN} characters; generate one with "
+                    "python -c 'import secrets; print(secrets.token_urlsafe(32))'")
+            if name in operators or token in seen:
+                raise InsecureConfiguration(
+                    f"{path}:{number}: duplicate operator name or token; each "
+                    "person needs their own")
+            operators[name] = token
+            seen.add(token)
+    if not operators:
+        raise InsecureConfiguration(f"{path}: no operators defined")
+    return operators
 
 
 class Authenticator:
@@ -160,11 +221,23 @@ class Authenticator:
             return AuthOutcome(False, HTTPStatus.FORBIDDEN, "cross-origin request refused")
         return AuthOutcome(True)
 
-    def matches(self, candidate: str | None) -> bool:
+    def identify(self, candidate: str | None) -> str | None:
+        """The operator a token belongs to, or None.
+
+        Every credential is compared in constant time, whether or not an
+        earlier one matched, so response time does not say which entry -- or
+        how much of one -- a guess got right.
+        """
         if not self.config.enabled or not candidate:
-            return False
-        # Constant time: a plain == leaks the shared prefix length through timing.
-        return hmac.compare_digest(candidate, self.config.token or "")
+            return None
+        found = None
+        for name, token in self.config.credentials():
+            if hmac.compare_digest(candidate.encode(), token.encode()):
+                found = name
+        return found
+
+    def matches(self, candidate: str | None) -> bool:
+        return self.identify(candidate) is not None
 
     def token_from_cookie(self, cookie_header: str | None) -> str | None:
         if not cookie_header:
@@ -200,44 +273,49 @@ class Authenticator:
         if not self.config.enabled:
             return AuthOutcome(True)
 
-        if self.matches(self.token_from_cookie(headers.get("Cookie"))):
-            return AuthOutcome(True)
+        operator = self.identify(self.token_from_cookie(headers.get("Cookie")))
+        if operator is not None:
+            return AuthOutcome(True, operator=operator)
 
-        if self.matches(self.token_from_authorization(headers.get("Authorization"))):
-            return AuthOutcome(True)
+        operator = self.identify(self.token_from_authorization(headers.get("Authorization")))
+        if operator is not None:
+            return AuthOutcome(True, operator=operator)
 
         parsed = urlparse(path)
         query = parse_qs(parsed.query)
         supplied = (query.get(TOKEN_PARAM) or [None])[0]
-        if self.matches(supplied):
+        operator = self.identify(supplied)
+        if operator is not None:
             # Bootstrap: trade the URL token for a cookie and redirect to a clean
             # address, so the token stops appearing in the address bar, in
             # browser history, and in any Referer this page might later send.
             return AuthOutcome(
                 True,
                 status=HTTPStatus.SEE_OTHER,
-                set_cookie=self.cookie_header(),
+                set_cookie=self.cookie_header(supplied),
                 redirect_to=_strip_token(parsed),
+                operator=operator,
             )
 
         return AuthOutcome(
             False, HTTPStatus.UNAUTHORIZED, "authentication required"
         )
 
-    def cookie_header(self) -> str:
+    def cookie_header(self, token: str | None = None) -> str:
         # No `Secure`: this server speaks plain HTTP on loopback, and setting it
         # would stop the cookie being stored at all. That is also why binding
-        # off-loopback needs something terminating TLS in front.
-        return (
-            f"{COOKIE_NAME}={self.config.token}; HttpOnly; SameSite=Strict; Path=/"
-        )
+        # off-loopback needs something terminating TLS in front. The cookie
+        # carries the operator's own token, so the session stays attributable.
+        value = token if token is not None else self.config.token
+        return f"{COOKIE_NAME}={value}; HttpOnly; SameSite=Strict; Path=/"
 
-    def bootstrap_url(self, host: str, port: int) -> str:
+    def bootstrap_url(self, host: str, port: int, token: str | None = None) -> str:
         display = host if ":" not in host else f"[{host}]"
         base = f"http://{display}:{port}/"
-        if not self.config.enabled:
+        value = token if token is not None else self.config.token
+        if not self.config.enabled or value is None:
             return base
-        return f"{base}?{TOKEN_PARAM}={self.config.token}"
+        return f"{base}?{TOKEN_PARAM}={value}"
 
 
 def _strip_token(parsed) -> str:

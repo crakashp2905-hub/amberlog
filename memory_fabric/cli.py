@@ -581,21 +581,34 @@ def cmd_quarantine(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 
 
 def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
-    from .observability.auth import ENV_TOKEN, InsecureConfiguration, build_config
+    from .observability.auth import (
+        ENV_TOKEN, InsecureConfiguration, build_config, load_operators,
+    )
     from .observability.server import serve
 
     try:
+        operators = load_operators(args.operators_file) if args.operators_file else None
         config = build_config(
             bind_host=args.host,
             token=args.token or os.environ.get(ENV_TOKEN),
             no_auth=args.no_auth,
             allowed_hosts=args.allowed_host,
+            operators=operators,
         )
-    except InsecureConfiguration as exc:
+    except (InsecureConfiguration, OSError) as exc:
         print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
         return 5
 
-    serve(fabric, host=args.host, port=args.port, quiet=args.quiet, auth=config)
+    access_log = args.access_log
+    if access_log is None and operators and args.db != ":memory:":
+        # Named operators exist to make access attributable; recording it is
+        # the point, so it is on unless explicitly turned off.
+        access_log = f"{args.db}.access.jsonl"
+    if access_log == "-":
+        access_log = None
+
+    serve(fabric, host=args.host, port=args.port, quiet=args.quiet, auth=config,
+          access_log=access_log)
     return 0
 
 
@@ -1439,6 +1452,18 @@ def build_parser() -> argparse.ArgumentParser:
         metavar="HOST",
         help="extra Host header value to accept; repeatable. Needed when reaching "
         "the server by a name or address other than localhost.",
+    )
+    p.add_argument(
+        "--operators-file",
+        metavar="FILE",
+        help="one 'name:token' per line, so each operator has their own token "
+        "and every request is attributable. Tokens are never printed.",
+    )
+    p.add_argument(
+        "--access-log",
+        metavar="FILE",
+        help="append who looked at what, one JSON line per request (default with "
+        "--operators-file: <db>.access.jsonl; '-' turns it off)",
     )
 
     p = add("mcp", cmd_mcp,

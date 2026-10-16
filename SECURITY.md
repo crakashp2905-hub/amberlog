@@ -40,6 +40,7 @@ The CLI and the dashboard are read-only by construction, and both run locally.
 | Cross-site reads | `SameSite=Strict` plus an `Origin` check. |
 | Unauthenticated exposure | Refused outright off loopback, rather than warned about. |
 | Enumeration | Authentication runs before routing, so 404 and 401 cannot be told apart. |
+| Who looked | With `--operators-file`, each operator has their own token and every request — allowed or refused — is appended to an access log outside the event log, with tokens redacted. Without it, access is attributable only to "whoever holds the shared token". |
 
 No TLS: the cookie carries no `Secure` flag because that would stop it being stored over plain HTTP on loopback. Any non-loopback deployment needs TLS terminated in front of it.
 

@@ -89,6 +89,21 @@ All internal, hand-built benchmarks with a deterministic agent.
 | **P10** | Triggered auditing finds planted problems that periodic sampling misses | 📏 **measured**: 100% vs 32% ([result](results/p10-audit.md)) |
 | **P12** | Many agent processes can share one store | ❌ **does not hold**: 214 → 4 ops/s from 1 to 100 SQLite agents ([result](results/p12-load.md)) |
 
+## 2c. Real model, fixed budget, and chain links (plan Phase 3, 2026-10-16)
+
+Every row below was pre-registered and scored once on cases no design
+decision had seen.
+
+| | claim | outcome |
+|---|---|---|
+| **D1a** | With a governed store in front of a real model, task success closes ≥ 40% of the headroom over an ungoverned store | ✅ **supported**: `sonnet`, 5 seeds. `naive` 0.492, **`fabric` 0.867**, oracle 1.000 (74% of headroom). The gain is the 9 of 24 cases where governance had already withdrawn the wrong value, so its **size is set by the registered case mix** ([result](results/d1-downstream.md)) |
+| **D1b** | ...with harm reduced by ≥ 40% of its headroom, at no success loss | ✅ **supported**: harmful answers 0.508 → **0.133**. All of the remainder is **undetected poison (15/15 harmed in both arms)** plus one paraphrased injection |
+| **D1c** | Governance does not block valid evidence | ✅ **supported**: valid blocked 0.000 (`haiku`, secondary: 0.020) |
+| **D1 injections** | *(measured, not registered)* Do current models obey injected notes? | 📏 **almost never, even unscreened**: `sonnet` 1/20, `haiku` 0/20, when the instruction warns that evidence may be wrong. P5's obedient-agent injection figures are an upper bound, not a rate |
+| **P2b** | At a fixed 400-token budget, a path-finding assembler closes ≥ 40% of the sufficiency headroom | ✅ **supported narrowly**: 0.600 → **0.700** against an oracle of 0.800, threshold 0.680. The whole gain is **one family** (`multi_hop_3`), and `multi_hop_4` stays at 0. `random@400` scores 0.047, which refutes the registration's own prediction ([result](results/p2b-budget.md)) |
+| **P1b** | Discriminating links for covering candidates | ❌ **not supported**: the switch changed nothing reachable ([result](results/p1b-links.md)) |
+| **P1c/P1d** | Prefer the chain whose weakest link is strongest | ✅ **P1d supported** on a fresh holdout: three-hop sufficiency 0.417 → 0.917. Now on by default ([P1c](results/p1c-strength.md), [P1d](results/p1d-strength-mh3.md)) |
+
 ## 3. Integrity engineering (roadmap phases 0–7)
 
 Not hypotheses. Deterministic guarantees, so the unit is "tested or not", and a

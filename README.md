@@ -187,13 +187,17 @@ nothing else would surface.
 
 ```bash
 docker build -t memory-fabric .
-docker run -p 8765:8765 -v mf-data:/data -e MEMORY_FABRIC_TOKEN=<token> memory-fabric
+docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
+  -e MEMORY_FABRIC_TOKEN=<token> memory-fabric
 ```
 
 The container runs as a non-root user and serves the read-only dashboard with
-token authentication. **Mount the volume:** the event log is the source of
-truth. Back it up with `memory-fabric backup`, which replays the copy to verify
-it. See [DEPLOYMENT.md](DEPLOYMENT.md) for backup, serving, capacity, upgrades
+token authentication. **Mount both volumes:** `/data` holds the event log, the
+source of truth, and `/keys` holds the content keys, kept apart so a copy of the
+database alone cannot read content. Back up both: `memory-fabric backup` copies
+and verifies the log, and the key directory needs its own backup. A store
+created before keys moved out can be migrated with `memory-fabric migrate-keys`;
+the container tells you how at startup. See [DEPLOYMENT.md](DEPLOYMENT.md) for backup, serving, capacity, upgrades
 and current limits (notably: one writer per store).
 
 ### Examples

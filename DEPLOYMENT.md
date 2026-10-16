@@ -38,6 +38,26 @@ there, failing with a non-zero exit if they do not match the source. That check
 is the point: a truncated backup opens perfectly well and reports fewer events,
 and nothing else would tell you.
 
+**With external keys, back up the key directory too.** The log backup holds no
+keys when they live outside the database, and says so. Content in a backup is
+readable only with the key directory as it was when the backup was taken — and
+a key destroyed by erasure after that backup is still in an older key backup,
+which is the backup-retention question in [SECURITY.md](SECURITY.md).
+
+### Key custody: keep keys outside the database in production
+
+```bash
+memory-fabric --db store.db migrate-keys /secure/keys      # once, for an existing store
+memory-fabric --db store.db --keys /secure/keys overview   # or set MEMORY_FABRIC_KEYS
+```
+
+By default a store keeps content keys in its own file, which makes erasure
+possible and does nothing against someone holding the file. `migrate-keys`
+copies the keys out, proves a replay with the directory alone reads every
+memory, and only then clears them from the database; a failed proof clears
+nothing. Put the directory on a different volume or under different
+credentials from the database. The container image does this by default.
+
 ### Restore
 
 ```bash
@@ -85,14 +105,21 @@ is visible in the process list to every user on the box.
 
 ```bash
 docker build -t memory-fabric .
-docker run -p 8765:8765 -v mf-data:/data \
+docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
   -e MEMORY_FABRIC_TOKEN=... memory-fabric
 ```
 
-Runs as uid 10001, not root. The volume is not optional — without it the first
-`docker rm` takes the event log, and §1 is why that is unrecoverable. CI builds
-this image and checks it answers on the published port and refuses an
-unauthenticated request.
+Runs as uid 10001, not root. **Both volumes are required.** Without `/data` the
+first `docker rm` takes the event log, and §1 is why that is unrecoverable.
+Without `/keys` it takes the content keys, and the content in `/data` becomes
+unreadable — the same mechanism erasure relies on, triggered by accident.
+
+A new store keeps its keys on `/keys`. A store created by an earlier image keeps
+them in the database and still starts, with a warning naming the
+`migrate-keys` command to run. CI builds this image and checks that it answers
+on the published port, refuses an unauthenticated request, writes keys to
+`/keys` and none to the database, and that the running dashboard sees writes
+made by another process.
 
 ## 3. Capacity, as measured
 

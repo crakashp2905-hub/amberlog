@@ -110,6 +110,20 @@ jobs:
           python -c "import json; d=json.load(open('/tmp/ov.json')); print('schema', d['schema_version'])"
           test "$(docker exec mf id -u)" = "10001"
 
+      - name: Content keys live on the key volume, not in the database
+        env:
+          MEMORY_FABRIC_TOKEN: ci-token-for-the-container-check
+        run: |
+          # Seeded by a second process while the server runs: the dashboard
+          # must see the writes (cross-process freshness) and the keys must
+          # land in /keys, leaving none in the database file.
+          docker exec mf memory-fabric --db /data/store.db demo
+          test -n "$(docker exec mf ls /keys)"
+          in_db=$(docker exec mf python -c "import sqlite3; print(sqlite3.connect('/data/store.db').execute('SELECT COUNT(*) FROM content_keys WHERE key_material IS NOT NULL').fetchone()[0])")
+          test "$in_db" = "0" || { echo "expected no keys in the database, found $in_db"; exit 1; }
+          curl -fsS -H "Authorization: Bearer $MEMORY_FABRIC_TOKEN" http://localhost:8765/api/overview -o /tmp/ov2.json
+          python -c "import json; d=json.load(open('/tmp/ov2.json')); assert d['total_memories'] > 0, d; print('dashboard sees', d['total_memories'], 'memories')"
+
       - name: Unauthenticated requests are refused
         run: |
           code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8765/api/overview)

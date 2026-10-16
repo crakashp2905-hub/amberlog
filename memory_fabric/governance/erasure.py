@@ -221,6 +221,67 @@ class DirectoryKeyProvider:
         return True
 
 
+def copy_keys_to_directory(conn: sqlite3.Connection, directory: str | Path) -> list[str]:
+    """Copy every live in-database content key into a key directory.
+
+    Step one of moving a store from the default custody (keys beside the
+    ciphertext) to keys held elsewhere. **Copies only**: the database keeps its
+    material until `clear_database_keys` runs, which the caller does only after
+    proving a replay with the directory alone can read everything. Erased keys
+    are skipped -- there is nothing to move, and their audit rows stay.
+
+    Refuses a directory that already holds a *different* key for one of these
+    memories, because that is two stores' keys being mixed and one of them
+    would become unreadable. Files are written atomically and owner-only.
+    """
+    target = Path(directory)
+    target.mkdir(parents=True, exist_ok=True)
+    try:
+        target.chmod(0o700)
+    except OSError:
+        pass  # not every filesystem has POSIX modes; Windows ACLs differ
+    rows = conn.execute(
+        "SELECT memory_id, key_material FROM content_keys "
+        "WHERE key_material IS NOT NULL AND erased_ms IS NULL ORDER BY memory_id"
+    ).fetchall()
+    provider = DirectoryKeyProvider(target)
+    copied: list[str] = []
+    for row in rows:
+        memory_id, material = row["memory_id"], bytes(row["key_material"])
+        existing = provider.get(memory_id)
+        if existing is not None:
+            if existing != material:
+                raise ValueError(
+                    f"{target} already holds a different key for {memory_id}; "
+                    "refusing to mix two stores' keys"
+                )
+            continue
+        path = provider._path(memory_id)
+        temporary = path.with_suffix(".key.tmp")
+        temporary.write_bytes(material)
+        try:
+            temporary.chmod(0o600)
+        except OSError:
+            pass
+        temporary.replace(path)
+        copied.append(memory_id)
+    return copied
+
+
+def clear_database_keys(conn: sqlite3.Connection) -> int:
+    """Remove key material from the database, keeping every audit row.
+
+    Step two, and only after a verified replay with the external keys: from
+    here a copy of the `.db` file alone no longer reads any content.
+    """
+    with transaction(conn):
+        cursor = conn.execute(
+            "UPDATE content_keys SET key_material = NULL "
+            "WHERE key_material IS NOT NULL AND erased_ms IS NULL"
+        )
+    return cursor.rowcount
+
+
 class CallbackKeyProvider:
     """Keys from a callable: a KMS, a secrets manager, an HSM wrapper.
 

@@ -625,6 +625,57 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
 
 
+def cmd_migrate_keys(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Move this store's content keys out of the database into a directory.
+
+    Copy, then prove a full replay with only the directory reads every memory,
+    then clear the material from the database. If the proof fails nothing is
+    cleared, so the store is never left unreadable.
+    """
+    from .governance.erasure import (
+        DirectoryKeyProvider, SqliteKeyProvider, clear_database_keys,
+        copy_keys_to_directory,
+    )
+
+    if args.db == ":memory:":
+        print(f"{C.RED}an in-memory store has no file to protect{C.RESET}", file=sys.stderr)
+        return 2
+    if not isinstance(fabric.vault.keys, SqliteKeyProvider):
+        print(f"{C.RED}this store was opened with external keys already; "
+              f"run without --keys / MEMORY_FABRIC_KEYS to migrate it{C.RESET}",
+              file=sys.stderr)
+        return 2
+    try:
+        copied = copy_keys_to_directory(fabric.log._conn, args.directory)
+    except ValueError as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 4
+    events, memories = len(fabric.log), len(fabric.state.memories)
+    fabric.close()
+
+    try:
+        proof = MemoryFabric(args.db, key_provider=DirectoryKeyProvider(args.directory))
+    except Exception as exc:  # noqa: BLE001 - any failure means do not clear
+        print(f"{C.RED}verification failed, database keys left in place: {exc}{C.RESET}",
+              file=sys.stderr)
+        return 5
+    try:
+        if len(proof.log) != events or len(proof.state.memories) != memories:
+            print(f"{C.RED}verification replay disagreed with the source; "
+                  f"database keys left in place{C.RESET}", file=sys.stderr)
+            return 5
+        cleared = clear_database_keys(proof.log._conn)
+    finally:
+        proof.close()
+
+    print(f"copied {len(copied)} key(s) to {args.directory}; replay with the "
+          f"directory alone read all {memories} memories")
+    print(f"cleared {cleared} key(s) from the database. From now on open this "
+          f"store with --keys {args.directory} (or MEMORY_FABRIC_KEYS), and back "
+          f"the key directory up separately from the database.")
+    return 0
+
+
 def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Consistent snapshot of the event log while the store is live.
 
@@ -671,7 +722,21 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         # next operation, including the verification read below.
         destination.close()
 
-    verifier = MemoryFabric(str(target))
+    # The replay needs the same keys as the source, or every sealed memory
+    # reads as missing. The in-database provider is bound to the source's
+    # connection, so the copy must use its own; any external provider is
+    # shared as-is. Without this, backup crashed on every store whose keys are
+    # outside the database -- the custody recommended for production.
+    from .governance.erasure import SqliteKeyProvider
+
+    external = not isinstance(fabric.vault.keys, SqliteKeyProvider)
+    try:
+        verifier = MemoryFabric(
+            str(target), key_provider=fabric.vault.keys if external else None)
+    except KeyUnavailable as exc:
+        print(f"{C.RED}The copy could not be read back: {exc}. "
+              f"Do not keep this backup.{C.RESET}", file=sys.stderr)
+        return 5
     try:
         copied = len(verifier.log)
         memories = len(verifier.state.memories)
@@ -680,6 +745,11 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 
     print(f"{fabric.log.path} -> {target}")
     print(f"  {copied} events, {memories} memories, replayed from the copy")
+    if external:
+        print(f"  {C.YELLOW}This store's content keys are outside the database, "
+              f"so this backup holds none of them. Back up the key directory "
+              f"too, separately -- without it the backup's content cannot be "
+              f"read.{C.RESET}")
     if copied != source_events:
         print(f"{C.RED}Source had {source_events} events; the copy has {copied}. "
               f"Do not keep this backup.{C.RESET}", file=sys.stderr)
@@ -1242,9 +1312,12 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--keys",
         metavar="DIR",
+        default=os.environ.get("MEMORY_FABRIC_KEYS") or None,
         help="directory holding this store's content keys, when they are kept "
-        "outside the database. Without it a store whose keys are external "
-        "cannot be opened at all — which is the correct refusal, not a bug.",
+        "outside the database (default: $MEMORY_FABRIC_KEYS). Without it a "
+        "store whose keys are external cannot be opened at all — which is the "
+        "correct refusal, not a bug. `migrate-keys` moves an existing store's "
+        "keys out.",
     )
     parser.add_argument(
         "--create",
@@ -1380,6 +1453,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="the agent's clean writes become active without review (marked "
         "in provenance). For one person's local assistant only.",
     )
+
+    p = add("migrate-keys", cmd_migrate_keys,
+            "WRITES: move content keys out of the database into a directory, "
+            "verified by replay before anything is removed")
+    p.add_argument("directory", help="where the keys will live from now on")
 
     p = add("backup", cmd_backup,
             "Consistent snapshot of the event log, verified by replaying it")

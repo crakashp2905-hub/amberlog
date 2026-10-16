@@ -132,6 +132,32 @@ class TestInAStore(unittest.TestCase):
         finally:
             fabric.close()
 
+    def test_truth_maintenance_agrees_that_the_copy_lost_its_support(self):
+        """The engine contested the copy and `recompute` called it a justified
+        root observation, so the integrity check (invariant 8) flagged a
+        contested memory with surviving support. `faultsim`'s
+        `cycle_terminates` found it: a federated round trip lands a copy back
+        at the origin, and the origin's retraction contests it. Red in CI from
+        the commit that added copy recognition onward."""
+        for order in ("copy_first", "original_first"):
+            with self.subTest(order):
+                fabric = self._fabric()
+                try:
+                    if order == "copy_first":
+                        r2 = fabric.remember(agent_id="b", content=COPY)
+                        r1 = fabric.remember(agent_id="a", content=BULLETIN)
+                    else:
+                        r1 = fabric.remember(agent_id="a", content=BULLETIN)
+                        r2 = fabric.remember(agent_id="b", content=COPY)
+                    self.assertTrue(fabric.justifications.recompute(r2).still_justified)
+                    fabric.quarantine(r1, reason="wrong", actor="op",
+                                      basis="contradicted")
+                    verdict = fabric.justifications.recompute(r2)
+                    self.assertFalse(verdict.still_justified)
+                    self.assertIn(r1, verdict.lost)
+                finally:
+                    fabric.close()
+
     def test_the_outcome_does_not_depend_on_ingestion_order(self):
         states = []
         for withdraw_first in (False, True):

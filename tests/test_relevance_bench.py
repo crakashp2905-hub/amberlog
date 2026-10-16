@@ -255,12 +255,14 @@ class ItIsReproducible(unittest.TestCase):
         for split in SPLITS:
             result = run(split)
             with self.subTest(split):
-                self.assertEqual(set(result["arms"]), set(ARMS))
+                # A real-model arm without a model is skipped and says so.
+                self.assertEqual(set(result["arms"]) | set(result["skipped"]), set(ARMS))
 
     def test_the_broken_arms_are_not_in_the_default_set(self) -> None:
         """A normal run must not be able to include one by accident."""
         self.assertFalse(set(BROKEN_ARMS) & set(ARMS))
-        self.assertEqual(set(run("dev")["arms"]), set(ARMS))
+        result = run("dev")
+        self.assertEqual(set(result["arms"]) | set(result["skipped"]), set(ARMS))
 
 
 class TheProductArmImproved(unittest.TestCase):

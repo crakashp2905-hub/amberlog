@@ -242,6 +242,9 @@ def arm_real_vector(case: Mapping[str, Any], k: int) -> list[str]:
     return [memory_id for memory_id, score in hits if score > 0.0]
 
 
+REAL_ARMS = ("real_vector", "real_hybrid")
+
+
 def arm_real_hybrid(case: Mapping[str, Any], k: int) -> list[str]:
     """Lexical fused with the trained embedder."""
     ranks: dict[str, float] = {}
@@ -899,6 +902,18 @@ def run(
     """
     cases = load(split, benchmark)
     chosen = list(arms) if arms else list(ARMS)
+    # The real-model arms are in the default set so a machine with Ollama
+    # measures them unasked. Without one they are skipped and *reported* as
+    # skipped -- never scored with the hashing embedder, and never allowed to
+    # crash the run, which kept CI red from 1b35fbd onward. Asking for one by
+    # name still raises: that caller wants a real-model number and must not
+    # get an absence instead.
+    skipped: dict[str, str] = {}
+    if not arms and real_embedder() is None:
+        for name in REAL_ARMS:
+            if name in chosen:
+                chosen.remove(name)
+                skipped[name] = "no embedding model available"
     registry = {**ARMS, **BROKEN_ARMS}
     reports: dict[str, ArmReport] = {}
     for name in chosen:
@@ -925,6 +940,7 @@ def run(
         "k": k,
         "cases": len(cases),
         "arms": {name: report.summary() for name, report in reports.items()},
+        "skipped": skipped,
         "timing": {name: report.timing() for name, report in reports.items()},
         "by_family": {name: report.by_family() for name, report in reports.items()},
         "_reports": reports,
@@ -962,6 +978,11 @@ def to_markdown(result: Mapping[str, Any]) -> str:
         "",
         f"- **Arms:** {', '.join(result['arms'])}",
         f"- **Cases:** {result['cases']} · **k:** {result['k']}",
+        *(
+            [f"- **Skipped:** " + ", ".join(
+                f"{name} ({why})" for name, why in result["skipped"].items())]
+            if result.get("skipped") else []
+        ),
         "- **Deterministic** unless a `real_*` arm is present: those call an "
         "embedding model, and the rest are byte-identical across runs of one "
         "commit.",

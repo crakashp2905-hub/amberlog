@@ -34,7 +34,7 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Iterable
 
-from .model import BLOCKED_STATES, LifecycleState
+from .model import BLOCKED_STATES, WITHDRAWN_STATES, LifecycleState
 
 
 class JustificationKind(str, Enum):
@@ -141,6 +141,18 @@ class JustificationGraph:
     def parents_of(self, memory_id: str) -> list[str]:
         return sorted(self.fabric.state.parents.get(memory_id, ()))
 
+    def withdrawn_copies_of(self, memory_id: str) -> list[str]:
+        """Members of this memory's copy component that are withdrawn."""
+        closure = getattr(self.fabric, "_copy_closure", None)
+        if closure is None:
+            return []
+        memories = self.fabric.state.memories
+        return sorted(
+            other for other in closure(memory_id)
+            if other in memories
+            and memories[other].lifecycle_state in WITHDRAWN_STATES
+        )
+
     def parent_version(self, child: str, parent: str) -> int | None:
         """The exact parent version the child was derived from.
 
@@ -215,6 +227,24 @@ class JustificationGraph:
         loop answered, and answering it is what destroyed independently
         justified knowledge.
         """
+        # A recognised copy is the same document as its original, not a
+        # conclusion drawn from it, so it has no parent edge -- and without
+        # this check a copy of withdrawn evidence read as a justified root
+        # observation, while the engine had already contested it. The two
+        # disagreeing is what invariant 8 exists to catch, and `faultsim`'s
+        # `cycle_terminates` did.
+        withdrawn_copies = self.withdrawn_copies_of(memory_id)
+        if withdrawn_copies:
+            return SupportVerdict(
+                memory_id=memory_id, surviving=(), lost=tuple(withdrawn_copies),
+                independent_count=0, verdict=CONTESTED,
+                reason=(
+                    "same document as withdrawn "
+                    + ", ".join(withdrawn_copies)
+                    + "; a copy is not independent support"
+                ),
+            )
+
         parents = self.parents_of(memory_id)
         if not parents:
             # A root observation is its own justification. Invalidating a

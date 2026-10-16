@@ -36,6 +36,33 @@
 > can still act as anyone, because the check and the bypass would be on the
 > same side of that boundary. See `identity.py`.
 >
+> **Phase 3 (2026-10-10) added one enforcement layer.** Every agent-facing read
+> goes through `Enforcer.check`, and an `ExposureToken` binds the decision to
+> the memory version and the log's integrity revision, so
+> `verify_before_action` re-checks at action time. "Action-time re-check" and
+> "one enforcement layer" below moved from missing/partial to **implemented**;
+> denials are audited as `AccessDenied` events.
+>
+> **Phase 4 (2026-10-10) added support recomputation.** Invalidating a premise
+> recomputes each descendant's justification rather than contesting all of
+> them, with typed edges (required, alternative, copied, contradicts). The two
+> truth-maintenance rows below marked partial are **implemented**; copies of a
+> withdrawn document are covered since 0.8.0.
+>
+> **Phase 6 (2026-10-10) added crypto-erasure**, with per-memory content keys
+> and an erasure that keeps the audit trail; **authenticated encryption followed
+> on 2026-10-11** — AEAD envelopes bound to store, memory and version, and
+> external key custody. The retention row
+> below is **implemented**; see SECURITY.md for what erasure does not reach.
+>
+> **Cross-process freshness (2026-10-16).** A running fabric now catches up on
+> other processes' writes before serving, enforcing or writing. Before this, a
+> retraction issued from another process did not reach a running server until
+> restart, which this audit did not check.
+>
+> **This file is a dated snapshot.** For the current state of every guarantee,
+> use [INVARIANTS.md](INVARIANTS.md), which maps each to its test.
+>
 > **Still true:** peer-to-peer discovery, brokers and consensus remain
 > deferred. Multi-tenancy is now an *authorisation* boundary and not a physical
 > one — one SQLite file holding several tenants is one blast radius whatever

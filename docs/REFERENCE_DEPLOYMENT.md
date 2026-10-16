@@ -17,8 +17,8 @@ Everything below is tested. The sequence is
 pip install .
 ```
 
-Zero runtime dependencies, Python 3.11–3.13 on Linux and Windows — both checked
-in CI with nothing installed (macOS untested), because a zero-dependency claim is only true if it
+Zero runtime dependencies, Python 3.11–3.13 on Linux, macOS and Windows — all
+checked in CI with nothing installed, because a zero-dependency claim is only true if it
 is tested that way.
 
 ```bash

@@ -7,7 +7,7 @@ evidence of anything by itself: what matters is which checks could have failed
 and did not.
 
 - **Run:** 2026-10-11, commit at `HEAD` of `main`, Python 3.13.5 on Windows 11.
-- **Automated in CI:** rows 1–5 and 11 on every push, across Python 3.11–3.13 on Linux and Windows. The rest are run by hand before a release, which is why they are written down.
+- **Automated in CI:** rows 1–5 and 11 on every push, across Python 3.11–3.13 on Linux, macOS (since 2026-10-16) and Windows, plus the storage-touching suite on PostgreSQL 16. The rest are run by hand before a release, which is why they are written down.
 - **Re-run:** 2026-10-16 on Linux, Python 3.13.16, after fixing the two causes of a red `main` (below): row 1 as `python -m unittest discover -s tests -t .` — **1086 tests OK, 30 skipped** (no Ollama, so the real-embedder arms skip and say so); row 2 **17/17**; row 3 71 findings, **0 unexpected**; row 4 clean; row 6 repeated from the README verbatim — `demo`, `attention`, `doctor` (sound), the Python quick start, the multi-tenant snippet and both `examples/` scripts, all exit 0 from a clean venv; row 16 added.
 - **CI was red on `main` for seven consecutive pushes** (from 1b35fbd) and the rows above kept saying it ran green. Six test jobs failed on a benchmark arm that needs Ollama; from 1d20bf5 the fault matrix failed too, on a real truth-maintenance disagreement. Neither was flaky. "Automated in CI" is only evidence while someone reads the result.
 

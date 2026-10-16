@@ -58,8 +58,8 @@ pip install .                 # core: zero runtime dependencies
 pip install ".[claude]"       # optional: Claude API adapter
 ```
 
-Python 3.11–3.13. Linux and Windows are tested in CI; macOS is expected to work
-but is untested. Installing provides the `memory-fabric` command, which is also
+Python 3.11–3.13 on Linux, macOS and Windows, all tested in CI with nothing
+installed. Installing provides the `memory-fabric` command, which is also
 available as `python -m memory_fabric`.
 
 ### Try the demo

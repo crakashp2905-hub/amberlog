@@ -237,7 +237,12 @@ class MemoryFabric:
         busy_timeout_ms: int = 5_000,
         recognise_copies: bool = True,
         rerank: bool = False,
+        conceal_cross_tenant: bool = False,
     ) -> None:
+        # Off by default to keep the documented reason code. On, a request
+        # from another tenant is refused exactly as a missing id is, so the
+        # refusal does not confirm that the id exists anywhere (plan Task 11).
+        self.conceal_cross_tenant = conceal_cross_tenant
         # Default on, because the alternative is measured to be wrong rather
         # than merely unmeasured: a withdrawn document re-ingested under its own
         # id was **100% of the residual** in P3, counted as independent support
@@ -1682,6 +1687,7 @@ class MemoryFabric:
         method: str | ProvenanceMethod = ProvenanceMethod.CONSOLIDATED,
         context: Mapping[str, Any] | None = None,
         tenant_id: str | None = None,
+        security_class: str | SecurityClass | None = None,
     ) -> str:
         """Create a memory derived from existing ones, recording the edges.
 
@@ -1711,6 +1717,16 @@ class MemoryFabric:
         for pid in parents:
             inherited.update(self._require(pid).context)
         inherited.update(dict(context or {}))
+        # A conclusion is at least as restricted as its most restricted
+        # premise. It used to be written at the default class, so a summary of
+        # a `restricted` memory came out `internal` and could be shared and
+        # offered: restricted content laundered through a derivation (plan
+        # Task 11). A caller may raise the class, never lower it below this.
+        order = (SecurityClass.PUBLIC, SecurityClass.INTERNAL, SecurityClass.RESTRICTED)
+        floor = max((self._require(pid).security_class for pid in parents),
+                    key=order.index, default=SecurityClass.PUBLIC)
+        requested = SecurityClass(security_class or SecurityClass.INTERNAL)
+        effective = max(requested, floor, key=order.index)
         derived = self.remember(
             agent_id=agent_id,
             content=content,
@@ -1719,6 +1735,7 @@ class MemoryFabric:
             parents=parent_versions,
             method=method,
             tenant_id=tenant_id,
+            security_class=effective,
         )
 
         # Check the support of what was just written.
@@ -1925,6 +1942,7 @@ class MemoryFabric:
         max_steps: int = chains.MAX_STEPS,
         beam: int = chains.BEAM,
         node_budget: int = chains.NODE_BUDGET,
+        deadline_ms: float | None = None,
     ) -> "chains.EvidenceChain":
         """Reconstruct a connected chain of **currently valid** evidence.
 
@@ -2001,6 +2019,7 @@ class MemoryFabric:
             max_steps=max_steps, beam=beam, node_budget=node_budget,
             relevance=relevance,
             plain=self.chain_plain,
+            deadline_ms=deadline_ms,
         )
         if follow_relations and chain.steps:
             # A qualifier is not reachable by the search: it supplies no query

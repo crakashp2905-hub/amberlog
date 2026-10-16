@@ -56,3 +56,20 @@ Still defensible, and now more precisely stated:
 ## The honest summary
 
 > The implementation is unusually mature for the research stage, and the strongest scientific contribution is still emerging. The component claims are largely not novel; the substrate they sit in, and the negative results, are.
+
+## Addendum, 2026-10-16: work found for the safety plan
+
+A short web search, not a systematic review (see
+[docs/RESEARCH_ROADMAP.md](../docs/RESEARCH_ROADMAP.md)), found close 2026 work:
+
+- **MemLineage** (arXiv 2605.14421): cryptographic provenance plus a derivation
+  lineage graph, blocking sensitive actions that depend on external ancestry.
+- **Proof-Carrying Agent Actions** (arXiv 2606.04104): action certificates with
+  pre-action admissibility, approval and audit receipts.
+- **SMSR** (arXiv 2606.12703): HMAC provenance at write time, with a certified
+  robustness bound for multi-session poisoning.
+
+So lineage-gated actions and action certificates are **not** new mechanisms.
+The evidence certificates and action gate here are an implementation of known
+ideas over this repository's event log and truth maintenance. None of these
+works has been compared with this one on a shared benchmark.

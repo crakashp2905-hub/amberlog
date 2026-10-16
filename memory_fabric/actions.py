@@ -133,26 +133,26 @@ class ActionGate:
             try:
                 principal = session.principal()
             except Exception:
-                return self._decide(tool, agent_id, (CREDENTIAL_INVALID,), None, None)
+                return self._decide(tool, agent_id, (CREDENTIAL_INVALID,), None, None, tenant_id=tenant_id)
             agent_id, tenant_id = principal.agent_id, principal.tenant_id
 
         rule = self.policy.tools.get(tool)
         if rule is None:
-            return self._decide(tool, agent_id, (UNKNOWN_TOOL,), None, None)
+            return self._decide(tool, agent_id, (UNKNOWN_TOOL,), None, None, tenant_id=tenant_id)
         if tool not in self.policy.grants.get(agent_id, frozenset()):
             # Before any memory is consulted. A valid certificate is evidence,
             # not permission.
-            return self._decide(tool, agent_id, (TOOL_NOT_GRANTED,), None, rule)
+            return self._decide(tool, agent_id, (TOOL_NOT_GRANTED,), None, rule, tenant_id=tenant_id)
         if not rule.protected:
-            return self._decide(tool, agent_id, (UNPROTECTED,), None, rule, allowed=True)
+            return self._decide(tool, agent_id, (UNPROTECTED,), None, rule, allowed=True, tenant_id=tenant_id)
         if certificate is None:
-            return self._decide(tool, agent_id, (CERTIFICATE_REQUIRED,), None, rule)
+            return self._decide(tool, agent_id, (CERTIFICATE_REQUIRED,), None, rule, tenant_id=tenant_id)
 
         if not isinstance(certificate, EvidenceCertificate):
             try:
                 certificate = EvidenceCertificate.from_json(certificate)
             except CertificateError as exc:
-                return self._decide(tool, agent_id, (exc.reason_code,), None, rule)
+                return self._decide(tool, agent_id, (exc.reason_code,), None, rule, tenant_id=tenant_id)
         # The rule can strengthen the certificate's checks, never the reverse.
         strengthened = replace(
             certificate,
@@ -165,20 +165,20 @@ class ActionGate:
             strengthened, agent_id=agent_id, tenant_id=tenant_id, risk=RiskLevel.HIGH)
         if not verification.ok:
             return self._decide(tool, agent_id, verification.reason_codes,
-                                verification, rule, certificate=certificate)
+                                verification, rule, certificate=certificate, tenant_id=tenant_id)
 
         if rule.requires_human_approval:
             if approval is None:
                 return self._decide(tool, agent_id, (HUMAN_APPROVAL_REQUIRED,),
-                                    verification, rule, certificate=certificate)
+                                    verification, rule, certificate=certificate, tenant_id=tenant_id)
             if (approval.approver_id not in self.policy.approvers
                     or approval.approver_id == agent_id
                     or approval.certificate_digest != certificate.digest()):
                 return self._decide(tool, agent_id, (APPROVAL_INVALID,),
-                                    verification, rule, certificate=certificate)
+                                    verification, rule, certificate=certificate, tenant_id=tenant_id)
 
         return self._decide(tool, agent_id, (ALLOWED,), verification, rule,
-                            allowed=True, certificate=certificate)
+                            allowed=True, certificate=certificate, tenant_id=tenant_id)
 
     # --- audit -----------------------------------------------------------
 
@@ -191,6 +191,7 @@ class ActionGate:
         rule: ToolRule | None,
         allowed: bool = False,
         certificate: EvidenceCertificate | None = None,
+        tenant_id: str | None = None,
     ) -> ActionDecision:
         decision = ActionDecision(
             allowed=allowed, tool=tool, agent_id=agent_id,
@@ -210,6 +211,13 @@ class ActionGate:
                     evidence=[[e.memory_id, e.version] for e in certificate.evidence]
                     if certificate else [],
                     watermark=verification.verified_at_watermark if verification else None,
+                    tenant_id=tenant_id,
+                    required_checks=list(dict.fromkeys(
+                        [*(certificate.required_checks if certificate else ()),
+                         *(rule.required_checks if rule else ())])),
+                    min_independent_sources=max(
+                        certificate.min_independent_sources if certificate else 0,
+                        rule.min_independent_sources if rule else 0),
                 ))
             except Exception:
                 # An audit write that fails must not turn a refusal into an

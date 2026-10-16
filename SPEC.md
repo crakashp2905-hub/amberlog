@@ -197,6 +197,13 @@ Evidence certificates (`certificates.py`) are not stored in the log. They are
 a versioned JSON document with `certificate_version` 1. A verifier refuses any
 other version, any unknown field and any check it cannot run.
 
+`derive` takes an optional `security_class` and writes the strictest of it,
+`internal` and every premise's class, so a conclusion is never less restricted
+than what it rests on. `MemoryFabric(conceal_cross_tenant=True)` makes a
+cross-tenant refusal identical to a missing id. Mental models
+(`mental_models.py`) are derived memories with the context keys
+`mental_model` and `model_watermark`. No event type is added for them.
+
 The ingest screen now reads the strings in `context` and `structured` as well
 as `content`, and `revise` runs the same screen as `remember`. A memory that
 passed before may now be quarantined on write. This is a behaviour change, not

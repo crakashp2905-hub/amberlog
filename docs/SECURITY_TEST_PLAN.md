@@ -35,19 +35,25 @@ threat model names actually exists, so the mapping cannot quietly go stale.
 | S13 authorization drift | `test_certificates.py::TestRevokedPermission` | A credential revoked after the certificate was issued stops the action. |
 | S14 TOCTOU | `test_security_regression.py::TestStaleAndRetractedEvidence`, `test_certificates.py::TestToolPermission` | Revision and retraction after retrieval block the action, including across a restart. The residual race after `verify` returns is documented, not tested away. |
 | Fail closed | `test_certificates.py::TestFailClosed`, `test_certificates.py::TestMalformed` | Unreadable state, unknown versions, unknown checks, unknown fields and 600 random mutations are all refused without raising. |
+| S15 derived class | `test_privacy_federation.py::TestDerivedContent` | A summary of `restricted` content stays `restricted`, cannot be shared, and cannot be federated. A refused offer transfers no content. |
+| S16 existence | `test_privacy_federation.py::TestDisclosureOfExistence` | With concealment on, use and certificate verification of another tenant's id match a missing id. |
+| Auditor cannot act | `test_auditor.py::TestStructure`, `test_auditor.py::TestObservationOnly` | No mutating call, no SQL write, not imported by any check. The gate's decisions are identical with or without an audit. |
+| Incident redaction | `test_incident.py::KnownIncident` | No content in reports, and reconstruction writes nothing. |
 | Tool permission | `test_certificates.py::TestToolPermission` | A valid certificate does not grant a tool. Rules strengthen certificates and are never weakened by them. Human approval is bound to the certificate digest and cannot be self-approval. |
 
 ## Found by these tests
 
-Two bypasses surfaced while writing the fixtures and are fixed in the same
-change. Both regression tests failed before the fix (4 failures measured) and
-pass after it:
+Three bypasses surfaced while writing the fixtures and are fixed in the same
+change. The first two each had regression tests that failed before the fix (4
+failures measured) and pass after it:
 
 1. **Metadata was not screened.** A secret or an injection in `context` or
    `structured` was stored active, in plaintext (only content is sealed), and
    copied into every memory `derive` drew from it.
 2. **`revise` skipped the ingest screen.** A revision could add a secret or an
    injection to a memory that was already active and retrievable.
+3. **`derive` downgraded restricted content** to the default class
+   (Task 11, 4 failures before the fix).
 
 ## Not covered (accepted gaps)
 

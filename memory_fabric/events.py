@@ -630,6 +630,9 @@ def action_gated(
     certificate_digest: str | None,
     evidence: list[list[Any]],
     watermark: int | None,
+    tenant_id: str | None = None,
+    required_checks: list[str] | None = None,
+    min_independent_sources: int | None = None,
 ) -> Event:
     """A decision about a protected tool call, with the evidence it rested on.
 
@@ -649,5 +652,8 @@ def action_gated(
             "certificate_digest": certificate_digest,
             "evidence": [list(e) for e in evidence],
             "watermark": watermark,
+            "tenant_id": tenant_id,
+            "required_checks": list(required_checks or []),
+            "min_independent_sources": min_independent_sources,
         },
     )

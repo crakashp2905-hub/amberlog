@@ -58,6 +58,7 @@ will be below 1.0 by construction.
 from __future__ import annotations
 
 import re
+import time
 from dataclasses import dataclass, field
 from typing import Callable, Iterable, Mapping, Sequence
 
@@ -234,6 +235,7 @@ def search(
     node_budget: int = NODE_BUDGET,
     relevance: Mapping[str, float] | None = None,
     plain: Mapping[str, frozenset[str]] | None = None,
+    deadline_ms: float | None = None,
 ) -> EvidenceChain:
     """Find a small connected set of `candidates` covering `need`.
 
@@ -246,7 +248,14 @@ def search(
     Returns the chain, or an incomplete one naming what it could not cover. An
     incomplete chain is a real answer: it is the shape of "the corpus does not
     join up", and the caller decides whether that means abstain.
+
+    `deadline_ms` adds a wall-clock budget to the node budget. When it runs out,
+    the search stops the way it does on `node_budget`: it reports the best
+    partial chain with `budget_exhausted` set. Off by default, because a
+    wall-clock limit makes the result depend on machine load, and every
+    measured result in this repository is deterministic.
     """
+    deadline = None if deadline_ms is None else time.perf_counter() + deadline_ms / 1000.0
     need_set = frozenset(need)
     term_sets = {c: frozenset(terms.get(c, ())) for c in candidates}
     rank_of = {c: i for i, c in enumerate(candidates)}
@@ -395,7 +404,8 @@ def search(
             bridging.sort()
             chosen = [c for _, c in covering[:beam]] + [c for _, c in bridging[:beam]]
             for candidate in chosen:
-                if explored >= node_budget:
+                if explored >= node_budget or (
+                        deadline is not None and time.perf_counter() >= deadline):
                     exhausted = True
                     break
                 explored += 1

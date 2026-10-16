@@ -66,10 +66,20 @@ CHECK_DEPENDENCIES_CURRENT = "dependencies_current"
 CHECK_INDEPENDENT_SUPPORT = "independent_support"
 CHECK_AUTHORIZED = "authorized_for_caller"
 CHECK_POLICY = "policy_current"
+CHECK_STRICT_INDEPENDENCE = "independent_support_strict"
+"""Like `independent_support`, but sources whose texts are near-copies count
+as one. Opt-in: the near-copy threshold is not measured against a frozen
+benchmark, so it does not change any default (plan Task 6)."""
+
 KNOWN_CHECKS = frozenset({
     CHECK_EVIDENCE_CURRENT, CHECK_DEPENDENCIES_CURRENT, CHECK_INDEPENDENT_SUPPORT,
-    CHECK_AUTHORIZED, CHECK_POLICY,
+    CHECK_AUTHORIZED, CHECK_POLICY, CHECK_STRICT_INDEPENDENCE,
 })
+
+NEAR_COPY_CONTAINMENT = 0.8
+"""Term containment at which two distinct sources are reported as possible
+copies. Recognised copies need full containment (`duplicates.is_copy`); this
+band below it is the uncertain case."""
 ALWAYS = (CHECK_AUTHORIZED, CHECK_POLICY, CHECK_EVIDENCE_CURRENT)
 
 # Reason codes. Stable strings: an operator filters on them.
@@ -354,6 +364,45 @@ def _premises(fabric: Any, memory_id: str) -> list[tuple[str, int]]:
     return out
 
 
+def _possible_copies(fabric: Any, memory_ids: Sequence[str]) -> list[tuple[str, str]]:
+    """Pairs from different roots whose texts are near-copies, not copies.
+
+    Never used to collapse sources by default. Similar independent reports
+    exist, and merging them would undercount real corroboration."""
+    from .duplicates import containment, is_copy, terms
+
+    out: list[tuple[str, str]] = []
+    texts = {m: fabric.state.memories[m].content for m in memory_ids}
+    ids = sorted(texts)
+    for i, a in enumerate(ids):
+        for b in ids[i + 1:]:
+            if fabric.source_root(a) == fabric.source_root(b):
+                continue
+            if is_copy(texts[a], texts[b]):
+                out.append((a, b))
+                continue
+            if containment(terms(texts[a]), terms(texts[b])) >= NEAR_COPY_CONTAINMENT:
+                out.append((a, b))
+    return out
+
+
+def _merge(roots: set[str], pairs: Sequence[tuple[str, str]], root_of: Mapping[str, str]) -> int:
+    """Number of root groups once possible copies are joined."""
+    parent = {r: r for r in roots}
+
+    def find(x: str) -> str:
+        while parent[x] != x:
+            parent[x] = parent[parent[x]]
+            x = parent[x]
+        return x
+
+    for a, b in pairs:
+        ra, rb = find(root_of[a]), find(root_of[b])
+        if ra != rb:
+            parent[ra] = rb
+    return len({find(r) for r in roots})
+
+
 class CertificateVerifier:
     """Recomputes every check from the store. Deterministic for a given log."""
 
@@ -536,10 +585,19 @@ class CertificateVerifier:
             checks[CHECK_DEPENDENCIES_CURRENT] = deps_ok
 
         roots = {fabric.source_root(mid) for mid in usable_ids}
+        possible = _possible_copies(fabric, usable_ids)
+        for a, b in possible:
+            notes.append(f"possible_copy:{a}:{b}")
         if CHECK_INDEPENDENT_SUPPORT in cert.required_checks:
             independent_ok = len(roots) >= cert.min_independent_sources
             checks[CHECK_INDEPENDENT_SUPPORT] = independent_ok
             if not independent_ok:
+                reasons.append(INSUFFICIENT_INDEPENDENT_SUPPORT)
+        if CHECK_STRICT_INDEPENDENCE in cert.required_checks:
+            strict = _merge(roots, possible, {m: fabric.source_root(m) for m in usable_ids})
+            strict_ok = strict >= cert.min_independent_sources
+            checks[CHECK_STRICT_INDEPENDENCE] = strict_ok
+            if not strict_ok and INSUFFICIENT_INDEPENDENT_SUPPORT not in reasons:
                 reasons.append(INSUFFICIENT_INDEPENDENT_SUPPORT)
 
         if watermark != cert.snapshot_watermark:

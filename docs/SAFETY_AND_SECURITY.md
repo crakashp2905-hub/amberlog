@@ -77,6 +77,8 @@ Status values:
 | S11 | **Key compromise** | Per-memory content keys. External key providers. Per-credential revocation. Agent key rotation. Peer keys kept separately. | `test_cipher.py`, `test_key_migration.py`, `test_service.py::test_a_revoked_credential_stops_working_immediately` | **partial**: there is no HSM, peer keys do not rotate automatically, and the default key custody is the weakest option (SECURITY.md) |
 | S12 | **Overblocking** | Justification is recomputed rather than blanket-invalidated. Independent support survives a single-source retraction. Benchmarks measure how often valid evidence is withheld. | `test_justification.py::test_losing_one_of_two_independent_premises…`, `test_certificates.py::TestSelectiveReassessment`, `research/results/p3b-agent-teams.md`, Task 5 results | **controlled** in the tested scenarios, and measured (§6) |
 | S13 | **Authorization drift** (a permission changes after retrieval) | Credentials are re-verified per call. The certificate verifier re-reads revocation status when the action happens. | `test_service.py::test_a_revoked_credential_stops_working_immediately`, `test_certificates.py::TestRevokedPermission` | **controlled** for revocation and expiry |
+| S15 | **Derived-content leakage across classes** | `derive` inherits the strictest security class of its premises, and a caller cannot lower it | `test_privacy_federation.py::TestDerivedContent` | **controlled**. Found by these tests: a summary of `restricted` content was written `internal` |
+| S16 | **Existence disclosure** | Cross-tenant refusals name only `wrong_tenant`, never the version or lifecycle. With `conceal_cross_tenant=True` they are identical to a missing id | `test_privacy_federation.py::TestDisclosureOfExistence` | **partial**: by default the refusal confirms the id exists elsewhere (documented policy). Concealment is opt-in |
 | S14 | **TOCTOU between verification and action** | Verification happens immediately before the action and is pinned to the log head. A certificate records the watermark it was checked against. | `test_enforcement.py::test_a_retraction_after_retrieval_blocks_the_action`, `test_certificates.py` | **accepted residual race**: a retraction committed after `verify` returns and before the tool runs is not seen. This is documented, not solved. |
 
 ## 5. Limitations (not guarantees)
@@ -96,6 +98,9 @@ Status values:
   checks passed against a specific log state and policy.
 - **No rate limiting.** Put the service behind a proxy that enforces limits.
 - **No formal verification and no third-party audit.**
+- **Write contention.** All writes take one lock to keep the log ordered.
+  Throughput falls as writers are added ([P12](../research/results/p12-load.md)).
+  A write flood from one credential can slow every agent (S9).
 
 ## 6. Failure behaviour
 

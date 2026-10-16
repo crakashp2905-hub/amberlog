@@ -99,7 +99,7 @@ projection rebuilt from it (AGENTS.md principle 3).
 | Task 5 ten-agent benchmark | **partial** — P3b runs 10–100 deterministic agents with five arms incl. oracle for *correction propagation*; poisoning, injection, permission change and copied evidence are not scenarios | `experiments/teamworld.py`, `research/results/p3b-agent-teams.md` |
 | Task 6 / R3 independent support | **implemented** for exact copies — source roots, `COPIED` justification, conservative copy recognition (containment and Jaccard thresholds); similar-but-independent reports are kept | `justification.py`, `duplicates.py`; `test_justification.py`, `test_duplicates.py`, `research/results/p2b-copy-recognition.md` |
 | Task 7 / R7 bounded multi-hop | **implemented** — bounded chain search with step and node budgets, reports `budget_exhausted` | `chains.py`; `test_chains.py`, `research/results/p1-evidence-chain-reconstruction.md` |
-| Task 8 / R9 mental models | **missing** — `derive()` records parents, and retraction re-evaluates derived memories, but no model object with watermark, dirty flag or coalesced refresh | — |
+| Task 8 / R9 mental models | **missing at baseline**; now implemented (§6) | — |
 | Task 9 / R2 incident reconstruction | **partial** — `explain()` and `audit_trail()` give write → derivation → exposure; no link from an exposure to a plan or tool action, no counterfactual harness | `explain.py`; `test_fabric.py` |
 | Task 10 / R6 active auditing | **missing** — `health()` and `doctor` are on-demand checks; no triggers, no audit policy comparison | — |
 | Task 11 / R5 privacy-aware federation | **partial** — firewall, scope, `security_class`; tenant refusal leaks no detail; leakage through *derived* memories untested | `governance/`, `enforcement.py`; `test_governance.py` |
@@ -108,6 +108,8 @@ projection rebuilt from it (AGENTS.md principle 3).
 | State machine | **implemented** — lifecycle states and allowed propagation transitions | `model.py`, `protocol.py`; `test_properties_state_machines.py` |
 
 ---
+
+Rows in this section describe the baseline. §6 records what each task changed.
 
 ## 4. Known gaps at baseline
 
@@ -151,3 +153,16 @@ As the plan orders it, inspecting before building and reusing what exists:
 | Task | Status | Where |
 |---|---|---|
 | 0 Baseline | done | this file |
+| 1 Threat model | done | [SAFETY_AND_SECURITY.md](SAFETY_AND_SECURITY.md) |
+| 2 Security regressions | done. **Found and fixed:** metadata not screened; `revise` unscreened | `tests/test_security_regression.py`, [SECURITY_TEST_PLAN.md](SECURITY_TEST_PLAN.md) |
+| 3 Certificates | done | `certificates.py`, `tests/test_certificates.py` |
+| 4 Action-time verification | done | `actions.py`, `examples/action_gate.py` |
+| 5 Ten-agent benchmark | done. H5b–d supported, **H5a not supported** as registered | [p5-poisonworld.md](../research/results/p5-poisonworld.md) |
+| 6 Independent support | done. Copies collapse; near-copies reported, opt-in strict check; defaults unchanged | `tests/test_independence.py` |
+| 7 Bounded multi-hop | done. Time budget added; withdrawn and cross-tenant nodes tested; P1 stays NOT SUPPORTED, so `retrieve` remains the default | `chains.py`, `tests/test_chains.py` |
+| 8 Mental models | done | `mental_models.py`, `tests/test_mental_models.py` |
+| 9 Incident reconstruction | done. First evaluator had 20% false attribution, fixed | `incident.py`, [p9-incidents.md](../research/results/p9-incidents.md) |
+| 10 Active auditing | done, observation only | `auditor.py`, [p10-audit.md](../research/results/p10-audit.md) |
+| 11 Privacy-aware federation | done. **Found and fixed:** a summary of restricted content was downgraded to internal | `tests/test_privacy_federation.py` |
+| 12 Operational hardening | measured. **Write contention collapses throughput** | [p12-load.md](../research/results/p12-load.md) |
+| 13 Release evaluation | done | [RELEASE_EVALUATION.md](RELEASE_EVALUATION.md) |

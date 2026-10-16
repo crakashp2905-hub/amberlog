@@ -221,6 +221,11 @@ class PgConnection:
     def _execute(self, sql: str, params: tuple[Any, ...]) -> Cursor:
         stripped = sql.strip()
         upper = stripped.upper()
+        if upper.replace(" ", "") == "PRAGMABUSY_TIMEOUT":
+            # The one PRAGMA with a Postgres meaning: how long a writer waits
+            # for the lock, which this connection set as lock_timeout.
+            return self._run(
+                "SELECT setting::bigint FROM pg_settings WHERE name = 'lock_timeout'", ())
         if upper.startswith("PRAGMA"):
             return Cursor()
         if "SQLITE_MASTER" in upper:

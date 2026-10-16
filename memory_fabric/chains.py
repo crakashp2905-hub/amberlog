@@ -102,9 +102,10 @@ BEAM = 8
 NODE_BUDGET = 2_000
 
 DISCRIMINATING_COVER = False
-"""Rank covering candidates of equal gain by how discriminating their link to
-the chain is (research/prereg/p1b-discriminating-links.md). Off until that
-registration's verdict is in."""
+"""P1b (research/results/p1b-links.md): rank covering candidates of equal gain
+by how discriminating their link to the chain is. NOT SUPPORTED on a fresh
+holdout -- it changed nothing, because the wrong chain survives the beam and
+loses only at goal selection. Kept off; retained so the result reproduces."""
 """Backstop on generated successor states.
 
 It used to be the primary bound and was wrong twice over. Expansion scanned

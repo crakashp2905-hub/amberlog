@@ -20,6 +20,7 @@ from ..model import (
     ValueEstimate,
 )
 from .sensitive import SensitiveDataDetector, summarise
+from .injection import InjectionDetector
 
 # Strictest last: used to pick the governing decision.
 _SEVERITY = [
@@ -165,9 +166,11 @@ class Firewall:
         self,
         rules: Sequence[Rule] | None = None,
         detector: SensitiveDataDetector | None = None,
+        injection: InjectionDetector | None = None,
     ) -> None:
         self.rules = tuple(rules) if rules is not None else DEFAULT_RULES
         self.detector = detector or SensitiveDataDetector()
+        self.injection = injection or InjectionDetector()
 
     def evaluate(self, request: FirewallRequest) -> FirewallRuling:
         decisions: list[FirewallDecision] = [FirewallDecision.ALLOW]
@@ -185,6 +188,14 @@ class Firewall:
         if findings:
             decisions.append(FirewallDecision.QUARANTINE)
             reasons.append(f"sensitive data detected: {summarise(findings)}")
+        # Checked again at share time, not only at ingest: a store may hold
+        # memories written before the injection screen existed, and sharing is
+        # where one injection becomes every recipient's.
+        injected = [f for f in self.injection.scan(request.memory.content)
+                    if f.severity == "high"]
+        if injected:
+            decisions.append(FirewallDecision.QUARANTINE)
+            reasons.append(f"prompt injection detected: {summarise(injected)}")
 
         governing = max(decisions, key=_SEVERITY.index)
         return FirewallRuling(decision=governing, reasons=reasons)
@@ -192,16 +203,20 @@ class Firewall:
     def screen_ingest(self, content: str) -> FirewallRuling:
         """Cheaper check for the write path: content only, no scope decision."""
         findings = self.detector.scan(content)
+        injected = self.injection.scan(content)
+        reasons: list[str] = []
         if any(f.severity == "high" for f in findings):
-            return FirewallRuling(
-                FirewallDecision.QUARANTINE,
-                [f"sensitive data detected on ingest: {summarise(findings)}"],
-            )
+            reasons.append(f"sensitive data detected on ingest: {summarise(findings)}")
+        if any(f.severity == "high" for f in injected):
+            reasons.append(f"prompt injection detected on ingest: {summarise(injected)}")
+        if reasons:
+            return FirewallRuling(FirewallDecision.QUARANTINE, reasons)
         if findings:
-            return FirewallRuling(
-                FirewallDecision.ALLOW_WITH_WARNING,
-                [f"possible sensitive data on ingest: {summarise(findings)}"],
-            )
+            reasons.append(f"possible sensitive data on ingest: {summarise(findings)}")
+        if injected:
+            reasons.append(f"possible prompt injection on ingest: {summarise(injected)}")
+        if reasons:
+            return FirewallRuling(FirewallDecision.ALLOW_WITH_WARNING, reasons)
         return FirewallRuling(FirewallDecision.ALLOW, [])
 
 

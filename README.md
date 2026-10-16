@@ -215,7 +215,8 @@ database alone cannot read content. Back up both: `memory-fabric backup` copies
 and verifies the log, and the key directory needs its own backup. A store
 created before keys moved out can be migrated with `memory-fabric migrate-keys`;
 the container tells you how at startup. See [DEPLOYMENT.md](DEPLOYMENT.md) for backup, serving, capacity, upgrades
-and current limits (notably: one writer per store).
+and current limits. Writers on more than one machine need the optional
+PostgreSQL backend (`pip install ".[postgres]"`, then `--db postgresql://...`).
 
 ### Examples
 
@@ -285,7 +286,6 @@ More: [SCORECARD.md](research/SCORECARD.md) (every claim and its outcome) and
 MCP server are built and tested. Open items:
 
 - The Claude adapter has not yet been run against the live API (P3 gate).
-- Postgres storage is deferred until a deployment needs concurrent writers.
 - Developer-experience (R8) and release-qualification (R9) gates are in progress.
 - Not yet published to PyPI, pending a name.
 

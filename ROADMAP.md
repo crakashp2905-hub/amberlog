@@ -84,7 +84,14 @@ The fabric-side path is real and tested: session scoping, retrieval, exposure lo
 
 To close it: `pip install anthropic`, set credentials, and run `examples/agent_on_the_fabric.py` with the `client=` argument dropped. Until someone does, the gate is partly met and P4 should not be treated as unblocked on the strength of it.
 
-### Postgres deferred out of P2
+### Postgres deferred out of P2 — then built as an option (2026-10-16)
+
+**Update.** Built as an optional backend (`memory-fabric[postgres]`), not a
+replacement: SQLite stays the default and the core stays dependency-free. It
+earns its place for writers on more than one machine, which SQLite cannot
+serve; it does not add throughput, because writers still serialise for the
+hash chain. Every storage-touching test module runs against it in CI. The reasoning below for not
+making it a P2 deliverable still stands.
 
 P2 listed a Postgres backend. It was dropped from the milestone because it does not serve the gate — observability is about what the surfaces can explain, not where the bytes live — and because a driver (`psycopg`) would be the project's first runtime dependency, costing the zero-dependency property for no gain at current scale. Postgres belongs with the first deployment that actually needs concurrent writers or a store larger than one machine's SQLite file; the storage seam already exists (ARCHITECTURE.md §4).
 

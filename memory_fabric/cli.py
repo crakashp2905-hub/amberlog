@@ -86,6 +86,15 @@ _ASCII_GLYPHS = {
 _PROBE = "─│└├…·"
 
 
+def _shown(db: str) -> str:
+    """The store argument as it may be displayed: a database URL loses its
+    password. Every message that names the store goes through this, because
+    the store argument is the one place a credential reaches the CLI."""
+    from .pgcompat import is_postgres_url, redact
+
+    return redact(db) if is_postgres_url(db) else db
+
+
 def configure_output() -> None:
     """Make stdout able to carry the output, or fall back to ASCII.
 
@@ -603,7 +612,12 @@ def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     if access_log is None and operators and args.db != ":memory:":
         # Named operators exist to make access attributable; recording it is
         # the point, so it is on unless explicitly turned off.
-        access_log = f"{args.db}.access.jsonl"
+        # A database URL is not a path, and would carry its password into a
+        # filename.
+        from .pgcompat import is_postgres_url
+
+        access_log = ("memory-fabric.access.jsonl" if is_postgres_url(args.db)
+                      else f"{args.db}.access.jsonl")
     if access_log == "-":
         access_log = None
 
@@ -625,7 +639,7 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     client = agent(fabric, args.agent, args.tenant)
     print(
         f"memory-fabric MCP server: agent {args.agent}, tenant {args.tenant}, "
-        f"store {args.db}",
+        f"store {_shown(args.db)}",
         file=sys.stderr,
     )
     if args.trusted_local:
@@ -701,9 +715,9 @@ def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
         return 5
     host, port = server.server_address[:2]
-    print(f"Memory Fabric agent API on http://{host}:{port}/v1/  (store {args.db})")
+    print(f"Memory Fabric agent API on http://{host}:{port}/v1/  (store {_shown(args.db)})")
     print("  POST /v1/recall | fetch | verify | remember   with  Authorization: Bearer <credential>")
-    print(f"  Issue a credential:  memory-fabric --db {args.db} agent-api-issue "
+    print(f"  Issue a credential:  memory-fabric --db {_shown(args.db)} agent-api-issue "
           f"--agents-file {args.agents_file} --agent <id>")
     try:
         server.serve_forever()
@@ -806,6 +820,13 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         print(f"{C.RED}This store is in memory, so there is nothing on disk to "
               f"copy and --db :memory: opens an empty one. Point --db at a file."
               f"{C.RESET}", file=sys.stderr)
+        return 6
+
+    if getattr(fabric.log, "dialect", "sqlite") == "postgresql":
+        print(f"{C.RED}A PostgreSQL store is backed up with the database's own "
+              f"tools, which are consistent and incremental where this copy is "
+              f"not:\n  pg_dump --format=custom --file=<out> <database>{C.RESET}",
+              file=sys.stderr)
         return 6
 
     target = Path(args.path)
@@ -1624,14 +1645,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     # tool that is the worst possible failure: it looks like an answer.
     if (
         args.db != ":memory:"
+        and not args.db.startswith(("postgresql://", "postgres://"))
         and args.command not in CREATING_COMMANDS
         and not args.create
         and not os.path.exists(args.db)
     ):
         print(
-            f"{C.RED}no store at {args.db}{C.RESET}\n"
+            f"{C.RED}no store at {_shown(args.db)}{C.RESET}\n"
             f"{C.DIM}Check the path, or pass --create to start an empty one. "
-            f"To populate a demo store: memory-fabric --db {args.db} demo{C.RESET}",
+            f"To populate a demo store: memory-fabric --db {_shown(args.db)} demo{C.RESET}",
             file=sys.stderr,
         )
         return 2
@@ -1649,14 +1671,14 @@ def main(argv: Sequence[str] | None = None) -> int:
         # specific and the default message would send someone looking at the
         # database instead of at the key store they did not mount.
         print(
-            f"{C.RED}could not open {args.db}: {exc}{C.RESET}\n"
+            f"{C.RED}could not open {_shown(args.db)}: {exc}{C.RESET}\n"
             f"{C.DIM}If this store's content keys are kept outside the "
             f"database, point at them with --keys <dir>.{C.RESET}",
             file=sys.stderr,
         )
         return 2
     except Exception as exc:
-        print(f"{C.RED}could not open {args.db}: {exc}{C.RESET}", file=sys.stderr)
+        print(f"{C.RED}could not open {_shown(args.db)}: {exc}{C.RESET}", file=sys.stderr)
         return 2
 
     try:

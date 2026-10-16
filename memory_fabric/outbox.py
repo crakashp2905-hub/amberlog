@@ -410,8 +410,13 @@ class Outbox:
         """
         self._conn.execute(
             "INSERT INTO origin_cursor (origin_store_id, sequence_seen) VALUES (?, ?) "
-            "ON CONFLICT(origin_store_id) DO UPDATE SET "
-            "sequence_seen = MAX(sequence_seen, excluded.sequence_seen)",
+            "ON CONFLICT(origin_store_id) DO UPDATE SET sequence_seen = "
+            # A CASE rather than SQLite's two-argument MAX(), and the column
+            # qualified: the same statement then means the same thing on
+            # SQLite and Postgres (which spells MAX(a, b) as GREATEST and
+            # rejects the unqualified name as ambiguous inside an upsert).
+            "CASE WHEN excluded.sequence_seen > origin_cursor.sequence_seen "
+            "THEN excluded.sequence_seen ELSE origin_cursor.sequence_seen END",
             (origin_store_id, sequence),
         )
 

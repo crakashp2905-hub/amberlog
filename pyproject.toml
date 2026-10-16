@@ -28,6 +28,9 @@ dependencies = []
 [project.optional-dependencies]
 # Adapters only. `ollama` needs nothing — it speaks HTTP over urllib.
 claude = ["anthropic>=0.40"]
+# Optional storage backend for writers on more than one machine. The core and
+# SQLite, the default, need nothing.
+postgres = ["psycopg>=3.1"]
 
 [project.scripts]
 memory-fabric = "memory_fabric.cli:main"

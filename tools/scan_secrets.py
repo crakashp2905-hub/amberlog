@@ -95,6 +95,11 @@ ALLOWED_LINES = {
     # characters, never real credentials.
     ("tests/test_agent_api.py", "password_assignment"),
     ("tests/test_operator_access.py", "password_assignment"),
+    # Builds database URLs around a random per-run password to prove the CLI
+    # never prints one. The value is generated at test time; the fixture is
+    # the URL shape.
+    ("tests/test_postgres.py", "password_assignment"),
+    ("tests/test_postgres.py", "connection_string"),
 
     # The obfuscation red team: invented values deliberately disguised -- split,
     # encoded, look-alike characters -- so the detector's variant scan can be

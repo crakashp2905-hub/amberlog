@@ -186,12 +186,25 @@ retrieved on easier tasks.
 
 Stated plainly, because a list of features is not a deployment plan.
 
-**One writer.** SQLite with WAL. Concurrent readers are fine; concurrent writers
-to one store are not supported and are not tested. The storage seam exists
-([ARCHITECTURE.md](ARCHITECTURE.md) §4) and Postgres belongs with the first
-deployment that actually needs it — adding a driver now would cost the
-zero-dependency property for no measured gain
-([ROADMAP.md](ROADMAP.md)).
+**Writers serialise; they do not run in parallel.** On SQLite (the default),
+processes on one machine share a store safely — writers queue on the file lock,
+tested with 4 processes × 20 appends landing gapless with a verifying chain —
+but every process must reach the same file, so one machine. For writers on
+**several machines**, use the optional PostgreSQL backend:
+
+```bash
+pip install "memory-fabric[postgres]"
+memory-fabric --db postgresql://user@db.internal:5432/memory overview
+```
+
+Every module runs unchanged against it (every storage-touching test module
+runs on Postgres in CI; only the research benchmarks are left out), with append-only enforced by database triggers and the hash chain
+intact. It does **not** add write throughput: writers still serialise, on a
+table lock instead of a file lock, because the chain needs a total order and
+`seq` must stay gapless. Readers never block. Back it up with `pg_dump`;
+`memory-fabric backup` refuses and says so. Passwords in the URL are never
+printed — but prefer a `.pgpass` file or `PGPASSWORD` over putting one in a
+command line, which other users on the host can see.
 
 **Named operators, but no roles or expiry — on the HTTP surface.** By default
 the dashboard has one shared bearer token. With `serve --operators-file FILE`

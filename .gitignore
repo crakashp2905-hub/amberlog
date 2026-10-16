@@ -47,3 +47,4 @@ research/bench/facet_v1/test.json
 # and the same reasoning as the external SciFact corpus.
 research/bench/longmemeval/data/
 research/bench/relevance_v2/holdout_p1b.json
+research/bench/relevance_v2/holdout_p1c.json

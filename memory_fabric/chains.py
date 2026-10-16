@@ -106,6 +106,10 @@ DISCRIMINATING_COVER = False
 by how discriminating their link to the chain is. NOT SUPPORTED on a fresh
 holdout -- it changed nothing, because the wrong chain survives the beam and
 loses only at goal selection. Kept off; retained so the result reproduces."""
+
+LINK_STRENGTH_SELECTION = False
+"""P1c (research/prereg/p1c-link-strength.md): among complete, connected
+chains, prefer the one whose weakest link is strongest. Off until its verdict."""
 """Backstop on generated successor states.
 
 It used to be the primary bound and was wrong twice over. Expansion scanned
@@ -329,10 +333,15 @@ def search(
     while frontier:
         frontier.sort(key=rank_key)
         frontier = frontier[:beam]
+        def goal_key(state: _State) -> tuple:
+            if LINK_STRENGTH_SELECTION:
+                return (_weakest_link(state.ids, links, doc_freq),
+                        len(state.ids), state.cost)
+            return (len(state.ids), state.cost)
+
         for state in frontier:
             if state.covered == need_set and connected(state) and (
-                best is None
-                or (len(state.ids), state.cost) < (len(best.ids), best.cost)
+                best is None or goal_key(state) < goal_key(best)
             ):
                 best = state
         if best is not None:
@@ -564,6 +573,29 @@ def _explain(
         budget_exhausted=exhausted,
         connected=_connected(ids, links),
     )
+
+
+def _weakest_link(ids: Sequence[str], links: Mapping[str, frozenset[str]],
+                  doc_freq: Mapping[str, int]) -> int:
+    """The chain's bottleneck: the largest edge weight in a minimum spanning
+    tree, where an edge's weight is the document frequency of the rarest term
+    the two memories share. Lower is stronger. Prim's algorithm; chains are a
+    handful of nodes."""
+    if len(ids) < 2:
+        return 0
+    inf = 1 << 30
+
+    def weight(a: str, b: str) -> int:
+        shared = links[a] & links[b]
+        return min((doc_freq.get(t, inf) for t in shared), default=inf)
+
+    in_tree = {ids[0]}
+    worst = 0
+    while len(in_tree) < len(ids):
+        w, nxt = min((weight(a, b), b) for a in in_tree for b in ids if b not in in_tree)
+        worst = max(worst, w)
+        in_tree.add(nxt)
+    return worst
 
 
 def _components_of(

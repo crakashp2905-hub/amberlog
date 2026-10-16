@@ -31,13 +31,13 @@ HOLDOUT = "holdout_p1b"
 HOLDOUT_INDICES = range(100, 112)
 
 
-def build_holdout() -> int:
+def build_holdout(name: str = HOLDOUT, indices: range = HOLDOUT_INDICES) -> int:
     from research.bench.relevance_v2 import build as B
 
-    cases = [B.BUILDERS[f](i) for f in p1.CHAIN_FAMILIES for i in HOLDOUT_INDICES]
+    cases = [B.BUILDERS[f](i) for f in p1.CHAIN_FAMILIES for i in indices]
     B.shuffle_corpora(cases)
-    path = HERE / "research" / "bench" / "relevance_v2" / f"{HOLDOUT}.json"
-    path.write_text(json.dumps({"benchmark": "relevance_v2", "split": HOLDOUT,
+    path = HERE / "research" / "bench" / "relevance_v2" / f"{name}.json"
+    path.write_text(json.dumps({"benchmark": "relevance_v2", "split": name,
                                 "cases": cases}) + "\n", encoding="utf-8")
     return len(cases)
 
@@ -47,14 +47,14 @@ def pooled(outcomes) -> float:
     return sum(1 for o in rows if o.sufficient) / len(rows) if rows else 0.0
 
 
-def measure(split: str) -> dict[str, Any]:
+def measure(split: str, switch: str = "DISCRIMINATING_COVER") -> dict[str, Any]:
     out: dict[str, Any] = {"split": split}
     for name, flag in (("chain_before", False), ("chain_after", True)):
-        chains.DISCRIMINATING_COVER = flag
+        setattr(chains, switch, flag)
         try:
             outcomes = p1.run_chain(split, k=p1.DEFAULT_K, families=p1.CHAIN_FAMILIES)
         finally:
-            chains.DISCRIMINATING_COVER = False
+            setattr(chains, switch, False)
         out[name] = {
             "sufficiency": pooled(outcomes),
             "by_family": {f: pooled([o for o in outcomes if o.family == f])

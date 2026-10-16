@@ -53,7 +53,8 @@ memory failed verification and recommends diagnosis or an inspection instead.
 ## What this establishes, and what it does not
 
 * **Established:** a real Claude model, given only the fabric's MCP surface,
-  uses recall → verify → remember unprompted by tool order, and a retraction
+  follows the recall → verify → remember discipline its prompt asks for (the
+  prompt names the tools; the model chooses when and on what), and a retraction
   issued from another process mid-session reaches the running server and stops
   the model acting on withdrawn knowledge, 10 of 10.
 * **It found a real bug first, and the bug is measured, not inferred.**

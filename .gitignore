@@ -46,3 +46,4 @@ research/bench/facet_v1/test.json
 # LongMemEval: downloaded, never committed. 15 MB for the oracle split alone,
 # and the same reasoning as the external SciFact corpus.
 research/bench/longmemeval/data/
+research/bench/relevance_v2/holdout_p1b.json

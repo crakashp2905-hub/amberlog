@@ -100,6 +100,11 @@ def is_numeric(term: str) -> bool:
 MAX_STEPS = 5
 BEAM = 8
 NODE_BUDGET = 2_000
+
+DISCRIMINATING_COVER = False
+"""Rank covering candidates of equal gain by how discriminating their link to
+the chain is (research/prereg/p1b-discriminating-links.md). Off until that
+registration's verdict is in."""
 """Backstop on generated successor states.
 
 It used to be the primary bound and was wrong twice over. Expansion scanned
@@ -360,7 +365,18 @@ def search(
                 cand_terms = term_sets[candidate]
                 gain = (cand_terms & need_set) - state.covered
                 if gain:
-                    covering.append(((-len(gain), rank_of[candidate]), candidate))
+                    if DISCRIMINATING_COVER:
+                        # Among equal gains, the candidate whose rarest shared
+                        # term with the chain is rarest. Two axle rules both
+                        # share "axle" and "set"; only the right one also
+                        # shares "heavy". Sharing nothing ranks last.
+                        shared = links[candidate] & state.links
+                        rarity = min((doc_freq[t] for t in shared),
+                                     default=len(candidates) + 1)
+                        covering.append(((-len(gain), rarity, rank_of[candidate]),
+                                         candidate))
+                    else:
+                        covering.append(((-len(gain), rank_of[candidate]), candidate))
                     continue
                 if not still_needed and state_connected:
                     # Complete and joined up: this state is already a goal, and

@@ -1,6 +1,6 @@
 # End-to-end validation across process boundaries
 
-Produced by `python -m experiments.e2e_validation` at commit `ef1dd74`.
+Produced by `python -m experiments.e2e_validation` at commit `ba303b1`.
 **22/22 checks passed.**
 
 - **E1**: an `agent-api` server in its own process, agents in two tenants over

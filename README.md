@@ -143,6 +143,23 @@ outcome tool**, because the model is the agent being scored.
 > Each is marked `trusted-local` in its provenance, and the sensitive-data
 > screen still applies. Never use it for a shared or federated store.
 
+### Over HTTP, for agents anywhere
+
+```bash
+# agents.txt (server-only, owner-readable): agent_id:tenant_id:hex_key per line
+memory-fabric --db memory.db agent-api --agents-file agents.txt          # serves on 127.0.0.1:8766
+memory-fabric --db memory.db agent-api-issue --agents-file agents.txt --agent my-bot
+curl -s -X POST http://127.0.0.1:8766/v1/recall \
+  -H "Authorization: Bearer <credential>" -d '{"query": "pump fault E01"}'
+```
+
+The same four operations as MCP, for agents in other processes, languages or
+machines. Every request is verified from a signed, expiring credential, so
+revocation and expiry take effect at the next call. It is a separate server
+from the read-only dashboard, refuses browser-originated requests, and will not
+bind beyond loopback over plain HTTP unless told TLS terminates in front of it
+(`--behind-tls`).
+
 ### Multiple tenants
 
 ```python

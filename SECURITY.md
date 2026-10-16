@@ -55,6 +55,18 @@ No TLS: the cookie carries no `Secure` flag because that would stop it being sto
 
 This is still scoping inside one process, not authentication: anything holding the raw `MemoryFabric` can write as any agent, which is correct — that is the host.
 
+## Agent API (2026-10-16)
+
+| Threat | Mitigation |
+|---|---|
+| An agent acts as another | Each request carries a credential signed with that agent's own key and is re-verified per call; the handler is an `AgentClient` bound to the verified principal. Exposure tokens are kept per agent, so one agent cannot verify on another's recall. |
+| A revoked or expired credential keeps working | Verified on every request through `MemoryService`, whose revocations are durable. |
+| Telling failure kinds apart | Unknown agent, bad signature, expired and revoked all return the same 401 body. |
+| Credentials sniffed on the wire | Refuses a non-loopback bind over plain HTTP unless `--behind-tls` says TLS terminates in front. |
+| A web page drives the API | Requests carrying `Origin` are refused; only browsers send it. No cookies, no CORS. |
+| Self-scored outcomes | No outcome endpoint. |
+| Resource exhaustion by body size | Bodies over 64 KiB are refused before parsing. There is **no rate limiting**; put it behind a proxy that has one. |
+
 ## Federation (Phase 2)
 
 Crossing a store boundary is governed on both sides, and the boundary is now

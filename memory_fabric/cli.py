@@ -638,6 +638,55 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
 
 
+def _agent_service(fabric: MemoryFabric, agents_file: str):
+    from .agent_api import load_agents, register_all
+    from .service import MemoryService
+
+    service = MemoryService(fabric=fabric)
+    register_all(service, load_agents(agents_file))
+    return service
+
+
+def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Serve agents over authenticated HTTP. See `agent_api.py`."""
+    from .agent_api import AgentApi, ConfigurationError, build_agent_server
+
+    try:
+        service = _agent_service(fabric, args.agents_file)
+        server = build_agent_server(AgentApi(service), host=args.host,
+                                    port=args.port, behind_tls=args.behind_tls)
+    except (ConfigurationError, OSError) as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 5
+    host, port = server.server_address[:2]
+    print(f"Memory Fabric agent API on http://{host}:{port}/v1/  (store {args.db})")
+    print("  POST /v1/recall | fetch | verify | remember   with  Authorization: Bearer <credential>")
+    print(f"  Issue a credential:  memory-fabric --db {args.db} agent-api-issue "
+          f"--agents-file {args.agents_file} --agent <id>")
+    try:
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print("\nstopped")
+    finally:
+        server.server_close()
+    return 0
+
+
+def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Mint a signed, expiring credential for one agent in the agents file."""
+    from .agent_api import ConfigurationError, encode_credential
+    from .identity import IdentityError
+
+    try:
+        service = _agent_service(fabric, args.agents_file)
+        credential = service.issue(args.agent, ttl_seconds=args.ttl)
+    except (ConfigurationError, IdentityError, OSError) as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 5
+    print(encode_credential(credential))
+    return 0
+
+
 def cmd_migrate_keys(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Move this store's content keys out of the database into a directory.
 
@@ -1478,6 +1527,22 @@ def build_parser() -> argparse.ArgumentParser:
         help="the agent's clean writes become active without review (marked "
         "in provenance). For one person's local assistant only.",
     )
+
+    p = add("agent-api", cmd_agent_api,
+            "WRITES: serve agents over authenticated HTTP (recall, fetch, verify, "
+            "remember), each request verified from a signed, expiring credential")
+    p.add_argument("--agents-file", required=True,
+                   help="agent_id:tenant_id:hex_key per line; secret, server-only")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8766)
+    p.add_argument("--behind-tls", action="store_true",
+                   help="allow a non-loopback bind because TLS terminates in front")
+
+    p = add("agent-api-issue", cmd_agent_api_issue,
+            "Print a signed, expiring credential for one agent")
+    p.add_argument("--agents-file", required=True)
+    p.add_argument("--agent", required=True)
+    p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
 
     p = add("migrate-keys", cmd_migrate_keys,
             "WRITES: move content keys out of the database into a directory, "

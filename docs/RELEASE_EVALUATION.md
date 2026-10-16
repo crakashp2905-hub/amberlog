@@ -25,7 +25,7 @@ model harnesses without Ollama or an API key.
 | [P5 PoisonWorld](../research/results/p5-poisonworld.md) | Pre-registered before the harness existed. 10 seeds, 7 arms, oracle and degenerate arm | H5b, H5c and H5d supported. **H5a not supported** as registered. One disclosed harness ordering fix |
 | [P9 incidents](../research/results/p9-incidents.md) | Measurement against live withdrawal | Precision 0.996, recall 1.000 after a 20% false-attribution evaluator bug was found and fixed |
 | [P10 auditing](../research/results/p10-audit.md) | Measurement | Triggered policies find every planted problem; periodic sampling finds 32% |
-| [P12 load](../research/results/p12-load.md) | Operational measurement | Throughput falls as agent processes are added. See below |
+| [P12 load](../research/results/p12-load.md) | Operational measurement | SQLite: 214 ops/s at 1 agent, 31 at 10, 4 at 100 (p50 19 s). Postgres: 63, 5, 1. No errors, only queueing. Cause not isolated |
 | [P1 chains](../research/results/p1-evidence-chain-reconstruction.md) | Earlier, pre-registered | Still NOT SUPPORTED. `retrieve` remains the default |
 
 All of these benchmarks are internal and hand-built. **No independent scenario
@@ -50,7 +50,7 @@ frozen held-out results and at least one independent scenario family" is
 - Paraphrased injections pass the pattern screen: 65% of fabric's residual P5 harm.
 - Before a compromise is detected, validated poison is indistinguishable from truth.
 - Tenancy is logical. Existence concealment is opt-in.
-- Write contention collapses throughput beyond a few concurrent writer processes (P12).
+- **Many agent processes on one store do not work at usable latency** (P12: p50 263 ms at 10 SQLite agents, 19 s at 100). The supported deployment is a few processes per store.
 - Lineage-gated actions and action certificates have close prior art (MemLineage, PCAA), and no comparison was run ([RESEARCH_ROADMAP.md](RESEARCH_ROADMAP.md)).
 - Lint and type checking are still not configured (baseline gap 7).
 

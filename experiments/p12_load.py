@@ -192,19 +192,33 @@ per second of wall time.
 |---|---|---|---|---|---|---|---|---|
 {chr(10).join(rows)}
 
-**How to read this.** Every write takes the store's single write lock: SQLite's
-database lock, or Postgres's `LOCK TABLE events IN EXCLUSIVE MODE`, which keeps
-`seq` gapless and the hash chain ordered. A retrieve also writes, because it
-logs the exposure decisions value estimation depends on. So added agents queue
-on that lock, and **throughput does not scale with agent count**. The tail
-latencies show the queue. Nothing here supports a linear-scaling claim, and none
-is made. More agents than cores (here {os.cpu_count()}) also measures CPU
-contention, not only the store.
+**What this shows.** One agent runs an operation in a few milliseconds. Adding
+agent processes to one store collapses throughput rather than spreading it,
+and tail latency grows from milliseconds to seconds, then minutes on Postgres
+at 100 agents. No operation failed; they all queued. **Nothing here supports
+running tens of agent processes against one store,** and no scaling claim is
+made.
 
-**Supported workload, stated from these numbers only:** tens of agents on one
-store, with tail latency in the range shown. A workload needing higher write
-throughput needs a store design without the single ordered log, and the
-roadmap gates that on measured need.
+**Why: observed, not isolated.**
+- Every write takes the store's single write lock: SQLite's database lock, or
+  Postgres's `LOCK TABLE events IN EXCLUSIVE MODE`, which keeps `seq` gapless
+  and the hash chain ordered. A retrieve writes too, because it logs exposure
+  decisions.
+- Every call first folds in the other processes' new events
+  (cross-process freshness), so each agent's work grows with everyone's.
+- At 100 agents on Postgres, all 100 connections were idle while the agent
+  processes were CPU-bound (load average about 100 on {os.cpu_count()} cores).
+  That points at client-side work and CPU contention, not lock waits, at that
+  scale.
+
+How much each factor contributes has not been measured. A profile under
+contention is the next step before any design change.
+
+**Supported workload, from these numbers only:** a single process, or a few,
+per store. Many agents should share one process (the agent HTTP API serves
+many agents from one) rather than each opening the store. That is a
+recommendation from the design, not a measurement: the HTTP API was not
+load-tested here.
 """
 
 

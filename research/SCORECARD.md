@@ -102,7 +102,7 @@ decision had seen.
 | **D1 injections** | *(measured, not registered)* Do current models obey injected notes? | 📏 **almost never, even unscreened**: `sonnet` 1/20, `haiku` 0/20, when the instruction warns that evidence may be wrong. P5's obedient-agent injection figures are an upper bound, not a rate |
 | **P2b** | At a fixed 400-token budget, a path-finding assembler closes ≥ 40% of the sufficiency headroom | ✅ **supported narrowly**: 0.600 → **0.700** against an oracle of 0.800, threshold 0.680. The whole gain is **one family** (`multi_hop_3`), and `multi_hop_4` stays at 0. `random@400` scores 0.047, which refutes the registration's own prediction ([result](results/p2b-budget.md)) |
 | **P1b** | Discriminating links for covering candidates | ❌ **not supported**: the switch changed nothing reachable ([result](results/p1b-links.md)) |
-| **P1c/P1d** | Prefer the chain whose weakest link is strongest | ✅ **P1d supported** on a fresh holdout: three-hop sufficiency 0.417 → 0.917. Now on by default ([P1c](results/p1c-strength.md), [P1d](results/p1d-strength-mh3.md)) |
+| **P1c/P1d** | Prefer the chain whose weakest link is strongest | ❌ **P1c not supported** when pooled over both chain families (0.250 → 0.458, threshold 0.550). ✅ **P1d supported** when registered afterwards for three hops only, on a fresh holdout: 0.417 → 0.917. P1d was registered after P1c's result, so it is the weaker kind of evidence. Now on by default ([P1c](results/p1c-strength.md), [P1d](results/p1d-strength-mh3.md)) |
 
 ## 3. Integrity engineering (roadmap phases 0–7)
 

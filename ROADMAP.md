@@ -104,8 +104,8 @@ authorised memory can be irrelevant now and essential later.
 | **R5** | Temporal / context dynamics (bitemporal) | Relevance reverses when context changes without memory mutation; stale data is never presented as current; `valid_time` distinct from recorded time | ✅ **done** — `valid_from`/`valid_to` on `Memory` (schema 0.7.0), `applies_at()`, `retrieve(as_of=…)`; +0.074 nDCG on the frozen split |
 | **R6** | Real-agent integration | The full loop runs against a live provider with a deterministic stub path still in CI. A downstream claim only if a controlled experiment supports it | 🔶 **run. dev inconclusive, test ABANDONED** — perfect selection was worth +0.000 on the frozen split, so the registered abandonment clause fired. The dev finding that retrieval beats a stuffed context **did not replicate**. What survived both splits: a ~3× token saving, and stuffing the context making the model less willing to abstain ([result](research/results/r6-downstream.md)) |
 | **R7** | Security and reliability | ✅ crypto (AEAD, external key custody) · ✅ trust boundary · ✅ multi-process durability · ✅ **tamper-evident event chain** with external checkpoints · ✅ concurrency measured and documented · ✅ version-skew tests · ✅ [OPERATIONS.md](docs/OPERATIONS.md). ✅ erasure inventory (`erasure_scope` reports reached / kept / unreachable, with the third as *unknown* rather than guessed) · ✅ state-machine property tests | ✅ **done** |
-| **R8** | Developer experience | An unfamiliar developer completes the quickstart unaided; demo matches docs | — |
-| **R9** | Release qualification | Claims match measured evidence, per deployment model | — |
+| **R8** | Developer experience | An unfamiliar developer completes the quickstart unaided; demo matches docs | 🔶 **dry run passed, gate open.** Every README command and snippet runs verbatim from a clean venv (one snippet needed its imports); an MCP server now serves non-Python agents. The gate needs a person who has not seen the project, which a dry run by its authors cannot stand in for ([VALIDATION.md](docs/VALIDATION.md) row 6, 16) |
+| **R9** | Release qualification | Claims match measured evidence, per deployment model | 🔶 **started.** Found and fixed: CI red on `main` for seven pushes while VALIDATION.md said it ran green; a fault-matrix invariant violation; `__version__` ≠ package version; stale test and layer counts; a macOS support claim CI never checked. Release workflow added. **Blocked on a name:** `memory-fabric` is taken on PyPI (open decision 6) |
 
 ### Why the benchmark comes before the ranker
 
@@ -562,6 +562,6 @@ population **worse** (−0.042 [−0.081, −0.005]).
 3. **LLM for the agent tier**, and the budget for LLM-agent runs (see CRITICAL_REVIEW §2.1 for the scale).
 4. **Real benchmark** for validation at P4 (ALFWorld, WebShop, τ-bench, a SWE-style set).
 5. **Memory types in v0:** all three, or semantic + procedural with episodic left as the raw log. *(P1 implements all three; the question is which the product surfaces.)*
-6. **Project name**, given the MemOS / MemoryOS collision.
+6. **Project name**, given the MemOS / MemoryOS collision — **and now a release blocker**: the distribution name `memory-fabric` is taken on PyPI by an unrelated MCP memory project (checked 2026-10-16).
 7. **Numeric thresholds** for H1–H5 — the numbers above are proposals and must be pre-registered before P4 starts.
 8. **Embedding model.** P1 ships a deterministic, dependency-free hashing embedder so tests are reproducible. A real model is swappable behind the `Embedder` protocol; choosing one is a P2/P3 decision.

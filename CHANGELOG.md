@@ -3,6 +3,38 @@
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track the
 **memory schema**, not the Python API — see [VERSIONING.md](VERSIONING.md) for why.
 
+## [Unreleased]
+
+### Added
+- **MCP server** — `memory-fabric --db store.db mcp --agent <id>` serves one store to one agent over stdio, so any MCP-capable client can use it. Standard library only. Built on `AgentClient`, so it exposes `recall`, `fetch`, `verify` and `remember` and nothing else: no unenforced read, no scope argument, and deliberately no `record_outcome`, because the model on the pipe is the agent being scored. Exposure tokens stay server-side; the model names memories by id and cannot forge one. Checked against the official MCP Python SDK client as well as its own tests.
+- **Release workflow** (`.github/workflows/release.yml`) on `v*` tags: version agreement check, full tests and fault matrix, GitHub release with wheel and sdist, container image to GHCR. PyPI publishing is wired but **off** until the repository variable `PYPI_PUBLISH` is set, because the name `memory-fabric` is taken on PyPI by an unrelated project.
+
+### Changed
+- **The Claude adapter defaults to `claude-opus-5-5`**, the current Opus, instead of `claude-opus-5`. The request shape was checked against the current API reference and needed nothing else: adaptive thinking, explicit effort (the new model defaults to `medium`), strict tools, no forced `tool_choice`, and the `fallbacks: "default"` form with its matching beta. Still not run live — no key here (P3 gate).
+
+### Fixed
+- **CI was red on `main` for seven pushes.** The real-embedder benchmark arms raised when no Ollama embedder was reachable, which is always true in CI; they are now skipped and reported as skipped, as their docstring promised. Asking for one by name still raises.
+- **A copy of withdrawn evidence read as justified.** Copy recognition (0.8.0) contested it; `JustificationGraph.recompute` called it a root observation with nothing to lose. `faultsim`'s `cycle_terminates` caught the disagreement. `recompute` now checks the copy component first.
+- **`memory_fabric.__version__` said 0.7.0** while the wheel said 0.8.0. A test now keeps them in step.
+
+## [0.8.0] — 2026-10-12 — copy recognition
+A re-ingested document is recognised as a copy and gets no independent source root; withdrawing a document withdraws its copies. One event type, additive. [SPEC.md §0.8.0](SPEC.md)
+
+## [0.7.0] — 2026-10-11 — bitemporal validity
+`valid_from` / `valid_to` on `Memory`, `applies_at()`, and `retrieve(as_of=…)` filtering before the index is queried. Additive. [SPEC.md §0.7.0](SPEC.md)
+
+## [0.6.0] — 2026-10-11 — authenticated content encryption
+`enc:v1` was unauthenticated and malleable. `enc:v2` (encrypt-then-MAC, zero-dependency) and `enc:v3` (AES-256-GCM when `cryptography` is installed) replace it for writes, with associated data binding store, memory and version; key custody can leave the database. Older code must not open a newer store. [SPEC.md §0.6.0](SPEC.md)
+
+## [0.5.0] — 2026-10-11 — tenant identity
+`tenant_id` on `Memory`, enforced at the handle rather than per call. Additive. [SPEC.md §0.5.0](SPEC.md)
+
+## [0.4.0] — 2026-10-11 — the share record, and a per-hop retraction target
+`MemoryShared` records what a recipient store called its copy, so a retraction can follow a memory past the first hop. Additive events plus one storage migration. [SPEC.md §0.4.0](SPEC.md)
+
+## [0.3.0] — 2026-10-10 — withdrawal basis, store identity, retraction protocol
+A withdrawal records its `basis`; each store gets an opaque `store_id`; origin records carry the exact version imported; retraction-protocol, access-denied, support-recomputed and content-erased events; per-memory sealed content. Additive. [SPEC.md §0.3.0](SPEC.md)
+
 ## [0.2.0] — 2026-10-07
 
 ### Added

@@ -84,11 +84,11 @@ class TestAgentApiFault(unittest.TestCase):
         self.addCleanup(fabric.close)
         self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
-        token = encode_credential(service.issue("ag_a", ttl_seconds=600))
+        bearer = encode_credential(service.issue("ag_a", ttl_seconds=600))
         request = urllib.request.Request(
             f"http://127.0.0.1:{server.server_address[1]}/v1/recall",
             data=json.dumps({"query": "x"}).encode(), method="POST",
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"})
+            headers={"Content-Type": "application/json", "Authorization": f"Bearer {bearer}"})
         with mock.patch.object(AgentClient, "recall", side_effect=RuntimeError(INTERNAL)), \
                 self.assertLogs("memory_fabric.agent_api", level="WARNING"):
             with self.assertRaises(urllib.error.HTTPError) as caught:

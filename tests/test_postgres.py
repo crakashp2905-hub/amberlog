@@ -68,6 +68,25 @@ class TestConcurrentWriters(PostgresCase):
             log.close()
 
 
+class TestSimultaneousStartup(PostgresCase):
+    def test_many_processes_can_open_the_store_at_once(self) -> None:
+        """Every connection used to replace the trigger function, so processes
+        starting together failed with "tuple concurrently updated" -- 5 of 80
+        in a local reproduction, and the first CI run of this file. Now it is
+        created once, under the schema lock."""
+        from memory_fabric.eventlog import EventLog
+
+        EventLog(self.url).close()
+        opener = "import sys; from memory_fabric.eventlog import EventLog; EventLog(sys.argv[1]).close()"
+        for _ in range(3):
+            procs = [subprocess.Popen([sys.executable, "-c", opener, self.url],
+                                      stderr=subprocess.PIPE, text=True)
+                     for _ in range(12)]
+            for proc in procs:
+                _, err = proc.communicate(timeout=120)
+                self.assertEqual(proc.returncode, 0, err[-500:])
+
+
 class TestAppendOnly(PostgresCase):
     def test_update_and_delete_are_refused_by_the_database(self) -> None:
         from memory_fabric import MemoryFabric

@@ -175,7 +175,20 @@ class PgConnection:
         # A waiting writer gives up like SQLite's busy timeout does, instead of
         # hanging forever behind a crashed peer's lock.
         self._pg.execute(f"SET lock_timeout = {int(busy_timeout_ms)}")
-        self._pg.execute(_APPEND_ONLY_FUNCTION)
+        # Under the schema lock, and only if missing. Unguarded, every
+        # connection replaced the function, and processes starting together
+        # failed with "tuple concurrently updated" -- 5 of 80 simultaneous
+        # connects in a local reproduction, and the CI postgres job.
+        self._pg.execute("SELECT pg_advisory_lock(%s)", (_SCHEMA_LOCK,))
+        try:
+            exists = self._pg.execute(
+                "SELECT 1 FROM pg_proc p JOIN pg_namespace n ON n.oid = p.pronamespace "
+                "WHERE p.proname = 'mf_append_only' AND n.nspname = current_schema()"
+            ).fetchone()
+            if not exists:
+                self._pg.execute(_APPEND_ONLY_FUNCTION)
+        finally:
+            self._pg.execute("SELECT pg_advisory_unlock(%s)", (_SCHEMA_LOCK,))
 
     # --- the sqlite3.Connection subset ----------------------------------------
 

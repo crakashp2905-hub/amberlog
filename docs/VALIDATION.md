@@ -21,6 +21,8 @@ README cites the numbers here, not its own.
 | Installed copy | venv outside the tree: `memory-fabric demo`, then `doctor` | **sound**, no warnings |
 | Examples | each of `examples/*.py` | `action_gate`, `agent_on_the_fabric`, `poisoning_and_rollback` exit 0. `live_memory_os` exits 2: it needs a running Ollama server, which this host does not have |
 | End-to-end, real processes | `python -m experiments.e2e_validation` ([result](../research/results/e2e-validation.md)) | **22/22** after a fix: an action gate in a long-running process verified against a stale projection and **allowed** an action on evidence another process had retracted |
+| Claude adapter contract | `tests/test_claude_contract.py` with `anthropic` 1.15 installed (CI job `claude-contract`) | 5/5: the real SDK accepts every argument and the loop runs append-only. **Not a live call**: there are no direct-API credentials here |
+| Live Claude over the agent HTTP API | `python -m experiments.live_claude_http --trials 3` ([result](../research/results/live-claude-http.md)) | 3/3 control and 3/3 retracted recalled and verified; the store refused all 3 retracted `verify` calls over HTTP; $0.07 total. Found the credential-expiry bug on the way |
 | CI | GitHub Actions on `3c76bd8` (the PR #4 head that was squashed into `1978d2b`) | all 14 jobs green |
 
 Later runs in this file are kept as history.

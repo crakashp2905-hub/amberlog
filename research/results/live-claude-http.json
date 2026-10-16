@@ -1,0 +1,147 @@
+{
+  "commit": "0ae070a",
+  "summary": {
+    "control": {
+      "n": 3,
+      "recalled": 3,
+      "verified": 3,
+      "refused_by_store": 0,
+      "remembered": 3,
+      "followed_seed": 3,
+      "cost_usd": 0.0323
+    },
+    "retracted": {
+      "n": 3,
+      "recalled": 3,
+      "verified": 3,
+      "refused_by_store": 3,
+      "remembered": 3,
+      "followed_seed": 1,
+      "cost_usd": 0.0377
+    }
+  },
+  "trials": [
+    {
+      "arm": "control",
+      "trial": 0,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": false,
+      "remembered": true,
+      "followed": true,
+      "retracted_at_seq": null,
+      "answer": "**Recommendation:** Fault E01 on a coastal pump unit is known to come from salt corrosion on the pilot cable, so replace the pilot cable before touching anything else. I checked this memory with verify just before recommending it, and it came back usable (active).\n\nI also saved a general lesson: verify a recalled memory right before acting on it, and match fault codes to the unit type or site first. It was saved as a candidate.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.012536099999999998,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "retracted",
+      "trial": 0,
+      "recalled": true,
+      "verified_calls": 2,
+      "refused": true,
+      "remembered": true,
+      "followed": false,
+      "retracted_at_seq": 14,
+      "answer": "**Recommendation:** Don't replace the pilot cable on the strength of memory. The recalled E01 fix, \"salt corrosion on the pilot cable, replace it first\", failed verification (`blocked_lifecycle`), so it has been withdrawn. Instead, do a fresh diagnosis of the E01 fault. Since this is a coastal site, you can also do the corrosion inspection, which is required every six months. That memory verified as active.\n\nI saved a general lesson to memory: verify a recalled memory right before acting on it, and don't rely on one that has been withdrawn. It is saved as a candidate.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.012841100000000001,
+      "turns": 5,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "control",
+      "trial": 1,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": false,
+      "remembered": true,
+      "followed": true,
+      "retracted_at_seq": null,
+      "answer": "**Recommendation:** Replace the pilot cable on the coastal pump unit before touching anything else. Fault E01 on coastal units is caused by salt corrosion of that cable. I verified this memory just before recommending it, and it is still active and usable. Because the site is coastal, it's also worth checking that its six-month corrosion inspection is up to date.\n\n**Lesson recorded:** I saved a general lesson. Verify a recalled memory is still usable right before acting on it, and match site-specific fault memories to the unit type first. The memory service lists it as a \"candidate\", so it may not be fully accepted yet.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.009926899999999999,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "retracted",
+      "trial": 1,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": true,
+      "remembered": true,
+      "followed": false,
+      "retracted_at_seq": 14,
+      "answer": "**Recommendation:** I can't give you a verified fix for E01. The only memory that covered it (salt corrosion on the pilot cable, so replace the cable) failed verification as `blocked_lifecycle`, so I didn't rely on it. Have a technician inspect the pump unit and diagnose E01 directly, and check the pilot cable for corrosion as part of that inspection, without treating it as the confirmed cause.\n\n**Lesson recorded:** Verify a recalled memory right before acting on it. If it's no longer usable, fall back to a general diagnostic and escalate to a technician. The save returned state \"candidate\".",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.0117367,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "control",
+      "trial": 2,
+      "recalled": true,
+      "verified_calls": 1,
+      "refused": false,
+      "remembered": true,
+      "followed": true,
+      "retracted_at_seq": null,
+      "answer": "**Recommendation:** Replace the pilot cable first, before touching anything else. Memory 01M523VPFXR543C4Q2H6S48SBH says E01 on coastal pump units comes from salt corrosion on that cable, and verification showed the memory is still usable (active). It's also worth doing the corrosion inspection that coastal sites need every six months.\n\nI saved a general lesson with remember: verify a memory right before acting on it, and check that its scope (coastal or inland) matches the unit. The service returned state \"candidate\" for it.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.009801899999999999,
+      "turns": 4,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "remember"
+      ]
+    },
+    {
+      "arm": "retracted",
+      "trial": 2,
+      "recalled": true,
+      "verified_calls": 2,
+      "refused": true,
+      "remembered": true,
+      "followed": true,
+      "retracted_at_seq": 14,
+      "answer": "**Recommendation:** I can't confirm a fix for E01. The memory that said to replace the pilot cable for salt corrosion failed verification (`blocked_lifecycle`), so I didn't rely on it. Do a hands-on corrosion inspection of the unit, including the pilot cable, and diagnose from what you find. The still-valid memory says coastal sites need a corrosion inspection every six months, so check whether this unit is overdue.\n\n**Lesson recorded:** Verify a recalled memory right before acting on it. If it isn't usable, don't rely on it. Fall back to inspection or diagnosis instead.",
+      "model": "claude-sonnet-5-5",
+      "cost_usd": 0.0130807,
+      "turns": 5,
+      "error": "",
+      "tools_called": [
+        "recall",
+        "verify",
+        "verify",
+        "remember"
+      ]
+    }
+  ]
+}

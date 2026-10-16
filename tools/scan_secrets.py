@@ -125,6 +125,9 @@ ALLOWED_LINES = {
 # renaming the concept to dodge a detector would be worse naming for a cosmetic
 # reason.
 ALLOWED_SNIPPETS = {
+    # A placeholder for a stubbed HTTP transport: the SDK requires *some*
+    # credential to build a client, and no request leaves the process.
+    ("tests/test_claude_contract.py", "password_assignment", "api_key=STUB_KEY"),
     ("memory_fabric/enforcement.py", "password_assignment", "ExposureToken"),
     ("memory_fabric/enforcement.py", "password_assignment", "token.expired"),
     ("memory_fabric/fabric.py", "password_assignment", "ExposureToken"),

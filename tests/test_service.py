@@ -224,6 +224,20 @@ class Revocation(ServiceCase):
         self.service.principals.reinstate_agent("acme-bot")
         self.assertEqual(self.acme.principal().agent_id, "acme-bot")
 
+    def test_a_credential_lasts_its_lifetime_in_seconds(self) -> None:
+        """Through the real path: the store's millisecond clock. Credentials
+        used to expire 1000x early, which only a slow caller exposed."""
+        now = [1_800_000_000_000]
+        service = MemoryService(MemoryFabric(":memory:", clock=lambda: now[0]))
+        self.addCleanup(service.close)
+        service.register_agent("slow-bot", key=b"k-slow", tenant_id="tn_acme")
+        session = service.session(service.issue("slow-bot", ttl_seconds=60))
+        now[0] += 30_000  # thirty seconds of thinking
+        session.remember("still allowed after thirty seconds")
+        now[0] += 31_000
+        with self.assertRaises(IdentityError):
+            session.remember("refused after sixty-one seconds")
+
     def test_an_expired_credential_stops_working(self) -> None:
         expired = replace(self.acme.credential, expires_at=0)
         with self.assertRaises(IdentityError):

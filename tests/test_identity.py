@@ -76,11 +76,21 @@ class CredentialTests(unittest.TestCase):
             self.registry.verify(forged, now=1_500)
 
     def test_an_expired_credential_does_not_verify(self) -> None:
+        # Timestamps are epoch milliseconds; the lifetime is seconds.
         issued = self.registry.issue("agent-acme", now=1_000, ttl_seconds=10)
-        self.registry.verify(issued, now=1_005)  # still inside the window
+        self.registry.verify(issued, now=1_000 + 9_999)  # still inside the window
         with self.assertRaises(IdentityError) as caught:
-            self.registry.verify(issued, now=1_010)
+            self.registry.verify(issued, now=1_000 + 10_000)
         self.assertIn("expired", str(caught.exception))
+
+    def test_the_lifetime_is_seconds_not_milliseconds(self) -> None:
+        """Every credential used to expire 1000x early: `now` is milliseconds
+        and the TTL was added unconverted. A real agent that took five seconds
+        to think was locked out of an "hour-long" credential."""
+        issued = self.registry.issue("agent-acme", now=1_000)  # default: an hour
+        self.assertEqual(issued.expires_at - issued.issued_at, 3_600_000)
+        self.registry.verify(issued, now=1_000 + 5_000)  # five seconds later
+        self.registry.verify(issued, now=1_000 + 3_599_999)
 
     def test_the_signature_is_checked_before_the_expiry(self) -> None:
         """An expiry check on an unverified body is a check on attacker data.

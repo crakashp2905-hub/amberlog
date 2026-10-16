@@ -78,7 +78,7 @@ projection rebuilt from it (AGENTS.md principle 3).
 |---|---|---|---|
 | Authenticated encryption at rest | **implemented** — AES-GCM with `cryptography`, else encrypt-then-MAC (HMAC-SHA256 keystream); AAD binds store, memory and version; legacy v1 read-only | `governance/cipher.py` | `test_cipher.py`, `test_key_migration.py` |
 | Key custody | **implemented** — keys outside the event log via Sqlite/Directory/Callback providers; crypto-erasure | `governance/cipher.py`, `fabric.erase_content` | `test_erasure.py`, `test_cipher.py` |
-| Cipher suite selection | **partial** — falls back from AES-GCM to EtM silently if AES-GCM construction fails (`cipher.py`, the bare `except: pass`) | `governance/cipher.py` | none for the fallback path |
+| Cipher suite selection | **partial at baseline** — silent fallback, and a broken `cryptography` crashed every write. Now fixed: visible fallback | `governance/cipher.py` | `test_cipher.py::BrokenCryptography` |
 | Agent identity | **implemented** — HMAC credentials, expiry, revocation persisted in SQLite; re-verified per call | `identity.py`, `service.py` | `test_identity.py`, `test_auth.py`, `test_service.py` |
 | Principal registrations | **partial** — registrations live in memory; revocations persist | `identity.py` | `test_identity.py` |
 | Tenancy | **partial (logical only)** — tenant filter on every read path and on the enforcer; one physical store | `fabric.TenantView`, `enforcement.Enforcer.check` | `test_data_access_paths.py`, `test_service.py`, `test_enforcement.py` |
@@ -116,7 +116,10 @@ Rows in this section describe the baseline. §6 records what each task changed.
 1. `events.access_denied` is defined twice with identical bodies (dead code).
 2. `cipher.default_suite` swallows any exception building AES-GCM and uses EtM
    instead. Both are authenticated, so it is not a confidentiality hole, but an
-   operator cannot tell which suite is in use from the failure.
+   operator cannot tell which suite is in use from the failure. **Fixed after
+   the baseline:** a broken install (seen for real as a pyo3 `PanicException`,
+   a `BaseException` that crashed every write) now falls back to EtM, warns
+   once, and `doctor` names the reason (`tests/test_cipher.py::BrokenCryptography`).
 3. `integrity.py` compares an optional bound with `>` (mypy); `chains.py`
    returns a `set` where `frozenset` is declared.
 4. Tenancy is logical. One store holds all tenants; there is no hard isolation.

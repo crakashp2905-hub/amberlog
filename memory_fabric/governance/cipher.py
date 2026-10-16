@@ -62,6 +62,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+import warnings
 from typing import Protocol
 
 TAG_BYTES = 32
@@ -251,28 +252,84 @@ class LegacyKeystream:
         )
 
 
-def aead_available() -> bool:
-    try:  # pragma: no cover - depends on the environment
+_INTERRUPTS = (KeyboardInterrupt, SystemExit, GeneratorExit)
+_aead_state: tuple[bool, str] | None = None
+
+
+def aead_status() -> tuple[bool, str]:
+    """Whether AES-GCM can be used here, and if not, why.
+
+    The reason is `"not installed"` when `cryptography` is absent, which is
+    the zero-dependency default and is not a problem, or a description of the
+    failure when it is installed and broken.
+
+    A broken install does not always raise `ImportError`. A Debian
+    `python3-cryptography` with no matching `_cffi_backend`, imported under
+    another interpreter, raises `pyo3_runtime.PanicException`, which derives
+    from `BaseException`. That escaped the old `except Exception`, so every
+    write crashed. Anything but an interrupt now counts as "unavailable".
+
+    Decided once per process and cached. Re-importing a module whose native
+    half panicked can panic again, and the answer cannot change without a
+    restart.
+    """
+    global _aead_state
+    if _aead_state is None:
+        _aead_state = _probe_aead()
+        if not _aead_state[0] and _aead_state[1] != "not installed":
+            warnings.warn(
+                "the `cryptography` package is installed but cannot be used "
+                f"({_aead_state[1]}); new content is sealed with "
+                "encrypt-then-MAC (HMAC-SHA256) instead of AES-GCM, and "
+                "existing AES-GCM content cannot be read on this host. Repair "
+                "or reinstall `cryptography` for this interpreter.",
+                RuntimeWarning, stacklevel=2,
+            )
+    return _aead_state
+
+
+def _probe_aead() -> tuple[bool, str]:
+    try:
         import cryptography.hazmat.primitives.ciphers.aead  # noqa: F401
-    except Exception:
-        return False
-    return True
+    except ModuleNotFoundError as exc:
+        if (exc.name or "").split(".")[0] == "cryptography":
+            return False, "not installed"
+        return False, f"installed but broken: {type(exc).__name__}: {exc}"
+    except _INTERRUPTS:
+        raise
+    except BaseException as exc:  # noqa: BLE001 - see aead_status
+        return False, f"installed but broken: {type(exc).__name__}: {exc}"
+    try:
+        AesGcm()
+    except _INTERRUPTS:
+        raise
+    except BaseException as exc:  # noqa: BLE001 - see aead_status
+        return False, f"installed but AES-GCM unusable: {type(exc).__name__}: {exc}"
+    return True, "available"
+
+
+def aead_available() -> bool:
+    return aead_status()[0]
+
+
+def _reset_aead_status() -> None:
+    """For tests: forget the cached probe."""
+    global _aead_state
+    _aead_state = None
 
 
 def default_suite() -> CipherSuite:
-    """AES-GCM when `cryptography` is installed, otherwise encrypt-then-MAC.
+    """AES-GCM when `cryptography` works here, otherwise encrypt-then-MAC.
 
     Automatic rather than configurable: a deployment that installed a
     maintained cryptographic library should get the benefit without having to
     discover a setting, and one that did not must still get authenticated
     encryption rather than a warning it will not read.
+
+    Falling back is never silent when the library is installed but broken:
+    `aead_status` warns once and `memory-fabric doctor` names the reason.
     """
-    if aead_available():  # pragma: no cover - depends on the environment
-        try:
-            return AesGcm()
-        except Exception:
-            pass
-    return EncryptThenMac()
+    return AesGcm() if aead_available() else EncryptThenMac()
 
 
 _SUITES: dict[str, CipherSuite] = {
@@ -284,11 +341,12 @@ _SUITES: dict[str, CipherSuite] = {
 def suite_for(envelope: str) -> CipherSuite:
     """The suite that produced this ciphertext, by its version prefix."""
     if envelope.startswith(GCM_PREFIX):
-        if not aead_available():
+        available, reason = aead_status()
+        if not available:
             raise IntegrityError(
                 "this content was sealed with AES-GCM (enc:v3) and "
-                "`cryptography` is not installed here. Install it, or read the "
-                "store from a host that has it — refusing rather than "
+                f"`cryptography` is {reason} here. Install or repair it, or "
+                "read the store from a host that has it — refusing rather than "
                 "returning anything, because a decryption failure must not "
                 "look like erasure."
             )

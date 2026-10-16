@@ -22,7 +22,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .fabric import MemoryFabric, NotFound, PolicyViolation
-from .governance.cipher import default_suite, envelope_version
+from .governance.cipher import aead_status, default_suite, envelope_version
 from .governance.erasure import (
     ERASED_MARKER,
     DirectoryKeyProvider,
@@ -1256,6 +1256,23 @@ def _check_content_cipher(fabric: MemoryFabric) -> Finding:
             "v1 ciphertext can be edited undetectably. Revising a memory "
             "re-seals it; there is no bulk migration because rewriting the log "
             "is the one thing this design forbids.",
+        )
+    available, reason = aead_status()
+    if not available and reason != "not installed":
+        sealed_gcm = counts.get("v3", 0)
+        if sealed_gcm:
+            return Finding(
+                "fail", "content cipher",
+                f"{sealed_gcm} content version(s) are AES-GCM but `cryptography` "
+                f"is {reason}; they cannot be read on this host",
+                "Repair or reinstall `cryptography` for this interpreter.",
+            )
+        return Finding(
+            "warn", "content cipher",
+            f"`cryptography` is {reason}; new content is sealed with "
+            f"{default_suite().name} instead of AES-GCM; {summary or 'no content yet'}; "
+            f"keys {where}",
+            "Repair or reinstall `cryptography` for this interpreter.",
         )
     if not counts:
         return Finding("ok", "content cipher", f"no content yet; keys {where}")

@@ -28,6 +28,19 @@ from memory_fabric.cli import main
 from memory_fabric.model import MemoryType, WithdrawalBasis
 
 
+
+def _host_warnings() -> list[str]:
+    """Warnings that describe this host rather than the store. A host with
+    `cryptography` installed but broken gets a content-cipher warning on every
+    store (tests/test_cipher.py::BrokenCryptography). Everywhere else, none."""
+    from memory_fabric.governance.cipher import aead_status
+
+    available, reason = aead_status()
+    return [] if available or reason == "not installed" else ["content cipher"]
+
+
+HOST_WARNINGS = _host_warnings()
+
 class DoctorTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()
@@ -72,10 +85,10 @@ class DoctorTests(unittest.TestCase):
 
     def test_a_sound_store_passes_every_check(self) -> None:
         code, report = self._run()
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 0 if not HOST_WARNINGS else 1)
         self.assertTrue(report["sound"])
         self.assertEqual(
-            [f["name"] for f in report["findings"] if f["status"] != "ok"], []
+            [f["name"] for f in report["findings"] if f["status"] != "ok"], HOST_WARNINGS
         )
 
     def test_the_probe_does_not_modify_the_log(self) -> None:
@@ -120,7 +133,7 @@ class DoctorTests(unittest.TestCase):
             conn.close()
 
         code, report = self._run()
-        self.assertEqual(code, 0)
+        self.assertEqual(code, 0 if not HOST_WARNINGS else 1)
         self.assertEqual(self._status(report, "append-only enforcement"), "ok")
         self.assertEqual(self._events()[0][0], 1)
 

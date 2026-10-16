@@ -1,252 +1,80 @@
-# Memory Fabric (working name)
+# Memory Fabric
 
-**Agent memory you can audit, retract across stores, and federate without
-silently poisoning your weakest agent.**
+**Governed memory for AI agents: auditable, retractable across stores, and safe to share.**
 
-Not "memory that makes agents smarter". That claim was pre-registered, tested
-against real models at five seeds, and **failed** — the measurements are below
-and they are the most reusable thing here.
+[![CI](https://github.com/crakashp2905-hub/memory-fabric/actions/workflows/ci.yml/badge.svg)](https://github.com/crakashp2905-hub/memory-fabric/actions/workflows/ci.yml)
+![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
+![Dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)
+![MCP](https://img.shields.io/badge/MCP-stdio%20server-purple)
+![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-> Working name only. "MemOS" and "MemoryOS" are taken by 2025 projects; see [research/CRITICAL_REVIEW.md](research/CRITICAL_REVIEW.md) §1.
+> **Working name.** "MemOS" and "MemoryOS" are taken, and so is `memory-fabric`
+> on PyPI. A final name is an open decision ([ROADMAP.md](ROADMAP.md), decision 6).
 
-## What this does, and what it costs
+---
 
-| Guarantee | Evidence |
-|---|---|
-| A retraction **follows a memory into other stores**, including ones the origin has never heard of, and drives acting-on-withdrawn-knowledge to zero | 17% → **0%** under both sharing policies, 240 decisions per arm ([PB2](research/results/phase-b-federated-agents.md)); re-shared two hops out, under outage, crash, diamond and cycle ([fault matrix](docs/INVARIANTS.md)) |
-| A premise can be invalidated **without destroying independently justified conclusions** | Lose one of two independent premises and the conclusion stays active; lose both and it is contested, never deleted ([Phase 4](docs/INVARIANTS.md)) |
-| Contradiction is **preserved rather than collapsed**, converting confident error into flagged uncertainty | 80% confidently wrong → **0%** with real disagreeing models ([live](research/results/live-multi-agent.md)); P(correct) 0.905 → 1.000 in simulation ([H4b](research/results/h4-topology-and-diversity.md)) |
-| Content can be **erased while the accountability survives** | Crypto-erasure under authenticated encryption, with keys optionally outside the database: the text goes, the provenance, lineage, retraction basis and audit trail stay ([Phase 6](SECURITY.md)) |
-| The event log is **tamper-evident**, not merely append-only | A hash chain over every event; an edit breaks every later link and verification names where. A wholesale rewrite is caught by an external checkpoint ([SECURITY.md](SECURITY.md)) |
-| A known-invalid version is **never served**, including at action time | One enforcement layer, exposure tokens bound to version and integrity revision ([Phase 3](docs/INVARIANTS.md)) |
-| **All of it costs almost nothing** | **0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store |
+## Overview
 
-**1086 tests**, 17 deterministic multi-store fault scenarios, fourteen testing layers,
-zero runtime dependencies in the core, Python 3.11–3.13 on Linux and Windows —
-the suite runs in CI with **nothing installed**, because a zero-dependency claim
-is only true if it is tested that way. What was run and what it showed, including
-the checks that are not automated: [docs/VALIDATION.md](docs/VALIDATION.md). All **14 integrity invariants**
-implemented and tested ([matrix](docs/INVARIANTS.md)), up from 4.
+Memory Fabric is a memory layer for LLM agents that answers the questions a
+vector store cannot: *where did this memory come from, why does the agent
+believe it, who may see it, and how do we pull it back?*
 
-## The accuracy claim failed, and that is the useful part
+Every memory carries provenance and a lifecycle. The source of truth is an
+append-only, tamper-evident event log, and everything else is a projection that
+can be rebuilt from it. When a memory turns out to be wrong, its retraction
+follows it into every store it was shared with, and conclusions built on it are
+re-checked rather than deleted.
 
-Five live phases, pre-registered thresholds, real models, ≥5 seeds for three of
-them. Full detail in [research/SCORECARD.md](research/SCORECARD.md).
+It is aimed at teams running agents where memory has to be **accountable**:
+multi-agent systems that share knowledge, regulated settings that need audit
+and erasure, and anyone who has watched one bad memory spread.
 
-| | claim | outcome |
+## Key features
+
+| | Capability | Evidence |
 |---|---|---|
-| **A** | Governed memory beats an ungoverned vector store | ❌ **killed** — 0.283 against 0.583 |
-| **A′1** | Some withdrawal policy beats withdrawing nothing | ❌ **killed**, as registered in advance |
-| **A′2** | Leave-one-out attribution recovers most of naive blame's damage | ✅ supported — 71% of the gap, at 2.55 model calls per episode |
-| **B1** | Selective sharing beats sharing all or none | ❌ **killed** — +0.008 [−0.042, +0.058], and the worst agent *fell* |
-| **B2** | Retraction propagation works, under both policies | ✅ **supported** — 17% → 0% |
-| **C** | A population learns what to propagate | 🔬 exploratory; the outcome channel made it **worse**, −0.042 [−0.081, −0.005] |
+| 🔁 | **Retraction that crosses stores.** A withdrawn memory is withdrawn wherever it travelled, including stores two hops away. | Acting on withdrawn knowledge fell **17% → 0%** ([PB2](research/results/phase-b-federated-agents.md)); holds under outage, crash, diamond and cycle ([fault matrix](docs/INVARIANTS.md)) |
+| 🧠 | **Truth maintenance, not cascading deletes.** Losing one premise leaves independently justified conclusions standing. | [Phase 4 invariants](docs/INVARIANTS.md) |
+| ⚖️ | **Contradictions are preserved.** Disagreement becomes flagged uncertainty instead of a confident wrong answer. | Confidently wrong **80% → 0%** with real models ([live](research/results/live-multi-agent.md)) |
+| 🔐 | **Erasure with accountability.** Crypto-erasure removes content and keeps provenance, lineage and audit trail. | Authenticated encryption, external key custody ([SECURITY.md](SECURITY.md)) |
+| 🧾 | **Tamper-evident log.** A hash chain over every event, with external checkpoints. | [SECURITY.md](SECURITY.md) |
+| 🚫 | **Never serves an invalid version**, including at action time, via exposure tokens re-checked before use. | [INVARIANTS.md](docs/INVARIANTS.md) |
+| 🏢 | **Multi-tenant by construction.** Tenant scope is bound to the handle, not passed per call. | [SECURITY.md](SECURITY.md) |
+| 🔌 | **Works with any MCP client**, alongside the Python SDK and a Claude API adapter. | [From an MCP client](#from-an-mcp-client) |
+| ⚡ | **Cheap.** **+0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store. | [Phase A cost gate](research/results/phase-a-real-agent-benchmark.md) |
 
-**One measurement explains nearly all of it.** Success tracked a single
-quantity: whether a correct memory reached the prompt. Conversion given one was
-**93–98% in every arm**, and coverage-to-success correlated at **+0.975** across
-arms. Everything the memory layer does — ranking, governance, lifecycle — can
-only move the outcome through that one channel, and **every withdrawal policy
-moved it downwards**. Perfect selection over the corpus was worth **+5 points**;
-the rest of the gap is corpus *coverage*, which is memory construction and not
-something this project does.
+**1086 tests**, 17 deterministic multi-store fault scenarios and 14 integrity
+invariants ([matrix](docs/INVARIANTS.md)), all run in CI with nothing
+installed. What was run and what it showed: [docs/VALIDATION.md](docs/VALIDATION.md).
 
-Three consequences, all acted on in the product rather than left in a paper:
+## Quick start
 
-1. **Do not withdraw memories because they were in context when something failed.** Of naive blame's 87 withdrawals, **57 were memories about a completely different fault**. `quarantine` now records *why*, and the attention list flags a withdrawal made on weak evidence as the finding — pointing an operator at releasing it rather than at the memory.
-2. **Do not filter at share time.** A memory wrong at one of a recipient's contexts is right at another, and which dominates is not knowable before the episode. Perfect sharing scored five points *below* sharing everything indiscriminately.
-3. **The value gate the default firewall ships is not a safety feature here.** It reduced federation to 42 imports of a possible 630, scored identically to isolation, and left the weakest agent worse than if it had never joined.
-
-## What simulation established
-
-**H1 supported** — a propensity-corrected estimator recovers true memory value
-at ρ=0.76 against a naive baseline's 0.47, on 8% exploration overhead
-([result](research/results/h1-causal-credit.md)). The confound is real and
-severe: a memory with *exactly zero* true effect scores 0.84 under naive
-usage-success and ≈0.00 under the corrected estimator.
-
-**H2 killed, H3 and H4a inconclusive, H5 unaskable, P9 declined on
-measurement.** The estimator's accuracy did not transfer to retention (H2),
-and three further live attempts to use it — exposure, withdrawal, sharing —
-each lost to a cheap baseline. **The product default is `naive_usage` for that
-reason, and value-ranked exposure is not recommended on current evidence.**
-
-H3's threshold exceeded its own ceiling and H4a tested the wrong point on an
-inverted-U curve; both are recorded as method failures rather than as results.
-That happened three times in this project, which is why
-[AGENTS.md](AGENTS.md) principle 8b now requires the oracle to carry no handicap
-the competing arms lack, and why `stats.check_ceiling` runs that check
-automatically in every phase verdict.
-
-## Novelty, checked rather than claimed
-
-[research/PRIOR_ART.md](research/PRIOR_ART.md) verified four papers that each
-remove one claim: learned value scoring, lifecycle management, causal
-attribution for clearance, and attributed memory construction are **not novel**.
-
-What survives, and is now measured rather than asserted: **provenance and
-retraction that cross a store boundary.** None of the four carries provenance
-across a boundary at all, so none can retract across one. Plus contradiction
-preservation, and the negative results themselves.
-
-## Install
+### Install
 
 ```bash
-pip install .
+git clone https://github.com/crakashp2905-hub/memory-fabric.git
+cd memory-fabric
+pip install .                 # core: zero runtime dependencies
+pip install ".[claude]"       # optional: Claude API adapter
 ```
 
-Zero runtime dependencies, Python 3.11–3.13 on Linux and Windows — both checked in CI with
-nothing installed, because a zero-dependency claim is only true if it is tested that way.
-macOS is expected to work and is not tested.
-The adapters are extras: `pip install ".[claude]"`. The Ollama adapter needs nothing, since
-Ollama speaks HTTP.
+Python 3.11–3.13. Linux and Windows are tested in CI; macOS is expected to work
+but is untested. Installing provides the `memory-fabric` command, which is also
+available as `python -m memory_fabric`.
 
-Installing puts a `memory-fabric` command on the path. Everything below works equally as
-`python -m memory_fabric` from a checkout.
+### Try the demo
 
-### Try it
-
-Seed a deliberately messy store — a poisoning and its retraction, an unresolved disagreement,
-a leaked secret, a rare-but-critical procedure:
+Seed a deliberately messy store, with a poisoning and its retraction, an
+unresolved disagreement, a leaked secret and a rare-but-critical procedure.
+Then inspect it:
 
 ```bash
 memory-fabric --db demo.db --create demo
+memory-fabric --db demo.db attention     # triage: what needs a human, worst first
+memory-fabric --db demo.db serve         # the same, as a local dashboard
 ```
 
-Then look at it from either surface:
-
-```bash
-memory-fabric --db demo.db attention
-```
-
-```bash
-memory-fabric --db demo.db --estimator ips serve
-```
-
-`attention` is the triage list — what needs a human, worst first, each finding carrying the
-command that acts on it. `serve` opens the same information as a local dashboard on 127.0.0.1.
-
-The dashboard prints a one-time URL that carries a session token. It binds to loopback and
-refuses to serve unauthenticated on any other address. `--db` on a path that does not exist is
-an error, not an empty store; `--create` opts in.
-
-In a container:
-
-```bash
-docker build -t memory-fabric . && docker run -p 8765:8765 -v mf-data:/data memory-fabric
-```
-
-The volume matters: the event log is the source of truth, and without it the first
-`docker rm` takes the data with it.
-
-Two scripted walkthroughs, both offline:
-
-```bash
-python examples/poisoning_and_rollback.py
-```
-
-```bash
-python examples/agent_on_the_fabric.py
-```
-
-The first is the governance story. The second runs an agent end to end — transcript ingestion,
-retrieval into the prompt, the `remember` tool, and governance on what the agent writes.
-
-### Tests
-
-```bash
-python -m unittest discover -s tests -t .
-```
-
-### Phase A is killed, and it is the most important result here
-
-Everything above is simulation or a single-mechanism live check. Put on a real
-task against a real baseline — 8 arms, 5 seeds, 960 verified decisions through a
-live model — **this project's governance made the agent worse.**
-
-| arm | success |
-|---|---|
-| no memory | 0.075 |
-| pooled vector store | 0.558 |
-| pooled + the fabric's prompt framing, no governance | **0.583** |
-| **governed (contested marking + quarantine on contradiction)** | **0.283** |
-| **governed + causal value selection** | **0.242** |
-| oracle | 0.633 |
-
-Not through cost — retrieval was 1.7 ms and the token gate passed. The mechanism
-is sharper than that. Every arm turned a correct memory into a correct answer
-**95%** of the time and failed **95%** of the time without one; the model was
-never the variable. Governance cut how often a correct memory arrived from 60% of
-episodes to 18%, because **withdrawing the memories blamed for a failure withdrew
-the correct ones.** Six actions span six fault codes, so the memory that asserted
-what the agent wrongly said was usually a *correct* memory about a different
-fault — quarantined for agreeing with a mistake it had nothing to do with.
-
-Principle 1 of [AGENTS.md](AGENTS.md) says value is not relevance. Phase A adds:
-**agreement is not causation.** [Result](research/results/phase-a-real-agent-benchmark.md)
-
-**PA′ then asked what to do instead, and the answer is nothing.** Real
-counterfactual attribution — re-asking without each memory — withdraws a quarter
-as much as naive blame and recovers 71% of the lost accuracy, at 2.55 model calls
-per episode, and **still loses to withdrawing nothing**. Two thirds of what naive
-blame destroyed was about a completely different fault. Perfect selection over
-the corpus was worth only +5 points, so the binding constraint is whether a
-correct memory *exists* yet — a coverage problem, not a governance one.
-[Result](research/results/phase-a-prime-attribution.md)
-
-The product consequence is immediate and is not a research note:
-quarantine-on-contradiction should not be recommended, and the attention list
-that invites an operator to withdraw memories needs to say what the evidence
-actually is.
-
-| Phase | Question | State |
-|---|---|---|
-| **A** | Governed memory against an ungoverned vector store | ❌ **Killed** — [result](research/results/phase-a-real-agent-benchmark.md) · [prereg](research/prereg/phase-a-real-agent-benchmark.md) |
-| **A′** | If not blame, then what? | ❌ **PA′1 killed**, ✅ **PA′2 supported** — [result](research/results/phase-a-prime-attribution.md) · [prereg](research/prereg/phase-a-prime-attribution.md) |
-| **B** | What should cross a federation boundary, and must retraction follow it | ❌ **PB1 killed** · ✅ **PB2 supported** — [result](research/results/phase-b-federated-agents.md) · [prereg](research/prereg/phase-b-federated-agents.md) |
-| **C** | Can a population learn what should propagate | 🔬 **Exploratory, no verdict** — gate not passed — [result](research/results/phase-c-memory-ecology.md) · [prereg](research/prereg/phase-c-memory-ecology.md) |
-
-Two decisions made before the run are why the result is usable. The decisive
-baseline was not a strawman — a pooled store that deletes what was in context at
-a failure, one line of code that reacts to outcomes, because governance beating a
-*naive* store would establish nothing and
-[H2](research/results/h2-credit-driven-retention.md) is the precedent for the
-cheap baseline winning. And an ablation arm was added when the pilot exposed a
-confound: the fabric arms rendered memories in a provenance-and-caveats framing
-while the vector arms got plain text. That arm won. Without it, a prompt's effect
-would have been scored as governance.
-
-### What works
-
-| Capability | Where |
-|---|---|
-| Append-only event log as the source of truth, with replay | [eventlog.py](memory_fabric/eventlog.py) |
-| All state as rebuildable projections | [projections.py](memory_fabric/projections.py) |
-| Memory objects with provenance, versions, lifecycle, scope | [model.py](memory_fabric/model.py) |
-| Lineage graph, TMS-style retraction, evidence-independence | [lineage.py](memory_fabric/lineage.py) |
-| Sensitive-data detection, firewall, retention with rare-event protection | [governance/](memory_fabric/governance/) |
-| Exposure policies with logged propensities | [exposure.py](memory_fabric/exposure.py) |
-| Value estimation: naive, IPS, doubly robust, amortized | [estimators.py](memory_fabric/estimators.py) |
-| `explain()` — "why does the system remember this?", with caveats | [explain.py](memory_fabric/explain.py) |
-| SDK facade | [fabric.py](memory_fabric/fabric.py) |
-| Shared read model, triage list, health diagnostics | [observability/report.py](memory_fabric/observability/report.py) |
-| Read-only HTTP API and web dashboard | [observability/](memory_fabric/observability/) |
-| Token auth, Host validation, cross-origin refusal | [observability/auth.py](memory_fabric/observability/auth.py) |
-| CLI, including verified backup | [cli.py](memory_fabric/cli.py) |
-| Capability-scoped agent sessions | [session.py](memory_fabric/session.py) |
-| Prompt context with injection defences | [adapters/context.py](memory_fabric/adapters/context.py) |
-| Claude API adapter, transcript ingestion | [adapters/](memory_fabric/adapters/) |
-| MCP server over stdio, on the agent's narrow surface | [adapters/mcp.py](memory_fabric/adapters/mcp.py) |
-| Federation across store boundaries | [federation.py](memory_fabric/federation.py) |
-| Local models + real embeddings | [adapters/ollama.py](memory_fabric/adapters/ollama.py) |
-
-### Not built yet
-
-Paired-replay estimator, topology effects (P7), learned controller (P8), Postgres. See [ROADMAP.md](ROADMAP.md).
-
-**The Claude adapter has not been run against the live API** — there is no key in the development environment, so its loop is covered by a stub client. See the P3 gate note in [ROADMAP.md](ROADMAP.md).
-
-## Quick start
+### Use it from Python
 
 ```python
 from memory_fabric import MemoryFabric
@@ -264,11 +92,53 @@ fabric.validate(mid, actor="reviewer")            # candidates are not retrievab
 hits = fabric.retrieve("agent-a", "how to follow up?", episode_id=episode.id)
 fabric.record_outcome(episode.id, outcome=1.0, verifier_id="env")   # never self-reported
 
-print(fabric.explain(mid).narrative())
-fabric.share(mid, "team")                          # default-deny; returns a reasoned ruling
+print(fabric.explain(mid).narrative())            # why does the system remember this?
+fabric.share(mid, "team")                         # default-deny; returns a reasoned ruling
 ```
 
-## One store, several customers
+## Usage
+
+### From an MCP client
+
+```bash
+memory-fabric --db memory.db --create mcp --agent my-assistant
+```
+
+This serves one store to one agent over MCP on stdio, for Claude Code, Claude
+Desktop, IDE assistants or TypeScript agents. Client configuration:
+
+```json
+{
+  "mcpServers": {
+    "memory-fabric": {
+      "command": "memory-fabric",
+      "args": ["--db", "/path/to/memory.db", "--create", "mcp", "--agent", "my-assistant"]
+    }
+  }
+}
+```
+
+| Tool | What it does |
+|---|---|
+| `recall` | Search memory; returns only memories that pass enforcement |
+| `fetch` | Read one memory by id; a withdrawn memory is an error, never content |
+| `verify` | Re-check a memory immediately before a consequential action |
+| `remember` | Record a lesson as a private, unvalidated memory |
+
+The identity is fixed at launch. The model cannot read withdrawn memories,
+choose who sees a memory, or act as another agent. There is deliberately **no
+outcome tool**, because the model is the agent being scored.
+
+> [!NOTE]
+> A memory the agent `remember`s is a private **candidate** and is not returned
+> by `recall` until someone validates it. This review step is the governance:
+>
+> ```bash
+> memory-fabric --db memory.db attention                       # what is waiting
+> memory-fabric --db memory.db validate <id> --actor <you>     # promote one
+> ```
+
+### Multiple tenants
 
 ```python
 import secrets
@@ -285,203 +155,146 @@ acme.retrieve("valve")                               # cannot be asked to read o
 service.revoke(acme.credential)                      # effective on the very next call
 ```
 
-The methods on that handle take no `tenant_id`, so there is no call site at
-which someone can omit it. A session holds the *credential* rather than a
-verified principal and re-checks it on every operation — otherwise a credential
-revoked at 10:00 would still be acting at 11:00 through a handle minted at
-09:00. The filter sits **before the index is queried** and
-the enforcement check refuses **before resolving the lifecycle**, so a
-cross-tenant refusal says only "not yours" — not the version, not that the
-memory was withdrawn on weak evidence, each of which is a true statement about
-another customer's data.
+Session methods take no `tenant_id`, so there is no call site where it can be
+omitted, and the credential is re-checked on every operation. The tenant filter
+runs before the index is queried, and a cross-tenant refusal reveals nothing
+about the other tenant's data.
 
-**What this is not.** It is an authorisation boundary, not a physical one. It
-holds against a bug in a ranking policy, an index query or a federation import;
-it holds against nothing that can read the file, and a caller holding the
-`MemoryFabric` can still act as any agent. That is not a patch waiting to
-happen — the check and the bypass would be on the same side of that boundary —
-and [SECURITY.md](SECURITY.md) says so plainly. `memory-fabric tenants` says
-which arrangement a store is actually in.
+> [!IMPORTANT]
+> Tenancy is an **authorisation** boundary, not a physical one. It holds against
+> bugs in ranking, querying or federation, not against anything that can read
+> the database file. See [SECURITY.md](SECURITY.md).
 
-## From any MCP client
-
-```bash
-memory-fabric --db memory.db --create mcp --agent my-assistant
-```
-
-serves the store to one agent over MCP on stdio, so Claude Code, Claude
-Desktop, an IDE assistant or a TypeScript agent can use it without the Python
-SDK. In a client's MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "memory-fabric": {
-      "command": "memory-fabric",
-      "args": ["--db", "/path/to/memory.db", "--create", "mcp", "--agent", "my-assistant"]
-    }
-  }
-}
-```
-
-Four tools — `recall`, `fetch`, `verify`, `remember` — and nothing else. The
-server is built on the SDK's narrow `AgentClient`, so the model cannot read a
-withdrawn memory, choose a scope, or act as another agent; the identity is
-fixed at launch. There is deliberately **no outcome tool**: the model on the
-pipe is the agent being scored, and outcomes need a third-party verifier.
-
-**What a new user trips on:** a memory the agent `remember`s is a private
-*candidate* and is **not returned by `recall` until someone validates it**:
-
-```bash
-memory-fabric --db memory.db attention                       # what is waiting
-memory-fabric --db memory.db validate <id> --actor <you>     # promote one
-```
-
-That review step is the governance, not a missing feature. A store where an
-agent's own unreviewed writes feed straight back into its context is the
-ungoverned vector store this project measured against.
-
-## Is this installation sound?
+### Health checks
 
 ```bash
 memory-fabric --db memory.db doctor
 ```
 
-A different question from `attention`, which asks what in a knowledge base
-needs a human. `doctor` asks whether the installation's answers can be
-believed, and it reports three outcomes rather than two: **ok** (verified, not
-merely "nothing raised"), **warn** (a real condition that does not invalidate
-the answers), **fail** (do not use this store for decisions). Exit codes 0, 1
-and 5, so it runs as a health check in a script.
+`doctor` reports whether an installation's answers can be believed: **ok**
+(verified), **warn** (a real condition that does not invalidate answers) or
+**fail** (do not use for decisions), with exit codes 0, 1 and 5 for use in
+scripts. A check that cannot run reports a warning, never `ok`. Among its
+checks: a retraction that has permanently failed to reach a recipient, which
+nothing else would surface.
 
-Eight checks. The one worth naming: a retraction that has permanently failed to
-reach a recipient raises nothing anywhere — the origin's own copy is withdrawn,
-the local store looks correct, and the recipient goes on exposing knowledge
-that was withdrawn hours ago. That is the one guarantee the research supported,
-and it is the one that can rot quietly.
+### Running in production
 
-A check that *cannot run* reports a warning with the reason, never `ok`. That
-rule caught a real bug in one of the checks within an hour of being written.
+```bash
+docker build -t memory-fabric .
+docker run -p 8765:8765 -v mf-data:/data -e MEMORY_FABRIC_TOKEN=<token> memory-fabric
+```
 
-## Two rules the observability surfaces follow
+The container runs as a non-root user and serves the read-only dashboard with
+token authentication. **Mount the volume:** the event log is the source of
+truth. Back it up with `memory-fabric backup`, which replays the copy to verify
+it. See [DEPLOYMENT.md](DEPLOYMENT.md) for backup, serving, capacity, upgrades
+and current limits (notably: one writer per store).
 
-Both surfaces read through one model ([report.py](memory_fabric/observability/report.py)), so the CLI and the dashboard cannot tell different stories about the same store. Two properties are enforced by tests:
+### Examples
 
-1. **Browsing is read-only.** Search goes to the index directly rather than through `retrieve()`, because retrieval writes exposure events — an observability tool that logged an operator's queries would feed its own browsing into the data every value estimate is computed from. There is no mutating HTTP endpoint at all.
-2. **Secrets are never displayed.** Quarantining a credential and then printing it in the review tool defeats the control that caught it; the value would reach a terminal scrollback, a browser's memory and any screenshot of either. The reviewer is shown the *kind* of secret, which is what they need in order to decide.
+```bash
+python examples/poisoning_and_rollback.py   # the governance story, offline
+python examples/agent_on_the_fabric.py      # an agent end to end, with a stub model
+```
 
-## Three design choices worth knowing
+## How it works
 
-1. **Propensities are logged from day one.** Every exposure decision records the probability it was made with, including the withheld ones. It costs one float and cannot be added retroactively; without it, no historical data can ever support an unbiased value estimate.
-2. **Value estimates carry a `contrastive` flag.** An absolute success rate over episodes where a memory appeared cannot show that the memory helped — that is the value/relevance confusion this project exists to avoid — so the type distinguishes the two and the firewall refuses to promote a memory on non-contrastive evidence.
-3. **Outcomes need a third-party verifier.** An agent that scores its own episodes can manufacture value for any memory it likes, so `record_outcome` rejects a verifier equal to the acting agent.
+```
+ agents ──► SDK / MCP / Claude adapter ──► enforcement ──► retrieval
+                         │                                    │
+                         ▼                                    ▼
+              governed write path                  exposure + propensity
+       (sensitive-data screen, firewall,                 logged
+            lifecycle, provenance)                         │
+                         │                                 │
+                         └──────────►  append-only, hash-chained event log
+                                                 │
+                         projections (memories, lineage, value, profiles)
+                                                 │
+                    CLI · read-only dashboard · federation to other stores
+```
 
-The test that demonstrates the point is `test_naive_is_fooled_by_selection_bias_and_ips_is_not` in [tests/test_estimators.py](tests/test_estimators.py): a memory with *exactly zero* true effect scores 0.84 under naive usage-success and ≈0.00 under the propensity-corrected estimator.
+Design principles, each enforced in code:
 
-## What is being built next
+- **The event log is the source of truth.** All state is a projection that can be rebuilt byte-identically.
+- **Every exposure decision logs its propensity**, so unbiased value estimates are possible later. This cannot be retrofitted.
+- **Outcomes need a third-party verifier.** An agent cannot score its own episodes.
+- **Contradictions stay representable.** Nothing silently overwrites a conflicting memory.
+- **Observability is read-only and never displays secrets.** Browsing does not write exposure events, and a quarantined credential is shown by kind, never by value.
 
-A **contextual relevance** layer, sequenced so the thing that could falsify it
-comes first: the contract and its invariants ([docs/RELEVANCE_SPEC.md](docs/RELEVANCE_SPEC.md),
-done), then the benchmark with a measured oracle ceiling, then a ranker — not
-the other way round.
+Full detail: [ARCHITECTURE.md](ARCHITECTURE.md), [SPEC.md](SPEC.md), and the
+repository constitution in [AGENTS.md](AGENTS.md).
 
-The benchmark exists and the ceiling is measured: **+0.222 nDCG@3** over the
-best simple baseline, with critical-memory omission going from 28.6% to zero
-([result](research/results/relevance-v1-ceiling.md)). That **contradicts** the
-~5-point prediction registered beforehand, and the prediction is left on record
-rather than edited away.
+## Research findings
 
-**An external benchmark changed the product.** SciFact — 300 queries, 5,183
-abstracts, labels written by someone else — put the shipped hashing embedder at
-**0.315 nDCG@10 against plain lexical retrieval's 0.621**, where my own
-benchmark had reported an 8% gap rather than a 2× one
-([result](research/results/scifact-external.md)). The default retrieval mode is
-now `lexical`. The parameter-free lexical arm landing just under published BM25
-is the most reassuring number here — it says the harness behaves as a third
-party would expect.
+Every claim in this project was pre-registered with thresholds, a baseline and
+an oracle ceiling, then tested. **The accuracy claim failed**, and the negative
+results are among the most useful things here.
 
-Swap in a **trained** embedder on the same 300 queries and the picture inverts:
-`real_vector` scores **0.701** and fusing it with lexical scores **0.726**,
-*above* published BM25. So fusion is not good or bad in itself — **do not fuse
-a weak arm into a strong one**. Both halves of the recommendation are now
-measured: `lexical` by default, `hybrid` once `embedder=` is a real model.
+| Phase | Claim | Outcome |
+|---|---|---|
+| A | Governed memory beats an ungoverned vector store | ❌ Killed: 0.283 against 0.583 |
+| A′ | Leave-one-out attribution recovers most of naive blame's damage | ✅ Supported: 71% of the gap |
+| B1 | Selective sharing beats sharing all or none | ❌ Killed |
+| B2 | Retraction propagation works under both sharing policies | ✅ Supported: 17% → 0% |
+| C | A population learns what to propagate | 🔬 Exploratory; made outcomes worse |
 
-**Whether retrieval changes answers is still unresolved, and the honest
-version is less flattering than the first draft of this paragraph.** R6 ran a
-real model over the benchmark. On dev, selected context beat handing the model
-the whole corpus at a third of the tokens — which the pre-registration
-predicted would *not* happen. **On the frozen split that reversed**, and
-perfect selection was worth **+0.000**, so the registered abandonment clause
-fired: a corpus a model can simply read does not pose a retrieval problem.
+**The key insight:** success tracked one quantity, whether a correct memory
+reached the prompt (coverage-to-success correlation **+0.975**). Withdrawing
+memories blamed for failures withdrew correct ones. The product acted on this:
+withdrawals record their evidence basis, and the triage list flags a
+withdrawal made on weak evidence.
 
-Two effects survived both splits: a **~3× token saving** for no measured
-quality loss, and — the one nobody asked for — **stuffing the context makes the
-model less willing to say it cannot tell**. The mechanisms' dev-only +0.076
-correctness gain did not replicate, so **they have no demonstrated downstream
-benefit** ([result](research/results/r6-downstream.md)).
+What the project offers is therefore **governance, not accuracy**: provenance,
+retraction and audit that work across store boundaries, which no verified prior
+work does ([PRIOR_ART.md](research/PRIOR_ART.md)).
 
-The biggest lever turned out to be the embedder, and it is bigger than
-everything else here: a trained model (`nomic-embed-text`) closes **~70% of the
-dev headroom** and matches bounded premise promotion with no lineage machinery
-([result](research/results/relevance-v1-real-embedder.md)). On the frozen split
-the gain is +0.045, and the two splits disagree about whether to fuse it with
-lexical retrieval — so **sample size is now the binding constraint**, ahead of
-any mechanism and ahead of a ranker. The hashing default stays, because
-zero-dependency is a commitment; switching is one line.
+More: [SCORECARD.md](research/SCORECARD.md) (every claim and its outcome) and
+[FINDINGS.md](research/FINDINGS.md) (the full narrative).
 
-Both of R1's findings have been acted on and re-measured. Hybrid retrieval took the product
-arm from 0.485 to 0.658 nDCG on the frozen split, with critical-memory omission
-going from 40% to zero; wiring in **source roots, premise promotion and
-bitemporal validity** added a further +0.074 there and +0.043 on dev, closing
-about 17% of the measured headroom. Lexical retrieval alone still has the better
-nDCG on the frozen split (0.804), and the product arm is still not the best arm
-— what it buys is not missing the decisive memory.
+## Project status
 
-Two findings matter more than the headroom. **The shipping retrieval path is
-the weakest non-broken arm** — beaten by plain IDF-weighted token overlap by up
-to 32 points, because it is a hashing embedder rather than a trained model; fix
-that before building a ranker. And three of the five families with the largest
-gaps (indirect evidence, copied evidence, temporal drift) are answerable with
-**provenance, source roots and recorded time — all of which the store already
-has and retrieval does not use.**
+**Alpha (0.8.0).** The governance core, observability, adapters, federation and
+MCP server are built and tested. Open items:
 
-The benchmark was invalid twice before it measured anything: corpus order
-leaked the answer, then `k` was as large as the corpus. The deliberately broken
-arm caught both, which is the argument for building the thing that can fail
-before the thing that can succeed.
+- The Claude adapter has not yet been run against the live API (P3 gate).
+- Postgres storage is deferred until a deployment needs concurrent writers.
+- Developer-experience (R8) and release-qualification (R9) gates are in progress.
+- Not yet published to PyPI, pending a name.
 
-Three rules the contract enforces in code, each from a measured mistake:
-**irrelevant never means deleted** (Phase A's withdrawal policy cost 12.5
-points), **a relevance score never overrides authorisation or retraction**, and
-**a missing signal is never scored zero**.
+See [ROADMAP.md](ROADMAP.md) for milestones, gates and kill criteria, and
+[CHANGELOG.md](CHANGELOG.md) for what changed.
 
-## Read in this order
+## Documentation
 
-| Doc | What it is |
+| Topic | Document |
 |---|---|
-| [research/CRITICAL_REVIEW.md](research/CRITICAL_REVIEW.md) | Stress test of the original vision, written before any code |
-| [research/SCORECARD.md](research/SCORECARD.md) | **Every registered claim and what the measurements did to it** — simulated, live and deterministic, kept apart on purpose |
-| [research/RETROSPECTIVE.md](research/RETROSPECTIVE.md) | The simulated milestones P1–P9 in detail |
-| [AGENTS.md](AGENTS.md) | Repository constitution and engineering rules (humans and AI agents) |
-| [RESEARCH.md](RESEARCH.md) | Hypotheses, novelty boundary, related work, experiments |
-| [EVALUATION.md](EVALUATION.md) | RuleWorld environment, metrics, baselines, statistics |
-| [SPEC.md](SPEC.md) | Memory object, event log, lifecycle, API v0 |
-| [ARCHITECTURE.md](ARCHITECTURE.md) | Components, data flow, storage, layout |
-| [ROADMAP.md](ROADMAP.md) | The single roadmap, with gates and kill criteria |
-| [SECURITY.md](SECURITY.md) | Threat model |
-| [DEPLOYMENT.md](DEPLOYMENT.md) | **Running it for real** — backup, serving, capacity, upgrades, and what it is not ready for |
-| [docs/AUDIT.md](docs/AUDIT.md) | **Which guarantees are actually implemented** — and which are specification only |
-| [docs/INVARIANTS.md](docs/INVARIANTS.md) | Every invariant mapped to the test that proves it, or to the gap |
-| [docs/PROTOCOL.md](docs/PROTOCOL.md) | The federation protocol v1 — identities, events, state machine, delivery |
-| [docs/REFERENCE_DEPLOYMENT.md](docs/REFERENCE_DEPLOYMENT.md) | **A two-store federation end to end in five minutes**, plus troubleshooting |
-| [VERSIONING.md](VERSIONING.md) | What the version number promises — the schema, not the API |
-| [CHANGELOG.md](CHANGELOG.md) | What changed, and which bugs it fixed |
-| [research/PRIOR_ART.md](research/PRIOR_ART.md) | Verified related work, and what it does to the novelty claims |
-| [CONTRIBUTING.md](CONTRIBUTING.md) | How to add a feature or an experiment |
+| Running it for real | [DEPLOYMENT.md](DEPLOYMENT.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) |
+| Two-store federation in five minutes | [docs/REFERENCE_DEPLOYMENT.md](docs/REFERENCE_DEPLOYMENT.md) |
+| Architecture and data model | [ARCHITECTURE.md](ARCHITECTURE.md), [SPEC.md](SPEC.md) |
+| Federation protocol | [docs/PROTOCOL.md](docs/PROTOCOL.md) |
+| Security and threat model | [SECURITY.md](SECURITY.md) |
+| Which guarantees are implemented | [docs/AUDIT.md](docs/AUDIT.md), [docs/INVARIANTS.md](docs/INVARIANTS.md) |
+| What was validated, and how | [docs/VALIDATION.md](docs/VALIDATION.md) |
+| Relevance contract | [docs/RELEVANCE_SPEC.md](docs/RELEVANCE_SPEC.md) |
+| Research results | [research/SCORECARD.md](research/SCORECARD.md), [research/FINDINGS.md](research/FINDINGS.md) |
+| Research design and evaluation | [RESEARCH.md](RESEARCH.md), [EVALUATION.md](EVALUATION.md) |
+| Versioning policy | [VERSIONING.md](VERSIONING.md) |
 
-## Central question
+## Development
 
-> Can we estimate the causal value of agent memories accurately and cheaply enough that retaining, retrieving and sharing memories by that value beats strong heuristic baselines?
+```bash
+python -m unittest discover -s tests -t .   # full suite, no dependencies needed
+python -m experiments.faultsim              # deterministic multi-store fault matrix
+python tools/scan_secrets.py                # sensitive-data scan of the repository
+```
 
-If not, everything downstream (federation, ecology, the learned controller) has no foundation — but the governance layer still stands on its own, which is why it was built first. See the kill criteria in [ROADMAP.md](ROADMAP.md).
+Read [AGENTS.md](AGENTS.md), the rules for everyone changing this repository,
+humans and AI agents alike, and [CONTRIBUTING.md](CONTRIBUTING.md) before
+opening a pull request.
+
+## License
+
+Copyright © 2026 CR Ramesh. All rights reserved. This is proprietary software;
+see [LICENSE](LICENSE) for terms.

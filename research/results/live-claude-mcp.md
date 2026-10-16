@@ -56,10 +56,14 @@ memory failed verification and recommends diagnosis or an inspection instead.
   uses recall → verify → remember unprompted by tool order, and a retraction
   issued from another process mid-session reaches the running server and stops
   the model acting on withdrawn knowledge, 10 of 10.
-* **It found a real bug first.** Setting this up showed a running fabric did
-  not see another process's retraction at all — a pre-fix server would have
-  scored `refused_by_store = 0` here. Fixed and pinned by
-  `tests/test_cross_process_freshness.py` before this run.
+* **It found a real bug first, and the bug is measured, not inferred.**
+  Setting this up showed a running fabric did not see another process's
+  retraction. The same harness, retracted arm, run against `main` at `0067e23`
+  (before the fix), Sonnet 5.5, 3 trials: the store refused **0 of 3**, `verify`
+  told the model the withdrawn memory was usable, and in at least 2 of the 3 the
+  model recommended the withdrawn fix (the third's final message only
+  summarised its lesson). After the fix: refused 10 of 10, followed 0 of 10.
+  Pinned by `tests/test_cross_process_freshness.py`.
 * **Not established:** that `adapters/claude.py`'s request shape is accepted
   by the Messages API. This run exercises the MCP door, not that adapter. That
   check still needs an API key.

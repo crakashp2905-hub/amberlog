@@ -8,6 +8,8 @@ because the record *is* the change.
 
 from __future__ import annotations
 
+import functools
+
 import random
 import time
 from contextlib import contextmanager
@@ -166,6 +168,22 @@ def iso_timestamp(ms: int) -> str:
     )
 
 
+def _fresh(method):
+    """Catch up on other processes' writes before serving, enforcing or writing.
+
+    See `MemoryFabric.refresh`. Applied to the public entry points only:
+    internal calls read `self.state` directly, so the cost is one indexed read
+    per call made from outside.
+    """
+
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        self.refresh()
+        return method(self, *args, **kwargs)
+
+    return wrapper
+
+
 class MemoryFabric:
     """Single-process memory fabric with a governed write and share path."""
 
@@ -233,6 +251,7 @@ class MemoryFabric:
             )
             self.encrypt_content = encrypt_content
             self.projection = Projection(unsealer=self._unseal_content)
+            self._seen_seq = 0
             self.index = VectorIndex(embedder)
             # The arm the product was missing. `relevance_v1` measured the
             # vector path as the weakest non-broken arm, losing to
@@ -910,10 +929,43 @@ class MemoryFabric:
 
     def _emit(self, *events: ev.Event) -> list[ev.Event]:
         stored = self.log.append_many(events)
+        if stored and stored[0].seq != self._seen_seq + 1:
+            # Another process appended between our last catch-up and this
+            # write, so folding only our own events would put the projection
+            # out of log order. Rebuild; it already contains what we wrote.
+            self._replay()
+            return stored
         for event in stored:
             self.projection.apply(event)
+        if stored:
+            self._seen_seq = stored[-1].seq
         self._estimator_dirty = True
         return stored
+
+    def refresh(self) -> bool:
+        """Fold in whatever other processes have appended to the log.
+
+        **Each process folds only its own writes**, so without this a running
+        fabric -- an MCP server, an app, the dashboard -- went on serving a
+        memory that an operator had quarantined from a terminal, until it was
+        restarted. A fresh process said `quarantined`; the live one recalled
+        it. That broke "a known-invalid version is never served" for the
+        deployment shape the MCP server and dashboard create
+        (`tests/test_cross_process_freshness.py`).
+
+        Called at every entry point that serves, enforces or writes. When
+        nothing changed it costs one indexed `MAX(seq)` read; when something
+        did, it rebuilds from the log, which is the source of truth (AGENTS.md
+        principle 3). Inside an open transaction it does nothing: the write
+        lock is ours, so nobody else can have appended. Returns whether a
+        rebuild happened.
+        """
+        if self.log.in_transaction:
+            return False
+        if self.log.head_seq == self._seen_seq:
+            return False
+        self._replay()
+        return True
 
     @contextmanager
     def _transaction(self):
@@ -938,6 +990,10 @@ class MemoryFabric:
         outermost = not self.log.in_transaction
         try:
             with self.log.transaction():
+                if outermost and self.log.head_seq != self._seen_seq:
+                    # The write lock is now ours, so this is the last moment
+                    # anyone else can have appended: catch up before writing.
+                    self._replay()
                 yield
         except BaseException:
             if outermost:
@@ -946,12 +1002,16 @@ class MemoryFabric:
 
     def _replay(self) -> None:
         """Rebuild all state from the log, including the vector index."""
+        head = self.log.head_seq
         self.projection = Projection.rebuild(
             self.log, unsealer=self._unseal_content
         )
         for memory in self.state.memories.values():
             if memory.lifecycle_state is not LifecycleState.DELETED:
                 self._index(memory.id, self._index_text(memory))
+        # Read before the rebuild: an event appended during it is picked up by
+        # the next `refresh` rather than counted as seen and never folded.
+        self._seen_seq = head
         self._estimator_dirty = True
 
     # --- the three mechanisms the store had and retrieval did not use -----
@@ -1278,6 +1338,7 @@ class MemoryFabric:
 
     # --- episodes --------------------------------------------------------
 
+    @_fresh
     def start_episode(
         self,
         agent_id: str,
@@ -1315,6 +1376,7 @@ class MemoryFabric:
         episode = self.start_episode(agent_id, task_id, context, seed)
         return AgentSession(fabric=self, agent_id=agent_id, episode=episode)
 
+    @_fresh
     def record_outcome(self, episode_id: str, outcome: float, verifier_id: str) -> None:
         """Record a verified outcome.
 
@@ -1348,6 +1410,7 @@ class MemoryFabric:
 
     # --- writing ---------------------------------------------------------
 
+    @_fresh
     def remember(
         self,
         agent_id: str,
@@ -1511,6 +1574,7 @@ class MemoryFabric:
         self._index(memory.id, self._index_text(memory))
         return memory.id
 
+    @_fresh
     def revise(
         self,
         memory_id: str,
@@ -1560,6 +1624,7 @@ class MemoryFabric:
         self._index(memory_id, self._index_text(revised))
         return revised
 
+    @_fresh
     def derive(
         self,
         agent_id: str,
@@ -1648,6 +1713,7 @@ class MemoryFabric:
 
     # --- retrieval -------------------------------------------------------
 
+    @_fresh
     def retrieve(
         self,
         agent_id: str,
@@ -2130,6 +2196,7 @@ class MemoryFabric:
             basis=basis,
         )
 
+    @_fresh
     def validate(self, memory_id: str, actor: str, reason: str = "validated") -> Memory:
         """Promote a candidate to active."""
         memory = self._require(memory_id)
@@ -2140,6 +2207,7 @@ class MemoryFabric:
         self._emit(self._transition(memory_id, LifecycleState.ACTIVE, reason, actor))
         return self.state.memories[memory_id]
 
+    @_fresh
     def quarantine(
         self,
         memory_id: str,
@@ -2478,6 +2546,7 @@ class MemoryFabric:
             )
         )
 
+    @_fresh
     def share(
         self,
         memory_id: str,
@@ -2537,6 +2606,7 @@ class MemoryFabric:
 
     # --- inspection ------------------------------------------------------
 
+    @_fresh
     def get(self, memory_id: str) -> Memory:
         """**Inspection only. Not an agent-facing read.**
 
@@ -2588,6 +2658,7 @@ class MemoryFabric:
         principal = self.principals.verify(credential, self.now())
         return TenantView(self, principal, verified=True)
 
+    @_fresh
     def lifecycle_of(self, memory_id: str) -> LifecycleState:
         """One memory's lifecycle state, and **no content**.
 
@@ -2629,6 +2700,7 @@ class MemoryFabric:
             self._enforcer = Enforcer(self)
         return self._enforcer
 
+    @_fresh
     def use(
         self,
         memory_id: str,
@@ -2674,6 +2746,7 @@ class MemoryFabric:
             decision=decision, token=token, memory=memory, warnings=warnings
         )
 
+    @_fresh
     def verify_before_action(
         self,
         token: "ExposureToken",

@@ -126,6 +126,9 @@ class Api:
         rest = parts[1:]
 
         with self._lock:
+            # A dashboard runs for hours while operators act from the CLI. It
+            # must show what the log says now, not what it said at startup.
+            self.fabric.refresh()
             try:
                 return self._route(rest, params)
             except NotFound as exc:

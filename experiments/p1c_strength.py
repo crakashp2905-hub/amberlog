@@ -51,4 +51,49 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(main_p1d() if "--p1d" in sys.argv else main())
+
+
+def main_p1d() -> int:
+    """P1d: holdout 3, multi_hop_3 primary (research/prereg/p1d-link-strength-mh3.md)."""
+    from experiments import p1_chains as p1
+    from research.bench.relevance_v2 import build as B
+
+    name = "holdout_p1d"
+    cases = [B.BUILDERS["multi_hop_3"](i) for i in range(300, 324)]
+    B.shuffle_corpora(cases)
+    (base.HERE / "research" / "bench" / "relevance_v2" / f"{name}.json").write_text(
+        json.dumps({"benchmark": "relevance_v2", "split": name, "cases": cases}) + "\n")
+    h3 = base.measure(name, SWITCH)
+    dev = base.measure("dev", SWITCH)
+    b = h3["chain_before"]["by_family"]["multi_hop_3"]
+    s = h3["chain_after"]["by_family"]["multi_hop_3"]
+    c = h3["oracle"]
+    mh4_ok = dev["chain_after"]["by_family"]["multi_hop_4"] >= dev["chain_before"]["by_family"]["multi_hop_4"]
+    threshold = b + 0.4 * (c - b)
+    verdict = ("INCONCLUSIVE (headroom too small)" if b >= 0.9
+               else "SUPPORTED" if s >= threshold and mh4_ok else "NOT SUPPORTED")
+    commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
+                            text=True, cwd=base.HERE).stdout.strip()
+    r = {"holdout3": h3, "dev": dev, "B": b, "S": s, "C": c, "threshold": threshold,
+         "dev_mh4_not_worse": mh4_ok, "verdict": verdict, "commit": commit,
+         "cases": len(cases)}
+    out = base.HERE / "research" / "results"
+    (out / "p1d-strength-mh3.json").write_text(json.dumps(r, indent=2) + "\n")
+    (out / "p1d-strength-mh3.md").write_text(f"""# P1d — link-strength selection on three-hop chains
+
+Registered in [p1d-link-strength-mh3.md](../prereg/p1d-link-strength-mh3.md)
+before holdout 3 existed. Produced by `python -m experiments.p1c_strength --p1d`
+at commit `{commit}`; raw numbers in [p1d-strength-mh3.json](p1d-strength-mh3.json).
+
+**{verdict}.** On {len(cases)} fresh `multi_hop_3` cases (holdout 3), chain
+sufficiency goes from **{b:.3f}** to **{s:.3f}** against an oracle of {c:.3f}
+(threshold {threshold:.3f}). `multi_hop_4` on dev not worse: {mh4_ok}.
+
+Cost: nodes explored {h3['chain_before']['nodes_explored']} → {h3['chain_after']['nodes_explored']}.
+
+**What it does not establish.** Same templates as every other split: new
+cases, not a new distribution. `reconstruct` is opt-in either way.
+""")
+    print(json.dumps({k: v for k, v in r.items() if k not in ("holdout3", "dev")}, indent=2))
+    return 0

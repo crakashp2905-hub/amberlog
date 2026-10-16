@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 if TYPE_CHECKING:  # pragma: no cover
+    from .certificates import CertificateVerification, EvidenceCertificate
     from .session import AgentSession
 
 from . import events as ev
@@ -166,6 +167,38 @@ def iso_timestamp(ms: int) -> str:
         .isoformat(timespec="milliseconds")
         .replace("+00:00", "Z")
     )
+
+
+
+def _screened_text(content: str, *metadata: Any) -> str:
+    """The text the ingest screen must see: the content *and* every string in
+    the metadata stored beside it.
+
+    The screen used to read `content` alone. A secret put in `context` or
+    `structured` was stored as an active memory, kept in plaintext (only the
+    content is sealed), and copied into every conclusion `derive` drew from
+    it, because derived memories inherit their parents' context. Found while
+    writing the summary-leakage regression test (SAFETY_AND_SECURITY.md S8).
+    Keys are included as well as values: a key is as able to carry a secret.
+    """
+    parts = [content]
+
+    def walk(value: Any) -> None:
+        if isinstance(value, str):
+            parts.append(value)
+        elif isinstance(value, Mapping):
+            for key, item in value.items():
+                walk(str(key))
+                walk(item)
+        elif isinstance(value, (list, tuple, set, frozenset)):
+            for item in value:
+                walk(item)
+        elif value is not None and not isinstance(value, (bool, int, float)):
+            parts.append(str(value))
+
+    for item in metadata:
+        walk(item)
+    return "\n".join(parts)
 
 
 def _fresh(method):
@@ -1479,7 +1512,8 @@ class MemoryFabric:
             copy_of = self.copy_index.find(content)
 
         activate = self.auto_activate if auto_activate is None else auto_activate
-        ruling = self.firewall.screen_ingest(content)
+        ruling = self.firewall.screen_ingest(
+            _screened_text(content, context, structured))
         if ruling.decision is FirewallDecision.QUARANTINE:
             lifecycle = LifecycleState.QUARANTINED
         elif copy_of is not None and self.state.memories[
@@ -1597,6 +1631,11 @@ class MemoryFabric:
                 f"{memory_id} has been content-erased; record new information "
                 "as a new memory rather than a new version"
             )
+        # A revision is a write and passes the same screen as the first
+        # version. It used to skip it, so a revision could put a secret or an
+        # injection into a memory that was already active and retrievable.
+        ruling = self.firewall.screen_ingest(
+            _screened_text(content, current.context, current.structured))
         now = self.now()
         revised = current.evolve(
             version=current.version + 1,
@@ -1619,10 +1658,19 @@ class MemoryFabric:
                     )
                 ),
                 reason=reason,
-            )
+            ),
+            *(
+                [self._transition(
+                    memory_id, LifecycleState.QUARANTINED, "; ".join(ruling.reasons),
+                    self.firewall.id, basis=WithdrawalBasis.SENSITIVE_DATA.value,
+                )]
+                if ruling.decision is FirewallDecision.QUARANTINE
+                and current.lifecycle_state is not LifecycleState.QUARANTINED
+                else []
+            ),
         )
         self._index(memory_id, self._index_text(revised))
-        return revised
+        return self.state.memories[memory_id]
 
     @_fresh
     def derive(
@@ -2777,6 +2825,43 @@ class MemoryFabric:
             )
         return decision
 
+    @_fresh
+    def certify(
+        self,
+        claim_id: str,
+        evidence: Sequence[Any],
+        agent_id: str,
+        tenant_id: str | None = None,
+        required_checks: Sequence[str] = (),
+        min_independent_sources: int = 1,
+        ttl_ms: int | None = 300_000,
+    ) -> "EvidenceCertificate":
+        """Record the evidence a decision rests on, for re-checking at action
+        time (`certificates.py`). Issuing checks nothing; `verify_certificate`
+        does, against the store as it is then."""
+        from .certificates import ALWAYS, CertificateVerifier
+
+        return CertificateVerifier(self).issue(
+            claim_id, evidence, agent_id, tenant_id=tenant_id,
+            required_checks=tuple(required_checks) or ALWAYS,
+            min_independent_sources=min_independent_sources, ttl_ms=ttl_ms,
+        )
+
+    @_fresh
+    def verify_certificate(
+        self,
+        certificate: Any,
+        agent_id: str,
+        tenant_id: str | None = None,
+        risk: "RiskLevel" = RiskLevel.HIGH,
+        mode: str = "selective",
+    ) -> "CertificateVerification":
+        """Re-check every piece of evidence in a certificate, now. Fails closed."""
+        from .certificates import CertificateVerifier
+
+        return CertificateVerifier(self, mode=mode).verify(
+            certificate, agent_id=agent_id, tenant_id=tenant_id, risk=risk)
+
     def history(self, memory_id: str) -> list[Memory]:
         self._require(memory_id)
         return list(self.state.history.get(memory_id, ())) + [self.state.memories[memory_id]]
@@ -2963,6 +3048,18 @@ class TenantView:
     def verify_before_action(self, token: "ExposureToken", **kwargs: Any):
         kwargs.pop("agent_id", None)
         return self.fabric.verify_before_action(token, self.agent_id, **kwargs)
+
+    def certify(self, claim_id: str, evidence: Sequence[Any], **kwargs: Any):
+        kwargs.pop("tenant_id", None)
+        kwargs.pop("agent_id", None)
+        return self.fabric.certify(claim_id, evidence, self.agent_id,
+                                   tenant_id=self.tenant_id, **kwargs)
+
+    def verify_certificate(self, certificate: Any, **kwargs: Any):
+        kwargs.pop("tenant_id", None)
+        kwargs.pop("agent_id", None)
+        return self.fabric.verify_certificate(certificate, self.agent_id,
+                                              tenant_id=self.tenant_id, **kwargs)
 
     def memory_ids(self) -> list[str]:
         """Every memory in this tenant, whatever its lifecycle state.

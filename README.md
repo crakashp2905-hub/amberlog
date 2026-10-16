@@ -282,7 +282,7 @@ More: [SCORECARD.md](research/SCORECARD.md) (every claim and its outcome) and
 
 ## Project status
 
-**Alpha (0.8.0).** The governance core, observability, adapters, federation and
+**Alpha (0.9.0).** The governance core, observability, adapters, federation and
 MCP server are built and tested. Open items:
 
 - The Claude adapter has not yet been run against the live API (P3 gate).

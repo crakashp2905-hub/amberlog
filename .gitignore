@@ -49,3 +49,4 @@ research/bench/longmemeval/data/
 research/bench/relevance_v2/holdout_p1b.json
 research/bench/relevance_v2/holdout_p1c.json
 research/bench/relevance_v2/holdout_p1d.json
+.d1-cache.json

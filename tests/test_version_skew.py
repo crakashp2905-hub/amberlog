@@ -338,3 +338,61 @@ class TheProtocolIsStableAcrossVersions(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class EveryShippedVersionUpgradesThenBacksUp(AnOlderStoreOpensOnNewerCode):
+    """Phase 4: migration, then backup and restore, for every shipped schema.
+
+    A store written at each older version is opened by this code. The test
+    then writes current-version events into it (a memory, a retraction, and
+    the 0.9.0 `ActionGated`), backs it up with the CLI, and opens the copy.
+    The copy must replay to the same memories and states. The log then holds
+    events of two versions, which is what a customer's store holds after an
+    upgrade.
+    """
+
+    VERSIONS = ("0.2.0", "0.3.0", "0.4.0", "0.5.0", "0.6.0", "0.7.0", "0.8.0")
+
+    def test_upgrade_write_backup_restore(self) -> None:
+        from io import StringIO
+        from unittest.mock import patch
+
+        from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+        from memory_fabric.cli import main
+
+        for version in self.VERSIONS:
+            with self.subTest(version):
+                if self.path.exists():
+                    self.path.unlink()
+                old = self._write_legacy(
+                    version, strip=("tenant_id", "valid_from", "valid_to", "capabilities")
+                    if version < "0.5.0" else ())
+                fabric = MemoryFabric(self.path, firewall=permissive(), auto_activate=True)
+                try:
+                    new = fabric.remember("ag", "valve 9 is downstream of the pump")
+                    gate = ActionGate(fabric, ActionPolicy(
+                        tools={"open_valve": ToolRule("open_valve")},
+                        grants={"ag": frozenset({"open_valve"})}))
+                    cert = fabric.certify("open-7", [old], "ag")
+                    self.assertTrue(gate.authorize("open_valve", "ag", cert).allowed)
+                    fabric.quarantine(old, reason="survey was wrong", basis="contradicted")
+                    self.assertFalse(gate.authorize("open_valve", "ag", cert).allowed)
+                    written = fabric.log.schema_versions()
+                    states = {m: fabric.lifecycle_of(m) for m in (old, new)}
+                finally:
+                    fabric.close()
+                self.assertEqual(written, sorted({version, SCHEMA_VERSION}))
+
+                copy = self.path.with_name(f"copy-{version}.db")
+                with patch("sys.stdout", StringIO()):
+                    self.assertEqual(main(["--db", str(self.path), "backup", str(copy)]), 0)
+                restored = MemoryFabric(copy, firewall=permissive())
+                try:
+                    self.assertEqual({m: restored.lifecycle_of(m) for m in (old, new)}, states)
+                    self.assertIs(states[old], LifecycleState.QUARANTINED)
+                    self.assertEqual(restored.get(new).content,
+                                     "valve 9 is downstream of the pump")
+                    types = {e.type for e in restored.log.read()}
+                    self.assertIn("ActionGated", types)
+                finally:
+                    restored.close()

@@ -27,7 +27,10 @@ from .context import build_context
 if TYPE_CHECKING:  # pragma: no cover
     from ..session import AgentSession
 
-DEFAULT_MODEL = "claude-opus-5"
+# The current Opus. Thinking cannot be disabled on it and its default effort is
+# `medium`, which is why `effort` is always sent explicitly below; forced
+# `tool_choice` is a 400 on it, which the loop never uses.
+DEFAULT_MODEL = "claude-opus-5-5"
 DEFAULT_MAX_TOKENS = 16000
 
 # Beta flag for the scalar `fallbacks: "default"` form, which routes a policy

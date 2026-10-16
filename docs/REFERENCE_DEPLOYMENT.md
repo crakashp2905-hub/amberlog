@@ -22,7 +22,7 @@ checked in CI with nothing installed, because a zero-dependency claim is only tr
 is tested that way.
 
 ```bash
-python -m unittest discover -s tests -t .    # 661 tests
+python -m unittest discover -s tests -t .    # count: docs/VALIDATION.md
 python -m experiments.faultsim               # 12 fault scenarios
 ```
 

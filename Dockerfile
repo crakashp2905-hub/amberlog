@@ -10,7 +10,9 @@ RUN pip install --no-cache-dir build && python -m build --wheel --outdir /dist
 FROM python:3.13-slim
 LABEL org.opencontainers.image.title="Memory Fabric" \
       org.opencontainers.image.description="Governed agent memory, valued by effect on outcomes." \
-      org.opencontainers.image.source="https://github.com/crakashp2905-hub/memory-fabric"
+      org.opencontainers.image.source="https://github.com/crakashp2905-hub/memory-fabric" \
+      org.opencontainers.image.authors="C R Akash Preetham" \
+      org.opencontainers.image.licenses="LicenseRef-Proprietary"
 
 COPY --from=build /dist/*.whl /tmp/
 RUN pip install --no-cache-dir /tmp/*.whl && rm /tmp/*.whl

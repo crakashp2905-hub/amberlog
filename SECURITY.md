@@ -166,4 +166,4 @@ before parsing. Both sentences predated the mechanism they named.
 - There is a kill switch: quarantine by predicate (for example "everything from agent X after time t"), which propagates through lineage.
 
 ## Reporting
-This is a research prototype with no production deployments. Report issues to the maintainers directly *(contact to be set)*.
+This is a research prototype with no production deployments. Report a vulnerability privately through the repository's **Security → Report a vulnerability** page on GitHub, not in a public issue. The maintainer is listed in `pyproject.toml`.

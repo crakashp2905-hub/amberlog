@@ -6,6 +6,26 @@ the research, which lives in [research/SCORECARD.md](../research/SCORECARD.md)
 evidence of anything by itself: what matters is which checks could have failed
 and did not.
 
+## Current baseline
+
+**2026-10-16, `main` at `1978d2b`** (after PR #4), Linux, Python 3.13.16. The
+README cites the numbers here, not its own.
+
+| Check | Command | Result |
+|---|---|---|
+| Unit, integration, property | `python -m unittest discover -s tests -t .` | **1281 OK, 36 skipped** (Postgres-only file without a server; live-model arms without Ollama or an API key) |
+| Fault matrix | `python -m experiments.faultsim` | **17/17** |
+| Secret scan | `python tools/scan_secrets.py` | 95 high-severity findings, **0 unexpected** |
+| Compile | `python -m compileall -q memory_fabric experiments tests examples tools` | clean |
+| Package | `python -m build`, then CI's wheel-content checks | wheel and sdist build; dashboard, `py.typed`, LICENSE and the new modules present; experiments and tests excluded |
+| Installed copy | venv outside the tree: `memory-fabric demo`, then `doctor` | **sound**, no warnings |
+| Examples | each of `examples/*.py` | `action_gate`, `agent_on_the_fabric`, `poisoning_and_rollback` exit 0. `live_memory_os` exits 2: it needs a running Ollama server, which this host does not have |
+| CI | GitHub Actions on `3c76bd8` (the PR #4 head that was squashed into `1978d2b`) | all 14 jobs green |
+
+Later runs in this file are kept as history.
+
+## History
+
 - **Run:** 2026-10-11, commit at `HEAD` of `main`, Python 3.13.5 on Windows 11.
 - **Automated in CI:** rows 1–5 and 11 on every push, across Python 3.11–3.13 on Linux, macOS (since 2026-10-16) and Windows, plus the storage-touching suite on PostgreSQL 16. The rest are run by hand before a release, which is why they are written down.
 - **Re-run:** 2026-10-16 on Linux, Python 3.13.16, after fixing the two causes of a red `main` (below): row 1 as `python -m unittest discover -s tests -t .` — **1086 tests OK, 30 skipped** (no Ollama, so the real-embedder arms skip and say so); row 2 **17/17**; row 3 71 findings, **0 unexpected**; row 4 clean; row 6 repeated from the README verbatim — `demo`, `attention`, `doctor` (sound), the Python quick start, the multi-tenant snippet and both `examples/` scripts, all exit 0 from a clean venv; row 16 added.

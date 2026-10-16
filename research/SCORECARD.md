@@ -75,6 +75,20 @@ read does not pose a retrieval problem at all. The product default changed from
 `hybrid` to `lexical` on that evidence — the first time an external benchmark
 has overruled an internal one here.
 
+## 2b. The safety track (plan Tasks 5–12, 2026-10-16)
+
+All internal, hand-built benchmarks with a deterministic agent.
+
+| | claim | outcome |
+|---|---|---|
+| **P5 H5a** | Fabric closes ≥ 50% of the invalid-evidence-action headroom over the best baseline | ❌ **not supported** as registered: the best M1 baseline (`local`) barely acts. Against acting baselines it closes 65% (exploratory) ([result](results/p5-poisonworld.md)) |
+| **P5 H5b** | No task-success loss against shared memory (margin 0.02) | ✅ **supported**: 0.837 vs 0.625 |
+| **P5 H5c** | Selective reassessment blocks less valid evidence than blanket mode, at equal safety | ✅ **supported**: 0.064 vs 0.133 |
+| **P5 H5d** | No unauthorized action through the gate | ✅ **supported**: 0.000, after a disclosed harness ordering fix |
+| **P9** | A read-only replay predicts which sources an action depended on | 📏 **measured**: precision 0.996, recall 1.000 against live withdrawal, after a 20% false-attribution bug was found ([result](results/p9-incidents.md)) |
+| **P10** | Triggered auditing finds planted problems that periodic sampling misses | 📏 **measured**: 100% vs 32% ([result](results/p10-audit.md)) |
+| **P12** | Many agent processes can share one store | ❌ **does not hold**: 214 → 4 ops/s from 1 to 100 SQLite agents ([result](results/p12-load.md)) |
+
 ## 3. Integrity engineering (roadmap phases 0–7)
 
 Not hypotheses. Deterministic guarantees, so the unit is "tested or not", and a
@@ -86,7 +100,7 @@ reproducible counterexample is a bug rather than a statistic.
 | Invariants partial | 7 | 0 |
 | Invariants with no route to a test | 3 | 0 |
 
-1086 unit/integration/property tests, 17 deterministic multi-store fault
+Unit, integration and property tests (current count in [VALIDATION.md](../docs/VALIDATION.md#current-baseline)), 17 deterministic multi-store fault
 scenarios, fourteen testing layers. Full matrix in
 [docs/INVARIANTS.md](../docs/INVARIANTS.md).
 

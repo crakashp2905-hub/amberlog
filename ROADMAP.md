@@ -20,7 +20,7 @@ Two things are built in P1 even though they only pay off at P4, because **they c
 | **P0** | Specs | This doc set + the critical review | ✅ done |
 | **P1** | **Governance core** | Memory model; append-only event log as source of truth; projections rebuilt from the log; lineage graph; provenance; sensitive-data detection; firewall; scopes; lifecycle; TMS retraction; `explain()`; SDK facade; tests | A poisoned memory can be traced to its source and retracted with every descendant marked contested, proven by tests; projections rebuild byte-identically from the log |
 | **P2** | Observability | ✅ Shared read model, triage list, CLI, read-only HTTP API, web dashboard, demo seeder. **Postgres deferred** — see below | ✅ Someone outside the project can answer "why did this agent remember this?" unaided, from either surface |
-| **P3** | Adapters | ✅ `AgentSession` (capability-scoped writes), prompt-context builder with injection defences, Claude API adapter, transcript ingestion | ⚠️ **Partly met.** The full loop runs against a stub client; **not yet run against the live API** (no key in this environment). See below. |
+| **P3** | Adapters | ✅ `AgentSession` (capability-scoped writes), prompt-context builder with injection defences, Claude API adapter, transcript ingestion | ✅ **Met for a live Claude model over MCP** (2026-10-16): Sonnet 5.5 and Opus 5.5, 20 trials, every run recalled and verified, and a retraction from another process mid-session was refused 10/10 ([result](research/results/live-claude-mcp.md)). Open: `adapters/claude.py`'s request shape against the Messages API, which needs a key. See below. |
 | **P4** | Causal credit (H1) | ✅ RuleWorld with analytic ground truth, DR + amortized estimators, power sweeps, pre-registered experiment | ✅ **H1 supported**: ρ=0.604 at 1.8% overhead, +0.366 over naive (ρ=0.761 at ε=0.20). [Result](research/results/h1-causal-credit.md) · [decision](research/decisions/2026-09-28-h1-proceed.md) |
 | **P5** | Credit-driven lifecycle (H2) | ✅ v2 world (harm bites, drift, rare events), retention arms, pre-registered experiment | ❌ **H2 killed**: amortized beats the heuristics but loses to naive usage-success (−0.012). Naive captures 93% of the oracle's gain. [Result](research/results/h2-credit-driven-retention.md) · [decision](research/decisions/2026-10-01-h2-killed.md) |
 | **P6** | Selective federation (H3) | ✅ `federation.py` (recipient decides, imports unvalidated, provenance crosses), two-context world, overlap sweep | ⚠️ **H3 inconclusive**: crossover curve confirmed, but the registered +0.030 margin exceeded the +0.027 ceiling, so no method could pass. [Result](research/results/h3-selective-federation.md) · [decision](research/decisions/2026-10-05-h3-inconclusive.md) |
@@ -72,6 +72,13 @@ H2 was killed at the registered budget of 40. An exploratory post-hoc sweep foun
 That is a new hypothesis, not a rescue of the old one. **H2b** (credit-ranked retention at a binding budget) needs its own pre-registration with fresh seeds before it counts. Until then the product default is naive usage-success.
 
 ### P3 gate: what is and is not proven
+
+**Update 2026-10-16.** A live Claude model now runs the loop end to end
+through the MCP server ([result](research/results/live-claude-mcp.md)), which
+closes the gate's substance: the fabric works with a real Claude model, and
+retraction reaches a running session. What remains is narrower than before —
+whether the Messages API accepts `claude.py`'s exact request — and the text
+below is about that adapter only.
 
 The fabric-side path is real and tested: session scoping, retrieval, exposure logging, prompt assembly, the `remember` tool, governance on the agent's write, and the refusal of a self-reported outcome. The model is a stub, so what remains unproven is only the request shape — whether the live API accepts this exact combination of `thinking`, `output_config.effort`, `strict` tools and the `fallbacks` beta.
 

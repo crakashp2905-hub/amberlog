@@ -483,6 +483,16 @@ class CertificateVerifier:
                 return refused(exc.reason_code, exc.detail)
         digest = certificate.digest()
         try:
+            # Fold in other processes' writes first. The action gate calls this
+            # directly rather than through a `@_fresh` fabric method, so without
+            # it a gate in a long-running process verified against its own
+            # stale projection and allowed an action on evidence another
+            # process had already retracted. Found by
+            # experiments/e2e_validation.py (E1). A failed refresh is state that
+            # cannot be read, and is refused below like any other.
+            refresh = getattr(self.fabric, "refresh", None)
+            if callable(refresh):
+                refresh()
             return self._verify(certificate, agent_id, tenant_id, risk, digest)
         except Exception as exc:  # fail closed: unknown state is a refusal
             return refused(STATE_UNAVAILABLE, type(exc).__name__, digest)

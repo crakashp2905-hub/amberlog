@@ -20,6 +20,7 @@ README cites the numbers here, not its own.
 | Package | `python -m build`, then CI's wheel-content checks | wheel and sdist build; dashboard, `py.typed`, LICENSE and the new modules present; experiments and tests excluded |
 | Installed copy | venv outside the tree: `memory-fabric demo`, then `doctor` | **sound**, no warnings |
 | Examples | each of `examples/*.py` | `action_gate`, `agent_on_the_fabric`, `poisoning_and_rollback` exit 0. `live_memory_os` exits 2: it needs a running Ollama server, which this host does not have |
+| End-to-end, real processes | `python -m experiments.e2e_validation` ([result](../research/results/e2e-validation.md)) | **22/22** after a fix: an action gate in a long-running process verified against a stale projection and **allowed** an action on evidence another process had retracted |
 | CI | GitHub Actions on `3c76bd8` (the PR #4 head that was squashed into `1978d2b`) | all 14 jobs green |
 
 Later runs in this file are kept as history.

@@ -190,6 +190,20 @@ jobs:
           python-version: "3.13"
       - run: python -m experiments.faultsim
 
+  e2e:
+    # Real process boundaries the unit suite cannot cross: an agent-api server
+    # in its own process, a CLI process that retracts, an action gate in a
+    # third, a child killed with os._exit mid-retraction, and backup/restore.
+    # It found the gate verifying against a stale projection on its first run.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e .
+      - run: python -m experiments.e2e_validation --quick
+
   secrets:
     # The project ships a sensitive-data detector. Pointing it at the repo is
     # both a smoke test of the detector and a guard on what gets committed.

@@ -1,0 +1,137 @@
+{
+  "commit": "ef1dd74",
+  "results": [
+    {
+      "scenario": "E1",
+      "check": "agent-api server starts in its own process",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E1",
+      "check": "own tenant: recall finds the memory over HTTP",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E1",
+      "check": "own tenant: verify says usable",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E1",
+      "check": "other tenant: recall returns nothing",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E1",
+      "check": "other tenant: fetch is refused without content",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E1",
+      "check": "gate allows before the retraction",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E1",
+      "check": "a separate CLI process quarantines",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E1",
+      "check": "server process sees the retraction: verify not usable",
+      "ok": true,
+      "detail": "None"
+    },
+    {
+      "scenario": "E1",
+      "check": "gate in a third process refuses the stale certificate",
+      "ok": true,
+      "detail": "evidence_withdrawn"
+    },
+    {
+      "scenario": "E1",
+      "check": "recall no longer returns it",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E2",
+      "check": "killed inside the retraction transaction: nothing survives",
+      "ok": true,
+      "detail": "exit 70"
+    },
+    {
+      "scenario": "E2",
+      "check": "killed after commit: withdrawn locally and the delivery is still owed",
+      "ok": true,
+      "detail": "exit 70, 1 owed"
+    },
+    {
+      "scenario": "E2",
+      "check": "the recipient has not seen it yet",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E2",
+      "check": "a restarted dispatcher delivers it",
+      "ok": true,
+      "detail": "enforced 1"
+    },
+    {
+      "scenario": "E2",
+      "check": "nothing remains owed",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E2",
+      "check": "origin hash chain verifies after the crash",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E2",
+      "check": "recipient hash chain verifies after the crash",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E3",
+      "check": "backup command succeeds",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E3",
+      "check": "restored copy has the same memories and states",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E3",
+      "check": "restored copy keeps the store identity",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E3",
+      "check": "restored copy verifies against the original's checkpoint",
+      "ok": true,
+      "detail": ""
+    },
+    {
+      "scenario": "E3",
+      "check": "doctor reports the restored copy sound",
+      "ok": true,
+      "detail": ""
+    }
+  ]
+}

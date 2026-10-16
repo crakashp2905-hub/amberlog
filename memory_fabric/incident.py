@@ -204,6 +204,8 @@ def action_events(fabric: Any, tool: str | None = None,
 
 def reconstruct(fabric: Any, action_seq: int | None = None) -> IncidentReport:
     """Report on one gated action, the latest one if `action_seq` is None."""
+    if callable(getattr(fabric, "refresh", None)):
+        fabric.refresh()
     actions = action_events(fabric)
     if not actions:
         raise LookupError("no gated action in this store")

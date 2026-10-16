@@ -79,6 +79,9 @@ class Auditor:
     # --- triggers --------------------------------------------------------
 
     def scan(self, since_seq: int = 0) -> list[Trigger]:
+        # Reading only, but reading another process's writes needs a refresh.
+        if callable(getattr(self.fabric, "refresh", None)):
+            self.fabric.refresh()
         log = self.fabric.log
         events = [e for e in log.read(since_seq=since_seq)]
         out: list[Trigger] = []

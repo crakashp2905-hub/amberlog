@@ -441,6 +441,32 @@ class TestRevokedPermission(unittest.TestCase):
         self.assertFalse(bob.verify_certificate(theirs).ok)
 
 
+class TestCrossProcess(unittest.TestCase):
+    """The gate verifies against the store, not its own stale view of it.
+
+    Found by experiments/e2e_validation.py: a gate in a long-running process
+    allowed an action on evidence another process had already retracted,
+    because the verifier read the projection without folding in other
+    writers."""
+
+    def test_a_retraction_by_another_handle_reaches_the_gate(self) -> None:
+        tmp = TemporaryDirectory()
+        self.addCleanup(tmp.cleanup)
+        path = Path(tmp.name) / "s.db"
+        writer = MemoryFabric(path, auto_activate=True)
+        self.addCleanup(writer.close)
+        fact = writer.remember("ag1", "Valve 7 is upstream of pump 3.")
+        server = MemoryFabric(path)  # another process, in effect
+        self.addCleanup(server.close)
+        gate = ActionGate(server, _policy())
+        cert = server.certify("c", [fact], "ag3")
+        self.assertTrue(gate.authorize("open_valve", "ag3", cert).allowed)
+        writer.quarantine(fact, reason="wrong", basis="contradicted")
+        decision = gate.authorize("open_valve", "ag3", cert)
+        self.assertFalse(decision.allowed)
+        self.assertIn(C.EVIDENCE_WITHDRAWN, decision.reason_codes)
+
+
 class TestExample(unittest.TestCase):
     def test_the_action_gate_example_runs_and_refuses_what_it_should(self) -> None:
         import subprocess

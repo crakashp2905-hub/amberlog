@@ -1,0 +1,19 @@
+{
+  "incidents": 200,
+  "skipped_not_allowed": 85,
+  "sources_judged": 458,
+  "confusion": {
+    "tp": 276,
+    "fp": 1,
+    "fn": 0,
+    "tn": 181
+  },
+  "precision": 0.9963898916967509,
+  "recall": 1.0,
+  "false_attribution_rate": 0.0036101083032490976,
+  "decoys_in_any_report": 0,
+  "path_exact_share": 1.0,
+  "reconstruct_ms_p50": 1.1336944999129628,
+  "reconstruct_ms_p95": 2.0307603995888712,
+  "commit": "3163ec3"
+}

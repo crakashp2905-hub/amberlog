@@ -39,11 +39,12 @@ and erasure, and anyone who has watched one bad memory spread.
 | 🔐 | **Erasure with accountability.** Crypto-erasure removes content and keeps provenance, lineage and audit trail. | Authenticated encryption, external key custody ([SECURITY.md](SECURITY.md)) |
 | 🧾 | **Tamper-evident log.** A hash chain over every event, with external checkpoints. | [SECURITY.md](SECURITY.md) |
 | 🚫 | **Never serves an invalid version**, including at action time, via exposure tokens re-checked before use. | [INVARIANTS.md](docs/INVARIANTS.md) |
+| 🛂 | **Evidence-gated actions.** A protected tool needs a grant *and* a certificate whose evidence still verifies at the moment of use. Valid memory never grants a tool. | Ten-agent benchmark: acted on invalid evidence **0.099** vs **0.285–0.375** for acting baselines; registered safety threshold **not met** ([P5](research/results/p5-poisonworld.md)) |
 | 🏢 | **Multi-tenant by construction.** Tenant scope is bound to the handle, not passed per call. | [SECURITY.md](SECURITY.md) |
 | 🔌 | **Works with any MCP client**, alongside the Python SDK and a Claude API adapter. | [From an MCP client](#from-an-mcp-client) |
 | ⚡ | **Cheap.** **+0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store. | [Phase A cost gate](research/results/phase-a-real-agent-benchmark.md) |
 
-**1086 tests**, 17 deterministic multi-store fault scenarios and 14 integrity
+**1273 tests**, 17 deterministic multi-store fault scenarios and 14 integrity
 invariants ([matrix](docs/INVARIANTS.md)), all run in CI with nothing
 installed. What was run and what it showed: [docs/VALIDATION.md](docs/VALIDATION.md).
 
@@ -223,6 +224,7 @@ PostgreSQL backend (`pip install ".[postgres]"`, then `--db postgresql://...`).
 ```bash
 python examples/poisoning_and_rollback.py   # the governance story, offline
 python examples/agent_on_the_fabric.py      # an agent end to end, with a stub model
+python examples/action_gate.py              # a tool call gated on its evidence
 ```
 
 ## How it works
@@ -274,20 +276,31 @@ withdrawals record their evidence basis, and the triage list flags a
 withdrawal made on weak evidence.
 
 What the project offers is therefore **governance, not accuracy**: provenance,
-retraction and audit that work across store boundaries, which no verified prior
-work does ([PRIOR_ART.md](research/PRIOR_ART.md)).
+retraction and audit that work across store boundaries
+([PRIOR_ART.md](research/PRIOR_ART.md)). Lineage-gated actions and action
+certificates have close 2026 prior art (MemLineage, Proof-Carrying Agent
+Actions), so they are not claimed as new. A limited search found no prior
+cross-store retraction. See [docs/RESEARCH_ROADMAP.md](docs/RESEARCH_ROADMAP.md).
+
+The safety work adds a pre-registered ten-agent poisoning benchmark
+([P5](research/results/p5-poisonworld.md)). Fabric met three of four
+hypotheses. **H5a failed as registered**: the best baseline on the safety
+metric barely acts. 65% of fabric's remaining harm is paraphrased injection
+that its pattern screen does not catch. The agent is deterministic, so the
+benchmark says nothing about real models.
 
 More: [SCORECARD.md](research/SCORECARD.md) (every claim and its outcome) and
 [FINDINGS.md](research/FINDINGS.md) (the full narrative).
 
 ## Project status
 
-**Alpha (0.8.0).** The governance core, observability, adapters, federation and
+**Alpha (0.9.0).** The governance core, observability, adapters, federation and
 MCP server are built and tested. Open items:
 
 - The Claude adapter has not yet been run against the live API (P3 gate).
 - Developer-experience (R8) and release-qualification (R9) gates are in progress.
 - Not yet published to PyPI, pending a name.
+- **Concurrency:** throughput falls sharply as agent processes are added to one store ([P12](research/results/p12-load.md)). Run a few processes per store, not one per agent.
 
 See [ROADMAP.md](ROADMAP.md) for milestones, gates and kill criteria, and
 [CHANGELOG.md](CHANGELOG.md) for what changed.
@@ -300,7 +313,8 @@ See [ROADMAP.md](ROADMAP.md) for milestones, gates and kill criteria, and
 | Two-store federation in five minutes | [docs/REFERENCE_DEPLOYMENT.md](docs/REFERENCE_DEPLOYMENT.md) |
 | Architecture and data model | [ARCHITECTURE.md](ARCHITECTURE.md), [SPEC.md](SPEC.md) |
 | Federation protocol | [docs/PROTOCOL.md](docs/PROTOCOL.md) |
-| Security and threat model | [SECURITY.md](SECURITY.md) |
+| Security and threat model | [SECURITY.md](SECURITY.md), [docs/SAFETY_AND_SECURITY.md](docs/SAFETY_AND_SECURITY.md), [docs/SECURITY_TEST_PLAN.md](docs/SECURITY_TEST_PLAN.md) |
+| What is implemented, task by task | [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md), [docs/RELEASE_EVALUATION.md](docs/RELEASE_EVALUATION.md) |
 | Which guarantees are implemented | [docs/AUDIT.md](docs/AUDIT.md), [docs/INVARIANTS.md](docs/INVARIANTS.md) |
 | What was validated, and how | [docs/VALIDATION.md](docs/VALIDATION.md) |
 | Relevance contract | [docs/RELEVANCE_SPEC.md](docs/RELEVANCE_SPEC.md) |

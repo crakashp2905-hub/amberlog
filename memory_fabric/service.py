@@ -109,6 +109,14 @@ class Session:
     ) -> AccessDecision:
         return self._view().verify_before_action(token, risk=risk)
 
+    def certify(self, claim_id: str, evidence: Sequence[Any], **kwargs: Any):
+        return self._view().certify(claim_id, evidence, **kwargs)
+
+    def verify_certificate(self, certificate: Any, **kwargs: Any):
+        """Re-verifies the credential, then every piece of evidence: a
+        credential revoked since the certificate was issued stops here."""
+        return self._view().verify_certificate(certificate, **kwargs)
+
     def memory_ids(self) -> list[str]:
         return self._view().memory_ids()
 

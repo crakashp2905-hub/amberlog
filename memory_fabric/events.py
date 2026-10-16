@@ -39,6 +39,7 @@ class EventType:
     SUPPORT_RECOMPUTED = "SupportRecomputed"
     CONTENT_ERASED = "ContentErased"
     MEMORY_SHARED = "MemoryShared"
+    ACTION_GATED = "ActionGated"
 
 
 @dataclass(frozen=True)
@@ -392,38 +393,6 @@ def access_denied(
     )
 
 
-def access_denied(
-    ts: int,
-    memory_id: str,
-    version: int,
-    agent_id: str,
-    verdict: str,
-    reason_code: str,
-    risk: str,
-    detail: str = "",
-) -> Event:
-    """A refusal, recorded without the content that was refused.
-
-    Auditing a denial by logging what was denied would move memory content into
-    exactly the secondary surfaces governance exists to keep it out of. The
-    reviewer gets the memory id, the version, the reason code and the risk
-    level, which is what the decision needs.
-    """
-    return Event(
-        type=EventType.ACCESS_DENIED,
-        ts=ts,
-        agent_id=agent_id,
-        payload={
-            "memory_id": memory_id,
-            "version": version,
-            "verdict": verdict,
-            "reason_code": reason_code,
-            "risk": risk,
-            "detail": detail[:256],
-        },
-    )
-
-
 def support_recomputed(
     ts: int,
     memory_id: str,
@@ -646,5 +615,45 @@ def experiment_run(ts: int, hypothesis_set: str, design: Mapping[str, Any], resu
             "hypothesis_set": hypothesis_set,
             "design": dict(design),
             "results": dict(results),
+        },
+    )
+
+
+def action_gated(
+    ts: int,
+    agent_id: str,
+    tool: str,
+    allowed: bool,
+    reason_codes: list[str],
+    policy_id: str,
+    claim_id: str | None,
+    certificate_digest: str | None,
+    evidence: list[list[Any]],
+    watermark: int | None,
+    tenant_id: str | None = None,
+    required_checks: list[str] | None = None,
+    min_independent_sources: int | None = None,
+) -> Event:
+    """A decision about a protected tool call, with the evidence it rested on.
+
+    Ids, versions and a digest only, never content, for the reason
+    `access_denied` gives. This is the record that links a memory to an
+    action, which incident reconstruction needs and which did not exist."""
+    return Event(
+        type=EventType.ACTION_GATED,
+        ts=ts,
+        agent_id=agent_id,
+        payload={
+            "tool": tool,
+            "allowed": allowed,
+            "reason_codes": list(reason_codes),
+            "policy_id": policy_id,
+            "claim_id": claim_id,
+            "certificate_digest": certificate_digest,
+            "evidence": [list(e) for e in evidence],
+            "watermark": watermark,
+            "tenant_id": tenant_id,
+            "required_checks": list(required_checks or []),
+            "min_independent_sources": min_independent_sources,
         },
     )

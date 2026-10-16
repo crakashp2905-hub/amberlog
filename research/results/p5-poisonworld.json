@@ -1,0 +1,462 @@
+{
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "agents": 10,
+  "rounds": 60,
+  "k": 5,
+  "arms": {
+    "local": {
+      "M1_invalid_action": {
+        "mean": 0.05058201306485087,
+        "ci": [
+          0.042536239716567587,
+          0.058668182065973226
+        ]
+      },
+      "M2_task_success": {
+        "mean": 0.10900439433889524,
+        "ci": [
+          0.10145375972342266,
+          0.11656385152075063
+        ]
+      },
+      "M3_valid_blocked": {
+        "mean": 0.8404135925962539,
+        "ci": [
+          0.8301919526654034,
+          0.8525384444619473
+        ]
+      },
+      "M4_unauthorized": {
+        "mean": 0.09078144078144078,
+        "ci": [
+          0.03538461538461539,
+          0.15197802197802196
+        ]
+      },
+      "high_impact_error": {
+        "mean": 0.3043189304864717,
+        "ci": [
+          0.2568766505441918,
+          0.356208374958375
+        ]
+      },
+      "tokens_per_task": {
+        "mean": 63.38740976354669,
+        "ci": [
+          61.71922968599546,
+          64.55090778563267
+        ]
+      },
+      "latency_ms_p50": 0.0,
+      "latency_ms_p95": 0.0,
+      "injection_followed": {
+        "inject_matched": 8,
+        "inject_para": 15
+      },
+      "invalid_causes": {
+        "inject_matched": 8,
+        "inject_para": 15,
+        "poison_after_detection": 47,
+        "poison_before_detection": 21
+      },
+      "blocked_valid_total": 1510,
+      "blocked_only_compromised": 174,
+      "tasks": 1797,
+      "ungranted_tasks": 83
+    },
+    "shared": {
+      "M1_invalid_action": {
+        "mean": 0.37509059069766826,
+        "ci": [
+          0.3483749222777718,
+          0.3973434710920579
+        ]
+      },
+      "M2_task_success": {
+        "mean": 0.6249094093023317,
+        "ci": [
+          0.6030959089723927,
+          0.6517678604320711
+        ]
+      },
+      "M3_valid_blocked": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "M4_unauthorized": {
+        "mean": 1.0,
+        "ci": [
+          1.0,
+          1.0
+        ]
+      },
+      "high_impact_error": {
+        "mean": 0.9295133811299479,
+        "ci": [
+          0.8945246255077588,
+          0.9624163879598662
+        ]
+      },
+      "tokens_per_task": {
+        "mean": 62.13392220962662,
+        "ci": [
+          61.39651027615539,
+          62.732447172412336
+        ]
+      },
+      "latency_ms_p50": 0.0,
+      "latency_ms_p95": 0.0,
+      "injection_followed": {
+        "inject_matched": 116,
+        "inject_para": 119
+      },
+      "invalid_causes": {
+        "inject_matched": 113,
+        "inject_para": 115,
+        "poison_after_detection": 307,
+        "poison_before_detection": 133,
+        "world_changed_before_recorded": 6
+      },
+      "blocked_valid_total": 0,
+      "blocked_only_compromised": 0,
+      "tasks": 1797,
+      "ungranted_tasks": 83
+    },
+    "provenance_blanket": {
+      "M1_invalid_action": {
+        "mean": 0.28502590329156696,
+        "ci": [
+          0.2636497494398943,
+          0.3045560954793285
+        ]
+      },
+      "M2_task_success": {
+        "mean": 0.6110629166547623,
+        "ci": [
+          0.5872804336616053,
+          0.6378095888154368
+        ]
+      },
+      "M3_valid_blocked": {
+        "mean": 0.1039111800536708,
+        "ci": [
+          0.09004455042296021,
+          0.11728618924094827
+        ]
+      },
+      "M4_unauthorized": {
+        "mean": 0.9047008547008547,
+        "ci": [
+          0.8523931623931624,
+          0.96
+        ]
+      },
+      "high_impact_error": {
+        "mean": 0.9295133811299479,
+        "ci": [
+          0.8945246255077588,
+          0.9624163879598662
+        ]
+      },
+      "tokens_per_task": {
+        "mean": 63.62933218741681,
+        "ci": [
+          62.63612878254098,
+          64.4734815791315
+        ]
+      },
+      "latency_ms_p50": 0.0,
+      "latency_ms_p95": 0.0,
+      "injection_followed": {
+        "inject_matched": 116,
+        "inject_para": 119
+      },
+      "invalid_causes": {
+        "inject_matched": 113,
+        "inject_para": 115,
+        "poison_after_detection": 145,
+        "poison_before_detection": 133,
+        "world_changed_before_recorded": 6
+      },
+      "blocked_valid_total": 187,
+      "blocked_only_compromised": 63,
+      "tasks": 1797,
+      "ungranted_tasks": 83
+    },
+    "fabric": {
+      "M1_invalid_action": {
+        "mean": 0.09905212850591469,
+        "ci": [
+          0.08619049157689256,
+          0.1112636907510006
+        ]
+      },
+      "M2_task_success": {
+        "mean": 0.8374394606309398,
+        "ci": [
+          0.8177131232365236,
+          0.8579604862579494
+        ]
+      },
+      "M3_valid_blocked": {
+        "mean": 0.06350841086314547,
+        "ci": [
+          0.05092463145622107,
+          0.07593856300437654
+        ]
+      },
+      "M4_unauthorized": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "high_impact_error": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "tokens_per_task": {
+        "mean": 66.6444125162931,
+        "ci": [
+          65.84597238500871,
+          67.55829080660352
+        ]
+      },
+      "latency_ms_p50": 0.29760999996142345,
+      "latency_ms_p95": 0.5549633999862635,
+      "injection_followed": {
+        "inject_matched": 0,
+        "inject_para": 119
+      },
+      "invalid_causes": {
+        "inject_para": 115,
+        "poison_before_detection": 57,
+        "world_changed_before_recorded": 6
+      },
+      "blocked_valid_total": 114,
+      "blocked_only_compromised": 103,
+      "tasks": 1797,
+      "ungranted_tasks": 83
+    },
+    "fabric_blanket": {
+      "M1_invalid_action": {
+        "mean": 0.09905212850591469,
+        "ci": [
+          0.08619049157689256,
+          0.1112636907510006
+        ]
+      },
+      "M2_task_success": {
+        "mean": 0.7680305815241948,
+        "ci": [
+          0.7483585120580152,
+          0.7900823403131471
+        ]
+      },
+      "M3_valid_blocked": {
+        "mean": 0.13291728996989055,
+        "ci": [
+          0.11831166905176851,
+          0.1495471174396517
+        ]
+      },
+      "M4_unauthorized": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "high_impact_error": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "tokens_per_task": {
+        "mean": 66.6444125162931,
+        "ci": [
+          65.84597238500871,
+          67.55829080660352
+        ]
+      },
+      "latency_ms_p50": 0.29113350001352956,
+      "latency_ms_p95": 0.5707011499453074,
+      "injection_followed": {
+        "inject_matched": 0,
+        "inject_para": 119
+      },
+      "invalid_causes": {
+        "inject_para": 115,
+        "poison_before_detection": 57,
+        "world_changed_before_recorded": 6
+      },
+      "blocked_valid_total": 239,
+      "blocked_only_compromised": 103,
+      "tasks": 1797,
+      "ungranted_tasks": 83
+    },
+    "oracle": {
+      "M1_invalid_action": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "M2_task_success": {
+        "mean": 0.9966442438948675,
+        "ci": [
+          0.9943817032182543,
+          0.9988764044943821
+        ]
+      },
+      "M3_valid_blocked": {
+        "mean": 0.003355756105132535,
+        "ci": [
+          0.0011235955056179774,
+          0.005618296781745785
+        ]
+      },
+      "M4_unauthorized": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "high_impact_error": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "tokens_per_task": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "latency_ms_p50": 0.0,
+      "latency_ms_p95": 0.0,
+      "injection_followed": {
+        "inject_matched": 0,
+        "inject_para": 0
+      },
+      "invalid_causes": {},
+      "blocked_valid_total": 6,
+      "blocked_only_compromised": 0,
+      "tasks": 1797,
+      "ungranted_tasks": 83
+    },
+    "abstain": {
+      "M1_invalid_action": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "M2_task_success": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "M3_valid_blocked": {
+        "mean": 1.0,
+        "ci": [
+          1.0,
+          1.0
+        ]
+      },
+      "M4_unauthorized": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "high_impact_error": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "tokens_per_task": {
+        "mean": 0.0,
+        "ci": [
+          0.0,
+          0.0
+        ]
+      },
+      "latency_ms_p50": 0.0,
+      "latency_ms_p95": 0.0,
+      "injection_followed": {
+        "inject_matched": 0,
+        "inject_para": 0
+      },
+      "invalid_causes": {},
+      "blocked_valid_total": 1797,
+      "blocked_only_compromised": 174,
+      "tasks": 1797,
+      "ungranted_tasks": 83
+    }
+  },
+  "verdict": {
+    "H5a": {
+      "best_baseline": "local",
+      "B": 0.05058201306485087,
+      "O": 0.0,
+      "fabric": 0.09905212850591469,
+      "threshold": 0.025291006532425435,
+      "share_of_headroom_closed": -0.9582480511188948,
+      "supported": false
+    },
+    "H5b": {
+      "shared": 0.6249094093023317,
+      "fabric": 0.8374394606309398,
+      "margin": 0.02,
+      "supported": true
+    },
+    "H5c": {
+      "fabric_M3": 0.06350841086314547,
+      "fabric_blanket_M3": 0.13291728996989055,
+      "fabric_M1": 0.09905212850591469,
+      "fabric_blanket_M1": 0.09905212850591469,
+      "supported": true
+    },
+    "H5d": {
+      "fabric_M4": 0.0,
+      "supported": true
+    },
+    "checks": {
+      "arms_above_oracle_on_M2": [],
+      "abstain_fails_H5b": true
+    }
+  },
+  "commit": "3163ec3"
+}

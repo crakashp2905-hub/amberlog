@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from memory_fabric.governance.firewall import FirewallRuling
 
 from memory_fabric import (
     EpsilonGreedyPolicy,
@@ -238,8 +239,15 @@ class TestSharing(FabricTestCase):
         f = MemoryFabric(auto_activate=True)
         try:
             # Bypass the ingest screen to test the share-time check on its own.
-            mid = f.remember("agent-a", "Innocuous placeholder.")
-            f.revise(mid, "key AKIAIOSFODNN7EXAMPLE", agent_id="agent-a", reason="leak")
+            # This used to go through `revise`, which skipped the screen; that
+            # was a bypass and is closed (test_security_regression.py), so the
+            # screen is switched off explicitly here instead.
+            screen = f.firewall.screen_ingest
+            f.firewall.screen_ingest = lambda content: FirewallRuling(
+                FirewallDecision.ALLOW, [])
+            mid = f.remember("agent-a", "key AKIAIOSFODNN7EXAMPLE")
+            f.firewall.screen_ingest = screen
+            self.assertIs(f.get(mid).lifecycle_state, LifecycleState.ACTIVE)
             ruling = f.share(mid, Scope.TEAM)
             self.assertIs(ruling.decision, FirewallDecision.QUARANTINE)
             self.assertIs(f.get(mid).lifecycle_state, LifecycleState.QUARANTINED)

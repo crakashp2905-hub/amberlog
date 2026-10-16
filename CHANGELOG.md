@@ -6,6 +6,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 ## [Unreleased]
 
 ### Added
+- **Evidence certificates** (`certificates.py`, schema 0.9.0): a versioned record of the evidence a decision rests on (ids, versions, recorded premises, source roots, policy, log position). `verify_certificate` re-checks all of it against the store and fails closed, with stable reason codes. A certificate is not proof and not a capability.
+- **Action gate** (`actions.py`): the tool grant is checked before any evidence, so valid memory never grants a tool. Protected tools need a certificate that still verifies; rules can require independent sources and a human approval bound to the certificate digest. Every decision appends an `ActionGated` event (ids and versions, no content). See `examples/action_gate.py`.
+- **Mental models** (`mental_models.py`): evidence-backed summaries that go stale when their evidence changes, with a coalesced and idempotent refresh queue. A stale model cannot pass a protected action.
+- **Incident reconstruction** (`incident.py`): from a gated action back to source observations, as of the action, redacted, with a read-only counterfactual per source. Measured against live withdrawal in [P9](research/results/p9-incidents.md).
+- **Observation-only auditor** (`auditor.py`): triggers and deep checks for high-impact actions, withdrawals, contradictions, write bursts and failed deliveries. It writes nothing and no check consults it. Policies compared in [P10](research/results/p10-audit.md).
+- **Independence signals**: near-copies are reported on every certificate verification. An opt-in `independent_support_strict` check counts them as one source.
+- **`reconstruct(deadline_ms=...)`**: an optional wall-clock budget for chain search.
+- **`conceal_cross_tenant`**: opt-in, makes a cross-tenant refusal identical to a missing id.
+- **Benchmarks**: [P5](research/results/p5-poisonworld.md) (ten-agent poisoning, pre-registered), [P12](research/results/p12-load.md) (latency at 1/10/50/100 agents).
+- **Threat-mapped security regression suite** (`tests/test_security_regression.py`), **threat model** (`docs/SAFETY_AND_SECURITY.md`), **test plan** (`docs/SECURITY_TEST_PLAN.md`) and **implementation status** (`docs/IMPLEMENTATION_STATUS.md`).
 - **MCP server** — `memory-fabric --db store.db mcp --agent <id>` serves one store to one agent over stdio, so any MCP-capable client can use it. Standard library only. Built on `AgentClient`, so it exposes `recall`, `fetch`, `verify` and `remember` and nothing else: no unenforced read, no scope argument, and deliberately no `record_outcome`, because the model on the pipe is the agent being scored. Exposure tokens stay server-side; the model names memories by id and cannot forge one. Checked against the official MCP Python SDK client as well as its own tests.
 - **Release workflow** (`.github/workflows/release.yml`) on `v*` tags: version agreement check, full tests and fault matrix, GitHub release with wheel and sdist, container image to GHCR. PyPI publishing is wired but **off** until the repository variable `PYPI_PUBLISH` is set, because the name `memory-fabric` is taken on PyPI by an unrelated project.
 
@@ -23,6 +33,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **macOS** added to the CI test matrix.
 
 ### Changed
+- **A broken `cryptography` install no longer crashes every write.** A native panic on import (a `BaseException`) escaped the availability check. The store now falls back to encrypt-then-MAC, warns once, and `doctor` names the reason: a warning, or a failure when AES-GCM content exists that cannot be read there.
+- **`derive` never writes a conclusion less restricted than its premises.** A summary of `restricted` content used to be written `internal`, so it could be shared.
+- **The ingest screen reads `context` and `structured`, and `revise` is screened.** Before, a secret or an injection placed in metadata was stored active and inherited by every memory `derive` drew from it, and a revision could add either to an active memory. Both are quarantined now. Ordinary metadata is unaffected; a test pins that.
 - **The Claude adapter defaults to `claude-opus-5-5`**, the current Opus, instead of `claude-opus-5`. The request shape was checked against the current API reference and needed nothing else: adaptive thinking, explicit effort (the new model defaults to `medium`), strict tools, no forced `tool_choice`, and the `fallbacks: "default"` form with its matching beta. Still not run live — no key here (P3 gate).
 
 ### Fixed

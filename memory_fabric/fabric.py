@@ -18,6 +18,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
 if TYPE_CHECKING:  # pragma: no cover
+    from .certificates import CertificateVerification, EvidenceCertificate
     from .session import AgentSession
 
 from . import events as ev
@@ -168,6 +169,38 @@ def iso_timestamp(ms: int) -> str:
     )
 
 
+
+def _screened_text(content: str, *metadata: Any) -> str:
+    """The text the ingest screen must see: the content *and* every string in
+    the metadata stored beside it.
+
+    The screen used to read `content` alone. A secret put in `context` or
+    `structured` was stored as an active memory, kept in plaintext (only the
+    content is sealed), and copied into every conclusion `derive` drew from
+    it, because derived memories inherit their parents' context. Found while
+    writing the summary-leakage regression test (SAFETY_AND_SECURITY.md S8).
+    Keys are included as well as values: a key is as able to carry a secret.
+    """
+    parts = [content]
+
+    def walk(value: Any) -> None:
+        if isinstance(value, str):
+            parts.append(value)
+        elif isinstance(value, Mapping):
+            for key, item in value.items():
+                walk(str(key))
+                walk(item)
+        elif isinstance(value, (list, tuple, set, frozenset)):
+            for item in value:
+                walk(item)
+        elif value is not None and not isinstance(value, (bool, int, float)):
+            parts.append(str(value))
+
+    for item in metadata:
+        walk(item)
+    return "\n".join(parts)
+
+
 def _fresh(method):
     """Catch up on other processes' writes before serving, enforcing or writing.
 
@@ -204,7 +237,12 @@ class MemoryFabric:
         busy_timeout_ms: int = 5_000,
         recognise_copies: bool = True,
         rerank: bool = False,
+        conceal_cross_tenant: bool = False,
     ) -> None:
+        # Off by default to keep the documented reason code. On, a request
+        # from another tenant is refused exactly as a missing id is, so the
+        # refusal does not confirm that the id exists anywhere (plan Task 11).
+        self.conceal_cross_tenant = conceal_cross_tenant
         # Default on, because the alternative is measured to be wrong rather
         # than merely unmeasured: a withdrawn document re-ingested under its own
         # id was **100% of the residual** in P3, counted as independent support
@@ -1479,7 +1517,8 @@ class MemoryFabric:
             copy_of = self.copy_index.find(content)
 
         activate = self.auto_activate if auto_activate is None else auto_activate
-        ruling = self.firewall.screen_ingest(content)
+        ruling = self.firewall.screen_ingest(
+            _screened_text(content, context, structured))
         if ruling.decision is FirewallDecision.QUARANTINE:
             lifecycle = LifecycleState.QUARANTINED
         elif copy_of is not None and self.state.memories[
@@ -1597,6 +1636,11 @@ class MemoryFabric:
                 f"{memory_id} has been content-erased; record new information "
                 "as a new memory rather than a new version"
             )
+        # A revision is a write and passes the same screen as the first
+        # version. It used to skip it, so a revision could put a secret or an
+        # injection into a memory that was already active and retrievable.
+        ruling = self.firewall.screen_ingest(
+            _screened_text(content, current.context, current.structured))
         now = self.now()
         revised = current.evolve(
             version=current.version + 1,
@@ -1619,10 +1663,19 @@ class MemoryFabric:
                     )
                 ),
                 reason=reason,
-            )
+            ),
+            *(
+                [self._transition(
+                    memory_id, LifecycleState.QUARANTINED, "; ".join(ruling.reasons),
+                    self.firewall.id, basis=WithdrawalBasis.SENSITIVE_DATA.value,
+                )]
+                if ruling.decision is FirewallDecision.QUARANTINE
+                and current.lifecycle_state is not LifecycleState.QUARANTINED
+                else []
+            ),
         )
         self._index(memory_id, self._index_text(revised))
-        return revised
+        return self.state.memories[memory_id]
 
     @_fresh
     def derive(
@@ -1634,6 +1687,7 @@ class MemoryFabric:
         method: str | ProvenanceMethod = ProvenanceMethod.CONSOLIDATED,
         context: Mapping[str, Any] | None = None,
         tenant_id: str | None = None,
+        security_class: str | SecurityClass | None = None,
     ) -> str:
         """Create a memory derived from existing ones, recording the edges.
 
@@ -1663,6 +1717,16 @@ class MemoryFabric:
         for pid in parents:
             inherited.update(self._require(pid).context)
         inherited.update(dict(context or {}))
+        # A conclusion is at least as restricted as its most restricted
+        # premise. It used to be written at the default class, so a summary of
+        # a `restricted` memory came out `internal` and could be shared and
+        # offered: restricted content laundered through a derivation (plan
+        # Task 11). A caller may raise the class, never lower it below this.
+        order = (SecurityClass.PUBLIC, SecurityClass.INTERNAL, SecurityClass.RESTRICTED)
+        floor = max((self._require(pid).security_class for pid in parents),
+                    key=order.index, default=SecurityClass.PUBLIC)
+        requested = SecurityClass(security_class or SecurityClass.INTERNAL)
+        effective = max(requested, floor, key=order.index)
         derived = self.remember(
             agent_id=agent_id,
             content=content,
@@ -1671,6 +1735,7 @@ class MemoryFabric:
             parents=parent_versions,
             method=method,
             tenant_id=tenant_id,
+            security_class=effective,
         )
 
         # Check the support of what was just written.
@@ -1877,6 +1942,7 @@ class MemoryFabric:
         max_steps: int = chains.MAX_STEPS,
         beam: int = chains.BEAM,
         node_budget: int = chains.NODE_BUDGET,
+        deadline_ms: float | None = None,
     ) -> "chains.EvidenceChain":
         """Reconstruct a connected chain of **currently valid** evidence.
 
@@ -1953,6 +2019,7 @@ class MemoryFabric:
             max_steps=max_steps, beam=beam, node_budget=node_budget,
             relevance=relevance,
             plain=self.chain_plain,
+            deadline_ms=deadline_ms,
         )
         if follow_relations and chain.steps:
             # A qualifier is not reachable by the search: it supplies no query
@@ -2777,6 +2844,43 @@ class MemoryFabric:
             )
         return decision
 
+    @_fresh
+    def certify(
+        self,
+        claim_id: str,
+        evidence: Sequence[Any],
+        agent_id: str,
+        tenant_id: str | None = None,
+        required_checks: Sequence[str] = (),
+        min_independent_sources: int = 1,
+        ttl_ms: int | None = 300_000,
+    ) -> "EvidenceCertificate":
+        """Record the evidence a decision rests on, for re-checking at action
+        time (`certificates.py`). Issuing checks nothing; `verify_certificate`
+        does, against the store as it is then."""
+        from .certificates import ALWAYS, CertificateVerifier
+
+        return CertificateVerifier(self).issue(
+            claim_id, evidence, agent_id, tenant_id=tenant_id,
+            required_checks=tuple(required_checks) or ALWAYS,
+            min_independent_sources=min_independent_sources, ttl_ms=ttl_ms,
+        )
+
+    @_fresh
+    def verify_certificate(
+        self,
+        certificate: Any,
+        agent_id: str,
+        tenant_id: str | None = None,
+        risk: "RiskLevel" = RiskLevel.HIGH,
+        mode: str = "selective",
+    ) -> "CertificateVerification":
+        """Re-check every piece of evidence in a certificate, now. Fails closed."""
+        from .certificates import CertificateVerifier
+
+        return CertificateVerifier(self, mode=mode).verify(
+            certificate, agent_id=agent_id, tenant_id=tenant_id, risk=risk)
+
     def history(self, memory_id: str) -> list[Memory]:
         self._require(memory_id)
         return list(self.state.history.get(memory_id, ())) + [self.state.memories[memory_id]]
@@ -2963,6 +3067,18 @@ class TenantView:
     def verify_before_action(self, token: "ExposureToken", **kwargs: Any):
         kwargs.pop("agent_id", None)
         return self.fabric.verify_before_action(token, self.agent_id, **kwargs)
+
+    def certify(self, claim_id: str, evidence: Sequence[Any], **kwargs: Any):
+        kwargs.pop("tenant_id", None)
+        kwargs.pop("agent_id", None)
+        return self.fabric.certify(claim_id, evidence, self.agent_id,
+                                   tenant_id=self.tenant_id, **kwargs)
+
+    def verify_certificate(self, certificate: Any, **kwargs: Any):
+        kwargs.pop("tenant_id", None)
+        kwargs.pop("agent_id", None)
+        return self.fabric.verify_certificate(certificate, self.agent_id,
+                                              tenant_id=self.tenant_id, **kwargs)
 
     def memory_ids(self) -> list[str]:
         """Every memory in this tenant, whatever its lifecycle state.

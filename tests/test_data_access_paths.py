@@ -71,6 +71,14 @@ METADATA = {
     "stats": "exposure counters",
     "value": "a value estimate",
     "tenants": "tenant inventory with counts",
+    "certify": (
+        "records evidence ids, versions, premises and source roots; no "
+        "content. Tenant-scoped: another tenant's id is recorded as if missing"
+    ),
+    "verify_certificate": (
+        "re-checks every piece of evidence through the enforcer; reason codes "
+        "and ids, never content"
+    ),
 }
 
 INSPECTION = {

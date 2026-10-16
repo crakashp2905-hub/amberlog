@@ -167,7 +167,7 @@ jobs:
           excluded = {
               "test_banditworld", "test_depotworld", "test_experiment_harnesses",
               "test_external_bench", "test_facet_v1", "test_h3_harness",
-              "test_p2_sufficiency", "test_propagation_v1", "test_relevance_bench",
+              "test_p2_sufficiency", "test_poisonworld", "test_propagation_v1", "test_relevance_bench",
               "test_relevance_v2", "test_retention_arms", "test_ruleworld",
           }
           modules = sorted(f"tests.{p.stem}" for p in pathlib.Path("tests").glob("test_*.py")

@@ -557,6 +557,19 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
                 return finding
         raise AssertionError("no content cipher check")
 
+    def assertHealthyCipher(self, finding) -> None:
+        """`ok` where AES-GCM works or is simply not installed. On a host
+        where `cryptography` is installed but broken, the right answer is a
+        warning naming why, which `BrokenCryptography` pins on every host."""
+        from memory_fabric.governance.cipher import aead_status
+
+        available, reason = aead_status()
+        if available or reason == "not installed":
+            self.assertEqual(finding["status"], "ok")
+        else:
+            self.assertEqual(finding["status"], "warn")
+            self.assertIn("broken", finding["detail"])
+
     def test_an_authenticated_store_reports_ok(self) -> None:
         fabric = MemoryFabric(self.path)
         try:
@@ -564,8 +577,9 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
         finally:
             fabric.close()
         finding = self._finding(self._report())
-        self.assertEqual(finding["status"], "ok")
-        self.assertIn("authenticated", finding["detail"])
+        self.assertHealthyCipher(finding)
+        if finding["status"] == "ok":
+            self.assertIn("authenticated", finding["detail"])
 
     def test_legacy_ciphertext_is_reported_as_a_warning(self) -> None:
         """It only goes down: v1 is never written again, and a revision
@@ -680,9 +694,126 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
         with patch("sys.stdout", buffer):
             main(["--json", "--db", str(self.path), "--keys", str(keys), "doctor"])
         finding = self._finding(_json.loads(buffer.getvalue()))
-        self.assertEqual(finding["status"], "ok")
+        self.assertHealthyCipher(finding)
         self.assertIn("externally", finding["detail"])
         self.assertIn("DirectoryKeyProvider", finding["detail"])
+
+
+class _Panic(BaseException):
+    """Stands in for `pyo3_runtime.PanicException`, which is not an Exception."""
+
+
+class BrokenCryptography(unittest.TestCase):
+    """A broken `cryptography` install must not take every write down.
+
+    Seen for real: Debian's python3-cryptography imported under an interpreter
+    with no `_cffi_backend` raises `pyo3_runtime.PanicException`, a
+    `BaseException`, and that escaped `aead_available()` so every `remember`
+    crashed while sealing.
+    """
+
+    def setUp(self) -> None:
+        import builtins
+
+        from memory_fabric.governance import cipher
+
+        self.cipher = cipher
+        self.real_import = builtins.__import__
+        cipher._reset_aead_status()
+        self.addCleanup(cipher._reset_aead_status)
+        self.addCleanup(setattr, builtins, "__import__", self.real_import)
+
+    def break_import(self, error: BaseException) -> None:
+        import builtins
+
+        real = self.real_import
+
+        def fake(name, *args, **kwargs):
+            if name.startswith("cryptography"):
+                raise error
+            return real(name, *args, **kwargs)
+
+        builtins.__import__ = fake
+
+    def test_a_panicking_import_falls_back_to_encrypt_then_mac_and_warns(self) -> None:
+        self.break_import(_Panic("Python API call failed"))
+        with self.assertWarns(RuntimeWarning) as caught:
+            available, reason = self.cipher.aead_status()
+        self.assertFalse(available)
+        self.assertIn("broken", reason)
+        self.assertIn("_Panic", reason)
+        self.assertIn("cannot be used", str(caught.warning))
+        self.assertIsInstance(self.cipher.default_suite(), EncryptThenMac)
+
+    def test_writes_and_reads_still_work(self) -> None:
+        self.break_import(_Panic("Python API call failed"))
+        fabric = MemoryFabric()
+        self.addCleanup(fabric.close)
+        with self.assertWarns(RuntimeWarning):
+            mid = fabric.remember("ag", "valve 7 is upstream")
+        self.assertEqual(fabric.get(mid).content, "valve 7 is upstream")
+
+    def test_existing_aes_gcm_content_is_refused_with_the_reason(self) -> None:
+        self.break_import(_Panic("Python API call failed"))
+        with self.assertWarns(RuntimeWarning):
+            with self.assertRaises(IntegrityError) as caught:
+                self.cipher.suite_for("enc:v3:00:00")
+        self.assertIn("broken", str(caught.exception))
+
+    def test_not_installed_is_the_quiet_default(self) -> None:
+        missing = ModuleNotFoundError("No module named 'cryptography'")
+        missing.name = "cryptography"
+        self.break_import(missing)
+        import warnings
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("error")
+            self.assertEqual(self.cipher.aead_status(), (False, "not installed"))
+
+    def test_a_missing_dependency_of_cryptography_is_broken_not_absent(self) -> None:
+        missing = ModuleNotFoundError("No module named '_cffi_backend'")
+        missing.name = "_cffi_backend"
+        self.break_import(missing)
+        with self.assertWarns(RuntimeWarning):
+            available, reason = self.cipher.aead_status()
+        self.assertFalse(available)
+        self.assertIn("_cffi_backend", reason)
+
+    def test_an_interrupt_is_not_swallowed(self) -> None:
+        self.break_import(KeyboardInterrupt())
+        with self.assertRaises(KeyboardInterrupt):
+            self.cipher.aead_status()
+
+    def test_the_probe_runs_once(self) -> None:
+        calls = []
+        import builtins
+
+        real = self.real_import
+
+        def counting(name, *args, **kwargs):
+            if name.startswith("cryptography"):
+                calls.append(name)
+                raise _Panic("again")
+            return real(name, *args, **kwargs)
+
+        builtins.__import__ = counting
+        with self.assertWarns(RuntimeWarning):
+            self.cipher.aead_available()
+        self.cipher.aead_available()
+        self.cipher.default_suite()
+        self.assertEqual(len(calls), 1)
+
+    def test_doctor_names_the_fallback(self) -> None:
+        from memory_fabric import cli
+
+        self.break_import(_Panic("Python API call failed"))
+        fabric = MemoryFabric(encrypt_content=True)
+        self.addCleanup(fabric.close)
+        with self.assertWarns(RuntimeWarning):
+            fabric.remember("ag", "valve 7 is upstream")
+        finding = cli._check_content_cipher(fabric)
+        self.assertEqual(finding.status, "warn")
+        self.assertIn("broken", finding.detail)
 
 
 if __name__ == "__main__":  # pragma: no cover

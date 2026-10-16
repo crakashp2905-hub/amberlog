@@ -202,6 +202,13 @@ class Enforcer:
                 reason_code=NOT_FOUND, risk=risk, integrity_revision=revision,
             )
 
+        if tenant_id is not None and memory.tenant_id != tenant_id \
+                and getattr(self.fabric, "conceal_cross_tenant", False):
+            # Indistinguishable from a missing id: same verdict, code, version.
+            return AccessDecision(
+                memory_id=memory_id, version=0, verdict=Verdict.DENY,
+                reason_code=NOT_FOUND, risk=risk, integrity_revision=revision,
+            )
         if tenant_id is not None and memory.tenant_id != tenant_id:
             # No `detail`, and the version is reported as 0: the refusal says
             # only "not yours", which is all a caller in another tenant may

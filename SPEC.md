@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.8.0`
+- **Schema version:** `0.9.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,34 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.9.0 — action gating
+
+Additive: one event type, no projection change. A pre-0.9.0 log replays
+unchanged; a 0.8.0 reader skips the new event, as it skips any type it does
+not model.
+
+**`ActionGated`**, payload `{tool, allowed, reason_codes, policy_id, claim_id,
+certificate_digest, evidence: [[memory_id, version]], watermark}`. Emitted by
+`actions.ActionGate` for every decision about a protected tool. Ids, versions
+and a digest only, never content. It is the first record linking a memory to
+an action, which incident reconstruction needs.
+
+Evidence certificates (`certificates.py`) are not stored in the log. They are
+a versioned JSON document with `certificate_version` 1. A verifier refuses any
+other version, any unknown field and any check it cannot run.
+
+`derive` takes an optional `security_class` and writes the strictest of it,
+`internal` and every premise's class, so a conclusion is never less restricted
+than what it rests on. `MemoryFabric(conceal_cross_tenant=True)` makes a
+cross-tenant refusal identical to a missing id. Mental models
+(`mental_models.py`) are derived memories with the context keys
+`mental_model` and `model_watermark`. No event type is added for them.
+
+The ingest screen now reads the strings in `context` and `structured` as well
+as `content`, and `revise` runs the same screen as `remember`. A memory that
+passed before may now be quarantined on write. This is a behaviour change, not
+a format change: logs written before still replay to the same state.
 
 ### 0.8.0 — copy recognition
 

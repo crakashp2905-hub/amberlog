@@ -177,6 +177,17 @@ class TestBounds(unittest.TestCase):
         self.assertLess(chain.nodes_explored, chains.BEAM * chains.BEAM
                         * chains.MAX_STEPS * 2)
 
+    def test_a_spent_deadline_stops_the_search_like_the_node_budget(self):
+        chain = chains.search(list(CHAIN), terms_of(CHAIN), NEED, deadline_ms=0)
+        self.assertTrue(chain.budget_exhausted)
+        self.assertFalse(chain.complete)
+        self.assertLessEqual(chain.nodes_explored, 1)
+
+    def test_a_generous_deadline_changes_nothing(self):
+        plain = chains.search(list(CHAIN), terms_of(CHAIN), NEED)
+        timed = chains.search(list(CHAIN), terms_of(CHAIN), NEED, deadline_ms=60_000)
+        self.assertEqual(plain.memory_ids, timed.memory_ids)
+
     def test_an_unreachable_term_yields_an_incomplete_chain_naming_it(self):
         chain = chains.search(list(CHAIN), terms_of(CHAIN),
                               NEED + ["unobtainable"])
@@ -200,6 +211,43 @@ class TestItNeverReadsLabels(unittest.TestCase):
         source = (ROOT / "memory_fabric" / "chains.py").read_text(encoding="utf-8")
         for forbidden in ('"critical"', '"requirements"', '"stale"', "labels"):
             self.assertNotIn(forbidden, source)
+
+
+class TestInAStore(unittest.TestCase):
+    """The chain runs inside the same gates as retrieval (plan Task 7)."""
+
+    def setUp(self):
+        from memory_fabric import MemoryFabric
+
+        self.fabric = MemoryFabric(auto_activate=True, seed=0)
+        self.addCleanup(self.fabric.close)
+        self.ids = {k: self.fabric.remember("ag", v, tenant_id="tn_a")
+                    for k, v in CHAIN.items()}
+
+    def chain_ids(self, **kw):
+        chain = self.fabric.reconstruct(
+            agent_id="ag", query="what does bay 7 at the coastal site run in winter",
+            tenant_id="tn_a", **kw)
+        return chain, {s.memory_id for s in chain.steps}
+
+    def test_the_connector_is_found_in_a_store(self):
+        chain, ids = self.chain_ids()
+        self.assertIn(self.ids["h2"], ids)
+
+    def test_a_withdrawn_connector_is_never_a_node(self):
+        self.fabric.quarantine(self.ids["h2"], reason="wrong refit record",
+                               basis="contradicted")
+        chain, ids = self.chain_ids()
+        self.assertNotIn(self.ids["h2"], ids)
+        # It was the only connector, so no complete chain exists any more.
+        self.assertFalse(chain.complete)
+
+    def test_another_tenants_memory_is_never_a_node(self):
+        other = self.fabric.remember("ag", CHAIN["h2"] + " (other tenant copy)",
+                                     tenant_id="tn_b")
+        self.fabric.quarantine(self.ids["h2"], reason="x", basis="contradicted")
+        _, ids = self.chain_ids()
+        self.assertNotIn(other, ids)
 
 
 if __name__ == "__main__":  # pragma: no cover

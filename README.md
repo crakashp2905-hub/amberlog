@@ -137,6 +137,11 @@ outcome tool**, because the model is the agent being scored.
 > memory-fabric --db memory.db attention                       # what is waiting
 > memory-fabric --db memory.db validate <id> --actor <you>     # promote one
 > ```
+>
+> For a single user's local assistant, where you are both the user and the
+> reviewer, `mcp --trusted-local` makes the agent's clean writes active at once.
+> Each is marked `trusted-local` in its provenance, and the sensitive-data
+> screen still applies. Never use it for a shared or federated store.
 
 ### Multiple tenants
 

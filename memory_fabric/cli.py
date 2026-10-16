@@ -615,7 +615,14 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         f"store {args.db}",
         file=sys.stderr,
     )
-    return serve_stdio(McpServer(client, fabric))
+    if args.trusted_local:
+        print(
+            "trusted-local: this agent's clean writes become active WITHOUT "
+            "review and feed back into its own recall. Use only for a single "
+            "user's local assistant, never for a shared or federated store.",
+            file=sys.stderr,
+        )
+    return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
 
 
 def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
@@ -1367,6 +1374,12 @@ def build_parser() -> argparse.ArgumentParser:
             "or see withdrawn memories")
     p.add_argument("--agent", required=True, help="the agent id every call is attributed to")
     p.add_argument("--tenant", default=DEFAULT_TENANT, help=f"tenant (default {DEFAULT_TENANT})")
+    p.add_argument(
+        "--trusted-local",
+        action="store_true",
+        help="the agent's clean writes become active without review (marked "
+        "in provenance). For one person's local assistant only.",
+    )
 
     p = add("backup", cmd_backup,
             "Consistent snapshot of the event log, verified by replaying it")

@@ -165,6 +165,47 @@ class TestTools(McpCase):
             self.assertTrue(is_error, (name, args))
 
 
+class TestTrustedLocal(McpCase):
+    """The one-person local assistant, where the reviewer is the user."""
+
+    def trusted(self) -> McpServer:
+        return McpServer(agent(self.fabric, "ag_local"), self.fabric, trusted_local=True)
+
+    def call_on(self, server: McpServer, name: str, arguments: dict) -> tuple[dict, bool]:
+        result = server.handle(
+            _request("tools/call", {"name": name, "arguments": arguments}))["result"]
+        return json.loads(result["content"][0]["text"]), result["isError"]
+
+    def test_off_by_default(self) -> None:
+        payload, _ = self.call("remember", {"content": "The north gate sticks below freezing."})
+        self.assertEqual(payload["state"], "candidate")
+
+    def test_a_clean_write_is_recallable_at_once(self) -> None:
+        server = self.trusted()
+        payload, _ = self.call_on(server, "remember",
+                                  {"content": "The north gate sticks below freezing."})
+        self.assertEqual(payload["state"], "active")
+        hits, _ = self.call_on(server, "recall", {"query": "north gate freezing"})
+        self.assertIn(payload["memory_id"], [m["memory_id"] for m in hits["memories"]])
+
+    def test_the_audit_trail_says_nobody_reviewed_it(self) -> None:
+        payload, _ = self.call_on(self.trusted(), "remember",
+                                  {"content": "The north gate sticks below freezing."})
+        memory = self.fabric.get(payload["memory_id"])
+        self.assertEqual(memory.context.get("activation"), "trusted-local")
+
+    def test_the_sensitive_data_screen_still_applies(self) -> None:
+        payload, _ = self.call_on(self.trusted(), "remember",
+                                  {"content": "the key is AKIAIOSFODNN7EXAMPLE for prod"})
+        self.assertEqual(payload["state"], "quarantined")
+
+    def test_the_tool_description_tells_the_truth(self) -> None:
+        tools = self.trusted().handle(_request("tools/list"))["result"]["tools"]
+        remember = next(t for t in tools if t["name"] == "remember")
+        self.assertIn("active immediately", remember["description"])
+        self.assertNotIn("until it is reviewed", remember["description"])
+
+
 class TestTransport(McpCase):
     def test_stdio_round_trip_and_garbage(self) -> None:
         lines = [

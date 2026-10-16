@@ -29,6 +29,7 @@ be passed per call can be omitted per call.
 
 from __future__ import annotations
 
+import copy
 import json
 import sys
 from typing import Any, Callable, Mapping, TextIO
@@ -42,6 +43,10 @@ __all__ = ["McpServer", "TOOLS", "PROTOCOL_VERSIONS", "serve_stdio"]
 # gets the newest, and the client decides whether it can proceed (the
 # negotiation rule in the MCP lifecycle spec).
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
+
+# Recorded in a memory's context when trusted-local mode activated it, so the
+# audit trail says that nobody reviewed it.
+TRUSTED_LOCAL = "trusted-local"
 
 SERVER_NAME = "memory-fabric"
 
@@ -155,8 +160,19 @@ class McpServer:
     """Protocol handling, separate from the transport so it can be tested by
     feeding it dicts."""
 
-    def __init__(self, client: AgentClient, fabric: Any) -> None:
+    def __init__(
+        self, client: AgentClient, fabric: Any, trusted_local: bool = False
+    ) -> None:
         self.client = client
+        # Off by default. On, the agent's own clean writes become active and
+        # recallable without review -- for one person's local assistant, where
+        # the reviewer and the agent's user are the same human. Every such
+        # write is marked in its provenance, so an audit can tell a memory
+        # nobody reviewed from one somebody did. The sensitive-data screen and
+        # copy recognition still apply: a flagged write is still quarantined.
+        self.trusted_local = trusted_local
+        if trusted_local:
+            fabric.auto_activate = True
         # Used only for `lifecycle_of` after a write — metadata, never content.
         self._fabric = fabric
         # memory id -> the token issued to this session. The model names a
@@ -192,7 +208,7 @@ class McpServer:
         elif method == "ping":
             result = {}
         elif method == "tools/list":
-            result = {"tools": TOOLS}
+            result = {"tools": self.tools()}
         elif method == "tools/call":
             name = params.get("name")
             arguments = params.get("arguments") or {}
@@ -209,6 +225,21 @@ class McpServer:
         if is_notification:
             return None
         return {"jsonrpc": "2.0", "id": msg_id, "result": result}
+
+    def tools(self) -> list[dict[str, Any]]:
+        """The tool list, with `remember` described as this server behaves."""
+        if not self.trusted_local:
+            return TOOLS
+        out = copy.deepcopy(TOOLS)
+        for tool in out:
+            if tool["name"] == "remember":
+                tool["description"] = (
+                    "Record a durable lesson for future tasks: a fact that stays "
+                    "true or a procedure that worked. Stored private; in this "
+                    "server it is active immediately unless the sensitive-data "
+                    "screen flags it."
+                )
+        return out
 
     def _initialize(self, params: Mapping[str, Any]) -> dict[str, Any]:
         requested = params.get("protocolVersion")
@@ -280,13 +311,17 @@ class McpServer:
         kind = args.get("type", "semantic")
         if kind not in ("semantic", "procedural"):
             raise _ToolError("type must be 'semantic' or 'procedural'")
-        memory_id = self.client.remember(content, type=kind)
+        context = {"activation": TRUSTED_LOCAL} if self.trusted_local else None
+        memory_id = self.client.remember(content, type=kind, context=context)
         state = self._fabric.lifecycle_of(memory_id).value
-        return {
-            "memory_id": memory_id,
-            "state": state,
-            "note": "private and unvalidated; not shown to other agents until reviewed",
-        }
+        if state == "active":
+            note = ("private; active without review (trusted-local mode), so it "
+                    "is recallable now")
+        elif state == "candidate":
+            note = "private and unvalidated; not recallable until someone reviews it"
+        else:
+            note = f"stored as {state}; it will not be recalled"
+        return {"memory_id": memory_id, "state": state, "note": note}
 
     def _present(self, memory: UsableMemory) -> dict[str, Any]:
         self._issued[memory.memory_id] = memory.token

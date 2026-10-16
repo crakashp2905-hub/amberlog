@@ -599,6 +599,25 @@ def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Serve this store to one agent over MCP on stdio.
+
+    The identity is fixed for the life of the process, so a client configured
+    for one agent cannot act as another by changing an argument. Stdout is the
+    protocol stream; the one human-readable line goes to stderr.
+    """
+    from .adapters.mcp import McpServer, serve_stdio
+    from .sdk import agent
+
+    client = agent(fabric, args.agent, args.tenant)
+    print(
+        f"memory-fabric MCP server: agent {args.agent}, tenant {args.tenant}, "
+        f"store {args.db}",
+        file=sys.stderr,
+    )
+    return serve_stdio(McpServer(client, fabric))
+
+
 def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Consistent snapshot of the event log while the store is live.
 
@@ -1341,6 +1360,13 @@ def build_parser() -> argparse.ArgumentParser:
         help="extra Host header value to accept; repeatable. Needed when reaching "
         "the server by a name or address other than localhost.",
     )
+
+    p = add("mcp", cmd_mcp,
+            "WRITES: serve this store to one agent over MCP (stdio). The agent "
+            "can recall, fetch, verify and remember; it cannot record outcomes "
+            "or see withdrawn memories")
+    p.add_argument("--agent", required=True, help="the agent id every call is attributed to")
+    p.add_argument("--tenant", default=DEFAULT_TENANT, help=f"tenant (default {DEFAULT_TENANT})")
 
     p = add("backup", cmd_backup,
             "Consistent snapshot of the event log, verified by replaying it")

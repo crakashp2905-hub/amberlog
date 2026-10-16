@@ -638,6 +638,48 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
 
 
+def _print_scope(fabric: MemoryFabric, memory_id: str, as_json: bool) -> None:
+    scope = fabric.erasure_scope(memory_id)
+    if as_json:
+        print(json.dumps(scope, indent=2, default=str))
+        return
+    heading(f"Erasure scope — {memory_id}")
+    state = "ERASED" if scope["erased"] else "not erased"
+    print(f"  {state}" + (f" ({scope['reason']})" if scope["reason"] else ""))
+    print(f"  key custody: {scope['key_custody']}"
+          + ("" if scope["provider_can_destroy"] else "  (provider CANNOT destroy keys)"))
+    print("\n  Reached, verified:")
+    for check, ok in scope["reached"].items():
+        print(f"    {'yes' if ok else 'NO '}  {check.replace('_', ' ')}")
+    print("\n  Kept deliberately:")
+    for item in scope["kept_deliberately"]:
+        print(f"    - {item}")
+    print("\n  Outside this store — act on these separately:")
+    outside = scope["outside_this_store"]
+    print(f"    backups before erasure: {outside['backups_taken_before_erasure']}")
+    print(f"    exports, logs, traces:  {outside['exports_logs_and_model_traces']}")
+    print(f"    federated copies:       {outside['federated_copies']}")
+    if outside["federated_copies"] != "none recorded":
+        print(f"      {outside['federated_copies_note']}")
+
+
+def cmd_erase(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Crypto-erase one memory's content, then report what that reached."""
+    erased = fabric.erase_content(args.id, reason=args.reason, actor=args.actor)
+    if not erased and not fabric.erasure_scope(args.id)["erased"]:
+        print(f"{C.RED}{args.id} was not erased: the key provider could not "
+              f"destroy its key{C.RESET}", file=sys.stderr)
+        _print_scope(fabric, args.id, args.json)
+        return 4
+    _print_scope(fabric, args.id, args.json)
+    return 0
+
+
+def cmd_erasure_scope(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    _print_scope(fabric, args.id, args.json)
+    return 0
+
+
 def _agent_service(fabric: MemoryFabric, agents_file: str):
     from .agent_api import load_agents, register_all
     from .service import MemoryService
@@ -1527,6 +1569,17 @@ def build_parser() -> argparse.ArgumentParser:
         help="the agent's clean writes become active without review (marked "
         "in provenance). For one person's local assistant only.",
     )
+
+    p = add("erase", cmd_erase,
+            "WRITES: crypto-erase one memory's content (provenance and audit "
+            "stay), then report what the erasure reached and what it could not")
+    p.add_argument("id")
+    p.add_argument("--reason", required=True, help="recorded with the erasure, e.g. a ticket id")
+    p.add_argument("--actor", default="operator")
+
+    p = add("erasure-scope", cmd_erasure_scope,
+            "What an erasure of one memory reached, kept, and could not reach")
+    p.add_argument("id")
 
     p = add("agent-api", cmd_agent_api,
             "WRITES: serve agents over authenticated HTTP (recall, fetch, verify, "

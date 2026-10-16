@@ -32,6 +32,7 @@ and did not.
 | 15a | **Data-access audit** — every public member of `MemoryFabric` classified, enforced by test | 50 members classified; adding one fails the test until it is. Found 2 real misuses of the unenforced read in shipped code |
 | 16 | **MCP interop** — `memory-fabric mcp` driven by the official MCP Python SDK client over stdio | negotiates `2025-06-18`; lists exactly `recall`, `fetch`, `verify`, `remember`; a `remember` lands as a private `candidate`; `verify` on a memory not recalled this session is a tool error |
 | 17 | **Live Claude over MCP** — Sonnet 5.5 and Opus 5.5, 5 trials per arm each, retraction issued by a separate CLI process mid-session ([result](../research/results/live-claude-mcp.md)) | 20/20 recalled and verified; retracted arm refused by the store **10/10** and no model recommended the withdrawn fix; $0.43 total |
+| 18 | **Secret-screen red team** — 13 obfuscated credentials and 9 near-miss negatives (`tests/test_sensitive_redteam.py`) | **0/13 → 12/13** caught at high severity; 0 near-miss false positives; display scrubbing removes the disguised value. One known miss (a reversed key), recorded with its reason |
 | 15 | **Tamper detection** — edited payload/timestamp/actor, deleted event, reordered pair, missing link, truncated log, wholesale chain rewrite | each caught, at the right sequence; the rewrite caught only by an external checkpoint |
 
 ## Two results worth stating rather than scoring

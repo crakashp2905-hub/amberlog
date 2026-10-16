@@ -88,6 +88,14 @@ ALLOWED_LINES = {
     ("tests/test_sensitive_patterns.py", "password_assignment"),
     ("tests/test_sensitive_patterns.py", "credit_card"),
     ("tests/test_sensitive_patterns.py", "ssn_us"),
+    ("tests/test_sensitive_patterns.py", "password_in_prose"),
+
+    # The obfuscation red team: invented values deliberately disguised -- split,
+    # encoded, look-alike characters -- so the detector's variant scan can be
+    # shown to catch them. A corpus that tests evasion has to contain evasions.
+    ("tests/test_sensitive_redteam.py", "aws_access_key"),
+    ("tests/test_sensitive_redteam.py", "password_in_prose"),
+    ("tests/test_sensitive_redteam.py", "private_key"),
 
     # This file names the fixtures it allows, so it matches its own patterns.
     ("tools/scan_secrets.py", "password_assignment"),

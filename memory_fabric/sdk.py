@@ -391,3 +391,20 @@ def agent_for(fabric: Any, credential: "Credential") -> AgentClient:
 
 def operator(fabric: Any, actor: str) -> OperatorClient:
     return OperatorClient(fabric, actor)
+
+
+def public_error(exc: BaseException) -> str:
+    """What a remote caller may be told about a refused request.
+
+    Expected refusals (a policy violation, an unknown id, a bad credential, a
+    malformed argument) are answers and keep their message. Anything else is a
+    fault, and its text can carry internals (a path, an SQL fragment, a value
+    from another tenant), so the caller gets a fixed sentence. The operator
+    gets the exception, logged by the server that caught it.
+    """
+    from .fabric import FabricError
+    from .identity import IdentityError
+
+    if isinstance(exc, (FabricError, IdentityError, ValueError)):
+        return f"{type(exc).__name__}: {exc}"
+    return "internal error; the request was refused"

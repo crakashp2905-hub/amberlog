@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import base64
 import json
+import logging
 import threading
 from dataclasses import dataclass
 from http import HTTPStatus
@@ -45,7 +46,7 @@ from typing import Any, Mapping
 
 from .enforcement import ExposureToken, RiskLevel
 from .identity import Credential, IdentityError, ROLE_AGENT
-from .sdk import AgentClient, NotUsable, UsableMemory
+from .sdk import AgentClient, NotUsable, UsableMemory, public_error
 from .service import MemoryService
 
 MAX_BODY = 64 * 1024
@@ -298,8 +299,8 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
             except _ApiError as exc:
                 self._reply(exc.status, {"error": exc.message})
             except Exception as exc:  # a refused write is an answer, not a crash
-                self._reply(HTTPStatus.UNPROCESSABLE_ENTITY,
-                            {"error": f"{type(exc).__name__}: {exc}"})
+                logging.getLogger(__name__).warning("request refused", exc_info=exc)
+                self._reply(HTTPStatus.UNPROCESSABLE_ENTITY, {"error": public_error(exc)})
             else:
                 self._reply(HTTPStatus.OK, result)
 

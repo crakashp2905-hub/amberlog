@@ -3037,6 +3037,10 @@ class TenantView:
         """
         for parent in parents:
             if self.fabric.tenant_of(parent) != self.tenant_id:
+                if self.fabric.conceal_cross_tenant:
+                    # Exactly what a missing id raises, so a derive cannot be
+                    # used to learn that another tenant's id exists.
+                    raise NotFound(f"no memory {parent!r}")
                 raise IdentityError(
                     f"{parent} belongs to another tenant; a conclusion cannot "
                     "be justified by a premise this tenant may not read"

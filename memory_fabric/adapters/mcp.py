@@ -31,11 +31,12 @@ from __future__ import annotations
 
 import copy
 import json
+import logging
 import sys
 from typing import Any, Callable, Mapping, TextIO
 
 from ..enforcement import ExposureToken, RiskLevel
-from ..sdk import AgentClient, NotUsable, UsableMemory
+from ..sdk import AgentClient, NotUsable, UsableMemory, public_error
 
 __all__ = ["McpServer", "TOOLS", "PROTOCOL_VERSIONS", "serve_stdio"]
 
@@ -259,9 +260,8 @@ class McpServer:
         except _ToolError as exc:
             return _tool_result({"error": str(exc)}, is_error=True)
         except Exception as exc:  # a refused write is a result, not a crash
-            return _tool_result(
-                {"error": f"{type(exc).__name__}: {exc}"}, is_error=True
-            )
+            logging.getLogger(__name__).warning("tool call refused", exc_info=exc)
+            return _tool_result({"error": public_error(exc)}, is_error=True)
         return _tool_result(payload)
 
     # --- tools -----------------------------------------------------------

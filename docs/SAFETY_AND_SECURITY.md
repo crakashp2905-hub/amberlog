@@ -112,3 +112,23 @@ Status values:
 | A peer is offline | Acknowledgement is `unknown`, not verified. The delivery retries and then shows as `failed`. | `test_retraction_protocol.py::test_an_offline_recipient_is_unknown_not_verified` |
 | A credential is revoked or expired | Refused on the next call | `test_service.py` |
 | Overblocking | Measured, never assumed to be zero | Task 5 results, `research/results/p3b-agent-teams.md` |
+
+### Fail-closed audit (2026-10-16)
+
+Every `except` on an authorisation, integrity or screening path was read
+(`enforcement`, `certificates`, `actions`, `service`, `identity`,
+`agent_api`, `adapters/mcp`, `transport`, `governance/*`, `fabric`,
+`outbox`, `dispatcher`, the dashboard server). Pinned in
+`test_fail_closed.py`.
+
+| Path | Behaviour on an exception | Verdict |
+|---|---|---|
+| Enforcer check, `use`, `verify_before_action` | propagates, so no decision is returned and nothing is usable | closed |
+| Ingest screen | propagates, so the write is refused and nothing is stored | closed |
+| Unmodelled lifecycle | `UNKNOWN`, refused | closed |
+| Certificate verifier, action gate | `state_unavailable` or `credential_invalid`; a failed audit write refuses | closed |
+| Credential parsing, signature | `IdentityError`, the same 401 for every failure kind | closed |
+| Federation receive | rejected before parsing when unauthenticated; parse errors are not echoed | closed |
+| `fabric` transaction and open | re-raise after rollback or close | closed |
+| **Agent API and MCP generic handler** | refused, **but returned the exception's text to the caller** | **fixed**: faults return a fixed sentence and are logged server-side (`sdk.public_error`) |
+| **Concealed cross-tenant `derive`** | refused, **but the message confirmed the id exists** | **fixed**: identical to a missing id |

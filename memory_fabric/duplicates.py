@@ -77,6 +77,7 @@ the right way round.
 from __future__ import annotations
 
 import re
+import unicodedata
 from dataclasses import dataclass
 from typing import Iterable, Mapping, Sequence
 
@@ -102,15 +103,34 @@ it.
 _TOKEN = re.compile(r"[a-z0-9]+(?:[-.][a-z0-9]+)*")
 
 
+def canonical(content: str) -> str:
+    """The text with encoding noise removed, and nothing else.
+
+    A withdrawn document pasted back in from a PDF arrives with soft hyphens,
+    zero-width spaces, ligatures and non-ASCII hyphens. Each of those split a
+    term, so the copy no longer contained the original and came back as active,
+    independent evidence (found 2026-10-16: 4 of 7 encodings evaded). NFKC folds
+    ligatures and full-width forms; format characters (Unicode category Cf) are
+    dropped; every dash becomes "-". None of these can merge two distinct words,
+    which is the error this module is built to avoid. Look-alike letters are
+    deliberately not mapped here.
+    """
+    text = unicodedata.normalize("NFKC", content)
+    return "".join(
+        "-" if unicodedata.category(ch) == "Pd" else ch
+        for ch in text if unicodedata.category(ch) != "Cf"
+    )
+
+
 def terms(content: str) -> frozenset[str]:
     """Content terms, identifiers kept whole.
 
     The same tokenisation `chains` uses, and for the same reason: "CB-9" is the
     document's name, and splitting it into "cb" and "9" loses exactly the token
-    that identifies it.
+    that identifies it. Applied to `canonical(content)`.
     """
     return frozenset(
-        t for t in _TOKEN.findall(content.lower()) if t not in _STOPWORDS
+        t for t in _TOKEN.findall(canonical(content).lower()) if t not in _STOPWORDS
     )
 
 

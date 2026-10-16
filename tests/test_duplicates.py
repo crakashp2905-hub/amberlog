@@ -273,6 +273,49 @@ class TestIndependentKnowledgeSurvives(unittest.TestCase):
             fabric.close()
 
 
+class EncodingNoise(unittest.TestCase):
+    """A withdrawn document pasted back with invisible or variant characters is
+    still the same document. Before `canonical`, four of these came back as
+    active, independent evidence."""
+
+    DOC = "Contractor bulletin CB-9: torque the hub nuts on crane-5 to 450 Nm before every lift."
+    VARIANTS = {
+        "zero-width space": DOC.replace("torque", "tor\u200bque").replace("lift", "li\u200bft"),
+        "ligature": DOC.replace("fi", "\ufb01"),
+        "non-breaking hyphen": DOC.replace("CB-9", "CB\u20119").replace("crane-5", "crane\u20135"),
+        "soft hyphen": DOC.replace("Contractor", "Con\u00adtractor"),
+        "full-width digits": DOC.replace("450", "\uff14\uff15\uff10"),
+    }
+
+    def test_each_variant_is_recognised_as_the_document(self) -> None:
+        from memory_fabric.duplicates import is_copy
+
+        for name, variant in self.VARIANTS.items():
+            with self.subTest(name):
+                self.assertTrue(is_copy(self.DOC, variant))
+
+    def test_a_reingested_variant_of_a_withdrawn_document_arrives_contested(self) -> None:
+        from memory_fabric import LifecycleState, MemoryFabric
+
+        for name, variant in self.VARIANTS.items():
+            with self.subTest(name):
+                fabric = MemoryFabric(auto_activate=True)
+                try:
+                    original = fabric.remember("a", self.DOC)
+                    fabric.quarantine(original, reason="wrong torque", basis="contradicted")
+                    copy = fabric.remember("b", variant)
+                    self.assertIs(fabric.get(copy).lifecycle_state, LifecycleState.CONTESTED)
+                    self.assertEqual(fabric.source_root(copy), fabric.source_root(original))
+                finally:
+                    fabric.close()
+
+    def test_a_corrected_value_is_not_a_copy(self) -> None:
+        """Normalisation must never merge distinct words: a correction stays new."""
+        from memory_fabric.duplicates import is_copy
+
+        self.assertFalse(is_copy(self.DOC, self.DOC.replace("450", "420")))
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
 

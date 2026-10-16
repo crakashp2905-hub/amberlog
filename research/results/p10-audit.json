@@ -1,0 +1,55 @@
+{
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "steps": 200,
+  "window": 20,
+  "budget": 3,
+  "policies": {
+    "periodic": {
+      "detection_rate": 0.325,
+      "audits_per_seed": 30,
+      "benign_flags_per_seed": 2.7,
+      "events_read_per_seed": 753,
+      "median_delay_steps": 59
+    },
+    "event_triggered": {
+      "detection_rate": 1.0,
+      "audits_per_seed": 25.5,
+      "benign_flags_per_seed": 1,
+      "events_read_per_seed": 128.7,
+      "median_delay_steps": 39.0
+    },
+    "risk_budgeted": {
+      "detection_rate": 1.0,
+      "audits_per_seed": 14.5,
+      "benign_flags_per_seed": 1,
+      "events_read_per_seed": 117.7,
+      "median_delay_steps": 39.0
+    },
+    "periodic_budget_1": {
+      "detection_rate": 0.15,
+      "audits_per_seed": 10,
+      "benign_flags_per_seed": 1.1,
+      "events_read_per_seed": 249.6,
+      "median_delay_steps": 39.0
+    },
+    "risk_budgeted_budget_1": {
+      "detection_rate": 0.5,
+      "audits_per_seed": 9,
+      "benign_flags_per_seed": 1,
+      "events_read_per_seed": 104.8,
+      "median_delay_steps": 39.0
+    }
+  },
+  "commit": "3163ec3"
+}

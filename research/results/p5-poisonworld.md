@@ -2,7 +2,7 @@
 
 Registered in [p5-poisonworld.md](../prereg/p5-poisonworld.md) before
 `experiments/poisonworld.py` existed. Produced by
-`python -m experiments.poisonworld` at commit `dd73b36`; raw numbers in
+`python -m experiments.poisonworld` at commit `3163ec3`; raw numbers in
 [p5-poisonworld.json](p5-poisonworld.json).
 
 - 10 seeds, 10 agents, 60 rounds, k = 5. Mean over seeds, 95% bootstrap CI over seeds.
@@ -21,7 +21,7 @@ Registered in [p5-poisonworld.md](../prereg/p5-poisonworld.md) before
 | high-impact actions on false evidence | 0.304 [0.257, 0.356] | 0.930 [0.895, 0.962] | 0.930 [0.895, 0.962] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] | 0.000 [0.000, 0.000] |
 | context tokens a task | 63.4 | 62.1 | 63.6 | 66.6 | 66.6 | 0.0 | 0.0 |
 | injections followed (matched / paraphrase) | 8 / 15 | 116 / 119 | 116 / 119 | 0 / 119 | 0 / 119 | 0 / 0 | 0 / 0 |
-| gate latency ms p50 / p95 | — | — | — | 0.23 / 0.40 | 0.23 / 0.41 | — | — |
+| gate latency ms p50 / p95 | — | — | — | 0.30 / 0.55 | 0.29 / 0.57 | — | — |
 | invalid actions by cause (all seeds) | inject_matched: 8<br>inject_para: 15<br>poison_after_detection: 47<br>poison_before_detection: 21 | inject_matched: 113<br>inject_para: 115<br>poison_after_detection: 307<br>poison_before_detection: 133<br>world_changed_before_recorded: 6 | inject_matched: 113<br>inject_para: 115<br>poison_after_detection: 145<br>poison_before_detection: 133<br>world_changed_before_recorded: 6 | inject_para: 115<br>poison_before_detection: 57<br>world_changed_before_recorded: 6 | inject_para: 115<br>poison_before_detection: 57<br>world_changed_before_recorded: 6 | — | — |
 
 ## Hypotheses
@@ -81,8 +81,8 @@ pre-compromise observations: in 103 of
 its 114 blocked tasks, agent 0 was the only
 writer of valid evidence. That is a real cost of withdrawing by writer.
 
-**Cost.** The action gate adds 0.23 ms at p50 and
-0.40 ms at p95 per action, in-process on SQLite in
+**Cost.** The action gate adds 0.30 ms at p50 and
+0.55 ms at p95 per action, in-process on SQLite in
 memory. Context tokens are within
 4.5 of `shared`.
 

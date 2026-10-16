@@ -50,7 +50,7 @@ No TLS: the cookie carries no `Secure` flag because that would stop it being sto
 |---|---|
 | An adapter cannot write as another agent | `AgentSession` binds `agent_id` and `episode_id` at construction; `remember` takes no agent parameter. |
 | Retrieved memories cannot hijack the prompt | Memories are delimited, labelled as evidence, and preceded by a standing instruction that they are data. A memory containing the closing delimiter cannot end the block early. |
-| An agent's own writes are not trusted | Tool-written memories land as `candidate` and are not retrievable until reviewed; the ingest screen still quarantines secrets. |
+| An agent's own writes are not trusted | Tool-written memories land as `candidate` and are not retrievable until reviewed, **unless the store runs with `auto_activate`**, which an operator turns on deliberately (`mcp --trusted-local` does, and marks each write `activation: trusted-local`). The ingest screen applies either way. |
 | An agent cannot score itself | Unchanged from T2: the session refuses a verifier equal to the acting agent, including on imported transcripts. |
 
 This is still scoping inside one process, not authentication: anything holding the raw `MemoryFabric` can write as any agent, which is correct — that is the host.

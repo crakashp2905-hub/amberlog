@@ -156,6 +156,7 @@ class Credential:
         return hmac.compare_digest(expected, self.signature)
 
     def is_expired(self, now: int) -> bool:
+        """`now` and the timestamps are epoch milliseconds."""
         return now >= self.expires_at
 
     def to_json(self) -> dict[str, Any]:
@@ -399,7 +400,14 @@ class PrincipalRegistry:
             tenant_id=registration.tenant_id,
             roles=tuple(sorted(granted)),
             issued_at=now,
-            expires_at=now + ttl_seconds,
+            # `now` is epoch milliseconds, as everywhere else in the store
+            # (`MemoryFabric.now`). The lifetime is in seconds. Adding them
+            # unconverted made every credential expire 1000x early: the
+            # default "hour" lasted 3.6 s and `agent-api-issue --ttl 1800`
+            # lasted 1.8 s. The unit tests called back at once, so nothing
+            # failed until a real model took a few seconds to think
+            # (experiments/live_claude_http.py).
+            expires_at=now + ttl_seconds * 1000,
             key_id=registration.key_id,
             credential_id="cr_" + new_ulid(),
         )

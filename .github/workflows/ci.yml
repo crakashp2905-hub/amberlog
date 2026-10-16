@@ -204,6 +204,19 @@ jobs:
       - run: pip install -e .
       - run: python -m experiments.e2e_validation --quick
 
+  claude-contract:
+    # The Claude adapter through the real anthropic SDK, HTTP stubbed: the SDK
+    # must accept every argument the adapter sends and the adapter must read
+    # the SDK's own response types. Not a live call; no credentials needed.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install anthropic
+      - run: python -m unittest tests.test_claude_contract -v
+
   secrets:
     # The project ships a sensitive-data detector. Pointing it at the repo is
     # both a smoke test of the detector and a guard on what gets committed.

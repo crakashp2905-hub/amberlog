@@ -32,7 +32,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **Release supply chain**: SPDX SBOMs for distributions and image; Sigstore build-provenance and SBOM attestations where GitHub allows them (public repository or Enterprise).
 - **macOS** added to the CI test matrix.
 
+### Fixed
+- **Credentials expired 1000x early.** `now` is epoch milliseconds and the lifetime is seconds, but they were added unconverted. The default hour-long credential lasted 3.6 s, and `agent-api-issue --ttl 1800` lasted 1.8 s. Every unit test called back at once, so nothing failed until a live model, a few seconds into its turn, was refused (`experiments/live_claude_http.py`). Credentials issued before the fix simply expire.
+- **The action gate verified against a stale view in another process** (found by `experiments/e2e_validation.py`), and two fail-closed leaks: raw exception text over the agent API and MCP, and concealed cross-tenant `derive` confirming an id exists.
+- **Re-ingestion through encoding noise.** Zero-width characters, soft hyphens, ligatures and non-ASCII hyphens no longer let a withdrawn document return as active, independent evidence.
+
 ### Changed
+- **Chain search prefers the chain whose weakest link is strongest** (P1d, pre-registered on a fresh holdout: three-hop sufficiency 0.417 → 0.917).
 - **A broken `cryptography` install no longer crashes every write.** A native panic on import (a `BaseException`) escaped the availability check. The store now falls back to encrypt-then-MAC, warns once, and `doctor` names the reason: a warning, or a failure when AES-GCM content exists that cannot be read there.
 - **`derive` never writes a conclusion less restricted than its premises.** A summary of `restricted` content used to be written `internal`, so it could be shared.
 - **The ingest screen reads `context` and `structured`, and `revise` is screened.** Before, a secret or an injection placed in metadata was stored active and inherited by every memory `derive` drew from it, and a revision could add either to an active memory. Both are quarantined now. Ordinary metadata is unaffected; a test pins that.

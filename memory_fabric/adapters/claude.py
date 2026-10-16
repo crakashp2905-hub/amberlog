@@ -12,8 +12,13 @@ after the cache breakpoint, so a different retrieval does not invalidate the
 cached system prompt. Putting them in `system` would defeat caching on every
 single request.
 
-Not yet exercised against the live API — the loop is covered by tests with a
-stub client (see `tests/test_adapters.py`).
+Not yet exercised against the live API: this environment has no credentials
+for a direct call. The loop is covered by a stub client
+(`tests/test_adapters.py`) and by a contract test that runs it through the
+**real** `anthropic` SDK with only HTTP stubbed (`tests/test_claude_contract.py`,
+its own CI job). That test checks the arguments are accepted, the response
+types are read, and history is replayed append-only. Real model behaviour
+through Claude Code over MCP is measured in research/results/live-claude-mcp.md.
 """
 
 from __future__ import annotations

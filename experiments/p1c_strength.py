@@ -50,8 +50,6 @@ def main() -> int:
     return 0
 
 
-if __name__ == "__main__":
-    sys.exit(main_p1d() if "--p1d" in sys.argv else main())
 
 
 def main_p1d() -> int:
@@ -97,3 +95,7 @@ cases, not a new distribution. `reconstruct` is opt-in either way.
 """)
     print(json.dumps({k: v for k, v in r.items() if k not in ("holdout3", "dev")}, indent=2))
     return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main_p1d() if "--p1d" in sys.argv else main())

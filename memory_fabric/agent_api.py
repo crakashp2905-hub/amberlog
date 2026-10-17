@@ -64,6 +64,13 @@ from .sdk import AgentClient, NotUsable, UsableMemory, public_error
 from .service import MemoryService
 
 MAX_BODY = 64 * 1024
+# How much of a refused body is read and discarded before replying. Closing a
+# socket with unread bytes makes the OS reset the connection, and the client
+# then sees an abort instead of the 413 -- one run in five on Windows for a
+# 70 KB body. Draining fixes that; the bound keeps a refusal from becoming a
+# way to make the server read an unlimited upload. Beyond it, the connection
+# is closed unread and a reset is the expected outcome.
+MAX_DRAIN = 1024 * 1024
 LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
 MIN_KEY_BYTES = 32
 MAX_TOKENS_PER_AGENT = 4096
@@ -352,8 +359,13 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
                 length = int(self.headers.get("Content-Length") or 0)
             except ValueError:
                 length = 0
-            if 0 < length <= MAX_BODY:
-                self.rfile.read(length)
+            if 0 < length <= MAX_DRAIN:
+                remaining = length
+                while remaining > 0:
+                    chunk = self.rfile.read(min(remaining, MAX_BODY))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
             self.close_connection = True
             self._reply(status, {"error": message})
 

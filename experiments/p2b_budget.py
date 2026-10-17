@@ -221,8 +221,8 @@ def main(argv: list[str] | None = None) -> int:
                                  text=True, cwd=ROOT).stdout.strip()
     print(json.dumps(r["verdict"], indent=2))
     out = ROOT / "research" / "results"
-    (out / "p2b-budget.json").write_text(json.dumps(r, indent=2) + "\n")
-    (out / "p2b-budget.md").write_text(to_markdown(r))
+    (out / "p2b-budget.json").write_text(json.dumps(r, indent=2) + "\n", encoding="utf-8")
+    (out / "p2b-budget.md").write_text(to_markdown(r), encoding="utf-8")
     return 0
 
 

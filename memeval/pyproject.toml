@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=68"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
@@ -12,7 +12,10 @@ dependencies = []
 # The repository's LICENSE (all rights reserved) covers this package too. It
 # is a separate distribution for packaging, not a separate licence: nothing
 # here grants rights the root LICENSE withholds.
-classifiers = ["License :: Other/Proprietary License"]
+license = "LicenseRef-Proprietary"
+# A copy of the root LICENSE, because a distribution cannot ship a file from
+# outside its own directory. tests/test_memeval.py fails if the two differ.
+license-files = ["LICENSE"]
 
 [tool.setuptools]
 # The package is this directory; it lives inside the Memory Fabric repository

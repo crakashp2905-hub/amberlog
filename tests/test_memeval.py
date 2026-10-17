@@ -47,6 +47,11 @@ def test_memeval_imports_nothing_outside_the_standard_library() -> None:
                 assert name in allowed, f"{path.name} imports {name}"
 
 
+def test_the_licence_copy_matches_the_root() -> None:
+    root = PACKAGE.parent / "LICENSE"
+    assert (PACKAGE / "LICENSE").read_bytes() == root.read_bytes()
+
+
 def test_experiments_checks_is_the_same_module() -> None:
     from experiments import checks as legacy
     assert legacy.baseline_max is checks.baseline_max

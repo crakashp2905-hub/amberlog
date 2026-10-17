@@ -1,0 +1,85 @@
+{
+  "experiment": "x6-secondary",
+  "seeds": [
+    0,
+    1,
+    2,
+    3,
+    4
+  ],
+  "units": 120,
+  "retrieval_independent_of_reader": true,
+  "retrieval_mismatches": [],
+  "right_in_context_by_writer": {
+    "gemma3:4b": 0.65,
+    "llama3.2:3b": 0.6167,
+    "oracle": 0.7,
+    "qwen2.5:3b": 0.625
+  },
+  "retrieval_agreement": {
+    "gemma3:4b|llama3.2:3b": 0.9667,
+    "gemma3:4b|qwen2.5:3b": 0.975,
+    "llama3.2:3b|qwen2.5:3b": 0.9417
+  },
+  "conversion": {
+    "gemma3:4b<-gemma3:4b": 0.8974,
+    "gemma3:4b<-llama3.2:3b": 0.9189,
+    "gemma3:4b<-oracle": 0.9643,
+    "gemma3:4b<-qwen2.5:3b": 0.96,
+    "llama3.2:3b<-gemma3:4b": 0.9103,
+    "llama3.2:3b<-llama3.2:3b": 0.9189,
+    "llama3.2:3b<-oracle": 0.8929,
+    "llama3.2:3b<-qwen2.5:3b": 0.9333,
+    "qwen2.5:3b<-gemma3:4b": 0.9231,
+    "qwen2.5:3b<-llama3.2:3b": 0.8649,
+    "qwen2.5:3b<-oracle": 0.9167,
+    "qwen2.5:3b<-qwen2.5:3b": 0.92
+  },
+  "cost_by_reader": {
+    "gemma3:4b": {
+      "total_s": 3600.4,
+      "median_s": 167.2,
+      "max_s": 300.1,
+      "cells": 20
+    },
+    "llama3.2:3b": {
+      "total_s": 33787.9,
+      "median_s": 96.2,
+      "max_s": 32013.5,
+      "cells": 20
+    },
+    "qwen2.5:3b": {
+      "total_s": 1822.2,
+      "median_s": 88.3,
+      "max_s": 128.0,
+      "cells": 20
+    }
+  },
+  "read_time_by_corpus": {
+    "gemma3:4b": {
+      "total_s": 1732.1,
+      "median_s": 101.1,
+      "max_s": 181.7,
+      "cells": 15
+    },
+    "llama3.2:3b": {
+      "total_s": 1851.0,
+      "median_s": 105.4,
+      "max_s": 197.0,
+      "cells": 15
+    },
+    "oracle": {
+      "total_s": 1462.9,
+      "median_s": 93.7,
+      "max_s": 145.2,
+      "cells": 15
+    },
+    "qwen2.5:3b": {
+      "total_s": 34164.5,
+      "median_s": 128.0,
+      "max_s": 32013.5,
+      "cells": 15
+    }
+  },
+  "writing_cost": null
+}

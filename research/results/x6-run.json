@@ -1,0 +1,81 @@
+{
+  "experiment": "x6-cross-model",
+  "models": [
+    "qwen2.5:3b",
+    "llama3.2:3b",
+    "gemma3:4b"
+  ],
+  "seeds": 5,
+  "episodes": 24,
+  "units": 120,
+  "matrix": {
+    "qwen2.5:3b<-qwen2.5:3b": 0.5833,
+    "qwen2.5:3b<-llama3.2:3b": 0.55,
+    "qwen2.5:3b<-gemma3:4b": 0.6083,
+    "qwen2.5:3b<-oracle": 0.65,
+    "llama3.2:3b<-qwen2.5:3b": 0.5917,
+    "llama3.2:3b<-llama3.2:3b": 0.575,
+    "llama3.2:3b<-gemma3:4b": 0.6,
+    "llama3.2:3b<-oracle": 0.6333,
+    "gemma3:4b<-qwen2.5:3b": 0.6083,
+    "gemma3:4b<-llama3.2:3b": 0.575,
+    "gemma3:4b<-gemma3:4b": 0.6,
+    "gemma3:4b<-oracle": 0.7333
+  },
+  "reader_effect": {
+    "qwen2.5:3b": -0.0074,
+    "llama3.2:3b": 0.0009,
+    "gemma3:4b": 0.0064
+  },
+  "writer_effect": {
+    "qwen2.5:3b": 0.0064,
+    "llama3.2:3b": -0.0213,
+    "gemma3:4b": 0.0148
+  },
+  "oracle_by_reader": {
+    "qwen2.5:3b": 0.65,
+    "llama3.2:3b": 0.6333,
+    "gemma3:4b": 0.7333
+  },
+  "diagonal_interaction": {
+    "point": -0.0019,
+    "ci95": [
+      -0.0157,
+      0.012
+    ],
+    "half_width": 0.0139,
+    "portable_reachable": true,
+    "own_memory_bonus": -0.0028,
+    "own_memory_bonus_ci95": [
+      -0.0236,
+      0.0181
+    ]
+  },
+  "verdict": "PORTABLE",
+  "writer_lesson_correctness": {
+    "qwen2.5:3b": 0.8444,
+    "qwen2.5:3b_lessons": 90,
+    "llama3.2:3b": 0.8333,
+    "llama3.2:3b_lessons": 84,
+    "gemma3:4b": 0.8444,
+    "gemma3:4b_lessons": 90
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "ceiling": {
+      "ok": true,
+      "arms_above_their_readers_oracle": {},
+      "note": ""
+    },
+    "power": {
+      "ok": true,
+      "half_width": 0.0139,
+      "note": ""
+    }
+  },
+  "cost": {
+    "calls": 1710,
+    "wall_s": 41054.5
+  }
+}

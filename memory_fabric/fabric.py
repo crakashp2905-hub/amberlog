@@ -11,6 +11,7 @@ from __future__ import annotations
 import functools
 
 import random
+import threading
 import time
 from contextlib import contextmanager
 from dataclasses import dataclass, field
@@ -210,8 +211,13 @@ def _fresh(method):
 
     @functools.wraps(method)
     def wrapper(self, *args, **kwargs):
-        self.refresh()
-        return method(self, *args, **kwargs)
+        # Under the fabric's lock: the projection is plain dicts and the
+        # connection is one sqlite3 connection, and neither may be used from
+        # two threads at once. Re-entrant, so a public method calling another
+        # takes it once.
+        with self.lock:
+            self.refresh()
+            return method(self, *args, **kwargs)
 
     return wrapper
 
@@ -250,6 +256,11 @@ class MemoryFabric:
         # which is why it is switchable for a store that ingests in bulk and
         # would rather run the check as a batch job.
         self.recognise_copies = recognise_copies
+        # One lock for everything that touches this fabric's connection and
+        # projection. Threaded servers (agent API, dashboard, federation)
+        # hold it per request, so a process serving several of them on one
+        # store is still serialised. See tests/test_concurrent_requests.py.
+        self.lock = threading.RLock()
         # Off by default until it passes its registered bar
         # (research/prereg/r2a-feature-reranker.md). A mechanism that has not
         # been measured does not become a default, and this project has a
@@ -975,11 +986,14 @@ class MemoryFabric:
         if stored and stored[0].seq != self._seen_seq + 1:
             # Another process appended between our last catch-up and this
             # write, so folding only our own events would put the projection
-            # out of log order. Rebuild; it already contains what we wrote.
-            self._replay()
+            # out of log order. Fold everything after what we had seen, in log
+            # order -- theirs, then ours -- which is what a rebuild would do.
+            self._catch_up()
             return stored
+        before = dict(self.state.memories)
         for event in stored:
             self.projection.apply(event)
+        self._reindex_changed(before)
         if stored and stored[-1].seq is not None:
             self._seen_seq = stored[-1].seq
         self._estimator_dirty = True
@@ -998,17 +1012,94 @@ class MemoryFabric:
 
         Called at every entry point that serves, enforces or writes. When
         nothing changed it costs one indexed `MAX(seq)` read; when something
-        did, it rebuilds from the log, which is the source of truth (AGENTS.md
-        principle 3). Inside an open transaction it does nothing: the write
-        lock is ours, so nobody else can have appended. Returns whether a
-        rebuild happened.
+        did, it folds the new events in log order (`_catch_up`). Inside an
+        open transaction it does nothing: the write lock is ours, so nobody
+        else can have appended. Returns whether anything was folded.
         """
         if self.log.in_transaction:
             return False
         if self.log.head_seq == self._seen_seq:
             return False
-        self._replay()
+        self._catch_up()
         return True
+
+    def _catch_up(self) -> int:
+        """Fold the events after `_seen_seq`, and re-index only what they changed.
+
+        This used to be a full `_replay` -- every event re-read, every memory
+        re-unsealed and re-indexed (re-embedded, with a real embedder) -- each
+        time any other process had written. Under contention that is every
+        operation, and the log grows with every retrieve because exposures are
+        logged, so the cost per operation grew with the log and with the
+        number of writers. P12's collapse at 10-100 agents was that: profiled,
+        it was 95% of one contending agent's time (experiments/p12_profile.py).
+
+        It is the same projection either way. A rebuild *is* the in-order fold
+        of the log (`Projection.rebuild` is `apply_all(log.read())`), so
+        folding the suffix onto the state that already holds the prefix gives
+        the state a rebuild would, which `tests/test_catch_up.py` checks
+        against a fresh replay. Memories are frozen, so the ones the suffix
+        changed are exactly those whose object changed; those are re-indexed
+        by the rule `_replay` uses -- indexed unless deleted -- and everything
+        else keeps entries a replay would have rewritten with the same text.
+        A changed memory is re-indexed when its text changed or it is not in
+        the index at all; re-indexing one whose text is unchanged would only
+        re-embed it.
+
+        Returns the number of events folded.
+        """
+        head = self.log.head_seq
+        before = dict(self.state.memories)
+        events = list(self.log.read(since_seq=self._seen_seq))
+        self.projection.apply_all(events)
+        self._reindex_changed(before)
+        # Only forward. `head` was read first, so a suffix that grew while it
+        # was being read ends later than `head`, and the watermark follows the
+        # last event actually folded.
+        last = events[-1].seq if events and events[-1].seq is not None else head
+        self._seen_seq = max(self._seen_seq, head, last)
+        self._estimator_dirty = True
+        return len(events)
+
+    def _reindex_changed(self, before: Mapping[str, Memory]) -> None:
+        """Bring the indexes in line with memories a fold just changed.
+
+        One rule for every fold, this process's own writes and others':
+        a deleted memory leaves the index; a changed memory that retrieval can
+        serve is (re)indexed if its text changed or it is absent. Absent
+        covers a memory this process unindexed itself -- `forget` does -- that
+        has since come back: validated out of `deprecated`, for instance.
+        Before this rule, that memory stayed unretrievable in the process that
+        forgot it, and only there, until a restart. Deprecated and erased
+        memories need not be present, since retrieval refuses both, but an
+        entry that is present always holds the current text.
+
+        Memories are frozen, so "changed" is an identity test, and the cost is
+        one pass over the memory table, not a pass over the log.
+        """
+        for memory_id, memory in self.state.memories.items():
+            old = before.get(memory_id)
+            if old is memory:
+                continue
+            state = memory.lifecycle_state
+            if state is LifecycleState.DELETED:
+                self._unindex(memory_id)
+                continue
+            text = self._index_text(memory)
+            present = memory_id in self.index
+            changed = old is None or self._index_text(old) != text
+            if state is LifecycleState.DEPRECATED or memory_id in self.state.erased:
+                # Not served, so an absent entry may stay absent -- but a
+                # present one must stay current, or it is stale text waiting
+                # for the memory to become servable again. The first version
+                # of this rule left it alone, and tests/test_catch_up.py found
+                # a revision of a deprecated memory indexed under its old text
+                # once a later transition made it contested.
+                if old is None or (present and changed):
+                    self._index(memory_id, text)
+                continue
+            if changed or not present:
+                self._index(memory_id, text)
 
     @contextmanager
     def _transaction(self):
@@ -1036,7 +1127,7 @@ class MemoryFabric:
                 if outermost and self.log.head_seq != self._seen_seq:
                     # The write lock is now ours, so this is the last moment
                     # anyone else can have appended: catch up before writing.
-                    self._replay()
+                    self._catch_up()
                 yield
         except BaseException:
             if outermost:
@@ -1615,7 +1706,8 @@ class MemoryFabric:
                 )
             )
         self._emit(*emitted)
-        self._index(memory.id, self._index_text(memory))
+        # From the state, not the local object: see `revise` for why.
+        self._index(memory.id, self._index_text(self.state.memories[memory.id]))
         return memory.id
 
     @_fresh
@@ -1679,8 +1771,13 @@ class MemoryFabric:
                 else []
             ),
         )
-        self._index(memory_id, self._index_text(revised))
-        return self.state.memories[memory_id]
+        # The state's version, not `revised`: if another process revised the
+        # same memory just after us, `_emit` has folded that later version in,
+        # and indexing our own would put superseded text back in the index
+        # under the current version. Found by tests/test_catch_up.py.
+        current = self.state.memories[memory_id]
+        self._index(memory_id, self._index_text(current))
+        return current
 
     @_fresh
     def derive(

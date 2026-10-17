@@ -23,6 +23,8 @@ uses the server in this module.
 
 from __future__ import annotations
 
+import contextlib
+
 import json
 import threading
 import urllib.error
@@ -192,6 +194,18 @@ class HttpTransport:
 # --- the receiving end ------------------------------------------------------
 
 
+def _store_lock(fabric: Any) -> Any:
+    """The fabric's lock, held around each store call and never around I/O.
+
+    `ThreadingHTTPServer` answers peers concurrently, and two retractions
+    arriving at once used the store's one connection from two threads, the
+    defect `tests/test_concurrent_requests.py` documents for the agent API.
+    A fabric stand-in without a lock (some tests pass one) gets a no-op.
+    """
+    lock = getattr(fabric, "lock", None)
+    return lock if lock is not None else contextlib.nullcontext()
+
+
 def build_federation_server(
     fabric: Any,
     registry: PeerRegistry,
@@ -311,14 +325,16 @@ def build_federation_server(
                 # none of which an unauthenticated caller may learn, and the
                 # head sequence in particular is pollable as an activity
                 # oracle.
-                fabric.receive_retraction(retraction, sender_authorised=False)
+                with _store_lock(fabric):
+                    fabric.receive_retraction(retraction, sender_authorised=False)
                 self._reply(
                     HTTPStatus.UNAUTHORIZED,
                     {"rejection_code": RejectionCode.UNAUTHORIZED.value},
                 )
                 return
 
-            ack = fabric.receive_retraction(retraction, sender_authorised=True)
+            with _store_lock(fabric):
+                ack = fabric.receive_retraction(retraction, sender_authorised=True)
             status = (
                 HTTPStatus.OK
                 if ack.state
@@ -356,15 +372,14 @@ def build_federation_server(
                 )
                 return
             since = int(body.get("since_sequence", -1))
-            self._reply(
-                HTTPStatus.OK,
-                {
+            with _store_lock(fabric):
+                payload = {
                     "store_id": fabric.store_id,
                     "retractions": [
                         r.to_json() for r in fabric.retractions_since(since)
                     ],
-                },
-            )
+                }
+            self._reply(HTTPStatus.OK, payload)
 
     server = ThreadingHTTPServer((host, port), Handler)
     return server

@@ -116,7 +116,9 @@ class Api:
 
     def __init__(self, fabric: "MemoryFabric") -> None:
         self.fabric = fabric
-        self._lock = threading.Lock()
+        # The fabric's own lock, not one of ours: a process serving the
+        # dashboard and the agent API on one store must serialise across both.
+        self._lock = fabric.lock
 
     def handle(self, path: str, params: dict[str, list[str]]) -> Any:
         from ..fabric import NotFound

@@ -338,6 +338,15 @@ def _on_content_erased(state: ProjectionState, event: Event) -> None:
         # Replace the stored text in the projection too. The event log keeps the
         # ciphertext, which without its key is not content.
         state.memories[memory_id] = memory.evolve(content=ERASED_MARKER)
+    # And every earlier version. One key seals them all, so a replay after the
+    # erasure reads each of them back as the marker -- but a process that was
+    # already running kept their plaintext in `history`, and `history()` and
+    # the dashboard's version list served it after the erasure was recorded.
+    # Found by tests/test_catch_up.py comparing a live projection with a
+    # replayed one.
+    if memory_id in state.history:
+        state.history[memory_id] = [
+            old.evolve(content=ERASED_MARKER) for old in state.history[memory_id]]
 
 
 def _on_scope_changed(state: ProjectionState, event: Event) -> None:

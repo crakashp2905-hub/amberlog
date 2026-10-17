@@ -225,38 +225,62 @@ class AgentApi:
         # The server owns the service; reaching its fabric here is the server
         # building the narrow per-agent client, not a caller bypassing it.
         self._fabric = service._fabric
-        self._lock = threading.Lock()
         self._issued: dict[str, OrderedDict[str, ExposureToken]] = {}
         limits = limits or RateLimit()
         self._per_agent = RateLimiter(limits.rate, limits.burst, clock)
         self._per_address = RateLimiter(limits.auth_failures,
                                         max(1, int(limits.auth_failures * 2)), clock)
 
-    def client_for(self, bearer: str | None, remote: str = "") -> AgentClient:
+    def _refused(self, remote: str) -> "_ApiError":
+        # One answer for every failure: unknown agent, bad signature,
+        # expired, revoked. Distinguishing them tells an attacker which.
+        wait = self._per_address.acquire(remote)
+        if wait:
+            return _ApiError(HTTPStatus.TOO_MANY_REQUESTS, "too many requests",
+                             retry_after=wait)
+        return _ApiError(HTTPStatus.UNAUTHORIZED, "authentication required")
+
+    def precheck(self, bearer: str | None, remote: str = "") -> Credential:
+        """Refuse or rate-limit without touching the store; return the credential.
+
+        Signature and expiry need only the in-memory registrations, so a forged
+        or expired credential, and an agent over its rate, are answered here,
+        before the request can queue on the store's lock.
+        """
         try:
             if not bearer:
                 raise IdentityError("no credential")
-            principal = self.service.session(decode_credential(bearer)).principal()
+            credential = decode_credential(bearer)
+            agent_id = self.service.precheck(credential)
         except IdentityError:
-            # One answer for every failure: unknown agent, bad signature,
-            # expired, revoked. Distinguishing them tells an attacker which.
-            wait = self._per_address.acquire(remote)
-            if wait:
-                raise _ApiError(HTTPStatus.TOO_MANY_REQUESTS, "too many requests",
-                                retry_after=wait) from None
-            raise _ApiError(HTTPStatus.UNAUTHORIZED, "authentication required") from None
-        wait = self._per_agent.acquire(principal.agent_id)
+            raise self._refused(remote) from None
+        wait = self._per_agent.acquire(agent_id)
         if wait:
             raise _ApiError(HTTPStatus.TOO_MANY_REQUESTS, "too many requests",
                             retry_after=wait)
+        return credential
+
+    def client_for(self, credential: Credential, remote: str = "") -> AgentClient:
+        """Full verification, revocation included. Call under the fabric's lock."""
+        try:
+            principal = self.service.session(credential).principal()
+        except IdentityError:
+            raise self._refused(remote) from None
         return AgentClient(self._fabric, principal.agent_id, principal.tenant_id)
 
     def handle(self, operation: str, bearer: str | None, body: Mapping[str, Any],
                remote: str = "") -> Any:
-        # Authentication and the rate check run before the store lock, so a
-        # refused caller never queues behind it.
-        client = self.client_for(bearer, remote)
-        with self._lock:
+        # Two halves. Signature, expiry and the rate limit need no store and
+        # run first, so a forged, expired or over-rate request never queues on
+        # the store's lock. Revocation is a read on the store's one
+        # connection, so it runs under the lock with the operation: it used to
+        # run outside it, and concurrently with another request it failed 39
+        # of 200 times under ten agents (experiments/p12_http.py) -- an
+        # interfered-with read is a revocation check that can say "not
+        # revoked".
+        credential = self.precheck(bearer, remote)
+        with self._fabric.lock:
+            client = self.client_for(credential, remote)
             if operation == "recall":
                 return self._recall(client, body)
             if operation == "fetch":

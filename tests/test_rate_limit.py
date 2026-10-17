@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -120,14 +121,45 @@ class TestApiLimits(ApiCase):
                 self.api.handle("recall", None, {"query": "x"}, remote="10.0.0.9")
         self.api.handle("recall", self.bearer(), {"query": "E01"}, remote="10.0.0.9")
 
+    def _with_store_lock_held_elsewhere(self, request) -> tuple[_ApiError, float]:
+        """Run `request` while another thread holds the fabric's lock.
+
+        The lock is re-entrant, so holding it in this thread would prove
+        nothing: the request would re-acquire it without waiting.
+        """
+        held, release = threading.Event(), threading.Event()
+
+        def hold() -> None:
+            with self.fabric.lock:
+                held.set()
+                release.wait(10)
+
+        holder = threading.Thread(target=hold)
+        holder.start()
+        self.assertTrue(held.wait(5))
+        try:
+            started = time.monotonic()
+            with self.assertRaises(_ApiError) as caught:
+                request()
+            return caught.exception, time.monotonic() - started
+        finally:
+            release.set()
+            holder.join()
+
     def test_a_refused_request_never_takes_the_store_lock(self) -> None:
         a = self.bearer()
         for _ in range(2):
             self.api.handle("recall", a, {"query": "E01"})
-        with self.api._lock:          # held: a limited request must not wait for it
-            with self.assertRaises(_ApiError) as caught:
-                self.api.handle("recall", a, {"query": "E01"})
-        self.assertEqual(caught.exception.status, 429)
+        error, waited = self._with_store_lock_held_elsewhere(
+            lambda: self.api.handle("recall", a, {"query": "E01"}))
+        self.assertEqual(error.status, 429)
+        self.assertLess(waited, 1.0, "a limited request queued on the store")
+
+    def test_a_forged_credential_never_takes_the_store_lock(self) -> None:
+        error, waited = self._with_store_lock_held_elsewhere(
+            lambda: self.api.handle("recall", "garbage", {"query": "E01"}, remote="10.0.0.7"))
+        self.assertEqual(error.status, 401)
+        self.assertLess(waited, 1.0, "an unauthenticated request queued on the store")
 
 
 class TestBoundedTokens(ApiCase):

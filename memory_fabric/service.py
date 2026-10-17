@@ -260,14 +260,16 @@ class MemoryService:
         tenant_id: str,
         roles: Iterable[str] = (ROLE_AGENT,),
     ) -> Principal:
-        return self._principals.register(
-            agent_id, key=key, tenant_id=tenant_id, roles=roles
-        )
+        with self._fabric.lock:
+            return self._principals.register(
+                agent_id, key=key, tenant_id=tenant_id, roles=roles
+            )
 
     def issue(self, agent_id: str, ttl_seconds: int = 3600, **kwargs: Any) -> Credential:
-        return self._principals.issue(
-            agent_id, now=self._fabric.now(), ttl_seconds=ttl_seconds, **kwargs
-        )
+        with self._fabric.lock:
+            return self._principals.issue(
+                agent_id, now=self._fabric.now(), ttl_seconds=ttl_seconds, **kwargs
+            )
 
     @property
     def revocations_are_durable(self) -> bool:
@@ -279,10 +281,12 @@ class MemoryService:
         return bool(getattr(self._principals.revocations, "durable", False))
 
     def revoke(self, credential: Credential | str) -> bool:
-        return self._principals.revoke(credential)
+        with self._fabric.lock:
+            return self._principals.revoke(credential)
 
     def revoke_agent(self, agent_id: str) -> None:
-        self._principals.revoke_agent(agent_id)
+        with self._fabric.lock:
+            self._principals.revoke_agent(agent_id)
 
     # --- the only way in ------------------------------------------------
 
@@ -307,8 +311,20 @@ class MemoryService:
 
     # --- internals -------------------------------------------------------
 
+    def precheck(self, credential: Credential) -> str:
+        """Signature and expiry only, without the store. See `authenticate`.
+
+        For a server that must refuse before queuing on the store. It is not
+        authorisation: `session` still verifies everything, revocation
+        included, before anything is served.
+        """
+        return self._principals.authenticate(credential, self._fabric.now())
+
     def _verify(self, credential: Credential) -> Principal:
-        return self._principals.verify(credential, self._fabric.now())
+        # Revocations are rows on the store's connection, so verifying one
+        # is a read that must not interleave with another thread's statement.
+        with self._fabric.lock:
+            return self._principals.verify(credential, self._fabric.now())
 
     def _require_tenant(self, memory_id: str, principal: Principal) -> None:
         """An operator's reach stops at their own tenant.

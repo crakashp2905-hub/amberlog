@@ -458,13 +458,14 @@ class PrincipalRegistry:
             credential.agent_id, credential.credential_id
         )
 
-    def verify(self, credential: Credential, now: int) -> Principal:
-        """Establish a principal, or raise.
+    def authenticate(self, credential: Credential, now: int) -> str:
+        """The checks that need no store: registration, key, signature, expiry.
 
-        The order matters and is the same reasoning as the retraction protocol's:
-        resolve *who this claims to be* and whether the claim is authentic before
-        looking at anything the claim says. An expiry check on an unverified body
-        is a check on attacker-controlled data.
+        Returns the agent id the credential authentically names. `verify` is
+        this plus revocation, tenant and role -- revocation is the one that
+        reads the store, so a caller that must decide something *before*
+        taking the store's lock (the agent API's rate limit) can use this and
+        then call `verify` under the lock. Never a substitute for `verify`.
         """
         registration = self._agents.get(credential.agent_id)
         if registration is None:
@@ -480,6 +481,18 @@ class PrincipalRegistry:
             raise IdentityError(
                 f"{credential.agent_id}: credential expired at {credential.expires_at}"
             )
+        return credential.agent_id
+
+    def verify(self, credential: Credential, now: int) -> Principal:
+        """Establish a principal, or raise.
+
+        The order matters and is the same reasoning as the retraction protocol's:
+        resolve *who this claims to be* and whether the claim is authentic before
+        looking at anything the claim says. An expiry check on an unverified body
+        is a check on attacker-controlled data.
+        """
+        self.authenticate(credential, now)
+        registration = self._agents[credential.agent_id]
         # After the signature, so a revocation check never runs on an
         # unverified id — and before the tenant and role checks, because a
         # revoked credential should not be told *why else* it would have failed.

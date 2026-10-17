@@ -37,6 +37,14 @@ INJECTION_PREAMBLE = (
 OPEN = "<retrieved_memories>"
 CLOSE = "</retrieved_memories>"
 
+EVIDENCE_SENTENCE = "Each memory carries how well it is evidenced"
+
+COMPACT_PREAMBLE = INJECTION_PREAMBLE.partition(EVIDENCE_SENTENCE)[0].strip()
+"""The injection preamble without its instruction to weigh evidence labels.
+
+Derived from `INJECTION_PREAMBLE` rather than copied, so the security text
+cannot drift between the two renderings."""
+
 
 @dataclass
 class MemoryBlock:
@@ -75,6 +83,62 @@ class MemoryContext:
             return ""
         body = "\n\n".join(block.render() for block in self.blocks)
         return f"{preamble}\n\n{OPEN}\n{body}\n{CLOSE}"
+
+    def render_compact(self) -> str:
+        """The rendering X5 measured as costing nothing, plus disagreement.
+
+        `research/results/x5-context-rendering.md` rendered one retrieval four
+        ways over 640 paired episodes. The full rendering above cost **7.0
+        points** of task success against plain text (95% CI +4.7 to +9.4).
+        Decomposed, the security preamble and delimiters alone cost **0.6
+        points, not distinguishable from zero** -- so the prompt-injection
+        control (SECURITY.md T1) is free -- while the per-memory evidence
+        labels and the instruction to weigh them cost the rest.
+
+        So this keeps the free part and drops the costly part:
+
+        * the injection preamble and delimiters, **kept**: a threat control,
+          measured at no cost;
+        * per-memory `[id | type | evidence | state]` headers, **dropped**: in
+          a cold store nearly every one reads "unevaluated", and telling a
+          model to prefer well-evidenced memories when none is evidenced
+          teaches it to discount everything it was shown;
+        * a disagreement, **kept, and only when one exists**. Dropping every
+          label would also drop "contradicts ...", which is the mechanism H4b
+          measured (P(correct) 0.905 -> 1.000). So contested memories are named
+          in one line after the block, rather than every memory carrying a
+          header to say it is not contested.
+
+        **The last point is not itself measured.** X5 tested labels on or
+        off; showing only informative labels is this function's design, not
+        X5's finding, and it should be measured before a figure is quoted for
+        it.
+        """
+        if not self.blocks:
+            return ""
+        body = "\n\n".join(block.content for block in self.blocks)
+        text = f"{COMPACT_PREAMBLE}\n\n{OPEN}\n{body}\n{CLOSE}"
+        position = {b.memory_id: n + 1 for n, b in enumerate(self.blocks)}
+        disputes = []
+        seen = set()
+        for block in self.blocks:
+            for other in block.contested_with:
+                pair = frozenset((block.memory_id, other))
+                if pair in seen:
+                    continue
+                seen.add(pair)
+                if other in position:
+                    disputes.append(f"memory {position[block.memory_id]} and "
+                                    f"memory {position[other]}")
+                else:
+                    disputes.append(f"memory {position[block.memory_id]} and "
+                                    f"one not shown here")
+        if disputes:
+            text += ("\n\nThese memories are in a declared disagreement: "
+                     + "; ".join(disputes)
+                     + ". Weigh both and say which you relied on; do not "
+                       "treat either as settled.")
+        return text
 
 
 def describe_evidence(value: ValueEstimate) -> str:

@@ -49,9 +49,10 @@ events nobody hashed then proves only that they are self-consistent today.
 
 from __future__ import annotations
 
+from .dbtypes import Connection
+
 import hashlib
 import json
-import sqlite3
 from dataclasses import dataclass
 from typing import Any, Iterator, Mapping
 
@@ -182,7 +183,7 @@ class IntegrityChain:
     indistinguishable from a deletion.
     """
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
+    def __init__(self, conn: Connection) -> None:
         self._conn = conn
         # Not inside `transaction()`: `executescript` issues its own COMMIT,
         # which would end ours. Safe unwrapped because every statement is
@@ -235,9 +236,8 @@ class IntegrityChain:
         return Checkpoint(seq=seq, chain_digest=digest, events=len(self))
 
     def __len__(self) -> int:
-        return int(
-            self._conn.execute("SELECT count(*) FROM integrity_chain").fetchone()[0]
-        )
+        row = self._conn.execute("SELECT count(*) FROM integrity_chain").fetchone()
+        return int(row[0]) if row is not None else 0
 
     def verify(self, events: Iterator[Event]) -> Verification:
         """Recompute the chain over `events` and report the first divergence.
@@ -254,7 +254,7 @@ class IntegrityChain:
             )
         }
         low, high = self.coverage()
-        if low is None:
+        if low is None or high is None:
             return Verification(
                 ok=True, checked=0,
                 detail="no chain recorded; nothing to verify and nothing claimed",

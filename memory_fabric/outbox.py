@@ -22,13 +22,13 @@ different events.
 
 from __future__ import annotations
 
+from .dbtypes import Connection, Row
+
 import json
-import sqlite3
 import time
 from dataclasses import dataclass
-from typing import Iterable, Sequence
+from typing import Sequence
 
-from .txn import transaction
 from .protocol import (
     Acknowledgement,
     PropagationState,
@@ -109,7 +109,7 @@ class Outbox:
     whole point is to be inside the caller's transaction.
     """
 
-    def __init__(self, conn: sqlite3.Connection) -> None:
+    def __init__(self, conn: Connection) -> None:
         self._conn = conn
         # NOT wrapped in `transaction()`: `executescript` issues its own
         # COMMIT before running, which would end ours and leave the
@@ -429,7 +429,7 @@ class Outbox:
 
     # --- plumbing --------------------------------------------------------
 
-    def _row(self, row: sqlite3.Row) -> OutboxRow:
+    def _row(self, row: Row) -> OutboxRow:
         return OutboxRow(
             id=row["id"],
             retraction_id=row["retraction_id"],

@@ -52,7 +52,7 @@ import json
 import time
 import urllib.error
 import urllib.request
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Sequence
 
 DEFAULT_HOST = "http://127.0.0.1:8009"

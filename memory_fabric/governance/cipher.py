@@ -215,7 +215,7 @@ class AesGcm:
             raise IntegrityError(f"malformed v3 envelope: {exc}") from None
         try:
             return self._aesgcm(key).decrypt(nonce, ciphertext, aad)
-        except Exception as exc:  # InvalidTag, and anything else it raises
+        except Exception:  # InvalidTag, and anything else it raises
             raise IntegrityError(
                 "content failed authentication (AES-GCM): the ciphertext, its "
                 "nonce, or the memory it is bound to has been altered"

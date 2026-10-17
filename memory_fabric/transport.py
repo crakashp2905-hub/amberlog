@@ -30,7 +30,7 @@ import urllib.request
 from dataclasses import dataclass, field
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-from typing import Any, Callable, Mapping, Protocol
+from typing import Any, Mapping, Protocol
 
 from .protocol import (
     Acknowledgement,
@@ -386,6 +386,9 @@ class ServedFabric:
     @property
     def endpoint(self) -> str:
         host, port = self.server.server_address[:2]
+        # Typed `str | bytes`: bytes only for an AF_UNIX socket, never here.
+        if isinstance(host, bytes):
+            host = host.decode()
         return f"http://{host}:{port}"
 
     def close(self) -> None:

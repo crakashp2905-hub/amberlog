@@ -92,7 +92,6 @@ class Dispatcher:
         reopen, because nothing had committed them.
         """
         outbox = self.fabric.outbox
-        connection = self.fabric.log._conn
         try:
             ack = self.transport.send(row.recipient, row.retraction)
         except TransportError as exc:

@@ -281,7 +281,7 @@ class AgentApi:
 
     def _verify(self, client: AgentClient, body: Mapping[str, Any]) -> dict[str, Any]:
         memory_id = _string(body, "memory_id")
-        issued = self._issued.get(client.agent_id, {}).get(memory_id)
+        issued = self._issued.get(client.agent_id, OrderedDict()).get(memory_id)
         if issued is None:
             raise _ApiError(HTTPStatus.CONFLICT,
                             "recall or fetch this memory before verifying it")

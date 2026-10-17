@@ -27,7 +27,7 @@ import hashlib
 import hmac
 import json
 import re
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 from enum import Enum
 from typing import Any, Mapping
 

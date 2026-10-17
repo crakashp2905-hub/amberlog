@@ -30,6 +30,8 @@ cleanup is explicit rather than left to chance.
 
 from __future__ import annotations
 
+from .dbtypes import Connection
+
 import sqlite3
 import threading
 from contextlib import contextmanager
@@ -50,7 +52,7 @@ _STATES: dict[int, _State] = {}
 _REGISTRY_LOCK = threading.Lock()
 
 
-def _state_for(conn: sqlite3.Connection) -> _State:
+def _state_for(conn: Connection) -> _State:
     key = id(conn)
     with _REGISTRY_LOCK:
         state = _STATES.get(key)
@@ -60,7 +62,7 @@ def _state_for(conn: sqlite3.Connection) -> _State:
         return state
 
 
-def forget(conn: sqlite3.Connection) -> None:
+def forget(conn: Connection) -> None:
     """Drop a closed connection's entry. Called by `EventLog.close`.
 
     Safe to call on a connection mid-transaction only because closing one then
@@ -71,12 +73,12 @@ def forget(conn: sqlite3.Connection) -> None:
         _STATES.pop(id(conn), None)
 
 
-def depth(conn: sqlite3.Connection) -> int:
+def depth(conn: Connection) -> int:
     return _state_for(conn).depth
 
 
 @contextmanager
-def transaction(conn: sqlite3.Connection) -> Iterator[None]:
+def transaction(conn: Connection) -> Iterator[None]:
     """One transaction, or one savepoint inside an open one.
 
     The outermost level issues `BEGIN IMMEDIATE` — the write lock is taken up

@@ -24,7 +24,7 @@ from functools import partial
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
 from . import report
@@ -460,7 +460,7 @@ def serve(
         if access_log:
             print(f"  access log:   {access_log}")
     elif config.enabled:
-        print(f"  auth:   token (open this URL once; it sets a session cookie)")
+        print("  auth:   token (open this URL once; it sets a session cookie)")
         print(f"\n  {authenticator.bootstrap_url(host, actual_port)}\n")
         print(f"  For scripts:  Authorization: Bearer {config.token}")
     else:

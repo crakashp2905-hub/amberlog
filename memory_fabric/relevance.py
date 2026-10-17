@@ -55,7 +55,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field, replace
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 from .identity import DEFAULT_TENANT
 from .ids import new_ulid

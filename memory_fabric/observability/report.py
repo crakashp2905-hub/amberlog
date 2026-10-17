@@ -12,7 +12,7 @@ from __future__ import annotations
 import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Mapping
 
 from ..governance.sensitive import scrub, scrub_tree, secret_values
 from ..model import (
@@ -676,7 +676,7 @@ def memory_detail(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
     }
 
 
-def _audit_payload(payload: dict[str, Any]) -> dict[str, Any]:
+def _audit_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     """Drop the embedded memory snapshot from audit rows.
 
     A `MemoryCreated` payload contains the whole memory, which would repeat the

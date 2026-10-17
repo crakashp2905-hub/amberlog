@@ -7,6 +7,8 @@ defines the authoritative replay order.
 
 from __future__ import annotations
 
+from .dbtypes import Connection, Row
+
 import json
 import sqlite3
 import time
@@ -55,6 +57,7 @@ class EventLog:
         self, path: str | Path = ":memory:", busy_timeout_ms: int = 5_000
     ) -> None:
         self.path = str(path)
+        self._conn: Connection
         self.dialect = "sqlite"
         if pgcompat.is_postgres_url(self.path):
             # Optional backend; see pgcompat.py for what it changes and what it
@@ -72,12 +75,13 @@ class EventLog:
         # the default, a statement silently opens a transaction and any
         # `with conn:` exit commits it — which is how `request_retraction`
         # came to be non-atomic.
-        self._conn = sqlite3.connect(
+        conn = sqlite3.connect(
             self.path, check_same_thread=False, isolation_level=None
         )
-        self._conn.row_factory = sqlite3.Row
-        self._conn.execute("PRAGMA journal_mode=WAL")
-        self._conn.execute("PRAGMA foreign_keys=ON")
+        conn.row_factory = sqlite3.Row
+        self._conn = conn
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
         # Explicit, not a fix. The C library's default busy timeout is zero,
         # but Python's `sqlite3.connect` sets 5 seconds of its own accord, so
         # this store has always serialised concurrent writers rather than
@@ -148,7 +152,10 @@ class EventLog:
                         json.dumps(event.payload, separators=(",", ":"), default=str),
                     ),
                 )
-                stored.append(event.with_seq(int(cursor.lastrowid)))
+                seq = cursor.lastrowid
+                if seq is None:  # pragma: no cover - an INSERT always sets it
+                    raise RuntimeError("the database assigned no sequence")
+                stored.append(event.with_seq(int(seq)))
             # Inside the same transaction as the insert. Chaining separately
             # would leave a window in which an event exists unchained, and a
             # crash there would be indistinguishable from a deletion.
@@ -184,7 +191,7 @@ class EventLog:
     @property
     def head_seq(self) -> int:
         row = self._conn.execute("SELECT COALESCE(MAX(seq), 0) AS s FROM events").fetchone()
-        return int(row["s"])
+        return int(row["s"]) if row is not None else 0
 
     def schema_versions(self) -> list[str]:
         """Every schema version that wrote into this log, oldest string first.
@@ -202,7 +209,7 @@ class EventLog:
 
     def __len__(self) -> int:
         row = self._conn.execute("SELECT COUNT(*) AS c FROM events").fetchone()
-        return int(row["c"])
+        return int(row["c"]) if row is not None else 0
 
     def close(self) -> None:
         # The transaction-depth entry is keyed by connection identity and a
@@ -214,7 +221,7 @@ class EventLog:
         self._conn.close()
 
 
-def _row_to_event(row: sqlite3.Row) -> Event:
+def _row_to_event(row: Row) -> Event:
     return Event(
         type=row["type"],
         ts=int(row["ts"]),

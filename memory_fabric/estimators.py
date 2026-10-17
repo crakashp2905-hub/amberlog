@@ -80,6 +80,7 @@ def _outcomes_by_episode(state: ProjectionState) -> dict[str, float]:
         episode_id: episode.outcome
         for episode_id, episode in state.episodes.items()
         if episode.has_outcome and episode.verifier_id is not None
+        and episode.outcome is not None
     }
 
 

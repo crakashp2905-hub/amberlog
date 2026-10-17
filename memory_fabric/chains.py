@@ -236,7 +236,7 @@ def _bridge_terms(left: frozenset[str], right: frozenset[str],
     term — "bay 7" needs the 7 — it just cannot be the evidence that two
     memories belong together.
     """
-    return {t for t in (left & right) - need if not _NUMERIC.match(t)}
+    return frozenset(t for t in (left & right) - need if not _NUMERIC.match(t))
 
 
 def search(

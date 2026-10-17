@@ -38,7 +38,7 @@ from .lineage import LineageGraph, LineageView
 import json
 from datetime import datetime, timezone
 
-from .justification import JustificationGraph, JustificationKind, justification_context
+from .justification import JustificationGraph
 from .enforcement import (
     AccessDecision,
     EnforcedRead,
@@ -47,12 +47,11 @@ from .enforcement import (
     RiskLevel,
     Verdict,
 )
-from .governance.cipher import IntegrityError, associated_data, is_sealed
+from .governance.cipher import associated_data, is_sealed
 from .governance.erasure import (
     ERASED_MARKER,
     ContentVault,
     KeyProvider,
-    KeyUnavailable,
     seal,
     unseal,
 )
@@ -62,7 +61,6 @@ from .protocol import (
     PROTOCOL_VERSION,
     Acknowledgement,
     PropagationState,
-    ProtocolError,
     RejectionCode,
     Retraction,
     new_retraction_id,
@@ -982,7 +980,7 @@ class MemoryFabric:
             return stored
         for event in stored:
             self.projection.apply(event)
-        if stored:
+        if stored and stored[-1].seq is not None:
             self._seen_seq = stored[-1].seq
         self._estimator_dirty = True
         return stored
@@ -3122,7 +3120,7 @@ class MemoryFabric:
 
 
 # Re-exported for typing convenience at the bottom to avoid a circular import.
-from .explain import Explanation  # noqa: E402\n
+from .explain import Explanation  # noqa: E402
 
 @dataclass
 class TenantView:

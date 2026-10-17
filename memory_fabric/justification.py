@@ -30,11 +30,11 @@ justification; only evidence does. Nothing here consults a timestamp.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Iterable
 
-from .model import BLOCKED_STATES, WITHDRAWN_STATES, LifecycleState
+from .model import WITHDRAWN_STATES, LifecycleState
 
 
 class JustificationKind(str, Enum):

@@ -217,6 +217,19 @@ jobs:
       - run: pip install anthropic
       - run: python -m unittest tests.test_claude_contract -v
 
+  lint:
+    # ruff and mypy as configured in pyproject.toml. Enforced, not
+    # informational: both were clean when this job was added.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install "ruff==0.15.13" "mypy==2.1.0"
+      - run: python -m ruff check
+      - run: python -m mypy
+
   secrets:
     # The project ships a sensitive-data detector. Pointing it at the repo is
     # both a smoke test of the detector and a guard on what gets committed.

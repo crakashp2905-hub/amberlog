@@ -25,12 +25,12 @@ Both are thin wrappers over the engine. The point is what they *omit*.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any, Iterable, Mapping, Sequence
+from typing import Any, Mapping, Sequence
 
-from .enforcement import AccessDecision, EnforcedRead, ExposureToken, RiskLevel, Verdict
+from .enforcement import AccessDecision, EnforcedRead, ExposureToken, RiskLevel
 from .identity import DEFAULT_TENANT, Credential
-from .model import LifecycleState, Memory, MemoryType, Scope
-from .protocol import Acknowledgement, PropagationState, Retraction
+from .model import Memory, MemoryType, Scope
+from .protocol import Acknowledgement, Retraction
 
 __all__ = [
     "AgentClient",
@@ -246,6 +246,10 @@ class AgentClient:
 
     def _wrap(self, read: EnforcedRead) -> UsableMemory:
         memory: Memory = read.memory
+        if read.token is None:
+            # A usable read always carries one. Refusing here keeps a memory
+            # from reaching an agent without the token that `verify` needs.
+            raise RuntimeError(f"enforced read of {memory.id} carried no token")
         return UsableMemory(
             memory_id=memory.id,
             version=memory.version,

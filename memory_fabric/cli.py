@@ -716,6 +716,8 @@ def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
         return 5
     host, port = server.server_address[:2]
+    if isinstance(host, bytes):  # AF_UNIX only; see transport.endpoint
+        host = host.decode()
     print(f"Memory Fabric agent API on http://{host}:{port}/v1/  (store {_shown(args.db)})")
     print("  POST /v1/recall | fetch | verify | remember   with  Authorization: Bearer <credential>")
     print(f"  Issue a credential:  memory-fabric --db {_shown(args.db)} agent-api-issue "
@@ -1057,10 +1059,11 @@ def _check_retractions(fabric: MemoryFabric) -> Finding:
     # terminal — so a permanent failure, the worst case here, never appears in
     # it. Found by the test that expected a failure and got a clean bill of
     # health. Queried directly instead.
-    failed = fabric.log._conn.execute(
+    row = fabric.log._conn.execute(
         "SELECT count(*) FROM outbox WHERE state = ?",
         (PropagationState.FAILED.value,),
-    ).fetchone()[0]
+    ).fetchone()
+    failed = row[0] if row is not None else 0
     pending = fabric.outbox.pending()
     retrying = [row for row in pending if row.attempts > 0]
     if failed:

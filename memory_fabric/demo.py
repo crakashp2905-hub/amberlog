@@ -45,7 +45,9 @@ def seed(fabric: MemoryFabric) -> dict[str, Any]:
             context={"domain": "deploy", "tags": ["runbook"]},
             capabilities=["shell"],
         )
-        distractor = fabric.remember(
+        # Written for its effect on the store: a nearby memory the demo's
+        # queries must not surface. Nothing reads the id.
+        fabric.remember(
             "ops-agent",
             "The staging cluster runs in eu-west-2.",
             context={"domain": "deploy"},

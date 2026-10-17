@@ -184,6 +184,10 @@ class IntegrityChain:
 
     def __init__(self, conn: sqlite3.Connection) -> None:
         self._conn = conn
+        # On Postgres the log's own schema creates this table and its
+        # append-only triggers, in Postgres syntax; this one is SQLite's.
+        if getattr(conn, "dialect", "sqlite") != "sqlite":
+            return
         # Not inside `transaction()`: `executescript` issues its own COMMIT,
         # which would end ours. Safe unwrapped because every statement is
         # `IF NOT EXISTS`.

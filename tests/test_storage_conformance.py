@@ -338,9 +338,11 @@ class _PostgresBase(Contract):
         # The table owner can disable triggers, as file access lets an
         # attacker drop them in SQLite. Same threat model; the chain is what
         # makes the result visible.
-        log._conn.execute("ALTER TABLE events DISABLE TRIGGER events_append_only")
-        log._conn.execute("UPDATE events SET payload = %s WHERE seq = %s",
-                          (json.dumps(payload), seq))
+        # `_pg` is the raw psycopg connection; `_conn` is the sqlite3-dialect
+        # adapter the governance modules share, and would reject `%s`.
+        log._pg.execute("ALTER TABLE events DISABLE TRIGGER events_append_only")
+        log._pg.execute("UPDATE events SET payload = %s WHERE seq = %s",
+                        (json.dumps(payload), seq))
 
     def forbidden_statements(self):
         # TRUNCATE is the Postgres-specific one: it does not fire row
@@ -355,8 +357,8 @@ class _PostgresBase(Contract):
     def execute(self, log, statement):
         # Inside a transaction so a refused statement cannot leave the
         # autocommit connection in an aborted state for the next one.
-        with log._conn.transaction():
-            log._conn.execute(statement)
+        with log._pg.transaction():
+            log._pg.execute(statement)
 
 
 @unittest.skipUnless(PG, PG_REASON)

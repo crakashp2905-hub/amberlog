@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from .fabric import MemoryFabric, NotFound, PolicyViolation
+from .storage import display, store_exists
 from .governance.cipher import default_suite, envelope_version
 from .governance.erasure import (
     ERASED_MARKER,
@@ -1378,12 +1379,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         args.db != ":memory:"
         and args.command not in CREATING_COMMANDS
         and not args.create
-        and not os.path.exists(args.db)
+        and not store_exists(args.db)
     ):
         print(
-            f"{C.RED}no store at {args.db}{C.RESET}\n"
+            f"{C.RED}no store at {display(args.db)}{C.RESET}\n"
             f"{C.DIM}Check the path, or pass --create to start an empty one. "
-            f"To populate a demo store: memory-fabric --db {args.db} demo{C.RESET}",
+            f"To populate a demo store: memory-fabric --db {display(args.db)} demo{C.RESET}",
             file=sys.stderr,
         )
         return 2

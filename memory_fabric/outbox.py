@@ -135,6 +135,10 @@ class Outbox:
         one of them arrives with no target fields either, so it computes the
         same empty key and still matches.
         """
+        if getattr(self._conn, "dialect", "sqlite") != "sqlite":
+            # No Postgres store predates 0.4.0: the backend arrived with
+            # 0.8.0, so every Postgres table is created in the new shape.
+            return
         tables = {
             row[0]
             for row in self._conn.execute(
@@ -405,13 +409,20 @@ class Outbox:
         return int(row["sequence_seen"]) if row else -1
 
     def advance_cursor(self, origin_store_id: str, sequence: int) -> None:
-        """Monotonic per origin. `MAX` rather than assignment so a reordered
-        delivery cannot rewind the cursor and re-open a window that was closed.
+        """Monotonic per origin. The larger value rather than assignment so a
+        reordered delivery cannot rewind the cursor and re-open a window that
+        was closed.
+
+        A `CASE` and a qualified column rather than SQLite's two-argument
+        `MAX(a, b)`: Postgres reads `MAX` as the aggregate, and an unqualified
+        `sequence_seen` is ambiguous between the row and `excluded`. Found by
+        running the suite on Postgres; this form means the same in both.
         """
         self._conn.execute(
             "INSERT INTO origin_cursor (origin_store_id, sequence_seen) VALUES (?, ?) "
-            "ON CONFLICT(origin_store_id) DO UPDATE SET "
-            "sequence_seen = MAX(sequence_seen, excluded.sequence_seen)",
+            "ON CONFLICT(origin_store_id) DO UPDATE SET sequence_seen = CASE "
+            "WHEN excluded.sequence_seen > origin_cursor.sequence_seen "
+            "THEN excluded.sequence_seen ELSE origin_cursor.sequence_seen END",
             (origin_store_id, sequence),
         )
 

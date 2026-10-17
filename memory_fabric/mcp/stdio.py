@@ -107,20 +107,20 @@ def main(argv: Sequence[str] | None = None) -> int:
                              "on external corpora and needs no model")
     args = parser.parse_args(argv)
 
-    from pathlib import Path
 
     from .. import MemoryFabric
+    from ..storage import display, store_exists
     from .tools import build_server
 
-    if not args.create and args.db != ":memory:" and not Path(args.db).exists():
-        print(f"memory-fabric mcp: no store at {args.db} "
+    if not args.create and not store_exists(args.db):
+        print(f"memory-fabric mcp: no store at {display(args.db)} "
               f"(pass --create to make one)", file=sys.stderr)
         return 2
 
     # Written to stderr so a host's log shows what the server is bound to --
     # the most useful single line when diagnosing "why does it not see my
     # memories".
-    print(f"memory-fabric mcp: store={args.db} agent={args.agent_id} "
+    print(f"memory-fabric mcp: store={display(args.db)} agent={args.agent_id} "
           f"tenant={args.tenant or 'all'} retrieval={args.retrieval} "
           f"validation={'required' if args.require_validation else 'on write'}",
           file=sys.stderr)

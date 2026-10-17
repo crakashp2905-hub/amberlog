@@ -21,6 +21,7 @@ if TYPE_CHECKING:  # pragma: no cover
 from . import events as ev
 from .estimators import ValueEstimator, build_estimator
 from .eventlog import EventLog
+from .storage import is_postgres_dsn
 from .exposure import Candidate, ExposurePolicy, build_policy
 from .governance.firewall import Firewall, FirewallRequest, FirewallRuling
 from .governance.retention import RetentionDecision, RetentionPolicy
@@ -187,6 +188,7 @@ class MemoryFabric:
         busy_timeout_ms: int = 5_000,
         recognise_copies: bool = True,
         rerank: bool = False,
+        log: Any = None,
     ) -> None:
         # Default on, because the alternative is measured to be wrong rather
         # than merely unmeasured: a withdrawn document re-ingested under its own
@@ -220,7 +222,17 @@ class MemoryFabric:
         # `research/prereg/x1-extraction-at-ingest.md` predicts the measurement
         # will make it a batch job rather than an ingest-path step.
         self.extracted: dict[str, "extracting.Extracted"] = {}
-        self.log = EventLog(path, busy_timeout_ms=busy_timeout_ms)
+        # A log handed in (for a Postgres schema other than the default, say),
+        # a DSN, or a SQLite path. Whatever it is, the vault, outbox and
+        # revocations below run on `log._conn`, so they share its transactions.
+        if log is not None:
+            self.log = log
+        elif is_postgres_dsn(path):
+            from .storage.postgres import PostgresEventLog
+
+            self.log = PostgresEventLog(str(path))
+        else:
+            self.log = EventLog(path, busy_timeout_ms=busy_timeout_ms)
         # Everything after opening the log can fail — a missing key store
         # makes every sealed memory unreadable and `KeyUnavailable`
         # propagates from the replay. Closing the connection on the way out

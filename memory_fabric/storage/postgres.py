@@ -136,7 +136,9 @@ from contextlib import contextmanager
 from typing import Any, Iterable, Iterator
 
 from ..events import Event
-from ..integrity import GENESIS, Verification, event_digest, link, verify_records
+from ..integrity import (GENESIS, IntegrityChain, Verification, event_digest,
+                         link, verify_records)
+from .pgcompat import PgConnection
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -208,6 +210,34 @@ CREATE OR REPLACE TRIGGER integrity_chain_no_truncate
 """
 
 
+def has_event_log(dsn: str, schema: str | None = None) -> bool:
+    """Whether this database (and schema) already holds an event log."""
+    psycopg = _psycopg()
+    with psycopg.connect(dsn, autocommit=True) as conn:
+        row = conn.execute("SELECT to_regclass(%s)",
+                           (f"{schema or 'public'}.events",)).fetchone()
+    return row is not None and row[0] is not None
+
+
+def redact(dsn: str) -> str:
+    """The DSN without its password, for anything that prints `log.path`.
+
+    `log.path` reaches the dashboard, the CLI's output and federation
+    provenance, so a password in it would be a secret written into memory
+    content -- which AGENTS.md forbids.
+    """
+    from urllib.parse import urlsplit, urlunsplit
+
+    parts = urlsplit(dsn)
+    if parts.password is None:
+        return dsn
+    host = parts.hostname or ""
+    if parts.port:
+        host += f":{parts.port}"
+    netloc = f"{parts.username}:***@{host}" if parts.username else host
+    return urlunsplit(parts._replace(netloc=netloc))
+
+
 def _psycopg() -> Any:
     try:
         import psycopg  # type: ignore
@@ -237,21 +267,21 @@ class PostgresEventLog:
         # the same reason the SQLite log sets `isolation_level=None`. With
         # psycopg's default, the first statement opens a transaction nobody
         # asked for and it stays open until something commits it.
-        self._conn = psycopg.connect(dsn, autocommit=True)
+        self._pg = psycopg.connect(dsn, autocommit=True)
         self._depth = 0
         self._local = threading.local()
         if schema:
             # Quoted as an identifier, never interpolated as text.
-            self._conn.execute(
+            self._pg.execute(
                 psycopg.sql.SQL("CREATE SCHEMA IF NOT EXISTS {}").format(
                     psycopg.sql.Identifier(schema)))
-            self._conn.execute(
+            self._pg.execute(
                 psycopg.sql.SQL("SET search_path TO {}").format(
                     psycopg.sql.Identifier(schema)))
         # Bounded, so a wedged appender produces an error rather than a
         # silent hang in every other writer behind it.
-        self._conn.execute(f"SET lock_timeout = {int(lock_timeout_ms)}")
-        with self._conn.transaction():
+        self._pg.execute(f"SET lock_timeout = {int(lock_timeout_ms)}")
+        with self._pg.transaction():
             # Serialise schema bootstrap across every process opening this
             # schema. Found by the conformance suite, not by reasoning: eight
             # handles opened at once all ran `CREATE OR REPLACE FUNCTION` on the
@@ -263,13 +293,21 @@ class PostgresEventLog:
             # if a process dies mid-bootstrap. Keyed by schema, so stores in
             # different schemas do not wait on each other. Everything after the
             # first holder finds the objects present and is a cheap no-op.
-            self._conn.execute(
+            self._pg.execute(
                 "SELECT pg_advisory_xact_lock(hashtext(%s))",
                 ("memory_fabric.schema:" + (schema or "public"),))
-            self._conn.execute(SCHEMA)
-            self._conn.execute(
+            self._pg.execute(SCHEMA)
+            self._pg.execute(
                 "INSERT INTO log_head (id, seq, chain_digest) VALUES (1, 0, %s) "
                 "ON CONFLICT (id) DO NOTHING", (GENESIS,))
+        # What `ContentVault`, `Outbox` and the rest see as the connection:
+        # the sqlite3 interface over this one, transacting through
+        # `transaction()` below, so their writes and the events beside them
+        # commit together exactly as they do on SQLite.
+        self._conn = PgConnection(self._pg, self.transaction,
+                                  lambda: self._depth)
+        self.chain = IntegrityChain(self._conn)
+        self.path = redact(dsn) + (f"#{schema}" if schema else "")
 
     # --- transactions -----------------------------------------------------
 
@@ -278,7 +316,7 @@ class PostgresEventLog:
         """A transaction that nests, via psycopg's savepoints."""
         self._depth += 1
         try:
-            with self._conn.transaction():
+            with self._pg.transaction():
                 yield
         finally:
             self._depth -= 1
@@ -299,7 +337,7 @@ class PostgresEventLog:
             return []
         now_ms = int(time.time() * 1000)
         with self.transaction():
-            row = self._conn.execute(
+            row = self._pg.execute(
                 "SELECT seq, chain_digest FROM log_head WHERE id = 1 FOR UPDATE"
             ).fetchone()
             seq, previous = int(row[0]), str(row[1])
@@ -307,7 +345,7 @@ class PostgresEventLog:
             for event in batch:
                 seq += 1
                 placed = event.with_seq(seq)
-                self._conn.execute(
+                self._pg.execute(
                     "INSERT INTO events (seq, event_id, ts, type, agent_id, "
                     "episode_id, schema_version, payload) "
                     "VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
@@ -320,12 +358,12 @@ class PostgresEventLog:
                                 default=str)))
                 digest = event_digest(placed)
                 previous = link(previous, digest)
-                self._conn.execute(
+                self._pg.execute(
                     "INSERT INTO integrity_chain (seq, event_digest, "
                     "chain_digest, recorded_ms) VALUES (%s, %s, %s, %s)",
                     (seq, digest, previous, now_ms))
                 stored.append(placed)
-            self._conn.execute(
+            self._pg.execute(
                 "UPDATE log_head SET seq = %s, chain_digest = %s WHERE id = 1",
                 (seq, previous))
             return stored
@@ -347,11 +385,11 @@ class PostgresEventLog:
         if limit is not None:
             sql += " LIMIT %s"
             params.append(limit)
-        for row in self._conn.execute(sql, params).fetchall():
+        for row in self._pg.execute(sql, params).fetchall():
             yield _row_to_event(row)
 
     def read_episode(self, episode_id: str) -> list[Event]:
-        rows = self._conn.execute(
+        rows = self._pg.execute(
             "SELECT seq, event_id, ts, type, agent_id, episode_id, "
             "schema_version, payload FROM events WHERE episode_id = %s "
             "ORDER BY seq ASC", (episode_id,)).fetchall()
@@ -361,7 +399,7 @@ class PostgresEventLog:
         type_list = [str(t) for t in types]
         if not type_list:
             return []
-        rows = self._conn.execute(
+        rows = self._pg.execute(
             "SELECT seq, event_id, ts, type, agent_id, episode_id, "
             "schema_version, payload FROM events WHERE type = ANY(%s) "
             "ORDER BY seq ASC", (type_list,)).fetchall()
@@ -369,17 +407,17 @@ class PostgresEventLog:
 
     @property
     def head_seq(self) -> int:
-        row = self._conn.execute(
+        row = self._pg.execute(
             "SELECT seq FROM log_head WHERE id = 1").fetchone()
         return int(row[0])
 
     def schema_versions(self) -> list[str]:
-        rows = self._conn.execute(
+        rows = self._pg.execute(
             "SELECT DISTINCT schema_version FROM events ORDER BY 1").fetchall()
         return [str(r[0]) for r in rows]
 
     def __len__(self) -> int:
-        return int(self._conn.execute(
+        return int(self._pg.execute(
             "SELECT COUNT(*) FROM events").fetchone()[0])
 
     # --- integrity --------------------------------------------------------
@@ -388,14 +426,14 @@ class PostgresEventLog:
         """Verify the chain with the algorithm the SQLite log uses."""
         records = {
             int(r[0]): (str(r[1]), str(r[2]))
-            for r in self._conn.execute(
+            for r in self._pg.execute(
                 "SELECT seq, event_digest, chain_digest FROM integrity_chain "
                 "ORDER BY seq").fetchall()
         }
         return verify_records(records, self.read())
 
     def close(self) -> None:
-        self._conn.close()
+        self._pg.close()
 
 
 def _row_to_event(row: Any) -> Event:

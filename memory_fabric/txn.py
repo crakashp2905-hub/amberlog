@@ -72,6 +72,8 @@ def forget(conn: sqlite3.Connection) -> None:
 
 
 def depth(conn: sqlite3.Connection) -> int:
+    if hasattr(conn, "dialect"):
+        return conn.depth
     return _state_for(conn).depth
 
 
@@ -89,6 +91,13 @@ def transaction(conn: sqlite3.Connection) -> Iterator[None]:
     a bare statement silently opens its own transaction and the explicit
     `BEGIN` here would fail or interleave.
     """
+    if hasattr(conn, "dialect"):
+        # `storage.pgcompat.PgConnection`: psycopg nests with savepoints
+        # itself, and the depth belongs to the owning log, so there is one
+        # counter per connection here too.
+        with conn.transaction():
+            yield
+        return
     state = _state_for(conn)
     with state.lock:
         name = f"mf_sp_{state.depth}"

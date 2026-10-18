@@ -92,7 +92,19 @@ class Session:
 
     # --- agent operations ------------------------------------------------
 
-    def remember(self, content: str, **kwargs: Any) -> str:
+    def remember(self, content: str, collection: str | None = None, **kwargs: Any) -> str:
+        """Write as this agent; with `collection`, also add it there (needs `write`)."""
+        if collection is not None:
+            principal = self.principal()
+            held = self.service._fabric.state.collections.get((principal.tenant_id, collection))
+            if held is None or "write" not in held.grants.get(principal.agent_id, ()):
+                raise IdentityError(f"{principal.agent_id} may not write to {collection}")
+            memory_id = self._remember(content, **kwargs)
+            self.service._fabric.collection_add(collection, memory_id, actor=principal.agent_id)
+            return memory_id
+        return self._remember(content, **kwargs)
+
+    def _remember(self, content: str, **kwargs: Any) -> str:
         return self._view().remember(content, **kwargs)
 
     def derive(self, content: str, parents: Sequence[str], **kwargs: Any) -> str:
@@ -145,7 +157,7 @@ class Session:
     # the withdrawal was justified, which is exactly what an agent must not do.
 
     def quarantine(self, memory_id: str, reason: str, basis: str | None = None):
-        principal = self._require_operator()
+        principal = self._require_operator_or("retract", memory_id)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.quarantine(
             memory_id, reason=reason, actor=principal.agent_id, basis=basis
@@ -159,7 +171,7 @@ class Session:
         )
 
     def validate(self, memory_id: str, reason: str = "validated"):
-        principal = self._require_operator()
+        principal = self._require_operator_or("approve", memory_id)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.validate(
             memory_id, actor=principal.agent_id, reason=reason
@@ -189,7 +201,7 @@ class Session:
         recipients: Sequence[str],
         basis: str | None = None,
     ):
-        principal = self._require_operator()
+        principal = self._require_operator_or("retract", memory_id)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.request_retraction(
             memory_id,
@@ -205,6 +217,25 @@ class Session:
         return self.service._fabric.erase_content(
             memory_id, reason=reason, actor=principal.agent_id
         )
+
+    def _require_operator_or(self, permission: str, memory_id: str) -> Principal:
+        """The operator role, or `permission` on a collection holding the memory.
+
+        Checked on the verified principal, so a collection grant is as real as
+        a role: it is what lets a team lead approve their team's collection
+        without being an operator of the whole store.
+        """
+        from .model import granted
+
+        principal = self.service._verify(self.credential)
+        if principal.may(ROLE_OPERATOR):
+            return principal
+        memory = self.service._fabric.state.memories.get(memory_id)
+        if memory is not None and granted(self.service._fabric.state, principal.tenant_id,
+                                          principal.agent_id, memory_id, permission):
+            return principal
+        principal.require(ROLE_OPERATOR)  # raises, naming the role it lacks
+        return principal
 
     def _require_operator(self) -> Principal:
         principal = self.principal()

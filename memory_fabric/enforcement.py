@@ -222,7 +222,7 @@ class Enforcer:
                 memory_id=memory_id, version=0, verdict=Verdict.DENY,
                 reason_code=WRONG_TENANT, risk=risk, integrity_revision=revision,
             )
-        if not visible_to(memory, agent_id):
+        if not visible_to(memory, agent_id, state):
             # Another agent's private memory: refused before lifecycle, with
             # version 0, for the reason the tenant check is -- "not yours" is
             # all the caller may learn about it.

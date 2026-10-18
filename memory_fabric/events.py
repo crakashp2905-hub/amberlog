@@ -8,7 +8,7 @@ them. Events are therefore append-only and never mutated.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from .ids import new_ulid
 from .model import SCHEMA_VERSION, Memory
@@ -40,6 +40,7 @@ class EventType:
     CONTENT_ERASED = "ContentErased"
     MEMORY_SHARED = "MemoryShared"
     ACTION_GATED = "ActionGated"
+    COLLECTION_CHANGED = "CollectionChanged"
 
 
 @dataclass(frozen=True)
@@ -657,3 +658,30 @@ def action_gated(
             "min_independent_sources": min_independent_sources,
         },
     )
+
+
+def collection_changed(
+    ts: int,
+    tenant_id: str,
+    collection: str,
+    action: str,
+    actor: str,
+    agent_id: str | None = None,
+    memory_id: str | None = None,
+    permissions: Sequence[str] = (),
+) -> Event:
+    """A collection's membership or grants changed (schema 0.10.0).
+
+    `action` is `add` or `remove` (a memory), or `grant` or `revoke` (an
+    agent's permissions). One type for all four, because they are one
+    projection and an older reader skips it as a whole.
+    """
+    payload: dict[str, Any] = {"tenant_id": tenant_id, "collection": collection,
+                               "action": action}
+    if agent_id is not None:
+        payload["agent_id"] = agent_id
+    if memory_id is not None:
+        payload["memory_id"] = memory_id
+    if permissions:
+        payload["permissions"] = sorted(permissions)
+    return Event(type=EventType.COLLECTION_CHANGED, ts=ts, agent_id=actor, payload=payload)

@@ -97,6 +97,7 @@ INSPECTION = {
     "enforcer": "the enforcement layer itself",
     "principals": "the agent registry",
     "store_id": "this store's identity",
+    "collections": "collection members and grants; ids and agent names, no content",
 }
 
 MUTATION = {
@@ -129,6 +130,10 @@ MUTATION = {
     "receive_retraction": "apply one arriving from another store",
     "erase_content": "destroy a content key. Irreversible",
     "rebuild": "replay the projection from the log",
+    "collection_add": "put a memory in a collection, widening who reads it; audited",
+    "collection_remove": "take one out; audited",
+    "collection_grant": "attach an agent to a collection, or grant it more; audited",
+    "collection_revoke": "detach an agent, or take permissions back; audited",
 }
 
 PLUMBING = {

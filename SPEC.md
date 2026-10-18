@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.9.0`
+- **Schema version:** `0.10.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,25 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.10.0 — collections, and scope enforced on reads
+
+Additive: one event type and one projection field. A 0.9.0 log replays
+unchanged; a 0.9.0 reader skips the new event, as it skips any type it does not
+model, and so does not know who a collection admits.
+
+**`CollectionChanged`**, payload `{tenant_id, collection, action, agent_id?,
+memory_id?, permissions?}`, `agent_id` on the event is the actor. `action` is
+`add` / `remove` (a memory) or `grant` / `revoke` (an agent's permissions:
+`read`, `write`, `approve`, `retract`; a revoke naming none removes all).
+Projected into `collections[(tenant, name)] = {members, grants}`.
+
+**Behaviour, not schema: scope is enforced on reads.** A `private` memory is
+readable by the agent that wrote it and by agents holding `read` on a
+collection that contains it; `team` and `federated` by every agent in the
+tenant. Before 0.10.0 retrieval checked only lifecycle and tenant. Restricted
+memories cannot be written wider than private or join a collection. The
+firewall's value rule applies to promotion to `federated` only.
 
 ### 0.9.0 — action gating
 

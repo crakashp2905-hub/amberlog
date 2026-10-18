@@ -127,6 +127,8 @@ class ProjectionState:
     # local memory id -> the stores this one sent it to, and the id each gave
     # it. The forwarding table a transitive retraction walks.
     shared_to: dict[str, dict[str, str]] = field(default_factory=dict)
+    # (tenant, collection name) -> members and per-agent grants (0.10.0).
+    collections: dict[tuple[str, str], "CollectionState"] = field(default_factory=dict)
     suppressed_duplicates: int = 0
     applied_seq: int = 0
 
@@ -392,6 +394,30 @@ def _on_copy_recognised(state: ProjectionState, event: Event) -> None:
     state.copies.setdefault(original, set()).add(memory_id)
 
 
+@dataclass
+class CollectionState:
+    members: set[str] = field(default_factory=set)
+    grants: dict[str, set[str]] = field(default_factory=dict)
+
+
+def _on_collection_changed(state: ProjectionState, event: Event) -> None:
+    p = event.payload
+    collection = state.collections.setdefault((p["tenant_id"], p["collection"]),
+                                              CollectionState())
+    action = p.get("action")
+    if action == "add" and p.get("memory_id"):
+        collection.members.add(p["memory_id"])
+    elif action == "remove" and p.get("memory_id"):
+        collection.members.discard(p["memory_id"])
+    elif action == "grant" and p.get("agent_id"):
+        collection.grants.setdefault(p["agent_id"], set()).update(p.get("permissions") or ())
+    elif action == "revoke" and p.get("agent_id"):
+        held = collection.grants.get(p["agent_id"], set())
+        held -= set(p.get("permissions") or held)
+        if not held:
+            collection.grants.pop(p["agent_id"], None)
+
+
 _HANDLERS = {
     EventType.EPISODE_STARTED: _on_episode_started,
     EventType.MEMORY_CREATED: _on_memory_created,
@@ -411,4 +437,5 @@ _HANDLERS = {
     EventType.RETRACTION_REQUESTED: _on_retraction_requested,
     EventType.CONTENT_ERASED: _on_content_erased,
     EventType.MEMORY_SHARED: _on_memory_shared,
+    EventType.COLLECTION_CHANGED: _on_collection_changed,
 }

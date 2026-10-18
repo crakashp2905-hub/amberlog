@@ -24,8 +24,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ### Added
 
-- `share` and `agent-api-revoke` commands; `list --agent`; four status labels
-  on every memory page ([status.py](memory_fabric/status.py)).
+- **Collections** (schema 0.10.0, `CollectionChanged`): named sets of memories in
+  a tenant. Attaching an agent (`read`) lets it read the members even when
+  private; `write`, `approve` and `retract` let an authenticated agent add to,
+  validate and withdraw a collection's members without the operator role. Every
+  change is an event naming its actor. `memory-fabric collection ...`.
+- A review queue (`review`), safe correction with a preview that is the outcome
+  (`correct`), reach on every memory page, and four status labels.
+- `share` and `agent-api-revoke` commands; `list --agent`.
 
 ### Fixed
 

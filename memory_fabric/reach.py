@@ -49,7 +49,14 @@ def reach(fabric: "MemoryFabric", memory_id: str) -> Reach:
     memory = fabric.state.memories[memory_id]
     state = memory.lifecycle_state
     if memory.scope is Scope.PRIVATE:
+        readers = sorted({agent for (tenant, name), c in fabric.state.collections.items()
+                          if tenant == memory.tenant_id and memory_id in c.members
+                          for agent, perms in c.grants.items() if "read" in perms}
+                         - {memory.provenance.created_by})
         may_read = f"only {memory.provenance.created_by}, who wrote it"
+        if readers:
+            may_read = (f"{memory.provenance.created_by}, who wrote it, and through a "
+                        f"collection: {', '.join(readers)}")
     else:
         may_read = f"every agent in tenant {memory.tenant_id}"
     if memory.scope is Scope.FEDERATED:

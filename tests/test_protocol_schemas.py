@@ -150,10 +150,11 @@ class TestSchemaMatchesTheCode(unittest.TestCase):
         you talk to me?" — and conflating them would force a wire break on every
         additive event change."""
         # Pinned, and bumped deliberately: 0.8.0 added copy recognition and
-        # 0.9.0 added `ActionGated`, each an additive event type. The protocol
+        # 0.9.0 added `ActionGated` and 0.10.0 `CollectionChanged`, each an
+        # additive event type. The protocol
         # version did not move, which is the point this test makes -- an
         # additive log change must not force a wire break.
-        self.assertEqual(SCHEMA_VERSION, "0.9.0")
+        self.assertEqual(SCHEMA_VERSION, "0.10.0")
         self.assertEqual(
             load("retraction-v1.schema.json")["properties"]["protocol_version"]["const"], 1
         )

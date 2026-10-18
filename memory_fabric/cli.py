@@ -765,6 +765,46 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_collection(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """List collections, or change one. Every change is an audited event."""
+    from .fabric import PolicyViolation
+
+    tenant = args.tenant
+    try:
+        if args.action == "list":
+            data = fabric.collections(tenant_id=tenant)
+            if args.json:
+                print(json.dumps(data, indent=2))
+                return 0
+            heading(f"Collections ({len(data)})")
+            for name, c in data.items():
+                grants = "; ".join(f"{a}: {','.join(p)}" for a, p in c["grants"].items())
+                print(f"  {name:<24} {len(c['members'])} memories   {grants or 'nobody attached'}")
+            return 0
+        if not args.name:
+            print(f"{C.RED}name the collection{C.RESET}", file=sys.stderr)
+            return 2
+        if args.action in ("add", "remove"):
+            if not args.memory:
+                print(f"{C.RED}--memory is required{C.RESET}", file=sys.stderr)
+                return 2
+            (fabric.collection_add if args.action == "add" else fabric.collection_remove)(
+                args.name, args.memory, actor=args.actor or "")
+        elif args.action in ("attach", "grant"):
+            perms = args.permission or ["read"]
+            fabric.collection_grant(args.name, args.agent, perms, actor=args.actor or "",
+                                    tenant_id=tenant or DEFAULT_TENANT)
+        elif args.action in ("detach", "revoke"):
+            fabric.collection_revoke(args.name, args.agent, actor=args.actor or "",
+                                     permissions=args.permission or [],
+                                     tenant_id=tenant or DEFAULT_TENANT)
+    except (PolicyViolation, NotFound) as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 4
+    print(f"{args.action}: {args.name}")
+    return 0
+
+
 def cmd_correct(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Preview, apply, or follow the correction of one memory. See `correction.py`."""
     from . import correction
@@ -1813,6 +1853,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agents-file", required=True)
     p.add_argument("--agent", required=True)
     p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
+
+    p = add("collection", cmd_collection,
+            "Collections: named sets of memories agents can be attached to. list, or WRITES: "
+            "add/remove a memory, attach/detach an agent, grant/revoke permissions")
+    p.add_argument("action", choices=["list", "add", "remove", "attach", "detach", "grant", "revoke"])
+    p.add_argument("name", nargs="?")
+    p.add_argument("--memory")
+    p.add_argument("--agent")
+    p.add_argument("--permission", action="append", choices=["read", "write", "approve", "retract"],
+                   help="repeatable; attach means read")
+    p.add_argument("--actor", help="who is changing this; required for a change")
+    p.add_argument("--tenant")
 
     p = add("correct", cmd_correct,
             "Preview what withdrawing a memory would touch; with --apply, WRITES it and "

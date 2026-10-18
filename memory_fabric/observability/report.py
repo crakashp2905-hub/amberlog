@@ -436,8 +436,8 @@ def _diagnostics(report: Overview) -> list[str]:
 
     if report.contrastive_evidence == 0 and report.total_memories > 0:
         notes.append(
-            "No memory has contrastive value evidence, so none can be promoted beyond "
-            "private scope by the firewall."
+            "No memory has contrastive value evidence, so the firewall will not let any "
+            "leave this store (federated). Sharing with the team does not need it."
         )
     return notes
 

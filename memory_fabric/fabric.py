@@ -2458,7 +2458,7 @@ class MemoryFabric:
             if memory.lifecycle_state in allowed
             and memory.lifecycle_state not in BLOCKED_STATES
             and (tenant_id is None or memory.tenant_id == tenant_id)
-            and visible_to(memory, agent_id)
+            and visible_to(memory, agent_id, self.state)
         }
 
     def cite(self, agent_id: str, episode_id: str, memory_id: str, step: int = 0) -> None:
@@ -2928,6 +2928,64 @@ class MemoryFabric:
         return ruling
 
     # --- inspection ------------------------------------------------------
+
+    # --- collections (schema 0.10.0) --------------------------------------
+
+    def _collection_event(self, name: str, action: str, actor: str, tenant_id: str,
+                          **fields: Any) -> None:
+        if not name or not name.replace("-", "").replace("_", "").isalnum():
+            raise PolicyViolation("a collection name is letters, digits, '-' and '_'")
+        if not actor or actor == "operator":
+            raise PolicyViolation("name who is changing this collection: it is audited")
+        self._emit(ev.collection_changed(ts=self.now(), tenant_id=tenant_id, collection=name,
+                                         action=action, actor=actor, **fields))
+
+    @_fresh
+    def collection_add(self, name: str, memory_id: str, actor: str) -> None:
+        """Put a memory in a collection. Its readers can then read it, even if private.
+
+        A restricted memory cannot join one: a collection is a way to widen
+        who reads, and restricted memories stay private.
+        """
+        memory = self._require(memory_id)
+        if memory.security_class is SecurityClass.RESTRICTED:
+            raise PolicyViolation("a restricted memory stays private; it cannot join a collection")
+        self._collection_event(name, "add", actor, memory.tenant_id, memory_id=memory_id)
+
+    @_fresh
+    def collection_remove(self, name: str, memory_id: str, actor: str) -> None:
+        memory = self._require(memory_id)
+        self._collection_event(name, "remove", actor, memory.tenant_id, memory_id=memory_id)
+
+    @_fresh
+    def collection_grant(self, name: str, agent_id: str, permissions: Iterable[str],
+                         actor: str, tenant_id: str = DEFAULT_TENANT) -> None:
+        """Attach an agent (`read`) or grant it more. See `model.PERMISSIONS`."""
+        from .model import PERMISSIONS
+
+        perms = set(permissions)
+        if not perms or not perms <= set(PERMISSIONS):
+            raise PolicyViolation(f"permissions must be a non-empty subset of {PERMISSIONS}")
+        self._collection_event(name, "grant", actor, tenant_id, agent_id=agent_id,
+                               permissions=sorted(perms))
+
+    @_fresh
+    def collection_revoke(self, name: str, agent_id: str, actor: str,
+                          permissions: Iterable[str] = (), tenant_id: str = DEFAULT_TENANT) -> None:
+        """Detach an agent (no permissions named: all of them) or take some back."""
+        self._collection_event(name, "revoke", actor, tenant_id, agent_id=agent_id,
+                               permissions=sorted(set(permissions)))
+
+    def collections(self, tenant_id: str | None = None) -> dict[str, Any]:
+        """Name -> members and grants, for one tenant or all (`tenant/name` keys)."""
+        out = {}
+        for (tenant, name), c in self.state.collections.items():
+            if tenant_id is not None and tenant != tenant_id:
+                continue
+            key = name if tenant_id is not None else f"{tenant}/{name}"
+            out[key] = {"members": sorted(c.members),
+                        "grants": {a: sorted(p) for a, p in sorted(c.grants.items())}}
+        return out
 
     @_fresh
     def get(self, memory_id: str) -> Memory:

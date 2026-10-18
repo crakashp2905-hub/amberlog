@@ -609,3 +609,39 @@ class ReorderedDeliveryAcrossMemories(unittest.TestCase):
         self.assertIs(recipient.state.memories[copy_b].lifecycle_state, LifecycleState.QUARANTINED)
         self.assertIs(recipient.state.memories[copy_a].lifecycle_state, LifecycleState.QUARANTINED,
                       "the delayed retraction was dropped as superseded")
+
+
+class ReorderedDeliveryAcrossVersions(unittest.TestCase):
+    """Copies of two versions are two memories; their retractions are independent."""
+
+    def test_the_v1_copys_retraction_applies_after_the_v2_copys(self) -> None:
+        from memory_fabric.federation import offer
+        from memory_fabric.governance.firewall import (
+            Firewall, rule_capabilities_must_be_granted, rule_must_be_active,
+            rule_restricted_stays_private)
+        from memory_fabric.model import LifecycleState, Scope
+
+        def firewall() -> Firewall:
+            return Firewall(rules=(rule_restricted_stays_private, rule_must_be_active,
+                                   rule_capabilities_must_be_granted))
+
+        origin = MemoryFabric(":memory:", firewall=firewall(), auto_activate=True)
+        recipient = MemoryFabric(":memory:", firewall=firewall())
+        self.addCleanup(origin.close)
+        self.addCleanup(recipient.close)
+        mid = origin.remember("ana", "valve A runs at 4 bar", scope="team")
+        origin.share(mid, Scope.FEDERATED, actor="op")
+        copy_v1 = offer(origin, mid, recipient, recipient_agent="x", activate=True).imported_memory_id
+        origin.revise(mid, "valve A runs at 5 bar", agent_id="ana", reason="correction")
+        copy_v2 = offer(origin, mid, recipient, recipient_agent="x", activate=True).imported_memory_id
+
+        def retraction(version: int, sequence: int) -> Retraction:
+            return Retraction(retraction_id=new_retraction_id(), origin_store_id=origin.store_id,
+                              origin_memory_id=mid, origin_memory_version=version,
+                              origin_sequence=sequence, reason_code="contradicted",
+                              requested_by="op", issued_at="2026-10-18T12:00:00Z")
+
+        recipient.receive_retraction(retraction(2, 20))
+        recipient.receive_retraction(retraction(1, 10))
+        for copy in (copy_v1, copy_v2):
+            self.assertIs(recipient.state.memories[copy].lifecycle_state, LifecycleState.QUARANTINED)

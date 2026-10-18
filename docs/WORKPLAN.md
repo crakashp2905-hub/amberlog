@@ -84,6 +84,12 @@ registered.
 | P9 | Honest, explainable status labels | Distinct labels: source recorded, reviewed, policy-checked, verified in destination. Each says what it does and does not establish, everywhere a memory is shown | ✅ `status.py`, on `show` and the dashboard; 'verified in destination' is self-reported because the protocol's `verified` state is never set (→ S1) |
 | P10 | Guided incident response | Detect → show propagation → contain → retract → reviewable incident record, as one workflow | ✅ `response.py` + `incident`: candidates (auditor, screens, attention) → assessment (author's other memories, who saw it, stores, blast radius, gated actions with necessity) → contain (withdraw + owe stores) → a record generated from the log (.md or .json); runbook §4 now uses it |
 
+## Follow-ups from results
+
+| ID | Task | Definition of done | Status |
+|---|---|---|---|
+| G4b | **Retrieval must not surface an undetected poison first.** G4 found the poison ranked above the honest note in 35/40 questions before detection | A change tested on held-out seeds (5–9) with G4's arms, prompt, k and models; attack-first and honest-first order both measured; clean and corrected success not reduced | ⏳ `conflicts.py`: write-free contradiction detection (same identifiers, same claim words, different value; threshold fixed in advance) and two presentations (flag; incumbent first). Dev pilot next, then registration |
+
 ## Last
 
 | ID | Task | Definition of done | Status |

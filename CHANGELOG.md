@@ -17,6 +17,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
   A reflection becomes a candidate, adopted only when held-out accuracy verified by
   someone else beats the incumbent. Rules can only narrow retrieval.
 - `derive(auto_activate=)`, as `remember` has.
+- **Contradiction surfacing** (`conflicts.py`, G4b, under test): notes that give different values for the same claim, by different authors (imports resolve to the original author), are placed together and flagged, instead of lexical ranking deciding which the agent sees first.
 - **In the RC as well:** `trust.py` and `exposure.TransferGatePolicy` (S4),
   `independence.py` (S2), `receipts.py` (S5), `MemoryFabric.supersede_copies` (S1),
   `ActionGate.execute` (S6). See the release note.

@@ -2012,8 +2012,12 @@ class MemoryFabric:
         follow_relations: bool = False,
         entities: Sequence[str] = (),
         use_extraction: bool = False,
+        objective: Any = None,
     ) -> RetrievalResult:
         """Retrieve, decide exposure, log both, return what was exposed.
+
+        `objective` (an `objective.MemoryObjective`) narrows the eligible set to
+        what the session said is relevant, before ranking (M1).
 
         Candidates below `min_relevance` are not considered at all, so a query
         with nothing to match returns nothing rather than the least-bad rows in
@@ -2066,6 +2070,12 @@ class MemoryFabric:
         # before ranking cannot be ranked, scored, logged or leaked by a bug
         # in a policy.
         eligible = self._applicable_at(eligible, as_of, until)
+        if objective is not None:
+            # The session's own statement of relevance, at the same chokepoint
+            # as tenancy and lifecycle, for the same reason: an excluded memory
+            # is never ranked, exposed, or logged as a withheld candidate.
+            eligible = {m for m in eligible
+                        if objective.admits(self.state.memories[m].context)}
         hits = self._search(query, pool_size, eligible, min_relevance)
         if self.rerank:
             # After fusion and before grouping. Reranking a *fused* pool is

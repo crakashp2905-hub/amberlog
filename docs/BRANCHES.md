@@ -29,3 +29,25 @@ remain checkable.
   commit is cited in the result.
 - A release candidate is cut as `rc/<version>` and receives fixes only. They
   are cherry-picked from `main` or made there and merged back.
+
+## Protection
+
+**GitHub cannot protect branches here.** Branch protection and rulesets
+return "Upgrade to GitHub Pro or make this repository public" for a private
+repository on the free plan, so the server refuses nothing. The repository
+stays private, and protection is enforced from the clone instead:
+
+- **`tools/hooks/pre-push`** refuses to delete `main`, `rc/*`, `archive/*` or
+  `wip/*` on the remote, and refuses any push to them that is not a
+  fast-forward. A forced rewind is caught too, because the hook checks
+  ancestry itself. Install it in every clone with `sh tools/install-hooks.sh`.
+  An intended exception needs `--no-verify`, visibly.
+- **`tools/backup.sh`** writes every branch and tag into one verified
+  `git bundle` outside the repository, by default `../Memory-backups/`. To
+  restore: `git clone <bundle>`. A bundle survives the loss of the GitHub
+  repository, which no hook can.
+
+If the account moves to GitHub Pro, server-side protection on `main` and
+`rc/*` should replace the hook: no force-push, no deletion. Do not require
+status checks while CI billing is broken (WORKPLAN X-CI), or nothing could
+merge.

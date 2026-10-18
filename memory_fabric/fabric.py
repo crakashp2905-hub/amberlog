@@ -1895,8 +1895,13 @@ class MemoryFabric:
         tenant_id: str | None = None,
         security_class: str | SecurityClass | None = None,
         scope: str | Scope = Scope.PRIVATE,
+        auto_activate: bool | None = None,
     ) -> str:
         """Create a memory derived from existing ones, recording the edges.
+
+        `auto_activate` overrides the store's default for this write, as in
+        `remember`. A rulebook proposal must stay a candidate on a store
+        that activates everything else (`rulebook.py`).
 
         These edges are what makes retraction work, so deriving through this
         method rather than writing a fresh memory is the difference between a
@@ -1950,6 +1955,7 @@ class MemoryFabric:
             tenant_id=tenant_id,
             security_class=effective,
             scope=visible,
+            auto_activate=auto_activate,
         )
 
         # Check the support of what was just written.

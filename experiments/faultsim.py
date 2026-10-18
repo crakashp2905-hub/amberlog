@@ -328,6 +328,19 @@ def share(origin: str, key: str, recipient: str, as_key: str) -> Callable[[World
     return step
 
 
+def share_refused(origin: str, key: str, recipient: str, because: str) -> Callable[[World], None]:
+    """An offer that must be refused, and for the stated reason."""
+    def step(world: World) -> None:
+        result = offer(world.store(origin), world.memories[key], world.store(recipient),
+                       recipient_agent=f"ag-{recipient}")
+        if result.accepted or not any(because in r for r in result.reasons):
+            raise AssertionError(f"expected refusal ({because}), got {result.accepted} "
+                                 f"{result.reasons}")
+        world.log.append(f"{origin} -> {recipient}: {key} refused ({because})")
+
+    return step
+
+
 def retract(origin: str, key: str, recipients: Sequence[str], reason: str = "contradicted"):
     def step(world: World) -> None:
         fabric = world.store(origin)
@@ -711,18 +724,21 @@ SCENARIOS: list[Scenario] = [
     ),
     (
         "cycle_terminates",
-        "A re-import back to the origin converges without a hop limit.",
+        "A share back to the origin is refused as an echo (F12); retraction converges "
+        "without a hop limit.",
         [
             observe("origin", "ag-n", "Valve 7 is upstream of the pump.", "fact"),
             share("origin", "fact", "alice", "fact@alice"),
             share("alice", "fact@alice", "bob", "fact@bob"),
-            share("bob", "fact@bob", "origin", "round-trip@origin"),
+            share_refused("bob", "fact@bob", "origin", "provenance chain"),
+            share_refused("bob", "fact@bob", "alice", "provenance chain"),
             retract("origin", "fact", ["alice"]),
             # `settle` raises if the federation will not come to rest, so the
             # schedule itself is the termination assertion.
             settle(),
+            expect("fact@alice", LifecycleState.QUARANTINED, "alice"),
             expect("fact@bob", LifecycleState.QUARANTINED, "bob"),
-            expect("round-trip@origin", LifecycleState.QUARANTINED, "origin"),
+            expect("fact", LifecycleState.QUARANTINED, "origin"),
         ],
     ),
     (

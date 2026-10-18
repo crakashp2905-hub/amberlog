@@ -651,8 +651,12 @@ def memory_detail(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
     # `full_content` would leave the secret sitting in the response.
     found = secret_values(fabric.firewall.detector, memory.content)
     redacted = sorted({kind for _, kind in found})
+    from ..status import labels as status_labels
+
     return {
         "row": _row(fabric, memory_id).to_json(),
+        # Four facts, each with what it does not establish (status.py).
+        "status": [label.to_json() for label in status_labels(fabric, memory_id)],
         "explanation": scrub_tree(explanation.to_json(), found),
         "narrative": scrub(explanation.narrative(), found),
         "descendants": lineage_tree(fabric, memory_id, "descendants").to_json(),

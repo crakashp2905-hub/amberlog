@@ -412,6 +412,13 @@ def cmd_show(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         print(json.dumps(report.jsonable(detail), indent=2, allow_nan=False))
         return 0
     print(detail["narrative"])
+    print()
+    heading("Status")
+    for label in detail["status"]:
+        mark = {True: f"{C.GREEN}yes{C.RESET}", False: f"{C.YELLOW}no{C.RESET}",
+                None: f"{C.DIM}n/a{C.RESET}"}[label["established"]]
+        print(f"  {label['label']:<24} {mark}  {label['detail']}")
+        print(f"  {'':<24} {C.DIM}does not establish: {label['does_not_mean']}{C.RESET}")
     if detail["redacted_kinds"]:
         print(
             f"\n{C.YELLOW}Secrets redacted for display: "

@@ -493,6 +493,15 @@ async function openDetail(id) {
       not shown here, so reviewing it cannot leak it to a screenshot or scrollback.</div>` : ""}
     <div class="content-quote">${esc(detail.full_content)}</div>
 
+    <h3>Status</h3>
+    <dl class="kv">${(detail.status || []).map((s) => `
+      <dt>${esc(s.label)}</dt>
+      <dd><span class="badge ${s.established === true ? "active" : s.established === false ? "medium" : ""}">${
+        s.established === true ? "yes" : s.established === false ? "no" : "n/a"}</span>
+        ${esc(s.detail)}
+        <div class="sub">Does not establish: ${esc(s.does_not_mean)}</div></dd>`).join("")}
+    </dl>
+
     <h3>Why the system remembers this</h3>
     <dl class="kv">
       <dt>Created by</dt><dd>${esc(r.created_by)} <span class="id">(${esc(r.method)})</span></dd>

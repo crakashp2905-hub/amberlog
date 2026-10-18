@@ -116,6 +116,7 @@ decision had seen.
 | | claim | outcome |
 |---|---|---|
 | **S1** | Version-scoped correction closes ≥ 40% of the correct-state headroom over the best baseline, converges in every seed, and invalidates no more than retraction alone | ⛔ **ABANDONED on degenerate headroom**: `delete_and_reshare` already reaches 0.9545 against a ceiling of 0.9568 (headroom 0.0023). The 8c check was not run before registering. `versioned` matches it exactly, converges 20/20 and invalidates nothing unnecessarily; `naive_overwrite` converges 3/20, `retraction_only` 0/20. Building the harness found **F12** (echo imports around a cycle left an origin serving its own superseded versions), now fixed ([result](results/s1-correction-sim.md)) |
+| **S2** | Exposure-based independence closes ≥ 40% of the corroboration-decision headroom over the best baseline (laundered copies are not second sources) | ❌ **NOT SUPPORTED: 28% of headroom**, +0.102 (CI +0.045 to +0.160) over a tuned near-duplicate store, 420 clusters, realised MDE 0.086. **The only arm that catches laundering**: perfect on both laundering families (in one store and across stores), where every baseline scores at most 0.23. False corroboration falls 0.83 → 0.28. **The price is structural**: an exposed author who observed for themselves scores 0, so blocked independent evidence rises 0.02 → 0.25. Off-store collusion is invisible to every arm. All four predictions held; not wired in ([result](results/s2-launder-sim.md)) |
 
 ## 3. Integrity engineering (roadmap phases 0–7)
 

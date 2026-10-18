@@ -1,0 +1,3987 @@
+{
+ "experiment": "s2-launder-sim",
+ "split": "dev",
+ "commit": "34e9437",
+ "seeds": 10,
+ "clusters": 210,
+ "tau": "overlap@0.9",
+ "tau_source": "tuned on dev",
+ "similarity_by_tau": {
+  "jaccard@0.1": 0.4286,
+  "jaccard@0.15": 0.4286,
+  "jaccard@0.2": 0.4286,
+  "jaccard@0.25": 0.4143,
+  "jaccard@0.3": 0.3857,
+  "jaccard@0.35": 0.3381,
+  "jaccard@0.4": 0.3048,
+  "jaccard@0.45": 0.3238,
+  "jaccard@0.5": 0.3714,
+  "jaccard@0.55": 0.5095,
+  "jaccard@0.6": 0.5286,
+  "jaccard@0.65": 0.5524,
+  "jaccard@0.7": 0.6238,
+  "jaccard@0.75": 0.6286,
+  "jaccard@0.8": 0.619,
+  "jaccard@0.85": 0.619,
+  "jaccard@0.9": 0.6048,
+  "overlap@0.1": 0.4286,
+  "overlap@0.15": 0.4286,
+  "overlap@0.2": 0.4286,
+  "overlap@0.25": 0.4286,
+  "overlap@0.3": 0.4286,
+  "overlap@0.35": 0.4286,
+  "overlap@0.4": 0.4286,
+  "overlap@0.45": 0.4286,
+  "overlap@0.5": 0.4286,
+  "overlap@0.55": 0.4286,
+  "overlap@0.6": 0.4238,
+  "overlap@0.65": 0.4238,
+  "overlap@0.7": 0.419,
+  "overlap@0.75": 0.6333,
+  "overlap@0.8": 0.6238,
+  "overlap@0.85": 0.6476,
+  "overlap@0.9": 0.6524,
+  "hashing_cosine@0.1": 0.4286,
+  "hashing_cosine@0.15": 0.4286,
+  "hashing_cosine@0.2": 0.4238,
+  "hashing_cosine@0.25": 0.4238,
+  "hashing_cosine@0.3": 0.419,
+  "hashing_cosine@0.35": 0.4143,
+  "hashing_cosine@0.4": 0.3857,
+  "hashing_cosine@0.45": 0.3667,
+  "hashing_cosine@0.5": 0.3238,
+  "hashing_cosine@0.55": 0.3238,
+  "hashing_cosine@0.6": 0.3286,
+  "hashing_cosine@0.65": 0.3952,
+  "hashing_cosine@0.7": 0.4524,
+  "hashing_cosine@0.75": 0.5095,
+  "hashing_cosine@0.8": 0.519,
+  "hashing_cosine@0.85": 0.5762,
+  "hashing_cosine@0.9": 0.619
+ },
+ "arms": {
+  "count_all": {
+   "decision_accuracy": 0.5714,
+   "false_corroboration": 1.0,
+   "blocked_independent": 0.0,
+   "by_family": {
+    "laundering_local": 0.0,
+    "laundering_cross_store": 0.0,
+    "collusion": 0.0,
+    "independent_similar": 1.0,
+    "independent_cross_store": 1.0,
+    "exposed_but_independent": 1.0,
+    "independent_plus_copy": 1.0
+   }
+  },
+  "provenance": {
+   "decision_accuracy": 0.6048,
+   "false_corroboration": 0.9222,
+   "blocked_independent": 0.0,
+   "by_family": {
+    "laundering_local": 0.0,
+    "laundering_cross_store": 0.0,
+    "collusion": 0.2333,
+    "independent_similar": 1.0,
+    "independent_cross_store": 1.0,
+    "exposed_but_independent": 1.0,
+    "independent_plus_copy": 1.0
+   }
+  },
+  "similarity": {
+   "decision_accuracy": 0.6524,
+   "false_corroboration": 0.7889,
+   "blocked_independent": 0.0167,
+   "by_family": {
+    "laundering_local": 0.1,
+    "laundering_cross_store": 0.2667,
+    "collusion": 0.2667,
+    "independent_similar": 1.0,
+    "independent_cross_store": 0.9333,
+    "exposed_but_independent": 1.0,
+    "independent_plus_copy": 1.0
+   }
+  },
+  "exposure": {
+   "decision_accuracy": 0.7476,
+   "false_corroboration": 0.2556,
+   "blocked_independent": 0.25,
+   "by_family": {
+    "laundering_local": 1.0,
+    "laundering_cross_store": 1.0,
+    "collusion": 0.2333,
+    "independent_similar": 1.0,
+    "independent_cross_store": 1.0,
+    "exposed_but_independent": 0.0,
+    "independent_plus_copy": 1.0
+   }
+  },
+  "oracle": {
+   "decision_accuracy": 1.0,
+   "false_corroboration": 0.0,
+   "blocked_independent": 0.0,
+   "by_family": {
+    "laundering_local": 1.0,
+    "laundering_cross_store": 1.0,
+    "collusion": 1.0,
+    "independent_similar": 1.0,
+    "independent_cross_store": 1.0,
+    "exposed_but_independent": 1.0,
+    "independent_plus_copy": 1.0
+   }
+  }
+ },
+ "best_baseline": "similarity",
+ "no_arm_beats_the_oracle": true,
+ "exposure_vs_best": {
+  "diff": 0.0952,
+  "ci_low": 0.0095,
+  "ci_high": 0.181,
+  "discordance": 0.3905,
+  "n_pairs": 210
+ },
+ "wall_s": 7.0,
+ "rows": [
+  {
+   "seed": 100,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Fenwick: compressor C10 running hot. Measured pressure 5 bar at 1645.",
+    "There is a problem at Fenwick: compressor C10 is overheating. Seen at 1645, pressure 5 bar."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Fenwick: fan F55 losing pressure. Measured temperature 98 C at 1000.",
+    "Walk-round Fenwick, 0915: fan F55 losing pressure. Reading temperature 72 C.",
+    "fan F55 (Fenwick) cannot hold pressure, per the 1000 log; temperature 98 C."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 2200 I found fan F60 at Ulverston tripping its breaker, vibration 11 mm/s.",
+    "At 2130 I found fan F60 at Ulverston tripping its breaker, vibration 14 mm/s."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "valve V55 at Rhyl is vibrating badly; logged 1700, current 36 A.",
+    "Walk-round Rhyl, 1445: valve V55 vibrating badly. Reading current 18 A.",
+    "valve V55, Rhyl site, shows heavy vibration -- current 18 A recorded 1445."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M10 at Ickford is leaking oil from its seal; logged 1000, pressure 6 bar.",
+    "At 0615 I found motor M10 at Ickford leaking oil from its seal, pressure 6 bar."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M42 at Garth is losing pressure; logged 1545, pressure 2 bar.",
+    "Summary: pressure loss on motor M42, Garth.",
+    "[filed copy] motor M42 at Garth is losing pressure; logged 1545, pressure 2 bar."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Garth: motor M3 tripping its breaker. Measured temperature 99 C at 1715.",
+    "Reported: Garth motor M3 keeps tripping the breaker (temperature 99 C, 1715).",
+    "motor M3 (Garth) keeps tripping the breaker, per the 1715 log; temperature 99 C."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 1,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "pump P56 at Penrith is leaking oil from its seal; logged 1215, vibration 7 mm/s.",
+    "[filed copy] pump P56 at Penrith is leaking oil from its seal; logged 1215, vibration 7 mm/s."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Dunmore: pump P17 leaking oil from its seal. Measured current 25 A at 0645.",
+    "Walk-round Dunmore, 1545: pump P17 leaking oil from its seal. Reading current 26 A."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Selby: motor M55 vibrating badly. Measured current 36 A at 0915.",
+    "Noticed motor M55 vibrating badly during the 0730 round at Selby (current 22 A)."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed pump P15 leaking oil from its seal during the 1300 round at Garth (current 18 A).",
+    "At 0600 I found pump P15 at Garth leaking oil from its seal, current 36 A."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "valve V26 at Holme is leaking oil from its seal; logged 1230, temperature 101 C.",
+    "There is a problem at Holme: valve V26 has a failed seal and is losing oil. Seen at 1230, temperature 101 C.",
+    "Holme valve V26 seal leak reported."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Yarm, 0530: pump P50 running hot. Reading temperature 95 C.",
+    "pump P50 at Yarm is running hot; logged 1000, temperature 103 C."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Quorn, 1745: valve V26 running hot. Reading current 16 A.",
+    "There is a problem at Quorn: valve V26 is overheating. Seen at 1745, current 16 A."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Ulverston, 1800: pump P30 losing pressure. Reading vibration 13 mm/s.",
+    "pump P30 (Ulverston) cannot hold pressure, per the 1800 log; vibration 13 mm/s."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "pump P52 at Marske is tripping its breaker; logged 1600, current 12 A.",
+    "At 1945 I found pump P52 at Marske tripping its breaker, current 10 A."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 1400 I found compressor C7 at Penrith losing pressure, temperature 95 C.",
+    "At 0915 I found compressor C7 at Penrith losing pressure, temperature 108 C."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Noticed motor M11 vibrating badly during the 0845 round at Elstow (current 36 A).",
+    "[filed copy] Noticed motor M11 vibrating badly during the 0845 round at Elstow (current 36 A)."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Walk-round Jarrow, 1200: fan F15 losing pressure. Reading pressure 2 bar.",
+    "Walk-round Jarrow, 2100: fan F15 losing pressure. Reading pressure 3 bar.",
+    "Reported: Jarrow fan F15 cannot hold pressure (pressure 3 bar, 2100)."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "At 2000 I found fan F33 at Lydd tripping its breaker, vibration 20 mm/s.",
+    "At 1300 I found fan F33 at Lydd tripping its breaker, vibration 20 mm/s."
+   ]
+  },
+  {
+   "seed": 100,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Wigton, 1900: pump P12 leaking oil from its seal. Reading vibration 7 mm/s.",
+    "Wigton pump P12 seal leak reported."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Oakham, 1145: pump P50 making a grinding noise. Reading pressure 7 bar.",
+    "pump P50 at Oakham is making a grinding noise; logged 1745, pressure 5 bar."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Oakham: fan F20 running hot. Measured temperature 85 C at 1530.",
+    "fan F20 at Oakham: overheating."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "fan F43 at Yarm is tripping its breaker; logged 1915, temperature 94 C.",
+    "Noticed fan F43 tripping its breaker during the 1600 round at Yarm (temperature 83 C).",
+    "fan F43 at Yarm: breaker trips."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed pump P12 vibrating badly during the 0945 round at Nairn (temperature 103 C).",
+    "At 2015 I found pump P12 at Nairn vibrating badly, temperature 91 C.",
+    "pump P12 (Nairn) shows heavy vibration, per the 2015 log; temperature 91 C."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed motor M56 leaking oil from its seal during the 0700 round at Ventnor (temperature 96 C).",
+    "motor M56, Ventnor site, has a failed seal and is losing oil -- temperature 96 C recorded 0700.",
+    "Reported: Ventnor motor M56 has a failed seal and is losing oil (temperature 96 C, 0700)."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Thame, 1015: motor M52 tripping its breaker. Reading vibration 18 mm/s.",
+    "Noticed motor M52 tripping its breaker during the 0715 round at Thame (vibration 13 mm/s)."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed fan F4 making a grinding noise during the 1900 round at Calder (pressure 5 bar).",
+    "There is a problem at Calder: fan F4 is grinding audibly. Seen at 1900, pressure 5 bar.",
+    "[filed copy] Noticed fan F4 making a grinding noise during the 1900 round at Calder (pressure 5 bar)."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "compressor C30 at Ickford is running hot; logged 0830, current 17 A.",
+    "compressor C30 at Ickford is running hot; logged 1315, current 10 A."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed fan F30 losing pressure during the 1515 round at Thame (temperature 110 C).",
+    "fan F30 at Thame: pressure loss."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed motor M35 vibrating badly during the 0515 round at Selby (pressure 6 bar).",
+    "motor M35, Selby site, shows heavy vibration -- pressure 6 bar recorded 0515."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Ulverston, 2100: fan F4 losing pressure. Reading vibration 10 mm/s.",
+    "fan F4 at Ulverston is losing pressure; logged 0815, vibration 14 mm/s."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Arden: valve V29 losing pressure. Measured vibration 8 mm/s at 1615.",
+    "Noticed valve V29 losing pressure during the 2230 round at Arden (vibration 13 mm/s)."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Walk-round Holme, 1930: valve V57 tripping its breaker. Reading vibration 5 mm/s.",
+    "[filed copy] Walk-round Holme, 1930: valve V57 tripping its breaker. Reading vibration 5 mm/s."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Yarm, 0630: valve V57 tripping its breaker. Reading current 27 A.",
+    "valve V57, Yarm site, keeps tripping the breaker -- current 27 A recorded 0630."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M1 at Bexley is tripping its breaker; logged 1315, current 25 A.",
+    "motor M1 at Bexley is tripping its breaker; logged 0630, current 29 A."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Thame: pump P52 tripping its breaker. Measured pressure 4 bar at 2100.",
+    "pump P52, Thame site, keeps tripping the breaker -- pressure 4 bar recorded 2100.",
+    "[filed copy] Thame: pump P52 tripping its breaker. Measured pressure 4 bar at 2100."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Holme, 1215: pump P23 running hot. Reading temperature 101 C.",
+    "Walk-round Holme, 1015: pump P23 running hot. Reading temperature 88 C."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 0800 I found pump P58 at Garth making a grinding noise, vibration 14 mm/s.",
+    "pump P58 at Garth is making a grinding noise; logged 0945, vibration 8 mm/s."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Bexley, 1345: pump P29 making a grinding noise. Reading temperature 108 C.",
+    "At 0600 I found pump P29 at Bexley making a grinding noise, temperature 78 C."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Dunmore, 1045: pump P20 vibrating badly. Reading vibration 16 mm/s.",
+    "There is a problem at Dunmore: pump P20 shows heavy vibration. Seen at 1045, vibration 16 mm/s."
+   ]
+  },
+  {
+   "seed": 101,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Holme: pump P20 tripping its breaker. Measured vibration 10 mm/s at 2015.",
+    "Holme: pump P20 tripping its breaker. Measured vibration 19 mm/s at 0915.",
+    "There is a problem at Holme: pump P20 keeps tripping the breaker. Seen at 0915, vibration 19 mm/s."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 2115 I found pump P45 at Bexley running hot, current 32 A.",
+    "At 2115 I found pump P45 at Bexley running hot, current 25 A."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Ulverston: fan F31 losing pressure. Measured temperature 81 C at 1200.",
+    "At 1145 I found fan F31 at Ulverston losing pressure, temperature 107 C."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed fan F9 running hot during the 1100 round at Marske (pressure 5 bar).",
+    "Summary: overheating on fan F9, Marske."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Oakham: motor M43 vibrating badly. Measured pressure 5 bar at 2045.",
+    "motor M43 at Oakham: vibration.",
+    "motor M43 (Oakham) shows heavy vibration, per the 2045 log; pressure 5 bar."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Lydd, 0845: motor M34 leaking oil from its seal. Reading current 40 A.",
+    "At 1400 I found motor M34 at Lydd leaking oil from its seal, current 34 A."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Yarm, 1130: fan F17 tripping its breaker. Reading vibration 18 mm/s.",
+    "fan F17 (Yarm) keeps tripping the breaker, per the 1130 log; vibration 18 mm/s."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M9 at Nairn is running hot; logged 2215, current 10 A.",
+    "Walk-round Nairn, 1245: motor M9 running hot. Reading current 18 A."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed pump P50 running hot during the 1830 round at Dunmore (temperature 80 C).",
+    "pump P50, Dunmore site, is overheating -- temperature 80 C recorded 1830.",
+    "pump P50, Dunmore site, is overheating -- temperature 80 C recorded 1830."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Ventnor: compressor C20 losing pressure. Measured vibration 10 mm/s at 0545.",
+    "compressor C20 (Ventnor) cannot hold pressure, per the 0545 log; vibration 10 mm/s."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed compressor C6 running hot during the 2015 round at Ickford (current 10 A).",
+    "compressor C6 at Ickford: overheating.",
+    "[filed copy] Noticed compressor C6 running hot during the 2015 round at Ickford (current 10 A)."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "fan F59 at Wigton is running hot; logged 0700, vibration 19 mm/s.",
+    "Walk-round Wigton, 1030: fan F59 running hot. Reading vibration 9 mm/s.",
+    "fan F59 (Wigton) is overheating, per the 0700 log; vibration 19 mm/s."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed compressor C46 making a grinding noise during the 2000 round at Oakham (current 40 A).",
+    "Oakham: compressor C46 making a grinding noise. Measured current 24 A at 2215."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 1,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Walk-round Elstow, 1315: compressor C46 leaking oil from its seal. Reading pressure 9 bar.",
+    "[filed copy] Walk-round Elstow, 1315: compressor C46 leaking oil from its seal. Reading pressure 9 bar."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Garth: motor M29 leaking oil from its seal. Measured pressure 4 bar at 2145.",
+    "Walk-round Garth, 1330: motor M29 leaking oil from its seal. Reading pressure 3 bar."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "valve V58 at Rhyl is leaking oil from its seal; logged 0815, temperature 69 C.",
+    "Rhyl: valve V58 leaking oil from its seal. Measured temperature 74 C at 1045.",
+    "valve V58, Rhyl site, has a failed seal and is losing oil -- temperature 69 C recorded 0815."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Lydd: valve V17 tripping its breaker. Measured vibration 10 mm/s at 1145.",
+    "Noticed valve V17 tripping its breaker during the 0800 round at Lydd (vibration 14 mm/s)."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "fan F45 at Rhyl is losing pressure; logged 0645, temperature 73 C.",
+    "Noticed fan F45 losing pressure during the 1900 round at Rhyl (temperature 67 C)."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Yarm, 1700: motor M2 leaking oil from its seal. Reading current 24 A.",
+    "Yarm motor M2 seal leak reported."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed compressor C21 running hot during the 1100 round at Ickford (pressure 5 bar).",
+    "Noticed compressor C21 running hot during the 0700 round at Ickford (pressure 6 bar)."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "At 1015 I found motor M14 at Garth leaking oil from its seal, temperature 75 C.",
+    "Garth: motor M14 leaking oil from its seal. Measured temperature 73 C at 1300.",
+    "motor M14 (Garth) has a failed seal and is losing oil, per the 1300 log; temperature 73 C."
+   ]
+  },
+  {
+   "seed": 102,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "At 2000 I found motor M45 at Selby running hot, current 35 A.",
+    "[filed copy] At 2000 I found motor M45 at Selby running hot, current 35 A."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 1815 I found motor M19 at Quorn running hot, current 35 A.",
+    "Walk-round Quorn, 1200: motor M19 running hot. Reading current 21 A."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Garth, 1330: motor M45 making a grinding noise. Reading current 39 A.",
+    "motor M45, Garth site, is grinding audibly -- current 39 A recorded 1330."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Garth, 0645: motor M46 making a grinding noise. Reading pressure 4 bar.",
+    "Garth: motor M46 making a grinding noise. Measured pressure 3 bar at 1830.",
+    "[filed copy] Garth: motor M46 making a grinding noise. Measured pressure 3 bar at 1830."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "pump P32 at Jarrow is losing pressure; logged 0845, temperature 78 C.",
+    "At 2245 I found pump P32 at Jarrow losing pressure, temperature 98 C."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Marske: fan F53 losing pressure. Measured current 15 A at 1300.",
+    "Noticed fan F53 losing pressure during the 0630 round at Marske (current 30 A)."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Rhyl, 1215: pump P16 making a grinding noise. Reading vibration 16 mm/s.",
+    "pump P16, Rhyl site, is grinding audibly -- vibration 16 mm/s recorded 1215.",
+    "[filed copy] Walk-round Rhyl, 1215: pump P16 making a grinding noise. Reading vibration 16 mm/s."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Kelso, 0630: fan F6 making a grinding noise. Reading vibration 12 mm/s.",
+    "fan F6, Kelso site, is grinding audibly -- vibration 12 mm/s recorded 0630."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 1330 I found valve V59 at Marske running hot, vibration 20 mm/s.",
+    "Walk-round Marske, 0645: valve V59 running hot. Reading vibration 15 mm/s."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Walk-round Ulverston, 0545: valve V41 losing pressure. Reading temperature 100 C.",
+    "Noticed valve V41 losing pressure during the 1845 round at Ulverston (temperature 78 C).",
+    "Ulverston valve V41 pressure loss reported."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Bexley, 1545: motor M26 making a grinding noise. Reading current 14 A.",
+    "At 1945 I found motor M26 at Bexley making a grinding noise, current 38 A."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 1,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Noticed motor M56 making a grinding noise during the 0845 round at Ventnor (temperature 61 C).",
+    "[filed copy] Noticed motor M56 making a grinding noise during the 0845 round at Ventnor (temperature 61 C)."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M46 at Oakham is losing pressure; logged 0830, current 31 A.",
+    "Reported: Oakham motor M46 cannot hold pressure (current 31 A, 0830).",
+    "motor M46 (Oakham) cannot hold pressure, per the 0830 log; current 31 A."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "compressor C23 at Quorn is leaking oil from its seal; logged 1230, pressure 8 bar.",
+    "Noticed compressor C23 leaking oil from its seal during the 1445 round at Quorn (pressure 9 bar)."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed compressor C43 losing pressure during the 1230 round at Nairn (current 13 A).",
+    "Summary: pressure loss on compressor C43, Nairn."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed motor M6 tripping its breaker during the 1700 round at Jarrow (current 31 A).",
+    "Walk-round Jarrow, 2000: motor M6 tripping its breaker. Reading current 14 A."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed motor M39 running hot during the 1430 round at Dunmore (pressure 8 bar).",
+    "motor M39 at Dunmore is running hot; logged 1100, pressure 3 bar.",
+    "There is a problem at Dunmore: motor M39 is overheating. Seen at 1100, pressure 3 bar."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "compressor C57 at Oakham is vibrating badly; logged 1300, pressure 8 bar.",
+    "Oakham: compressor C57 vibrating badly. Measured pressure 4 bar at 1430."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Walk-round Ventnor, 1930: valve V48 making a grinding noise. Reading pressure 2 bar.",
+    "valve V48 at Ventnor: grinding."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed fan F18 losing pressure during the 1800 round at Arden (pressure 6 bar).",
+    "[filed copy] Noticed fan F18 losing pressure during the 1800 round at Arden (pressure 6 bar).",
+    "Summary: pressure loss on fan F18, Arden."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed pump P2 tripping its breaker during the 1630 round at Ventnor (vibration 4 mm/s).",
+    "Ventnor pump P2 breaker trips reported."
+   ]
+  },
+  {
+   "seed": 103,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Thame: pump P18 vibrating badly. Measured vibration 13 mm/s at 1145.",
+    "At 1115 I found pump P18 at Thame vibrating badly, vibration 13 mm/s."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "compressor C17 at Selby is tripping its breaker; logged 1030, pressure 8 bar.",
+    "Noticed compressor C17 tripping its breaker during the 1945 round at Selby (pressure 5 bar).",
+    "Reported: Selby compressor C17 keeps tripping the breaker (pressure 8 bar, 1030)."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "pump P39 at Bexley is leaking oil from its seal; logged 1345, vibration 14 mm/s.",
+    "pump P39 at Bexley is leaking oil from its seal; logged 1615, vibration 7 mm/s.",
+    "pump P39, Bexley site, has a failed seal and is losing oil -- vibration 7 mm/s recorded 1615."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Holme, 0645: compressor C10 running hot. Reading vibration 5 mm/s.",
+    "compressor C10 at Holme: overheating."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Walk-round Oakham, 0700: motor M6 leaking oil from its seal. Reading vibration 8 mm/s.",
+    "[filed copy] Walk-round Oakham, 0700: motor M6 leaking oil from its seal. Reading vibration 8 mm/s."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Thame, 2245: fan F36 losing pressure. Reading current 27 A.",
+    "There is a problem at Thame: fan F36 cannot hold pressure. Seen at 2245, current 27 A."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "pump P2 at Wigton is losing pressure; logged 2100, current 28 A.",
+    "pump P2 at Wigton: pressure loss."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Penrith, 0715: compressor C57 tripping its breaker. Reading temperature 97 C.",
+    "At 0730 I found compressor C57 at Penrith tripping its breaker, temperature 66 C."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Ulverston: compressor C5 losing pressure. Measured temperature 70 C at 1815.",
+    "compressor C5 at Ulverston is losing pressure; logged 1515, temperature 75 C."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Garth: compressor C55 running hot. Measured vibration 5 mm/s at 0715.",
+    "At 2115 I found compressor C55 at Garth running hot, vibration 20 mm/s."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed compressor C13 losing pressure during the 0500 round at Penrith (current 37 A).",
+    "compressor C13, Penrith site, cannot hold pressure -- current 37 A recorded 0500.",
+    "compressor C13 at Penrith: pressure loss."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "pump P4 at Penrith is tripping its breaker; logged 1745, vibration 12 mm/s.",
+    "Noticed pump P4 tripping its breaker during the 2115 round at Penrith (vibration 20 mm/s)."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed pump P59 running hot during the 0515 round at Selby (current 27 A).",
+    "Noticed pump P59 running hot during the 1800 round at Selby (current 18 A)."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M3 at Oakham is losing pressure; logged 1015, vibration 19 mm/s.",
+    "motor M3 at Oakham is losing pressure; logged 1400, vibration 13 mm/s."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed pump P22 leaking oil from its seal during the 2245 round at Oakham (vibration 7 mm/s).",
+    "Summary: seal leak on pump P22, Oakham.",
+    "Reported: Oakham pump P22 has a failed seal and is losing oil (vibration 7 mm/s, 2245)."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 2045 I found valve V49 at Dunmore vibrating badly, pressure 8 bar.",
+    "At 1115 I found valve V49 at Dunmore vibrating badly, pressure 4 bar."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "At 0945 I found valve V7 at Fenwick making a grinding noise, pressure 6 bar.",
+    "valve V7 at Fenwick is making a grinding noise; logged 1215, pressure 5 bar.",
+    "valve V7 (Fenwick) is grinding audibly, per the 1215 log; pressure 5 bar."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed compressor C48 leaking oil from its seal during the 0915 round at Holme (pressure 2 bar).",
+    "compressor C48 at Holme is leaking oil from its seal; logged 1915, pressure 5 bar."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Jarrow: motor M12 leaking oil from its seal. Measured pressure 4 bar at 2200.",
+    "Jarrow: motor M12 leaking oil from its seal. Measured pressure 3 bar at 0815."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 2115 I found valve V16 at Yarm losing pressure, vibration 7 mm/s.",
+    "There is a problem at Yarm: valve V16 cannot hold pressure. Seen at 2115, vibration 7 mm/s."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed fan F28 losing pressure during the 2000 round at Ickford (pressure 9 bar).",
+    "Reported: Ickford fan F28 cannot hold pressure (pressure 9 bar, 2000)."
+   ]
+  },
+  {
+   "seed": 104,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed fan F43 making a grinding noise during the 1700 round at Kelso (vibration 14 mm/s).",
+    "fan F43 (Kelso) is grinding audibly, per the 1700 log; vibration 14 mm/s.",
+    "There is a problem at Kelso: fan F43 is grinding audibly. Seen at 1700, vibration 14 mm/s."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed fan F25 tripping its breaker during the 1215 round at Thame (current 29 A).",
+    "There is a problem at Thame: fan F25 keeps tripping the breaker. Seen at 1215, current 29 A."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Kelso: pump P53 making a grinding noise. Measured temperature 107 C at 1615.",
+    "At 2245 I found pump P53 at Kelso making a grinding noise, temperature 99 C."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed fan F19 making a grinding noise during the 1830 round at Selby (temperature 78 C).",
+    "Selby: fan F19 making a grinding noise. Measured temperature 95 C at 0900."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "fan F55 at Lydd is making a grinding noise; logged 2215, temperature 73 C.",
+    "Lydd: fan F55 making a grinding noise. Measured temperature 108 C at 1030."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 0700 I found fan F33 at Selby running hot, temperature 82 C.",
+    "Walk-round Selby, 1430: fan F33 running hot. Reading temperature 102 C."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Nairn, 0845: valve V20 leaking oil from its seal. Reading temperature 110 C.",
+    "Summary: seal leak on valve V20, Nairn.",
+    "valve V20 at Nairn: seal leak."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 0830 I found pump P57 at Jarrow running hot, vibration 9 mm/s.",
+    "Summary: overheating on pump P57, Jarrow."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "valve V56 at Ickford is leaking oil from its seal; logged 2145, current 34 A.",
+    "Walk-round Ickford, 1015: valve V56 leaking oil from its seal. Reading current 34 A."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed motor M4 losing pressure during the 1515 round at Wigton (current 31 A).",
+    "Walk-round Wigton, 1630: motor M4 losing pressure. Reading current 10 A.",
+    "There is a problem at Wigton: motor M4 cannot hold pressure. Seen at 1630, current 10 A."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Holme, 1300: pump P16 vibrating badly. Reading temperature 109 C.",
+    "Reported: Holme pump P16 shows heavy vibration (temperature 109 C, 1300).",
+    "Reported: Holme pump P16 shows heavy vibration (temperature 109 C, 1300)."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Calder: motor M23 losing pressure. Measured temperature 88 C at 1545.",
+    "motor M23 (Calder) cannot hold pressure, per the 1545 log; temperature 88 C."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Arden, 1445: fan F2 losing pressure. Reading vibration 9 mm/s.",
+    "Reported: Arden fan F2 cannot hold pressure (vibration 9 mm/s, 1445)."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Lydd: pump P14 tripping its breaker. Measured temperature 94 C at 1800.",
+    "Lydd: pump P14 tripping its breaker. Measured temperature 110 C at 1900."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Yarm, 2200: pump P40 vibrating badly. Reading current 38 A.",
+    "At 0500 I found pump P40 at Yarm vibrating badly, current 39 A."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 2045 I found motor M42 at Selby leaking oil from its seal, temperature 87 C.",
+    "There is a problem at Selby: motor M42 has a failed seal and is losing oil. Seen at 2045, temperature 87 C."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 2115 I found motor M21 at Oakham leaking oil from its seal, current 31 A.",
+    "Noticed motor M21 leaking oil from its seal during the 1315 round at Oakham (current 22 A)."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Kelso: valve V2 vibrating badly. Measured vibration 17 mm/s at 2030.",
+    "Kelso valve V2 vibration reported.",
+    "There is a problem at Kelso: valve V2 shows heavy vibration. Seen at 2030, vibration 17 mm/s."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Thame: pump P1 running hot. Measured temperature 84 C at 1445.",
+    "There is a problem at Thame: pump P1 is overheating. Seen at 1445, temperature 84 C."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "fan F23 at Yarm is losing pressure; logged 0600, pressure 9 bar.",
+    "Walk-round Yarm, 2045: fan F23 losing pressure. Reading pressure 9 bar.",
+    "There is a problem at Yarm: fan F23 cannot hold pressure. Seen at 2045, pressure 9 bar."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Nairn: valve V13 leaking oil from its seal. Measured pressure 5 bar at 1030.",
+    "Nairn: valve V13 leaking oil from its seal. Measured pressure 2 bar at 0615."
+   ]
+  },
+  {
+   "seed": 105,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Bexley: pump P59 tripping its breaker. Measured temperature 89 C at 0630.",
+    "Noticed pump P59 tripping its breaker during the 0630 round at Bexley (temperature 71 C).",
+    "[filed copy] Bexley: pump P59 tripping its breaker. Measured temperature 89 C at 0630."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Wigton: valve V31 losing pressure. Measured vibration 15 mm/s at 1030.",
+    "Noticed valve V31 losing pressure during the 1600 round at Wigton (vibration 13 mm/s).",
+    "valve V31 (Wigton) cannot hold pressure, per the 1600 log; vibration 13 mm/s."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Nairn, 1500: compressor C6 leaking oil from its seal. Reading temperature 106 C.",
+    "At 1645 I found compressor C6 at Nairn leaking oil from its seal, temperature 104 C."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Walk-round Thame, 1815: valve V17 tripping its breaker. Reading current 14 A.",
+    "Walk-round Thame, 2015: valve V17 tripping its breaker. Reading current 14 A."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Kelso, 0930: compressor C37 making a grinding noise. Reading vibration 12 mm/s.",
+    "Walk-round Kelso, 1645: compressor C37 making a grinding noise. Reading vibration 16 mm/s."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Holme, 1745: fan F41 making a grinding noise. Reading pressure 4 bar.",
+    "There is a problem at Holme: fan F41 is grinding audibly. Seen at 1745, pressure 4 bar.",
+    "Reported: Holme fan F41 is grinding audibly (pressure 4 bar, 1745)."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "pump P46 at Rhyl is losing pressure; logged 2015, current 27 A.",
+    "pump P46 at Rhyl: pressure loss."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "fan F24 at Dunmore is running hot; logged 1115, pressure 2 bar.",
+    "fan F24 at Dunmore is running hot; logged 2230, pressure 6 bar."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "valve V1 at Oakham is tripping its breaker; logged 0830, vibration 12 mm/s.",
+    "valve V1 at Oakham: breaker trips."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "At 0630 I found fan F19 at Garth losing pressure, vibration 4 mm/s.",
+    "[filed copy] At 0630 I found fan F19 at Garth losing pressure, vibration 4 mm/s."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 1,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "motor M46 at Kelso is vibrating badly; logged 0630, temperature 94 C.",
+    "[filed copy] motor M46 at Kelso is vibrating badly; logged 0630, temperature 94 C."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Rhyl, 0630: motor M24 making a grinding noise. Reading current 20 A.",
+    "motor M24, Rhyl site, is grinding audibly -- current 20 A recorded 0630."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed compressor C49 vibrating badly during the 1700 round at Thame (pressure 8 bar).",
+    "Walk-round Thame, 1700: compressor C49 vibrating badly. Reading pressure 6 bar.",
+    "There is a problem at Thame: compressor C49 shows heavy vibration. Seen at 1700, pressure 6 bar."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "pump P49 at Ickford is losing pressure; logged 1530, vibration 20 mm/s.",
+    "Walk-round Ickford, 1415: pump P49 losing pressure. Reading vibration 15 mm/s."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Rhyl, 1915: pump P41 tripping its breaker. Reading current 38 A.",
+    "pump P41 at Rhyl: breaker trips."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 1900 I found motor M6 at Wigton making a grinding noise, current 12 A.",
+    "Walk-round Wigton, 1645: motor M6 making a grinding noise. Reading current 16 A."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed pump P2 losing pressure during the 1800 round at Holme (pressure 2 bar).",
+    "Holme pump P2 pressure loss reported.",
+    "Reported: Holme pump P2 cannot hold pressure (pressure 2 bar, 1800)."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 1915 I found pump P26 at Calder vibrating badly, pressure 9 bar.",
+    "At 1415 I found pump P26 at Calder vibrating badly, pressure 5 bar.",
+    "[filed copy] At 1915 I found pump P26 at Calder vibrating badly, pressure 9 bar."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Selby, 2200: compressor C53 vibrating badly. Reading current 11 A.",
+    "Noticed compressor C53 vibrating badly during the 0830 round at Selby (current 18 A)."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "fan F2 at Thame is leaking oil from its seal; logged 0845, temperature 98 C.",
+    "At 1530 I found fan F2 at Thame leaking oil from its seal, temperature 84 C."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Walk-round Thame, 1845: pump P6 making a grinding noise. Reading current 31 A.",
+    "pump P6 at Thame: grinding.",
+    "Thame pump P6 grinding reported."
+   ]
+  },
+  {
+   "seed": 106,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "valve V53 at Rhyl is vibrating badly; logged 0600, current 38 A.",
+    "Rhyl: valve V53 vibrating badly. Measured current 15 A at 1245."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Walk-round Yarm, 1600: compressor C35 running hot. Reading vibration 6 mm/s.",
+    "[filed copy] Walk-round Yarm, 1600: compressor C35 running hot. Reading vibration 6 mm/s."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Elstow: compressor C30 vibrating badly. Measured temperature 87 C at 1230.",
+    "Noticed compressor C30 vibrating badly during the 1200 round at Elstow (temperature 99 C)."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Jarrow, 1730: fan F52 vibrating badly. Reading temperature 70 C.",
+    "fan F52 at Jarrow: vibration."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "At 1445 I found motor M58 at Oakham running hot, vibration 19 mm/s.",
+    "motor M58 at Oakham is running hot; logged 2145, vibration 14 mm/s.",
+    "Reported: Oakham motor M58 is overheating (vibration 14 mm/s, 2145)."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "fan F53 at Marske is losing pressure; logged 2130, temperature 76 C.",
+    "At 1245 I found fan F53 at Marske losing pressure, temperature 107 C."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Jarrow: motor M17 tripping its breaker. Measured current 39 A at 1615.",
+    "Jarrow: motor M17 tripping its breaker. Measured current 14 A at 1845."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Nairn, 0730: fan F37 losing pressure. Reading current 14 A.",
+    "Nairn: fan F37 losing pressure. Measured current 10 A at 0715."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 0700 I found compressor C21 at Jarrow running hot, current 38 A.",
+    "Jarrow: compressor C21 running hot. Measured current 17 A at 2230."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Kelso, 1915: valve V7 running hot. Reading vibration 17 mm/s.",
+    "[filed copy] Walk-round Kelso, 1915: valve V7 running hot. Reading vibration 17 mm/s.",
+    "Reported: Kelso valve V7 is overheating (vibration 17 mm/s, 1915)."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Thame, 1800: valve V43 running hot. Reading current 35 A.",
+    "Noticed valve V43 running hot during the 1130 round at Thame (current 18 A)."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Arden, 1015: valve V2 tripping its breaker. Reading vibration 9 mm/s.",
+    "Reported: Arden valve V2 keeps tripping the breaker (vibration 9 mm/s, 1015)."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Elstow: valve V39 losing pressure. Measured temperature 102 C at 2145.",
+    "There is a problem at Elstow: valve V39 cannot hold pressure. Seen at 2145, temperature 102 C.",
+    "valve V39 at Elstow: pressure loss."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 1,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "At 0645 I found compressor C26 at Garth tripping its breaker, vibration 17 mm/s.",
+    "[filed copy] At 0645 I found compressor C26 at Garth tripping its breaker, vibration 17 mm/s."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Bexley, 1130: pump P8 making a grinding noise. Reading current 40 A.",
+    "There is a problem at Bexley: pump P8 is grinding audibly. Seen at 1130, current 40 A."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Wigton: pump P48 tripping its breaker. Measured pressure 9 bar at 1300.",
+    "pump P48 (Wigton) keeps tripping the breaker, per the 1300 log; pressure 9 bar.",
+    "pump P48 at Wigton: breaker trips."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed valve V3 losing pressure during the 1915 round at Bexley (pressure 6 bar).",
+    "At 1545 I found valve V3 at Bexley losing pressure, pressure 6 bar."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Selby: fan F28 leaking oil from its seal. Measured vibration 19 mm/s at 1845.",
+    "At 2145 I found fan F28 at Selby leaking oil from its seal, vibration 14 mm/s."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 0600 I found compressor C20 at Holme vibrating badly, temperature 67 C.",
+    "compressor C20 at Holme is vibrating badly; logged 0500, temperature 82 C."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Noticed fan F45 making a grinding noise during the 1245 round at Lydd (temperature 88 C).",
+    "fan F45 at Lydd is making a grinding noise; logged 1045, temperature 92 C.",
+    "Lydd fan F45 grinding reported."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Walk-round Ickford, 1845: fan F7 tripping its breaker. Reading temperature 92 C.",
+    "Walk-round Ickford, 1145: fan F7 tripping its breaker. Reading temperature 103 C.",
+    "fan F7, Ickford site, keeps tripping the breaker -- temperature 103 C recorded 1145."
+   ]
+  },
+  {
+   "seed": 107,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 1,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Walk-round Marske, 0700: fan F39 tripping its breaker. Reading temperature 71 C.",
+    "[filed copy] Walk-round Marske, 0700: fan F39 tripping its breaker. Reading temperature 71 C."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed fan F41 losing pressure during the 1900 round at Garth (temperature 82 C).",
+    "Garth: fan F41 losing pressure. Measured temperature 92 C at 1215."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Arden, 1715: compressor C5 tripping its breaker. Reading temperature 81 C.",
+    "Walk-round Arden, 1900: compressor C5 tripping its breaker. Reading temperature 82 C."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Thame: compressor C24 making a grinding noise. Measured vibration 19 mm/s at 0515.",
+    "Walk-round Thame, 1100: compressor C24 making a grinding noise. Reading vibration 20 mm/s."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "pump P60 at Yarm is making a grinding noise; logged 0930, vibration 12 mm/s.",
+    "Yarm: pump P60 making a grinding noise. Measured vibration 8 mm/s at 0730."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed pump P46 tripping its breaker during the 1345 round at Oakham (pressure 3 bar).",
+    "Oakham: pump P46 tripping its breaker. Measured pressure 2 bar at 2145."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Fenwick, 2215: fan F12 running hot. Reading vibration 16 mm/s.",
+    "[filed copy] Walk-round Fenwick, 2215: fan F12 running hot. Reading vibration 16 mm/s.",
+    "There is a problem at Fenwick: fan F12 is overheating. Seen at 2215, vibration 16 mm/s."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 0845 I found pump P56 at Jarrow losing pressure, current 12 A.",
+    "Summary: pressure loss on pump P56, Jarrow."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Bexley: motor M7 making a grinding noise. Measured temperature 108 C at 0730.",
+    "Noticed motor M7 making a grinding noise during the 1845 round at Bexley (temperature 84 C)."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Thame: pump P45 running hot. Measured current 14 A at 0545.",
+    "pump P45 at Thame is running hot; logged 0845, current 40 A."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "At 0745 I found pump P57 at Ventnor tripping its breaker, vibration 16 mm/s.",
+    "Reported: Ventnor pump P57 keeps tripping the breaker (vibration 16 mm/s, 0745)."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Thame, 2145: fan F27 making a grinding noise. Reading vibration 7 mm/s.",
+    "fan F27 at Thame is making a grinding noise; logged 0745, vibration 4 mm/s."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "motor M58 at Fenwick is losing pressure; logged 1000, current 31 A.",
+    "motor M58 at Fenwick is losing pressure; logged 1300, current 37 A.",
+    "motor M58, Fenwick site, cannot hold pressure -- current 37 A recorded 1300."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed pump P15 tripping its breaker during the 1345 round at Selby (temperature 72 C).",
+    "pump P15 (Selby) keeps tripping the breaker, per the 1345 log; temperature 72 C."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "fan F56 at Jarrow is losing pressure; logged 1530, current 26 A.",
+    "Noticed fan F56 losing pressure during the 1000 round at Jarrow (current 14 A).",
+    "Reported: Jarrow fan F56 cannot hold pressure (current 26 A, 1530)."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Fenwick: motor M27 tripping its breaker. Measured current 26 A at 2245.",
+    "[filed copy] Fenwick: motor M27 tripping its breaker. Measured current 26 A at 2245.",
+    "Fenwick motor M27 breaker trips reported."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Elstow: pump P60 vibrating badly. Measured vibration 15 mm/s at 0830.",
+    "There is a problem at Elstow: pump P60 shows heavy vibration. Seen at 0830, vibration 15 mm/s."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "At 0530 I found pump P47 at Nairn losing pressure, vibration 17 mm/s.",
+    "Nairn: pump P47 losing pressure. Measured vibration 10 mm/s at 1600.",
+    "Summary: pressure loss on pump P47, Nairn."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 1,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "Noticed motor M26 losing pressure during the 2030 round at Ulverston (temperature 88 C).",
+    "[filed copy] Noticed motor M26 losing pressure during the 2030 round at Ulverston (temperature 88 C)."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "fan F48 at Ulverston is vibrating badly; logged 0800, current 28 A.",
+    "fan F48 at Ulverston is vibrating badly; logged 2115, current 29 A."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M50 at Yarm is losing pressure; logged 1645, temperature 74 C.",
+    "[filed copy] motor M50 at Yarm is losing pressure; logged 1645, temperature 74 C.",
+    "motor M50, Yarm site, cannot hold pressure -- temperature 74 C recorded 1645."
+   ]
+  },
+  {
+   "seed": 108,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed valve V48 leaking oil from its seal during the 1315 round at Ulverston (temperature 76 C).",
+    "There is a problem at Ulverston: valve V48 has a failed seal and is losing oil. Seen at 1315, temperature 76 C."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed valve V36 making a grinding noise during the 0715 round at Yarm (pressure 2 bar).",
+    "Yarm: valve V36 making a grinding noise. Measured pressure 4 bar at 1115."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Elstow: fan F28 vibrating badly. Measured vibration 4 mm/s at 1000.",
+    "fan F28, Elstow site, shows heavy vibration -- vibration 4 mm/s recorded 1000.",
+    "[filed copy] Elstow: fan F28 vibrating badly. Measured vibration 4 mm/s at 1000."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed valve V14 tripping its breaker during the 0630 round at Wigton (temperature 89 C).",
+    "valve V14, Wigton site, keeps tripping the breaker -- temperature 89 C recorded 0630."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Bexley: pump P27 leaking oil from its seal. Measured current 21 A at 1415.",
+    "Bexley pump P27 seal leak reported."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "At 1415 I found fan F43 at Arden tripping its breaker, current 27 A.",
+    "Reported: Arden fan F43 keeps tripping the breaker (current 27 A, 1415).",
+    "fan F43 at Arden: breaker trips."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed motor M3 vibrating badly during the 0930 round at Holme (pressure 4 bar).",
+    "Holme: motor M3 vibrating badly. Measured pressure 8 bar at 0930."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M32 at Oakham is running hot; logged 1345, temperature 103 C.",
+    "Walk-round Oakham, 0600: motor M32 running hot. Reading temperature 62 C."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "compressor C29 at Penrith is losing pressure; logged 0815, temperature 101 C.",
+    "compressor C29 at Penrith is losing pressure; logged 1715, temperature 108 C."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 0845 I found compressor C8 at Fenwick losing pressure, vibration 16 mm/s.",
+    "Noticed compressor C8 losing pressure during the 1030 round at Fenwick (vibration 4 mm/s)."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Elstow, 0615: compressor C4 leaking oil from its seal. Reading pressure 8 bar.",
+    "Noticed compressor C4 leaking oil from its seal during the 2200 round at Elstow (pressure 5 bar)."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_similar",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Walk-round Ickford, 0630: compressor C59 vibrating badly. Reading pressure 5 bar.",
+    "Walk-round Ickford, 2000: compressor C59 vibrating badly. Reading pressure 2 bar."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M42 at Lydd is running hot; logged 0800, current 14 A.",
+    "There is a problem at Lydd: motor M42 is overheating. Seen at 0800, current 14 A."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Selby: motor M47 making a grinding noise. Measured vibration 18 mm/s at 0830.",
+    "At 0500 I found motor M47 at Selby making a grinding noise, vibration 14 mm/s.",
+    "[filed copy] Selby: motor M47 making a grinding noise. Measured vibration 18 mm/s at 0830."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "valve V33 at Yarm is making a grinding noise; logged 0630, pressure 2 bar.",
+    "Noticed valve V33 making a grinding noise during the 1015 round at Yarm (pressure 5 bar).",
+    "[filed copy] Noticed valve V33 making a grinding noise during the 1015 round at Yarm (pressure 5 bar)."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "exposed_but_independent",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "motor M49 at Selby is leaking oil from its seal; logged 0600, current 23 A.",
+    "Noticed motor M49 leaking oil from its seal during the 1230 round at Selby (current 37 A)."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "laundering_cross_store",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Lydd: pump P55 losing pressure. Measured current 21 A at 0600.",
+    "pump P55, Lydd site, cannot hold pressure -- current 21 A recorded 0600."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "laundering_local",
+   "truth": 1,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 1,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "compressor C12 at Calder is losing pressure; logged 0730, vibration 17 mm/s.",
+    "There is a problem at Calder: compressor C12 cannot hold pressure. Seen at 0730, vibration 17 mm/s.",
+    "Summary: pressure loss on compressor C12, Calder."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_plus_copy",
+   "truth": 2,
+   "counts": {
+    "count_all": 3,
+    "provenance": 3,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 3
+    }
+   },
+   "texts": [
+    "Thame: valve V28 losing pressure. Measured pressure 8 bar at 1830.",
+    "Noticed valve V28 losing pressure during the 2100 round at Thame (pressure 5 bar).",
+    "There is a problem at Thame: valve V28 cannot hold pressure. Seen at 1830, pressure 8 bar."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "independent_cross_store",
+   "truth": 2,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 2,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "At 0530 I found pump P5 at Selby running hot, temperature 76 C.",
+    "Noticed pump P5 running hot during the 2245 round at Selby (temperature 91 C)."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 2
+    }
+   },
+   "texts": [
+    "Noticed motor M60 vibrating badly during the 1430 round at Quorn (temperature 71 C).",
+    "Reported: Quorn motor M60 shows heavy vibration (temperature 71 C, 1430)."
+   ]
+  },
+  {
+   "seed": 109,
+   "family": "collusion",
+   "truth": 1,
+   "counts": {
+    "count_all": 2,
+    "provenance": 2,
+    "exposure": 2,
+    "oracle": 1,
+    "similarity": {
+     "overlap@0.9": 1
+    }
+   },
+   "texts": [
+    "At 1330 I found pump P26 at Rhyl making a grinding noise, temperature 72 C.",
+    "pump P26 at Rhyl: grinding."
+   ]
+  }
+ ],
+ "note": "rows keep only the overlap@0.9 similarity count; similarity_by_tau holds every measure's accuracy"
+}

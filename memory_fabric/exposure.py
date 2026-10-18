@@ -206,6 +206,54 @@ class EpsilonGreedyPolicy:
         return decisions
 
 
+class TransferGatePolicy:
+    """Epsilon-greedy over value, withholding what this store's outcomes show harmful here (S4).
+
+    An import arrives with no value evidence at the recipient (federation tells
+    the recipient it has none), and the sender's own score describes the
+    sender's context, not this one. The recipient's evidence is its own
+    verified outcomes, in its own context. `EpsilonGreedyPolicy` already
+    ranks on that evidence, but it never *withholds*. With one relevant
+    candidate, a memory measured to hurt in this context is still the greedy
+    choice. This policy removes from the greedy set any candidate whose
+    context-specific estimate is confidently harmful (`ci_high < 0`).
+
+    Those candidates are still explored, at `epsilon / 2` like every
+    non-greedy candidate, so an estimate can recover when the context changes.
+    That exploration is a cost, and S4 reports it as one.
+    """
+
+    declares_overlap = True
+    needs_value = True
+
+    def __init__(self, epsilon: float = 0.2) -> None:
+        if not 0.0 < epsilon < 1.0:
+            raise ValueError("epsilon must be in (0, 1) for the policy to have overlap")
+        self.epsilon = epsilon
+        self.id = f"transfer_gate:{epsilon}"
+
+    @staticmethod
+    def harmful(candidate: Candidate) -> bool:
+        value = candidate.value
+        return value is not None and value.n_eff > 0 and value.contrastive and value.ci_high < 0
+
+    def decide(
+        self, candidates: Sequence[Candidate], k: int, rng: random.Random
+    ) -> list[ExposureDecision]:
+        eligible = [c for c in candidates if not self.harmful(c)]
+        ordered = sorted(eligible, key=lambda c: _rank_key(c, "value"))
+        greedy = {c.memory_id for c in ordered[:k]}
+        eps = self.epsilon
+        decisions: list[ExposureDecision] = []
+        for candidate in candidates:
+            p_expose = (1.0 - eps) * (1.0 if candidate.memory_id in greedy else 0.0) + eps * 0.5
+            exposed = rng.random() < p_expose
+            decisions.append(ExposureDecision(
+                candidate=candidate, exposed=exposed,
+                propensity=p_expose if exposed else 1.0 - p_expose))
+        return decisions
+
+
 class AlwaysExposePolicy:
     """Expose every candidate. Used by baselines and by tests."""
 
@@ -225,6 +273,7 @@ POLICIES: dict[str, type] = {
     "top_k": TopKPolicy,
     "epsilon_greedy": EpsilonGreedyPolicy,
     "always": AlwaysExposePolicy,
+    "transfer_gate": TransferGatePolicy,
 }
 
 

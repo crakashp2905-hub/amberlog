@@ -308,13 +308,12 @@ More: [SCORECARD.md](research/SCORECARD.md) (every claim and its outcome) and
 
 ## Project status
 
-**Alpha, 0.11.0 release candidate** (`rc/0.11.0`; [release note](docs/RELEASE_NOTES_0.11.0.md),
+**Alpha, 0.11.0 released** (tag `v0.11.0`; [release note](docs/RELEASE_NOTES_0.11.0.md),
 [acceptance](docs/RELEASE_EVALUATION.md)). The governance core, observability, adapters,
 federation, the action fence and the governance console are built and tested.
 Work in progress, with every result and failure: [docs/WORKPLAN.md](docs/WORKPLAN.md).
 Open items:
 
-- **Not tagged:** CI cannot run while GitHub Actions billing is failing (WORKPLAN X-CI).
 - The Claude adapter has not been run against the live API, and no frontier model has
   been tested (X-API). The container smoke test needs Docker (X-DKR).
 - Research running after the RC: the memory objective (M1: supported in the prompt,

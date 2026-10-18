@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import subprocess
 import sys
 import threading
@@ -13,6 +14,7 @@ from tempfile import TemporaryDirectory
 from memory_fabric import MemoryFabric
 from memory_fabric.actions import (ALREADY_EXECUTED, EXECUTED, FAILED, REFUSED, TIMED_OUT,
                                    ActionGate, ActionPolicy, ToolRule, unfenced_changes)
+from memory_fabric.events import EventType
 from memory_fabric.model import LifecycleState
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -57,22 +59,32 @@ class Fence(unittest.TestCase):
     def test_a_concurrent_retraction_waits_for_the_action(self) -> None:
         marks: dict[str, float] = {}
 
+        # perf_counter, not monotonic: on Python 3.12 for Windows monotonic
+        # ticks every 15.6 ms, and a withdrawal that commits just after the
+        # fence lands in the same tick (found on the RC's Postgres run).
         def slow(key: str) -> None:
             time.sleep(0.3)
-            marks["effect"] = time.monotonic()
+            marks["effect"] = time.perf_counter()
 
         def retract() -> None:
             time.sleep(0.05)  # starts while the tool is running
+            marks["retract_started"] = time.perf_counter()
             self.f.quarantine(self.m, reason="wrong", actor="op")
-            marks["retracted"] = time.monotonic()
 
         other = threading.Thread(target=retract)
         other.start()
         result = self.gate.execute("open_valve", "ops", slow, self.cert, key="k4", lease_s=2.0)
         other.join()
         self.assertEqual(result.outcome, EXECUTED)
-        self.assertLess(marks["effect"], marks["retracted"],
-                        "the withdrawal committed only after the side effect")
+        self.assertLess(marks["retract_started"], marks["effect"],
+                        "the withdrawal was attempted while the tool was running")
+        # The authoritative order is the log's: the fenced run committed first.
+        log = self.f.log.read_types([EventType.ACTION_EXECUTED, EventType.LIFECYCLE_CHANGED])
+        executed = next(e.seq for e in log if e.type == EventType.ACTION_EXECUTED)
+        withdrawn = next(e.seq for e in log if e.type == EventType.LIFECYCLE_CHANGED
+                         and e.payload.get("memory_id") == self.m
+                         and e.payload.get("to") == "quarantined")
+        self.assertLess(executed, withdrawn, "the withdrawal committed only after the action")
         self.assertEqual(unfenced_changes(self.f), [])
 
     def test_an_overrun_releases_the_fence_and_is_recorded(self) -> None:
@@ -109,10 +121,31 @@ class Fence(unittest.TestCase):
             self.gate.execute("open_valve", "ops", self.tool, self.cert, key="k7", lease_s=10)
 
 
+def _shared_store_path(tmp: str) -> str:
+    """A store two processes can open: a file, or a fresh Postgres schema.
+
+    On Postgres the fence is `LOCK TABLE events IN EXCLUSIVE MODE` rather than
+    SQLite's `BEGIN IMMEDIATE`, so the cross-process claim has to be tested on
+    both, not inferred from one.
+    """
+    url = os.environ.get("MF_TEST_POSTGRES_URL")
+    if not url:
+        return str(Path(tmp) / "store.db")
+    import uuid
+
+    import psycopg
+
+    schema = f"mf_fence_{uuid.uuid4().hex[:12]}"
+    with psycopg.connect(url, autocommit=True) as conn:
+        conn.execute(f"CREATE SCHEMA {schema}")
+    separator = "&" if "?" in url else "?"
+    return f"{url}{separator}options=-csearch_path%3D{schema}"
+
+
 class AcrossProcesses(unittest.TestCase):
     def test_a_writer_in_another_process_waits_for_the_action(self) -> None:
         with TemporaryDirectory() as tmp:
-            path = str(Path(tmp) / "store.db")
+            path = _shared_store_path(tmp)
             f = MemoryFabric(path, auto_activate=True)
             try:
                 m = f.remember("ana", "valve 7 is safe to open below 4 bar", scope="team")
@@ -141,9 +174,15 @@ class AcrossProcesses(unittest.TestCase):
                 child.stdin.close()
                 child.stdout.close()
                 self.assertEqual(result.outcome, EXECUTED)
-                self.assertLess(marks["effect"], retracted_at)
+                self.assertLessEqual(marks["effect"], retracted_at)
                 f.refresh()
                 self.assertIs(f.get(m).lifecycle_state, LifecycleState.QUARANTINED)
+                log = f.log.read_types([EventType.ACTION_EXECUTED, EventType.LIFECYCLE_CHANGED])
+                executed = next(e.seq for e in log if e.type == EventType.ACTION_EXECUTED)
+                withdrawn = next(e.seq for e in log if e.type == EventType.LIFECYCLE_CHANGED
+                                 and e.payload.get("memory_id") == m
+                                 and e.payload.get("to") == "quarantined")
+                self.assertLess(executed, withdrawn, "the other process committed after the action")
             finally:
                 f.close()
 

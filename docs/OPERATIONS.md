@@ -236,3 +236,31 @@ Said plainly rather than left for an incident to discover.
 - **No alerting.** `doctor` and `attention` exit non-zero; wiring that to a pager is yours.
 - **Revocation durability depends on which surface you use.** A `MemoryService` writes revocations to the database; a bare `PrincipalRegistry` keeps them in memory. `service.revocations_are_durable` answers it rather than leaving it to be inferred.
 - **Untested here:** restore onto a different OS, stores above a few hundred thousand events, and recovery from filesystem-level corruption rather than logical tampering.
+
+## Background maintenance (0.12.0)
+
+The store maintains itself. `serve`, `agent-api` and `mcp` each start the
+background manager. Run it alone with `memory-fabric --db <store> maintain`,
+or for one cycle with `--once`.
+
+**What it does, every `--maintain-interval` seconds (60 by default):**
+
+- delivers owed retractions to peers (`--peers peers.json`, or
+  `MEMORY_FABRIC_PEERS`; the file holds keys, so keep it readable by the
+  service user only);
+- applies retention: deprecations always, deletions only with
+  `--retention-delete`;
+- scans for audit triggers and contradictions;
+- records an integrity checkpoint: give `--checkpoint-dir` a path on other
+  storage, or it is only recorded in the log;
+- runs the doctor's checks.
+
+**Seeing what it did:** `memory-fabric maintain --status` shows the last
+cycle and everything it found that needs a person. Conflicts and audit
+findings are never resolved automatically. `doctor` warns when the manager
+has not run for an hour.
+
+**Several processes on one store:** they coordinate through a lease, so
+exactly one maintains the store. Turn it off in a process with
+`--no-maintain`.
+

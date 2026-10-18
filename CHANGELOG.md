@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: the background memory manager (schema 0.12.0)
+
+- **`memory_fabric/manager.py`: the store maintains itself.**
+  - **Tasks:** every interval it delivers owed retractions to peer stores,
+    applies the retention policy, scans for the auditor's triggers, finds
+    contradicting memories, records an integrity checkpoint (off-host with
+    `--checkpoint-dir`) and runs the doctor's checks.
+  - **Recovery:** each task is isolated and backs off exponentially when it
+    fails.
+  - **Coordination:** a lease held in the store means one manager per store,
+    across processes, with takeover when the holder stops.
+  - **Audit:** every cycle is a `MaintenanceRan` event.
+  - **Startup:** it starts automatically with `serve`, `agent-api` and
+    `mcp`, and runs alone with `memory-fabric maintain`. `--status` shows
+    the last cycle and what needs a person.
+  - **No terminal step by default:** retention *deletions* need
+    `--retention-delete`, contradictions are queued and never resolved, and
+    nothing is validated or released.
+- **Retraction delivery now has a configuration path:** `--peers` or
+  `MEMORY_FABRIC_PEERS` (a JSON peer list). Before, nothing in the CLI
+  delivered retractions to other stores.
+- `doctor` reports a manager that has stopped.
+- `sweep_retention(actions=)` limits which retention actions are applied.
+
 ### Added after the 0.11.0 release candidate (opt-in research modules)
 
 - **Memory objective** (`objective.py`, M1): a session's statement of what is relevant,

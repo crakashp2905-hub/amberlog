@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.11.0`
+- **Schema version:** `0.12.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,22 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.12.0 — the background memory manager
+
+Additive: two event types, no projection change. A 0.11.0 log replays
+unchanged, and a 0.11.0 reader skips both events.
+
+- **`ManagerLease`**, payload `{holder, expires_ms}`. Taken and renewed inside
+  a write transaction, so at most one manager maintains a store at a time.
+- **`MaintenanceRan`**, payload `{since_seq, until_seq, tasks}`. One cycle:
+  for each task, what it did or the error. The tasks are dispatch, retention,
+  audit, conflicts, checkpoint and health. Ids and counts only, never
+  content.
+
+Behaviour: `serve`, `agent-api` and `mcp` start the manager unless
+`--no-maintain` is given. `memory-fabric maintain` runs it on its own.
+Retention deletions are applied only with `--retention-delete`.
 
 ### 0.11.0 — the action fence, exposure records and the provenance chain
 

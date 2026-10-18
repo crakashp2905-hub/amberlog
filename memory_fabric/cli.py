@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import time
 import pathlib
 import platform
 import shutil
@@ -608,6 +609,63 @@ def cmd_quarantine(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+ENV_PEERS = "MEMORY_FABRIC_PEERS"
+ENV_CHECKPOINT_DIR = "MEMORY_FABRIC_CHECKPOINT_DIR"
+
+
+def _manager_for(fabric: MemoryFabric, args: argparse.Namespace):
+    """A background manager configured from flags, then the environment."""
+    from .manager import MemoryManager, load_peers
+    from .transport import HttpTransport
+
+    peers = getattr(args, "peers", None) or os.environ.get(ENV_PEERS)
+    transport = HttpTransport(load_peers(peers), origin_store_id=fabric.store_id) if peers else None
+    return MemoryManager(fabric, interval_s=getattr(args, "maintain_interval", 60.0),
+                         transport=transport,
+                         checkpoint_dir=getattr(args, "checkpoint_dir", None)
+                         or os.environ.get(ENV_CHECKPOINT_DIR),
+                         allow_delete=getattr(args, "retention_delete", False))
+
+
+def _start_manager(fabric: MemoryFabric, args: argparse.Namespace):
+    """Servers maintain their store unless told not to (`--no-maintain`)."""
+    if getattr(args, "no_maintain", False):
+        return None
+    try:
+        return _manager_for(fabric, args).start()
+    except Exception as exc:  # noqa: BLE001 - a bad peer file must not stop the server
+        print(f"{C.YELLOW}background manager not started: {exc}{C.RESET}", file=sys.stderr)
+        return None
+
+
+def cmd_maintain(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Run the background manager: once, continuously, or report its last cycle."""
+    from .manager import findings, last_run
+
+    if args.status:
+        run = last_run(fabric)
+        if run is None:
+            print("no maintenance cycle has run on this store")
+            return 1
+        print(json.dumps({"last_cycle": run, "needs_a_person": findings(fabric)}, indent=2,
+                         default=str))
+        return 0
+    manager = _manager_for(fabric, args)
+    if args.once:
+        report = manager.run_once()
+        print(json.dumps({"leader": report.leader, "tasks": report.tasks}, indent=2, default=str))
+        return 0
+    print(f"maintaining {fabric.store_id} every {manager.interval_s:g}s as {manager.holder} "
+          "(Ctrl-C to stop)", file=sys.stderr)
+    manager.start()
+    try:
+        while True:
+            time.sleep(3600)
+    except KeyboardInterrupt:
+        manager.stop()
+    return 0
+
+
 def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     from .observability.auth import (
         ENV_TOKEN, InsecureConfiguration, build_config, load_operators,
@@ -640,6 +698,7 @@ def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     if access_log == "-":
         access_log = None
 
+    _start_manager(fabric, args)
     serve(fabric, host=args.host, port=args.port, quiet=args.quiet, auth=config,
           access_log=access_log)
     return 0
@@ -668,6 +727,7 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             "user's local assistant, never for a shared or federated store.",
             file=sys.stderr,
         )
+    _start_manager(fabric, args)
     return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
 
 
@@ -742,6 +802,7 @@ def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     print(f"  Issue a credential:  memory-fabric --db {_shown(args.db)} agent-api-issue "
           f"--agents-file {args.agents_file} --agent <id>")
     try:
+        _start_manager(fabric, args)
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nstopped")
@@ -1734,7 +1795,29 @@ def _check_dashboard_asset(fabric: MemoryFabric) -> Finding:
     )
 
 
+def _check_manager(fabric: MemoryFabric) -> Finding:
+    """Is the background manager running? Silent stores are not governed between visits."""
+    from .manager import last_run
+
+    run = last_run(fabric)
+    if run is None:
+        return Finding("ok", "background manager",
+                       "never run on this store: maintenance is manual. `serve`, `agent-api` and "
+                       "`mcp` start it; so does `memory-fabric maintain`")
+    age_s = max(0.0, (fabric.now() - int(run["ts"])) / 1000)
+    failed = [t for t, r in (run.get("tasks") or {}).items() if isinstance(r, dict) and "error" in r]
+    if age_s > 3600:
+        return Finding("warn", "background manager",
+                       f"last cycle {age_s / 60:.0f} min ago by {run.get('holder')}: it has stopped",
+                       "start `memory-fabric maintain`, or a server, for this store")
+    if failed:
+        return Finding("warn", "background manager", f"last cycle failed: {', '.join(failed)}",
+                       "see `memory-fabric maintain --status`")
+    return Finding("ok", "background manager", f"last cycle {age_s:.0f} s ago by {run.get('holder')}")
+
+
 DOCTOR_CHECKS = (
+    _check_manager,
     _check_append_only,
     _check_event_chain,
     _check_replay,
@@ -1937,6 +2020,19 @@ def build_parser() -> argparse.ArgumentParser:
         help="leave descendants alone (they keep a retracted justification)",
     )
 
+    p = add("maintain", cmd_maintain,
+            "Run the background memory manager (also started by serve, mcp and agent-api)")
+    p.add_argument("--once", action="store_true", help="one cycle, then exit")
+    p.add_argument("--status", action="store_true",
+                   help="the last cycle, and what it found that needs a person")
+    p.add_argument("--no-maintain", action="store_true",
+                   help="do not run the background memory manager in this process")
+    p.add_argument("--maintain-interval", type=float, default=60.0, metavar="SECONDS")
+    p.add_argument("--peers", help=f"JSON peer list for retraction delivery (or ${ENV_PEERS})")
+    p.add_argument("--checkpoint-dir",
+                   help=f"write integrity checkpoints here, off the store's disk (or ${ENV_CHECKPOINT_DIR})")
+    p.add_argument("--retention-delete", action="store_true",
+                   help="let the manager apply retention deletions (terminal); off by default")
     p = add("serve", cmd_serve, "Start the read-only web dashboard")
     p.add_argument(
         "--host",
@@ -1976,6 +2072,14 @@ def build_parser() -> argparse.ArgumentParser:
         "--operators-file: <db>.access.jsonl; '-' turns it off)",
     )
 
+    p.add_argument("--no-maintain", action="store_true",
+                   help="do not run the background memory manager in this process")
+    p.add_argument("--maintain-interval", type=float, default=60.0, metavar="SECONDS")
+    p.add_argument("--peers", help=f"JSON peer list for retraction delivery (or ${ENV_PEERS})")
+    p.add_argument("--checkpoint-dir",
+                   help=f"write integrity checkpoints here, off the store's disk (or ${ENV_CHECKPOINT_DIR})")
+    p.add_argument("--retention-delete", action="store_true",
+                   help="let the manager apply retention deletions (terminal); off by default")
     p = add("mcp", cmd_mcp,
             "WRITES: serve this store to one agent over MCP (stdio). The agent "
             "can recall, fetch, verify and remember; it cannot record outcomes "
@@ -1989,6 +2093,14 @@ def build_parser() -> argparse.ArgumentParser:
         "in provenance). For one person's local assistant only.",
     )
 
+    p.add_argument("--no-maintain", action="store_true",
+                   help="do not run the background memory manager in this process")
+    p.add_argument("--maintain-interval", type=float, default=60.0, metavar="SECONDS")
+    p.add_argument("--peers", help=f"JSON peer list for retraction delivery (or ${ENV_PEERS})")
+    p.add_argument("--checkpoint-dir",
+                   help=f"write integrity checkpoints here, off the store's disk (or ${ENV_CHECKPOINT_DIR})")
+    p.add_argument("--retention-delete", action="store_true",
+                   help="let the manager apply retention deletions (terminal); off by default")
     p = add("erase", cmd_erase,
             "WRITES: crypto-erase one memory's content (provenance and audit "
             "stay), then report what the erasure reached and what it could not")
@@ -2013,6 +2125,14 @@ def build_parser() -> argparse.ArgumentParser:
                    help="requests a second per agent, on average (0 turns it off)")
     p.add_argument("--burst", type=int, default=40, help="requests per agent at once")
 
+    p.add_argument("--no-maintain", action="store_true",
+                   help="do not run the background memory manager in this process")
+    p.add_argument("--maintain-interval", type=float, default=60.0, metavar="SECONDS")
+    p.add_argument("--peers", help=f"JSON peer list for retraction delivery (or ${ENV_PEERS})")
+    p.add_argument("--checkpoint-dir",
+                   help=f"write integrity checkpoints here, off the store's disk (or ${ENV_CHECKPOINT_DIR})")
+    p.add_argument("--retention-delete", action="store_true",
+                   help="let the manager apply retention deletions (terminal); off by default")
     p = add("agent-api-issue", cmd_agent_api_issue,
             "Print a signed, expiring credential for one agent")
     p.add_argument("--agents-file", required=True)

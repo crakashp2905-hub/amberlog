@@ -763,11 +763,11 @@ class TestSchemaVersionReporting(unittest.TestCase):
         self.addCleanup(fabric.close)
         last = list(fabric.log.read())[-1]
         fabric.log.append(
-            dataclasses.replace(last, event_id=last.event_id + "Z", schema_version="0.12.0")
+            dataclasses.replace(last, event_id=last.event_id + "Z", schema_version="0.13.0")
         )
 
         data = report.overview(fabric)
-        self.assertIn("0.12.0", data.log_schema_versions)
+        self.assertIn("0.13.0", data.log_schema_versions)
         self.assertTrue(
             any("newer than the installed" in note for note in data.diagnostics),
             f"no diagnostic warned about the newer schema: {data.diagnostics}",

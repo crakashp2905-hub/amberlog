@@ -3369,13 +3369,23 @@ class MemoryFabric:
             events=len(self.log),
         )
 
-    def sweep_retention(self, apply: bool = False, actor: str = "retention") -> list[RetentionDecision]:
+    def sweep_retention(self, apply: bool = False, actor: str = "retention",
+                        actions: Iterable[str] | None = None) -> list[RetentionDecision]:
+        """The retention policy's decisions; with `apply`, carry them out.
+
+        `actions` limits what is applied (for example `{"deprecate"}`). The
+        background manager uses it: `delete` is terminal, so an unattended
+        process applies it only when the owner has opted in (`manager.py`).
+        """
         now = self.now()
         pairs = [
             (memory, self.state.stats_for(memory.id))
             for memory in self.state.memories.values()
         ]
         decisions = self.retention.sweep(pairs, now)
+        if actions is not None:
+            allowed = set(actions)
+            decisions = [d for d in decisions if d.action in allowed]
         if apply:
             emitted: list[ev.Event] = []
             for decision in decisions:

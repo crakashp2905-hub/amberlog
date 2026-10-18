@@ -42,6 +42,8 @@ class EventType:
     ACTION_GATED = "ActionGated"
     COLLECTION_CHANGED = "CollectionChanged"
     ACTION_EXECUTED = "ActionExecuted"
+    MANAGER_LEASE = "ManagerLease"
+    MAINTENANCE_RAN = "MaintenanceRan"
 
 
 @dataclass(frozen=True)
@@ -726,3 +728,25 @@ def action_executed(
             "tenant_id": tenant_id,
         },
     )
+
+
+def manager_lease(ts: int, holder: str, expires_ms: int) -> Event:
+    """The background manager's claim on this store until `expires_ms` (schema 0.12.0).
+
+    Taken and renewed inside a write transaction, so at most one manager acts
+    on a store at a time, across processes and machines.
+    """
+    return Event(type=EventType.MANAGER_LEASE, ts=ts, agent_id=holder,
+                 payload={"holder": holder, "expires_ms": expires_ms})
+
+
+def maintenance_ran(ts: int, holder: str, since_seq: int, until_seq: int,
+                    tasks: Mapping[str, Any]) -> Event:
+    """One cycle of the background manager: what each task did, or why it failed.
+
+    Ids and counts only, never content. The manager is audited like everything
+    else it maintains.
+    """
+    return Event(type=EventType.MAINTENANCE_RAN, ts=ts, agent_id=holder,
+                 payload={"since_seq": since_seq, "until_seq": until_seq,
+                          "tasks": dict(tasks)})

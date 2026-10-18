@@ -1,3 +1,60 @@
+# Release evaluation: 0.11.0 (release gate G6)
+
+Release candidate `rc/0.11.0`. The acceptance runs below are at `cddd8ca`,
+on Windows 11 with Python 3.13 (SQLite) and Python 3.12 with PostgreSQL 16.2.
+**Not tagged.** The tag waits on G1, a green CI run on this SHA, which
+GitHub Actions billing blocks (WORKPLAN X-CI). Release note:
+[RELEASE_NOTES_0.11.0.md](RELEASE_NOTES_0.11.0.md).
+
+## Acceptance suites
+
+| suite | command | result |
+|---|---|---|
+| Unit and integration, SQLite | `python -m unittest discover -s tests -t .`, with the generated benchmark fixtures built | **1,636 OK, 15 skipped** (Postgres-only file 6, anthropic SDK not installed 5, POSIX entrypoint 3, one more) |
+| New and changed modules on Postgres 16 | 24 modules, among them `test_postgres`, the fence, receipts, independence, trust, retraction, federation, scope, collections and the console modules, with `MF_TEST_POSTGRES_URL` | **224 OK** |
+| Fault matrix | `python -m experiments.faultsim` | **17/17** (the cycle scenario now asserts F12's echo refusal) |
+| Lint, types | `ruff check .`; `mypy memory_fabric` | clean; clean (75 files) |
+| Secret scan, compile | `tools/scan_secrets.py`; `compileall` | exit 0; exit 0 |
+| Packaging | wheel built from the RC, installed in a clean venv | `memory_fabric-0.11.0-py3-none-any.whl` installs and imports; `demo` runs; `doctor` reports "Sound. Every check verified, none skipped." |
+| Container | `docker build` and the smoke test | **not run**: no Docker daemon (X-DKR) |
+| CI | GitHub Actions | **not run**: billing (X-CI) |
+
+**Found by acceptance and fixed before this table:**
+
+- the fault matrix and a schema-pin test were still asserting behaviour that
+  F12 and the 0.11.0 bump had changed;
+- a Postgres connect had no timeout, so a mistyped URL hung for 131 s;
+- a posture test assumed SQLite.
+
+The first Postgres run failed 2 of 224 tests, on the last two. The re-run
+then failed the fence's concurrency test once. That was not a fence
+violation: two timestamps were *equal*, because `time.monotonic()` ticks
+every 15.6 ms on Python 3.12 for Windows. The fence tests now assert the
+log's order, which is authoritative. The cross-process fence test also runs
+on Postgres now, where the fence is `LOCK TABLE events IN EXCLUSIVE MODE`;
+it passed 3 of 3. Final set: 224 OK. S6's own measurements ran on Python
+3.13, where `time.time()` resolves to 0.1 µs, so its counts stand.
+
+## Gates
+
+| gate | status |
+|---|---|
+| G1 | ⛔ X-CI for the CI run. Counts reconciled, and a hygiene test keeps them so |
+| G2 | ✅ except the live Claude adapter call (X-API) |
+| G3 | ✅ capacity measured and published |
+| G4 | ✅ run and published: **not supported** on qwen2.5:3b, underpowered on gemma3:4b, failures reported |
+| G5 | ✅ 13 findings, 0 open critical or high |
+| G6 | this document; the tag is blocked by G1 |
+
+## Rollback
+
+The schema changes are additive. Rolling back to 0.9.x code is a code
+rollback, except for one thing: 0.10.0 enforced scope on reads, and a store
+upgraded with `share --all-private-active` stays shared. That is the
+intended direction, and nothing needs undoing.
+
+---
+
 # Release evaluation: 0.9.0 (plan Task 13)
 
 Covers the work from the [safety plan](AI_SAFETY_CYBER_RESEARCH_IMPLEMENTATION_PLAN.md),

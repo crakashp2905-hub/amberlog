@@ -765,6 +765,49 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_lifecycle(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Retention rules, stale and sensitive finders, and deletion progress."""
+    from .lifecycle import center
+
+    data = center(fabric, stale_days=args.stale_days)
+    if args.json:
+        print(json.dumps(data, indent=2))
+        return 0
+    rules = data["rules"]
+    heading("Retention rules")
+    print(f"  deprecated kept {rules['deprecated_grace_days']} days, quarantined "
+          f"{rules['quarantine_grace_days']}, unreviewed candidates "
+          f"{rules['unused_candidate_days']}; protected tags: {', '.join(rules['protected_tags'])}")
+    print(f"  a sweep now would act on {len(rules['sweep_would'])} memory/ies "
+          f"{C.DIM}(dry run){C.RESET}")
+
+    def section(title: str, items: list[dict[str, Any]], label: str) -> None:
+        print()
+        heading(f"{title} ({len(items)})")
+        for item in items[:args.limit]:
+            print(f"  {item['memory_id']}  {item.get(label, '')}")
+            print(f"  {C.DIM}{item['command']}{C.RESET}")
+        if len(items) > args.limit:
+            print(f"  {C.DIM}... {len(items) - args.limit} more (--json for all){C.RESET}")
+
+    section(f"Not shown to anyone in {args.stale_days} days", data["stale"], "idle_days")
+    section("Waiting too long for review", data["waiting_for_review"], "waiting_days")
+    section("Secrets still readable", data["sensitive"]["readable_secrets"], "")
+    section("Flagged by the current screens", data["sensitive"]["flagged_by_current_screens"],
+            "finding")
+    print()
+    heading(f"Erased ({len(data['deletions']['erased'])})")
+    for e in data["deletions"]["erased"][:args.limit]:
+        print(f"  {e['memory_id']}  by {e['actor']}: {e['reason']}")
+    props = data["deletions"]["propagation"]
+    print()
+    heading(f"Withdrawn memories other stores hold ({len(props)})")
+    for p in props[:args.limit]:
+        print(f"  {p['memory_id']}  confirmed {len(p['confirmed'])}/{len(p['stores'])}"
+              + (f"; outstanding {', '.join(p['outstanding'])}" if p["outstanding"] else ""))
+    return 0
+
+
 def cmd_posture(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Which controls are on in this store, and the gaps no setting closes."""
     from .posture import posture
@@ -1920,6 +1963,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("dir", help="directory to create the store in")
     p.add_argument("--agent", default="my-assistant")
     p.add_argument("--tenant", default="tn_default")
+
+    p = add("lifecycle", cmd_lifecycle,
+            "Retention rules, stale and sensitive memories, and erasure and retraction "
+            "progress across stores. Read-only")
+    p.add_argument("--stale-days", type=int, default=90)
+    p.add_argument("--limit", type=int, default=20)
 
     add("posture", cmd_posture,
         "Which security controls are on in this store, and the accepted gaps")

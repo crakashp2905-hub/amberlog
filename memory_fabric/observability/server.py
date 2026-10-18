@@ -152,6 +152,11 @@ class Api:
             case ["attention"]:
                 return [i.to_json() for i in report.attention(f)]
 
+            case ["lifecycle"]:
+                from ..lifecycle import center
+
+                return center(f, stale_days=_int(params, "stale_days", 90) or 90)
+
             case ["posture"]:
                 from ..posture import posture
 

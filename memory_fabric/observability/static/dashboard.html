@@ -216,6 +216,7 @@
       <button data-tab="memories" aria-selected="false">Memories<span class="count" id="c-memories"></span></button>
       <button data-tab="episodes" aria-selected="false">Episodes<span class="count" id="c-episodes"></span></button>
       <button data-tab="search" aria-selected="false">Search</button>
+      <button data-tab="lifecycle" aria-selected="false">Lifecycle</button>
       <button data-tab="posture" aria-selected="false">Posture</button>
     </nav>
   </div>
@@ -257,6 +258,13 @@
   <section id="tab-episodes" hidden>
     <h2>Episodes</h2>
     <div id="episodes-table"></div>
+  </section>
+
+  <section id="tab-lifecycle" hidden>
+    <h2>Lifecycle and deletion</h2>
+    <div class="note">What to keep, what to remove, and what has landed in other stores.
+      Read-only: nothing here runs a sweep or erases anything; each finding shows its command.</div>
+    <div id="lifecycle-body"></div>
   </section>
 
   <section id="tab-posture" hidden>
@@ -380,6 +388,36 @@ async function loadAttention() {
           ${actionBlock(i.action)}
         </div>`).join("")
     : `<div class="empty">Nothing needs attention.</div>`;
+}
+
+/* ---------- lifecycle ---------- */
+
+async function loadLifecycle() {
+  const d = await api("/api/lifecycle");
+  const r = d.rules;
+  const group = (title, items, label) => `<h3>${esc(title)} (${items.length})</h3>` +
+    (items.length ? items.slice(0, 50).map((i) => `<div class="card low">
+      <div class="card-head"><span class="id link-id" data-id="${esc(i.memory_id)}">${esc(i.memory_id)}</span>
+      ${label && i[label] !== undefined ? `<span class="sub">${esc(String(i[label]))}</span>` : ""}</div>
+      ${i.command ? actionBlock(i.command) : ""}</div>`).join("") : '<div class="empty">none</div>');
+  $("lifecycle-body").innerHTML = `
+    <h3>Retention rules</h3>
+    <dl class="kv"><dt>Deprecated kept</dt><dd>${r.deprecated_grace_days} days</dd>
+      <dt>Quarantined kept</dt><dd>${r.quarantine_grace_days} days</dd>
+      <dt>Unreviewed candidates</dt><dd>${r.unused_candidate_days} days</dd>
+      <dt>Protected tags</dt><dd>${r.protected_tags.map(esc).join(", ")}</dd>
+      <dt>A sweep now would act on</dt><dd>${r.sweep_would.length} <span class="sub">(dry run)</span></dd></dl>
+    ${group("Not shown to anyone recently", d.stale, "idle_days")}
+    ${group("Waiting too long for review", d.waiting_for_review, "waiting_days")}
+    ${group("Secrets still readable", d.sensitive.readable_secrets, "")}
+    ${group("Flagged by the current screens", d.sensitive.flagged_by_current_screens, "finding")}
+    <h3>Erased (${d.deletions.erased.length})</h3>
+    ${d.deletions.erased.map((e) => `<div class="sub">${esc(e.memory_id)} by ${esc(e.actor || "")}: ${esc(e.reason)}</div>`).join("") || '<div class="empty">none</div>'}
+    <h3>Withdrawn memories other stores hold (${d.deletions.propagation.length})</h3>
+    ${d.deletions.propagation.map((p) => `<div class="card ${p.outstanding.length ? "medium" : "low"}">
+      <div class="card-head"><span class="id">${esc(p.memory_id)}</span>
+      <span class="sub">confirmed ${p.confirmed.length}/${p.stores.length}</span></div>
+      ${actionBlock(p.command)}</div>`).join("") || '<div class="empty">none</div>'}`;
 }
 
 /* ---------- posture ---------- */
@@ -634,11 +672,12 @@ function closeDetail() { $("drawer-bg").hidden = true; }
 
 /* ---------- wiring ---------- */
 
-const TABS = ["attention", "review", "memories", "episodes", "search", "posture"];
+const TABS = ["attention", "review", "memories", "episodes", "search", "lifecycle", "posture"];
 const LOADERS = {
   attention: loadAttention,
   review: loadReview,
   posture: loadPosture,
+  lifecycle: loadLifecycle,
   memories: loadMemories,
   episodes: loadEpisodes,
   search: async () => {},

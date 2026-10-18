@@ -8,7 +8,7 @@ Registration: [prereg/m1-memory-objective.md](../prereg/m1-memory-objective.md)
 |---|---|
 | qwen2.5:3b, registered, seeds 0–9, at `adaf615` | **done**: [m1-qwen.json](m1-qwen.json) |
 | gemma3:4b, registered, seeds 0–9, at `adaf615` | **running** |
-| qwen2.5:3b, corrected compile cache, at `e13d63b` | **queued** behind M2 |
+| qwen2.5:3b, corrected compile cache, at `e13d63b` | **done**: [m1-qwen-corrected.json](m1-qwen-corrected.json) |
 
 ## qwen2.5:3b (registered run): M1a **SUPPORTED**
 
@@ -80,3 +80,50 @@ measures what they are worth: everything.
 3. *`filter_gold` is near the oracle.* **Held**: 0.998.
 4. *On gemma, the guard trips on some seeds.* Gemma's run is still in
    progress. On qwen it tripped on 8 of 10.
+
+## Corrected replication (qwen2.5:3b, cache keyed on the compiler's source, `e13d63b`)
+
+Reported **beside** the registered run, not replacing it. Same seeds and the
+same answer cache for unchanged prompts; only compilations and the prompts
+that render them were recomputed.
+
+| arm | registered (stale compilations) | corrected |
+|---|---|---|
+| `plain` | 0.484 | 0.484 |
+| `prompt_only` | 0.784 (58% of headroom) | **0.843 (70%)**: +0.359, CI +0.307 to +0.409 |
+| `filter_only` | 0.366 (−0.118 against plain) | **0.664 (+0.180 against plain)**, CI +0.125 to +0.232 |
+| `both` | 0.607 | 0.768: −0.075 against `prompt_only`, CI −0.121 to −0.030 |
+| `filter_gold` | 0.998 | 0.998 |
+
+How often each arm used an irrelevant memory, corrected run:
+
+| arm | used an irrelevant memory |
+|---|---|
+| `plain` | 49% |
+| `prompt_only` | 16% |
+| `filter_only` | 14% |
+| `both` | **4%** |
+
+Compilation, corrected run:
+
+- **7 of 10 seeds** compiled correctly: admission precision 1.000, recall 0.727.
+- **3 of 10** were refused by the guard.
+- The 0.727 is exactly prediction 2: the compiled rules leave out the
+  plant-wide alternative. `filter_only` scores 0.881 on procedures and 0.083
+  on plant-wide rules. A filtered-out memory cannot be recovered by the prompt.
+
+**What the correction changes:**
+
+- **M1a: supported either way, and stronger corrected** (70%).
+- **The filter routes go from harmful to helpful.** They beat plain
+  retrieval by 0.18 and use irrelevant memory least (4%).
+- **The filter routes still lose to the prompt alone**, because model
+  compilation drops one of the objective's two alternatives.
+- **The stale cache made the filter look far worse than it is.** It never
+  made the prompt route look better.
+- **The recommendation stands:**
+  - give the objective to the agent;
+  - use it as a filter only with rules a person has reviewed;
+  - with those rules, the filter reaches the oracle (`filter_gold`, 0.998).
+
+gemma3:4b is still running.

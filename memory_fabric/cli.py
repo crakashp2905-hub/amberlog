@@ -765,6 +765,59 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_correct(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Preview, apply, or follow the correction of one memory. See `correction.py`."""
+    from . import correction
+
+    if args.status:
+        rows = correction.status(fabric, args.id)
+        if args.json:
+            print(json.dumps(rows, indent=2))
+            return 0
+        heading(f"Retractions of {args.id}")
+        if not rows:
+            memory = fabric.state.memories.get(args.id)
+            withdrawn = memory is not None and memory.lifecycle_state.value in (
+                "quarantined", "deprecated", "deleted")
+            print("  withdrawn here; no other store held it, so none was owed"
+                  if withdrawn else "  none requested")
+        for row in rows:
+            print(f"  {row['store_id']:<30} {row['state']:<10} {row['detail']}")
+        return 0
+    if args.apply:
+        if not args.reason:
+            print(f"{C.RED}a correction needs --reason{C.RESET}", file=sys.stderr)
+            return 2
+        try:
+            result = correction.apply(fabric, args.id, reason=args.reason,
+                                      actor=args.actor or "", basis=args.basis)
+        except (ValueError, KeyError) as exc:
+            print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+            return 4
+        owed = ", ".join(result["owed_to"]) or "no other store"
+        print(f"withdrawn: {args.id}; retraction owed to {owed}")
+        print(f"{C.DIM}Follow it: memory-fabric --db {_shown(args.db)} correct {args.id} --status{C.RESET}")
+        return 0
+    try:
+        p = correction.preview(fabric, args.id)
+    except KeyError:
+        print(f"{C.RED}no memory {args.id}{C.RESET}", file=sys.stderr)
+        return 4
+    if args.json:
+        print(json.dumps(p.to_json(), indent=2))
+        return 0
+    heading(f"Withdrawing {args.id} would")
+    print(f"  contest        {', '.join(p.would_contest) or 'nothing'}")
+    print(f"  leave standing {', '.join(p.would_survive) or 'nothing'}"
+          + (f"  {C.DIM}(independent support){C.RESET}" if p.would_survive else ""))
+    print(f"  take copies    {', '.join(p.copies) or 'none'}")
+    stores = ", ".join(s["store_id"] for s in p.stores)
+    print(f"  owe stores     {stores or 'none'}")
+    print(f"\n{C.DIM}Apply: memory-fabric --db {_shown(args.db)} correct {args.id} --apply "
+          f"--reason WHY --actor YOU{C.RESET}")
+    return 0
+
+
 def cmd_review(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """The review queue, or one decision on one memory. See `review.py`."""
     from .review import ReviewError, decide, queue
@@ -1760,6 +1813,18 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agents-file", required=True)
     p.add_argument("--agent", required=True)
     p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
+
+    p = add("correct", cmd_correct,
+            "Preview what withdrawing a memory would touch; with --apply, WRITES it and "
+            "owes the retraction to every store that received it")
+    p.add_argument("id")
+    mode = p.add_mutually_exclusive_group()
+    mode.add_argument("--apply", action="store_true")
+    mode.add_argument("--status", action="store_true", help="what each store acknowledged")
+    p.add_argument("--reason", default="")
+    p.add_argument("--actor", help="who is correcting this; required with --apply")
+    p.add_argument("--basis", default="contradicted",
+                   choices=["contradicted", "sensitive_data", "contrastive_harm"])
 
     p = add("review", cmd_review,
             "The review queue. With an id and a decision, WRITES it: approve (usable by "

@@ -651,6 +651,7 @@ def memory_detail(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
     # `full_content` would leave the secret sitting in the response.
     found = secret_values(fabric.firewall.detector, memory.content)
     redacted = sorted({kind for _, kind in found})
+    from ..correction import preview as correction_preview
     from ..reach import reach
     from ..status import labels as status_labels
 
@@ -660,6 +661,9 @@ def memory_detail(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
         "status": [label.to_json() for label in status_labels(fabric, memory_id)],
         # Who may read it, who has, and which stores hold a copy (reach.py).
         "reach": reach(fabric, memory_id).to_json(),
+        # What withdrawing it would touch, computed by the rules quarantine
+        # uses (correction.py), so the page cannot promise a smaller blast radius.
+        "correction": correction_preview(fabric, memory_id).to_json(),
         "explanation": scrub_tree(explanation.to_json(), found),
         "narrative": scrub(explanation.narrative(), found),
         "descendants": lineage_tree(fabric, memory_id, "descendants").to_json(),

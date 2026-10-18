@@ -546,6 +546,21 @@ async function openDetail(id) {
         : '<span class="sub">none</span>'}</dd>
     </dl>
 
+    <h3>If this were withdrawn</h3>
+    <dl class="kv">
+      <dt>Contested</dt><dd>${detail.correction.would_contest.length
+        ? detail.correction.would_contest.map((p) => `<span class="link link-id" data-id="${esc(p)}">${esc(p)}</span>`).join(", ")
+        : '<span class="sub">nothing</span>'}</dd>
+      <dt>Still standing</dt><dd>${detail.correction.would_survive.length
+        ? detail.correction.would_survive.map((p) => `<span class="link link-id" data-id="${esc(p)}">${esc(p)}</span>`).join(", ") +
+          ' <span class="sub">independent support</span>'
+        : '<span class="sub">nothing</span>'}</dd>
+      <dt>Stores owed a retraction</dt><dd>${detail.correction.stores.length
+        ? detail.correction.stores.map((s) => `<span class="id">${esc(s.store_id)}</span>`).join(", ")
+        : '<span class="sub">none</span>'}</dd>
+    </dl>
+    ${actionBlock(`memory-fabric --db <store> correct ${r.id} --apply --reason "<why>" --actor <you>`)}
+
     <h3>Why the system remembers this</h3>
     <dl class="kv">
       <dt>Created by</dt><dd>${esc(r.created_by)} <span class="id">(${esc(r.method)})</span></dd>

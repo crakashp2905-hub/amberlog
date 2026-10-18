@@ -73,7 +73,7 @@ registered.
 
 | ID | Capability | Definition of done | Status |
 |---|---|---|---|
-| P1 | Memory governance console | One view per memory: source, history, status and confidence, and which agents and stores can reach it. Answers "why does this agent know this?" in the dashboard | ⬜ |
+| P1 | Memory governance console | One view per memory: source, history, status and confidence, and which agents and stores can reach it. Answers "why does this agent know this?" in the dashboard | ✅ memory page and `show`: source, versions, audit, status (P9), value with n_eff, and reach (`reach.py`: may read / has seen / other stores). Building it found F10 |
 | P2 | Review queue for proposed memories | Approve, reject, correct or limit candidates before they spread, each decision logged with its reviewer | ⬜ |
 | P3 | Safe correction and retraction | Preview the copies and dependents a change would touch, apply it, and see which stores confirmed | ⬜ |
 | P4 | Access and sharing controls | Attach or detach a collection to agents. Read, write, approve and retract permissions, audited | ⬜ |

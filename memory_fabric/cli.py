@@ -419,6 +419,17 @@ def cmd_show(fabric: MemoryFabric, args: argparse.Namespace) -> int:
                 None: f"{C.DIM}n/a{C.RESET}"}[label["established"]]
         print(f"  {label['label']:<24} {mark}  {label['detail']}")
         print(f"  {'':<24} {C.DIM}does not establish: {label['does_not_mean']}{C.RESET}")
+    r = detail["reach"]
+    print()
+    heading("Who can reach this")
+    print(f"  may read       {r['may_read']}"
+          + ("" if r["readable_now"] else f"  {C.YELLOW}(nobody now: {r['why_not']}){C.RESET}"))
+    seen = ", ".join(f"{a} x{n}" for a, n in r["seen_by"].items()) or "nobody yet"
+    print(f"  has seen it    {seen}")
+    if r["refused"]:
+        print(f"  refused        {', '.join(f'{a} x{n}' for a, n in r['refused'].items())}")
+    stores = ", ".join(f"{s['store_id']} (as {s['imported_memory_id']})" for s in r["stores"])
+    print(f"  other stores   {stores or 'none'}")
     if detail["redacted_kinds"]:
         print(
             f"\n{C.YELLOW}Secrets redacted for display: "

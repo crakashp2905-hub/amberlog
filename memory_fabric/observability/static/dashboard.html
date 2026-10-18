@@ -502,6 +502,20 @@ async function openDetail(id) {
         <div class="sub">Does not establish: ${esc(s.does_not_mean)}</div></dd>`).join("")}
     </dl>
 
+    <h3>Who can reach this</h3>
+    <dl class="kv">
+      <dt>May read</dt><dd>${esc(detail.reach.may_read)}${detail.reach.readable_now ? "" :
+        ` <span class="badge medium">nobody now</span> <span class="sub">${esc(detail.reach.why_not)}</span>`}</dd>
+      <dt>Has seen it</dt><dd>${Object.keys(detail.reach.seen_by).length
+        ? Object.entries(detail.reach.seen_by).map(([a, n]) => `${esc(a)} ×${n}`).join(", ")
+        : '<span class="sub">nobody yet</span>'}</dd>
+      ${Object.keys(detail.reach.refused).length ? `<dt>Refused</dt><dd>${
+        Object.entries(detail.reach.refused).map(([a, n]) => `${esc(a)} ×${n}`).join(", ")}</dd>` : ""}
+      <dt>Other stores</dt><dd>${detail.reach.stores.length
+        ? detail.reach.stores.map((s) => `<span class="id">${esc(s.store_id)}</span> as <span class="id">${esc(s.imported_memory_id)}</span>`).join(", ")
+        : '<span class="sub">none</span>'}</dd>
+    </dl>
+
     <h3>Why the system remembers this</h3>
     <dl class="kv">
       <dt>Created by</dt><dd>${esc(r.created_by)} <span class="id">(${esc(r.method)})</span></dd>

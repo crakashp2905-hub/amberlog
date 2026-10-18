@@ -12,8 +12,8 @@ requires-python = ">=3.11"
 # identifier rather than the whole licence text pasted into the metadata.
 license = "LicenseRef-Proprietary"
 license-files = ["LICENSE"]
-authors = [{ name = "CR Akash Preetham", email = "crakashp2905@gmail.com" }]
-maintainers = [{ name = "CR Akash Preetham", email = "crakashp2905@gmail.com" }]
+authors = [{ name = "C R Akash Preetham", email = "crakashp2905@gmail.com" }]
+maintainers = [{ name = "C R Akash Preetham", email = "crakashp2905@gmail.com" }]
 keywords = ["agent-memory", "llm", "provenance", "governance", "federation"]
 classifiers = [
     "Development Status :: 3 - Alpha",

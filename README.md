@@ -350,5 +350,5 @@ opening a pull request.
 
 ## License
 
-Copyright © 2026 CR Akash Preetham. All rights reserved. This is proprietary software;
+Copyright © 2026 C R Akash Preetham. All rights reserved. This is proprietary software;
 see [LICENSE](LICENSE) for terms.

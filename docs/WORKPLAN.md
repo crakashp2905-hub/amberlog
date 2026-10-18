@@ -89,6 +89,8 @@ registered.
 | ID | Task | Definition of done | Status |
 |---|---|---|---|
 | G4b | **Retrieval must not surface an undetected poison first.** G4 found the poison ranked above the honest note in 35/40 questions before detection | A change tested on held-out seeds (5–9) with G4's arms, prompt, k and models; attack-first and honest-first order both measured; clean and corrected success not reduced | ⏳ `conflicts.py`: write-free contradiction detection (same identifiers, same claim words, different value; threshold fixed in advance) and two presentations (flag; incumbent first). Dev pilot next, then registration |
+| T1 | **Learned staleness** (from the temporal-reasoning review): trust forgets at a rate learned per context | Registered; held-out seeds; against no, fixed and Zep-style forgetting | ✅ run, ❌ **NOT SUPPORTED** ([result](../research/results/t1-learned-staleness.md)): 1.5% of headroom; detection perfect, decision gain nil. `TransferTrust(adaptive=True)` kept as a safe default, opt-in |
+| T2 | **Hindsight re-decision**: a memory withdrawn as false re-flags its author's other memories and the decisions that rested on them | Registered on LabNet with an honest-mistake control family; real models | ⏳ designed; queued behind the model runs |
 
 ## Last
 

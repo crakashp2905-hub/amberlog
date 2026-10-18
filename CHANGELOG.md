@@ -53,6 +53,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ### Fixed
 
+- **The Claude contract test seeded a private memory for another agent.** Since scope is enforced on reads (F10) that memory is correctly invisible, so `recalled` was empty and CI's `claude-contract` job failed. The test skips without the anthropic SDK, so no local run caught it. The seed is now `team`, and `test_adapters.py` covers the recall-follows-scope path without the SDK. The release workflow now refuses a tag unless CI passed on that exact commit.
 - **A Postgres connect is bounded** (10 s unless the URL sets `connect_timeout`). A mistyped URL hung for 131 s on Windows.
 - **Acknowledgements no longer describe the recipient to the origin.** `state_revision` counts that origin's retractions instead of exposing the recipient's log head, and `detail` carries no copy or peer counts ([security review](docs/SECURITY_REVIEW.md) F13).
 - **Echo imports.** A memory shared around a cycle (A -> B -> A) is no longer imported back into a store that already holds it; imports record their provenance chain (`context.federation.chain`). Before, a correction at A left A serving its own superseded versions ([security review](docs/SECURITY_REVIEW.md) F12).

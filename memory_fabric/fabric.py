@@ -779,8 +779,11 @@ class MemoryFabric:
                 )
             )
         # The index holds the plaintext too, so drop it or a search would still
-        # surface the content the caller just erased.
+        # surface the content the caller just erased. The copy index as well:
+        # `_unindex` leaves it alone, so that withdrawn documents stay
+        # recognisable, but its term set is derived from the erased text.
         self._unindex(memory_id)
+        self.copy_index.remove(memory_id)
         return had_content
 
     def erasure_scope(self, memory_id: str) -> dict[str, Any]:
@@ -1084,6 +1087,7 @@ class MemoryFabric:
             state = memory.lifecycle_state
             if state is LifecycleState.DELETED:
                 self._unindex(memory_id)
+                self.copy_index.remove(memory_id)
                 continue
             text = self._index_text(memory)
             present = memory_id in self.index

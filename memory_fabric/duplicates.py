@@ -269,6 +269,10 @@ class CopyIndex:
         self.terms: dict[str, frozenset[str]] = {}
 
     def add(self, memory_id: str, content: str) -> None:
+        # Replace, never accumulate: a revision's old terms would otherwise
+        # stay reachable, and an erased memory's -- whose marker is too short
+        # to index -- would stay in memory after the erasure.
+        self.remove(memory_id)
         tokens = terms(content)
         if len(tokens) < MIN_TERMS:
             return
@@ -279,6 +283,25 @@ class CopyIndex:
         rarest = sorted(tokens, key=lambda t: (len(self.postings.get(t, ())), t))
         for token in rarest[: self.ANCHORS]:
             self.anchors.setdefault(token, set()).add(memory_id)
+
+    def remove(self, memory_id: str) -> None:
+        """Forget a memory's terms entirely. For erasure and deletion only.
+
+        Withdrawn memories stay in the index on purpose: re-ingesting a
+        quarantined or deprecated document must still be recognised as a
+        copy. An erased one has no content left to be a copy of, and its
+        term set is derived from the plaintext erasure destroyed.
+        """
+        tokens = self.terms.pop(memory_id, None)
+        if tokens is None:
+            return
+        for token in tokens:
+            for table in (self.postings, self.anchors):
+                bucket = table.get(token)
+                if bucket is not None:
+                    bucket.discard(memory_id)
+                    if not bucket:
+                        del table[token]
 
     def candidates(self, content: str) -> set[str]:
         tokens = terms(content)

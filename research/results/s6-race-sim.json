@@ -1,0 +1,1296 @@
+{
+  "experiment": "s6-race-sim",
+  "commit": "c0ef841",
+  "seeds": 5,
+  "first_seed": 0,
+  "summary": {
+    "targeted": {
+      "authorize_then_act": {
+        "effects": 662,
+        "violations": 188,
+        "violation_rate": 0.284,
+        "seeds_with_a_violation": 5,
+        "withdrawals": 188,
+        "violations_outside_overruns": 188,
+        "violations_in_overruns": 0,
+        "violations_flagged": 0,
+        "writer_failures": 0,
+        "writer_wait_p95_s_max": 0.0055,
+        "writer_wait_max_s": 0.0101,
+        "actions_per_s": 26.8
+      },
+      "reverify": {
+        "effects": 662,
+        "violations": 69,
+        "violation_rate": 0.1042,
+        "seeds_with_a_violation": 5,
+        "withdrawals": 188,
+        "violations_outside_overruns": 69,
+        "violations_in_overruns": 0,
+        "violations_flagged": 0,
+        "writer_failures": 0,
+        "writer_wait_p95_s_max": 0.0052,
+        "writer_wait_max_s": 0.0075,
+        "actions_per_s": 25.45
+      },
+      "fenced": {
+        "effects": 677,
+        "violations": 0,
+        "violation_rate": 0.0,
+        "seeds_with_a_violation": 0,
+        "withdrawals": 188,
+        "violations_outside_overruns": 0,
+        "violations_in_overruns": 0,
+        "violations_flagged": 0,
+        "writer_failures": 0,
+        "writer_wait_p95_s_max": 0.5593,
+        "writer_wait_max_s": 1.8682,
+        "actions_per_s": 23.68
+      },
+      "fenced_overrun": {
+        "effects": 671,
+        "violations": 15,
+        "violation_rate": 0.0224,
+        "seeds_with_a_violation": 5,
+        "withdrawals": 188,
+        "violations_outside_overruns": 0,
+        "violations_in_overruns": 15,
+        "violations_flagged": 15,
+        "writer_failures": 0,
+        "writer_wait_p95_s_max": 0.5427,
+        "writer_wait_max_s": 1.8425,
+        "actions_per_s": 19.83
+      }
+    },
+    "random": {
+      "authorize_then_act": {
+        "effects": 526,
+        "violations": 3,
+        "violation_rate": 0.0057,
+        "seeds_with_a_violation": 2,
+        "withdrawals": 60,
+        "violations_outside_overruns": 3,
+        "violations_in_overruns": 0,
+        "violations_flagged": 0,
+        "writer_failures": 0,
+        "writer_wait_p95_s_max": 0.0074,
+        "writer_wait_max_s": 0.0176,
+        "actions_per_s": 29.66
+      },
+      "reverify": {
+        "effects": 501,
+        "violations": 0,
+        "violation_rate": 0.0,
+        "seeds_with_a_violation": 0,
+        "withdrawals": 60,
+        "violations_outside_overruns": 0,
+        "violations_in_overruns": 0,
+        "violations_flagged": 0,
+        "writer_failures": 0,
+        "writer_wait_p95_s_max": 0.0507,
+        "writer_wait_max_s": 0.0612,
+        "actions_per_s": 28.44
+      },
+      "fenced": {
+        "effects": 552,
+        "violations": 0,
+        "violation_rate": 0.0,
+        "seeds_with_a_violation": 0,
+        "withdrawals": 60,
+        "violations_outside_overruns": 0,
+        "violations_in_overruns": 0,
+        "violations_flagged": 0,
+        "writer_failures": 0,
+        "writer_wait_p95_s_max": 0.4069,
+        "writer_wait_max_s": 1.3518,
+        "actions_per_s": 24.92
+      },
+      "fenced_overrun": {
+        "effects": 529,
+        "violations": 15,
+        "violation_rate": 0.0284,
+        "seeds_with_a_violation": 5,
+        "withdrawals": 60,
+        "violations_outside_overruns": 0,
+        "violations_in_overruns": 15,
+        "violations_flagged": 15,
+        "writer_failures": 0,
+        "writer_wait_p95_s_max": 0.9705,
+        "writer_wait_max_s": 2.3908,
+        "actions_per_s": 22.97
+      }
+    }
+  },
+  "runs": [
+    {
+      "arm": "authorize_then_act",
+      "seed": 0,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 125,
+        "refused": 75
+      },
+      "withdrawals": 39,
+      "effects": 125,
+      "violations": 39,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 39,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0031,
+      "writer_wait_p95_s": 0.0055,
+      "writer_wait_max_s": 0.0101,
+      "actions_per_s": 27.54
+    },
+    {
+      "arm": "reverify",
+      "seed": 0,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 125,
+        "refused": 75
+      },
+      "withdrawals": 39,
+      "effects": 125,
+      "violations": 13,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 13,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0032,
+      "writer_wait_p95_s": 0.0052,
+      "writer_wait_max_s": 0.0064,
+      "actions_per_s": 25.41
+    },
+    {
+      "arm": "fenced",
+      "seed": 0,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 131,
+        "refused": 69
+      },
+      "withdrawals": 39,
+      "effects": 131,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0304,
+      "writer_wait_p95_s": 0.2549,
+      "writer_wait_max_s": 0.9928,
+      "actions_per_s": 24.74
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 0,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "timed_out": 6,
+        "executed": 121,
+        "refused": 73
+      },
+      "withdrawals": 39,
+      "effects": 127,
+      "violations": 2,
+      "violations_in_overruns": 2,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 2,
+      "overruns": [
+        [
+          null,
+          false
+        ],
+        [
+          -1.401,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          -0.681,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          null,
+          false
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0411,
+      "writer_wait_p95_s": 0.2685,
+      "writer_wait_max_s": 0.3492,
+      "actions_per_s": 20.72
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 0,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 91,
+        "refused": 109
+      },
+      "withdrawals": 12,
+      "effects": 91,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.004,
+      "writer_wait_p95_s": 0.0056,
+      "writer_wait_max_s": 0.0059,
+      "actions_per_s": 30.28
+    },
+    {
+      "arm": "reverify",
+      "seed": 0,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 89,
+        "refused": 111
+      },
+      "withdrawals": 12,
+      "effects": 89,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.004,
+      "writer_wait_p95_s": 0.014,
+      "writer_wait_max_s": 0.016,
+      "actions_per_s": 29.98
+    },
+    {
+      "arm": "fenced",
+      "seed": 0,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 113,
+        "refused": 87
+      },
+      "withdrawals": 12,
+      "effects": 113,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0184,
+      "writer_wait_p95_s": 0.4069,
+      "writer_wait_max_s": 1.3518,
+      "actions_per_s": 24.77
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 0,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 109,
+        "timed_out": 7,
+        "refused": 84
+      },
+      "withdrawals": 12,
+      "effects": 116,
+      "violations": 4,
+      "violations_in_overruns": 4,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 4,
+      "overruns": [
+        [
+          -1.195,
+          true
+        ],
+        [
+          1.12,
+          true
+        ],
+        [
+          0.338,
+          true
+        ],
+        [
+          0.913,
+          true
+        ],
+        [
+          -0.613,
+          true
+        ],
+        [
+          -0.877,
+          true
+        ],
+        [
+          -0.391,
+          true
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0413,
+      "writer_wait_p95_s": 0.3324,
+      "writer_wait_max_s": 2.3908,
+      "actions_per_s": 21.05
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 1,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 137,
+        "refused": 63
+      },
+      "withdrawals": 38,
+      "effects": 137,
+      "violations": 38,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 38,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0029,
+      "writer_wait_p95_s": 0.004,
+      "writer_wait_max_s": 0.0044,
+      "actions_per_s": 25.77
+    },
+    {
+      "arm": "reverify",
+      "seed": 1,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 137,
+        "refused": 63
+      },
+      "withdrawals": 38,
+      "effects": 137,
+      "violations": 20,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 20,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0019,
+      "writer_wait_p95_s": 0.0036,
+      "writer_wait_max_s": 0.0042,
+      "actions_per_s": 25.58
+    },
+    {
+      "arm": "fenced",
+      "seed": 1,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 141,
+        "refused": 59
+      },
+      "withdrawals": 38,
+      "effects": 141,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0323,
+      "writer_wait_p95_s": 0.1044,
+      "writer_wait_max_s": 1.8682,
+      "actions_per_s": 23.72
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 1,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 128,
+        "timed_out": 10,
+        "refused": 62
+      },
+      "withdrawals": 38,
+      "effects": 138,
+      "violations": 5,
+      "violations_in_overruns": 5,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 5,
+      "overruns": [
+        [
+          -1.184,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          -1.429,
+          true
+        ],
+        [
+          2.491,
+          true
+        ],
+        [
+          1.984,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          -0.811,
+          true
+        ],
+        [
+          -1.433,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          -1.053,
+          true
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.042,
+      "writer_wait_p95_s": 0.5427,
+      "writer_wait_max_s": 1.0912,
+      "actions_per_s": 18.89
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 1,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 123,
+        "refused": 77
+      },
+      "withdrawals": 12,
+      "effects": 123,
+      "violations": 2,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 2,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0032,
+      "writer_wait_p95_s": 0.0074,
+      "writer_wait_max_s": 0.0176,
+      "actions_per_s": 28.08
+    },
+    {
+      "arm": "reverify",
+      "seed": 1,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 115,
+        "refused_late": 1,
+        "refused": 84
+      },
+      "withdrawals": 12,
+      "effects": 115,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0049,
+      "writer_wait_p95_s": 0.017,
+      "writer_wait_max_s": 0.0207,
+      "actions_per_s": 26.76
+    },
+    {
+      "arm": "fenced",
+      "seed": 1,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 119,
+        "refused": 81
+      },
+      "withdrawals": 12,
+      "effects": 119,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0045,
+      "writer_wait_p95_s": 0.0754,
+      "writer_wait_max_s": 0.1137,
+      "actions_per_s": 26.52
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 1,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 126,
+        "refused": 68,
+        "timed_out": 6
+      },
+      "withdrawals": 12,
+      "effects": 132,
+      "violations": 3,
+      "violations_in_overruns": 3,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 3,
+      "overruns": [
+        [
+          4.159,
+          true
+        ],
+        [
+          -0.88,
+          true
+        ],
+        [
+          1.223,
+          true
+        ],
+        [
+          -1.064,
+          true
+        ],
+        [
+          0.058,
+          true
+        ],
+        [
+          -0.521,
+          true
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0116,
+      "writer_wait_p95_s": 0.9705,
+      "writer_wait_max_s": 1.0103,
+      "actions_per_s": 20.73
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 2,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 129,
+        "refused": 71
+      },
+      "withdrawals": 37,
+      "effects": 129,
+      "violations": 37,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 37,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0029,
+      "writer_wait_p95_s": 0.0039,
+      "writer_wait_max_s": 0.0046,
+      "actions_per_s": 27.19
+    },
+    {
+      "arm": "reverify",
+      "seed": 2,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 129,
+        "refused": 71
+      },
+      "withdrawals": 37,
+      "effects": 129,
+      "violations": 15,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 15,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.003,
+      "writer_wait_p95_s": 0.0034,
+      "writer_wait_max_s": 0.007,
+      "actions_per_s": 25.8
+    },
+    {
+      "arm": "fenced",
+      "seed": 2,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 133,
+        "refused": 67
+      },
+      "withdrawals": 37,
+      "effects": 133,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0386,
+      "writer_wait_p95_s": 0.5593,
+      "writer_wait_max_s": 0.6603,
+      "actions_per_s": 23.94
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 2,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 126,
+        "refused": 69,
+        "timed_out": 5
+      },
+      "withdrawals": 37,
+      "effects": 131,
+      "violations": 3,
+      "violations_in_overruns": 3,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 3,
+      "overruns": [
+        [
+          0.085,
+          true
+        ],
+        [
+          2.338,
+          true
+        ],
+        [
+          -0.544,
+          true
+        ],
+        [
+          -0.876,
+          true
+        ],
+        [
+          -1.15,
+          true
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0319,
+      "writer_wait_p95_s": 0.4363,
+      "writer_wait_max_s": 1.0855,
+      "actions_per_s": 21.9
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 2,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 103,
+        "refused": 97
+      },
+      "withdrawals": 12,
+      "effects": 103,
+      "violations": 1,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 1,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0034,
+      "writer_wait_p95_s": 0.0044,
+      "writer_wait_max_s": 0.0065,
+      "actions_per_s": 30.09
+    },
+    {
+      "arm": "reverify",
+      "seed": 2,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 97,
+        "refused": 103
+      },
+      "withdrawals": 12,
+      "effects": 97,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0039,
+      "writer_wait_p95_s": 0.0507,
+      "writer_wait_max_s": 0.0612,
+      "actions_per_s": 29.09
+    },
+    {
+      "arm": "fenced",
+      "seed": 2,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 93,
+        "refused": 107
+      },
+      "withdrawals": 12,
+      "effects": 93,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0378,
+      "writer_wait_p95_s": 0.2032,
+      "writer_wait_max_s": 0.2383,
+      "actions_per_s": 20.31
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 2,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 86,
+        "refused": 111,
+        "timed_out": 3
+      },
+      "withdrawals": 12,
+      "effects": 89,
+      "violations": 2,
+      "violations_in_overruns": 2,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 2,
+      "overruns": [
+        [
+          1.685,
+          true
+        ],
+        [
+          -0.175,
+          true
+        ],
+        [
+          -0.344,
+          true
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0055,
+      "writer_wait_p95_s": 0.3169,
+      "writer_wait_max_s": 0.457,
+      "actions_per_s": 24.99
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 3,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 127,
+        "refused": 73
+      },
+      "withdrawals": 37,
+      "effects": 127,
+      "violations": 37,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 37,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0033,
+      "writer_wait_p95_s": 0.005,
+      "writer_wait_max_s": 0.0093,
+      "actions_per_s": 27.44
+    },
+    {
+      "arm": "reverify",
+      "seed": 3,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 127,
+        "refused": 73
+      },
+      "withdrawals": 37,
+      "effects": 127,
+      "violations": 12,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 12,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0031,
+      "writer_wait_p95_s": 0.0048,
+      "writer_wait_max_s": 0.0056,
+      "actions_per_s": 26.07
+    },
+    {
+      "arm": "fenced",
+      "seed": 3,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 128,
+        "refused": 72
+      },
+      "withdrawals": 37,
+      "effects": 128,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0311,
+      "writer_wait_p95_s": 0.142,
+      "writer_wait_max_s": 0.7575,
+      "actions_per_s": 22.19
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 3,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 118,
+        "timed_out": 10,
+        "refused": 72
+      },
+      "withdrawals": 37,
+      "effects": 128,
+      "violations": 2,
+      "violations_in_overruns": 2,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 2,
+      "overruns": [
+        [
+          5.06,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          -0.654,
+          true
+        ],
+        [
+          0.767,
+          true
+        ],
+        [
+          1.903,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          0.419,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          -1.426,
+          true
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.036,
+      "writer_wait_p95_s": 0.444,
+      "writer_wait_max_s": 1.0959,
+      "actions_per_s": 18.95
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 3,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 85,
+        "refused": 115
+      },
+      "withdrawals": 12,
+      "effects": 85,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0035,
+      "writer_wait_p95_s": 0.0056,
+      "writer_wait_max_s": 0.0057,
+      "actions_per_s": 31.54
+    },
+    {
+      "arm": "reverify",
+      "seed": 3,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 77,
+        "refused": 122,
+        "refused_late": 1
+      },
+      "withdrawals": 12,
+      "effects": 77,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0039,
+      "writer_wait_p95_s": 0.0162,
+      "writer_wait_max_s": 0.0361,
+      "actions_per_s": 29.5
+    },
+    {
+      "arm": "fenced",
+      "seed": 3,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 103,
+        "refused": 97
+      },
+      "withdrawals": 12,
+      "effects": 103,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0295,
+      "writer_wait_p95_s": 0.1878,
+      "writer_wait_max_s": 0.774,
+      "actions_per_s": 26.55
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 3,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 70,
+        "timed_out": 3,
+        "refused": 127
+      },
+      "withdrawals": 12,
+      "effects": 73,
+      "violations": 1,
+      "violations_in_overruns": 1,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 1,
+      "overruns": [
+        [
+          2.277,
+          true
+        ],
+        [
+          0.674,
+          true
+        ],
+        [
+          -1.449,
+          true
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0111,
+      "writer_wait_p95_s": 0.057,
+      "writer_wait_max_s": 0.2671,
+      "actions_per_s": 27.66
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 4,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 144,
+        "refused": 56
+      },
+      "withdrawals": 37,
+      "effects": 144,
+      "violations": 37,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 37,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0028,
+      "writer_wait_p95_s": 0.0037,
+      "writer_wait_max_s": 0.0046,
+      "actions_per_s": 26.07
+    },
+    {
+      "arm": "reverify",
+      "seed": 4,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 144,
+        "refused": 56
+      },
+      "withdrawals": 37,
+      "effects": 144,
+      "violations": 9,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 9,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0032,
+      "writer_wait_p95_s": 0.0037,
+      "writer_wait_max_s": 0.0075,
+      "actions_per_s": 24.4
+    },
+    {
+      "arm": "fenced",
+      "seed": 4,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 144,
+        "refused": 56
+      },
+      "withdrawals": 37,
+      "effects": 144,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0303,
+      "writer_wait_p95_s": 0.142,
+      "writer_wait_max_s": 1.3189,
+      "actions_per_s": 23.79
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 4,
+      "timing": "targeted",
+      "actions": 200,
+      "outcomes": {
+        "executed": 140,
+        "timed_out": 7,
+        "refused": 53
+      },
+      "withdrawals": 37,
+      "effects": 147,
+      "violations": 3,
+      "violations_in_overruns": 3,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 3,
+      "overruns": [
+        [
+          null,
+          false
+        ],
+        [
+          -0.931,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          -1.227,
+          true
+        ],
+        [
+          null,
+          false
+        ],
+        [
+          -1.476,
+          true
+        ],
+        [
+          null,
+          false
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0346,
+      "writer_wait_p95_s": 0.5233,
+      "writer_wait_max_s": 1.8425,
+      "actions_per_s": 18.7
+    },
+    {
+      "arm": "authorize_then_act",
+      "seed": 4,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 124,
+        "refused": 76
+      },
+      "withdrawals": 12,
+      "effects": 124,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0039,
+      "writer_wait_p95_s": 0.0055,
+      "writer_wait_max_s": 0.0071,
+      "actions_per_s": 28.29
+    },
+    {
+      "arm": "reverify",
+      "seed": 4,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 123,
+        "refused": 77
+      },
+      "withdrawals": 12,
+      "effects": 123,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0049,
+      "writer_wait_p95_s": 0.0105,
+      "writer_wait_max_s": 0.019,
+      "actions_per_s": 26.85
+    },
+    {
+      "arm": "fenced",
+      "seed": 4,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 124,
+        "refused": 76
+      },
+      "withdrawals": 12,
+      "effects": 124,
+      "violations": 0,
+      "violations_in_overruns": 0,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 0,
+      "overruns": [],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.0116,
+      "writer_wait_p95_s": 0.0326,
+      "writer_wait_max_s": 0.0884,
+      "actions_per_s": 26.47
+    },
+    {
+      "arm": "fenced_overrun",
+      "seed": 4,
+      "timing": "random",
+      "actions": 200,
+      "outcomes": {
+        "executed": 109,
+        "timed_out": 10,
+        "refused": 81
+      },
+      "withdrawals": 12,
+      "effects": 119,
+      "violations": 5,
+      "violations_in_overruns": 5,
+      "violations_outside_overruns": 0,
+      "violations_flagged": 5,
+      "overruns": [
+        [
+          2.069,
+          true
+        ],
+        [
+          -1.104,
+          true
+        ],
+        [
+          2.844,
+          true
+        ],
+        [
+          -1.099,
+          true
+        ],
+        [
+          2.888,
+          true
+        ],
+        [
+          3.784,
+          true
+        ],
+        [
+          3.47,
+          true
+        ],
+        [
+          -1.467,
+          true
+        ],
+        [
+          -1.203,
+          true
+        ],
+        [
+          -0.11,
+          true
+        ]
+      ],
+      "writer_failures": 0,
+      "writer_wait_p50_s": 0.039,
+      "writer_wait_p95_s": 0.559,
+      "writer_wait_max_s": 0.6785,
+      "actions_per_s": 20.43
+    }
+  ]
+}

@@ -408,6 +408,13 @@ class Outbox:
                 best = int(row["s"]) if best is None else max(best, int(row["s"]))
         return best
 
+    def inbox_count(self, origin_store_id: str) -> int:
+        """How many retractions from this origin this store has recorded."""
+        row = self._conn.execute(
+            "SELECT COUNT(*) AS n FROM inbox WHERE origin_store_id = ?", (origin_store_id,)
+        ).fetchone()
+        return int(row["n"]) if row is not None else 0
+
     def cursor_for(self, origin_store_id: str) -> int:
         row = self._conn.execute(
             "SELECT sequence_seen FROM origin_cursor WHERE origin_store_id = ?",

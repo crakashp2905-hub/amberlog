@@ -634,7 +634,13 @@ class MemoryFabric:
                 recipient_store_id=self.store_id,
                 state=state,
                 at=at,
-                state_revision=self.log.head_seq,
+                # Per origin, not the log head. The head told every origin how
+                # much this store did between two of its retractions, which is
+                # none of its business (security review F13, measured by S5).
+                # A count of this origin's applied retractions still regresses
+                # when the store is restored from an older backup, which is
+                # what the field is for.
+                state_revision=self.outbox.inbox_count(retraction.origin_store_id),
                 origin_sequence_seen=self.outbox.cursor_for(retraction.origin_store_id),
                 detail=detail,
                 rejection_code=code,
@@ -666,7 +672,7 @@ class MemoryFabric:
                 "superseded": PropagationState.SUPERSEDED,
                 "unknown_memory": PropagationState.REJECTED,
             }.get(outcome, PropagationState.REJECTED)
-            return ack(state, f"duplicate: {detail}")
+            return ack(state, f"duplicate: {outcome}")
 
         # 5. Supersession, per origin memory. It used to compare against one
         #    cursor per *origin store*, so a retraction delayed by an outage
@@ -748,10 +754,11 @@ class MemoryFabric:
         # 7. Projections already reflect it: `quarantine` emitted through the
         #    same projection fold, and `_eligible_ids` reads lifecycle state, so
         #    the version is no longer exposed. Hence `enforced`, not `persisted`.
-        detail = f"{len(targets)} memory/ies withdrawn"
-        if forwarded:
-            detail += f"; forwarded to {forwarded} peer(s)"
-        return ack(PropagationState.ENFORCED, detail)
+        # No counts: how many copies this store held and how many peers it
+        # re-shared to are its own sharing graph, and went to every origin
+        # (F13). Both stay in this store's log.
+        del forwarded
+        return ack(PropagationState.ENFORCED, "withdrawn")
 
     def _latest_applied_sequence(self, origin_store_id: str, origin_memory_id: str,
                                  origin_memory_version: int) -> int | None:

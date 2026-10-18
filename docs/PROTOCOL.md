@@ -166,10 +166,10 @@ single most damaging lie the protocol could tell.
   "retraction_id": "rt_01M4...",
   "recipient_store_id": "st_01M4...",
   "state": "enforced",
-  "state_revision": 918,
+  "state_revision": 12,
   "origin_sequence_seen": 4821,
   "at": "2026-10-10T12:00:03Z",
-  "detail": "3 descendants contested",
+  "detail": "withdrawn",
   "signature": { "alg": "hmac-sha256", "key_id": "k7", "value": "base64..." }
 }
 ```
@@ -177,6 +177,17 @@ single most damaging lie the protocol could tell.
 A lost acknowledgement is safe: the origin retries, the recipient deduplicates
 and returns the same state. `state_revision` lets the origin detect a recipient
 that has been restored from a backup and regressed.
+
+**`state_revision` counts this origin's retractions only, and `detail` carries
+no counts.** Until 2026-10-18 the field was the recipient's log head, and
+`detail` said how many copies were withdrawn and how many peers it forwarded
+to. So every origin learned the recipient's activity between two retractions
+and part of its sharing graph (security review F13, measured in
+[S5](../research/results/s5-correction-receipts.md)). A per-origin count still
+falls when the recipient regresses, which is the field's job. Both counts stay
+in the recipient's own log. The wire format is unchanged. For a receipt that
+proves enforcement to an auditor without revealing anything, see
+`memory_fabric/receipts.py`.
 
 ## 7. Reconciliation after an outage
 

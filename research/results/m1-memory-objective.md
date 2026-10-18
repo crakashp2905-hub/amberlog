@@ -7,7 +7,7 @@ Registration: [prereg/m1-memory-objective.md](../prereg/m1-memory-objective.md)
 | run | status |
 |---|---|
 | qwen2.5:3b, registered, seeds 0–9, at `adaf615` | **done**: [m1-qwen.json](m1-qwen.json) |
-| gemma3:4b, registered, seeds 0–9, at `adaf615` | **running** |
+| gemma3:4b, registered, seeds 0–9, at `adaf615` | **done**: [m1-gemma.json](m1-gemma.json) |
 | qwen2.5:3b, corrected compile cache, at `e13d63b` | **done**: [m1-qwen-corrected.json](m1-qwen-corrected.json) |
 
 ## qwen2.5:3b (registered run): M1a **SUPPORTED**
@@ -126,4 +126,43 @@ Compilation, corrected run:
   - use it as a filter only with rules a person has reviewed;
   - with those rules, the filter reaches the oracle (`filter_gold`, 0.998).
 
-gemma3:4b is still running.
+## gemma3:4b (registered run): M1a **SUPPORTED**
+
+gemma's cache never held dev compilations, so this run was unaffected by the
+stale-cache defect.
+
+| arm | accuracy | used an irrelevant memory | procedure tasks | plant-wide tasks |
+|---|---|---|---|---|
+| `plain` | 0.327 | 0.493 | 0.406 | 0.117 |
+| **`prompt_only`** | **0.707** | 0.189 | 0.806 | 0.442 |
+| `filter_only` | 0.616 | 0.121 | 0.847 | 0.000 |
+| `both` | 0.573 | **0.048** | 0.769 | 0.050 |
+| `filter_gold` | 0.841 | 0.005 | 0.978 | 0.475 |
+| `oracle` | 0.841 | 0.005 | 0.978 | 0.475 |
+
+- **M1a: SUPPORTED, 74% of the headroom.** +0.380, CI +0.325 to +0.432,
+  realised MDE 0.089.
+- **Filters:** +0.289 over plain, and −0.134 for `both` against `prompt_only`.
+  The same pattern as qwen's corrected run.
+- **Compilation:** 8 of 10 seeds compiled correctly (precision 1.000,
+  recall 0.727). The admits-nothing guard refused the other 2, which was
+  prediction 4.
+- **gemma's ceiling is 0.84, not 1.0.** Even shown only the right note, it
+  answers plant-wide questions correctly half the time. The headroom share is
+  measured against that ceiling.
+
+## M1 overall
+
+**Supported on both models, three runs:**
+
+| run | share of headroom |
+|---|---|
+| qwen, registered | 58% |
+| qwen, corrected | 70% |
+| gemma | 74% |
+
+**Stating what a session is for, in the agent's prompt, is the single
+largest gain any mechanism in this repository has measured on real models.**
+Compiled into retrieval filters it helps as well, but less: the model drops
+one of the objective's alternatives. Filtering should therefore use rules a
+person has reviewed, which reach the ceiling.

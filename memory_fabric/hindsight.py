@@ -36,12 +36,19 @@ if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
     from .model import Memory
 
-FALSITY = {"contradicted", "detected as false", "wrong", "poison", "prompt injection"}
+FALSITY = ("contradicted", "detected as false", "wrong", "poison", "prompt injection")
+HOSTILE = ("prompt injection",)
+"""Signals no honest author produces. A contradicted withdrawal can be an honest mistake."""
 SUSPECT = "[SOURCE WAS WRONG BEFORE: another note by this author was withdrawn as false]"
 
 
-def discredited_authors(fabric: "MemoryFabric") -> set[str]:
-    """Authors with a memory withdrawn on a basis that says it was false."""
+def discredited_authors(fabric: "MemoryFabric", signals: Sequence[str] = FALSITY) -> set[str]:
+    """Authors with a memory withdrawn on one of these grounds.
+
+    `signals=HOSTILE` discredits only sources caught doing something no honest
+    author does (T2's dev pilot: discrediting on any falsity withheld every
+    valid note by an honest technician who made one mistake).
+    """
     out: set[str] = set()
     for event in fabric.log.read_types([EventType.LIFECYCLE_CHANGED]):
         payload = event.payload
@@ -52,7 +59,7 @@ def discredited_authors(fabric: "MemoryFabric") -> set[str]:
         # and the origin's basis in the reason, so reading the basis alone
         # missed every cross-store withdrawal (found on T2's dev world).
         said = f"{payload.get('basis') or ''} {payload.get('reason') or ''}".lower()
-        if not any(word in said for word in FALSITY):
+        if not any(word in said for word in signals):
             continue
         memory = fabric.state.memories.get(payload.get("memory_id", ""))
         if memory is not None:
@@ -60,9 +67,10 @@ def discredited_authors(fabric: "MemoryFabric") -> set[str]:
     return out
 
 
-def suspects(fabric: "MemoryFabric", memories: Iterable["Memory"] | None = None) -> set[str]:
+def suspects(fabric: "MemoryFabric", memories: Iterable["Memory"] | None = None,
+             signals: Sequence[str] = FALSITY) -> set[str]:
     """Ids of active memories whose author has been discredited."""
-    bad = discredited_authors(fabric)
+    bad = discredited_authors(fabric, signals)
     pool = fabric.state.memories.values() if memories is None else memories
     return {m.id for m in pool
             if m.lifecycle_state is LifecycleState.ACTIVE and author(m) in bad}
@@ -73,6 +81,7 @@ def annotate(fabric: "MemoryFabric", memories: Sequence["Memory"]) -> list[str]:
     return [f"{SUSPECT} {m.content}" if m.id in flagged else m.content for m in memories]
 
 
-def withhold(fabric: "MemoryFabric", memories: Sequence["Memory"]) -> list[str]:
-    flagged = suspects(fabric, memories)
+def withhold(fabric: "MemoryFabric", memories: Sequence["Memory"],
+             signals: Sequence[str] = FALSITY) -> list[str]:
+    flagged = suspects(fabric, memories, signals)
     return [m.content for m in memories if m.id not in flagged]

@@ -13,6 +13,8 @@ can act. The mistaken fact itself is not scored.
   fabric                     retraction only (the product as shipped)
   fabric_hindsight_flag      the discredited authors' other notes marked as from a source that was wrong before
   fabric_hindsight_withhold  those notes withheld
+  fabric_hindsight_hostile   withheld only for sources caught by the injection screen (a hostile signal),
+                             not for a contradicted withdrawal, which an honest mistake also produces
   + no_memory, shared_store, shared_delete_all, oracle (as in G4)
 
 Breakdown:
@@ -39,7 +41,7 @@ from experiments.g4_labnet import (K, OFFLINE_AT_STAGE_2, SITES, Cache, Doc, Fab
 from experiments.g4b_conflicts import ordered_docs
 
 ARMS = ("no_memory", "shared_store", "shared_delete_all", "fabric", "fabric_hindsight_flag",
-        "fabric_hindsight_withhold", "oracle")
+        "fabric_hindsight_withhold", "fabric_hindsight_hostile", "oracle")
 SPLITS = {"dev": range(100, 101), "test": range(10, 15)}
 
 
@@ -48,7 +50,11 @@ def hindsight_notes(fabric: FabricArm, site: str, question: str, mode: str) -> l
 
     store = fabric.sites[site]
     hits = store.retrieve(fabric.agent(site), question, k=K).exposed
-    return hindsight.annotate(store, hits) if mode == "flag" else hindsight.withhold(store, hits)
+    if mode == "flag":
+        return hindsight.annotate(store, hits)
+    if mode == "hostile":
+        return hindsight.withhold(store, hits, signals=hindsight.HOSTILE)
+    return hindsight.withhold(store, hits)
 
 
 def run_seed(seed: int, client: Any, model: str, cache: Cache) -> list[dict[str, Any]]:
@@ -101,6 +107,7 @@ def run_seed(seed: int, client: Any, model: str, cache: Cache) -> list[dict[str,
                     "fabric": fabric.notes(site, question),
                     "fabric_hindsight_flag": hindsight_notes(fabric, site, question, "flag"),
                     "fabric_hindsight_withhold": hindsight_notes(fabric, site, question, "withhold"),
+                    "fabric_hindsight_hostile": hindsight_notes(fabric, site, question, "hostile"),
                     "oracle": oracle.notes(site, question),
                 }
                 for arm in ARMS:
@@ -132,7 +139,7 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
                            "no_arm_beats_the_oracle": all(arms[a]["safe_success"]
                                                           <= arms["oracle"]["safe_success"]
                                                           for a in ARMS)}
-    for mech in ("fabric_hindsight_flag", "fabric_hindsight_withhold"):
+    for mech in ("fabric_hindsight_flag", "fabric_hindsight_withhold", "fabric_hindsight_hostile"):
         interval, discordance = stats.paired_difference([by[mech][k] for k in keys],
                                                         [by[best][k] for k in keys])
         out[f"{mech}_minus_best"] = {"mean": round(interval.point, 4),

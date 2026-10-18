@@ -231,6 +231,13 @@ class IntegrityChain:
             return (None, None)
         return (int(row["lo"]), int(row["hi"]))
 
+    def digest_at(self, seq: int) -> str | None:
+        """The chain digest recorded at `seq`, or None if it is not chained."""
+        row = self._conn.execute(
+            "SELECT chain_digest FROM integrity_chain WHERE seq = ?", (seq,)
+        ).fetchone()
+        return str(row["chain_digest"]) if row is not None else None
+
     def checkpoint(self) -> Checkpoint:
         seq, digest = self.head()
         return Checkpoint(seq=seq, chain_digest=digest, events=len(self))

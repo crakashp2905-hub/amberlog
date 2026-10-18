@@ -265,6 +265,24 @@ class TestClaudeAdapter(unittest.TestCase):
         self.assertIn(OPEN, user_text)
         self.assertNotIn("ripgrep", str(call["system"]))
 
+    def test_recall_follows_scope_another_agents_private_memory_is_not_recalled(self) -> None:
+        """The path tests/test_claude_contract.py exercises through the real SDK.
+
+        Run here without it, so this is checked on every machine. That test
+        skips without `anthropic`, which is how a fixture seeding a *private*
+        memory for another agent passed every local run and failed in CI
+        after scope began to be enforced on reads (F10).
+        """
+        theirs = self.fabric.remember("agent-z", "Use ripgrep to search large repositories.")
+        shared = self.fabric.remember("agent-z", "Use fd to find files in large repositories.",
+                                      scope="team")
+        mine = self.fabric.remember("agent-a", "Use rg --files for file lists in repositories.")
+        agent = self.agent([text_response("ok")])
+        run = agent.run("task-1", "search large repositories files")
+        self.assertNotIn(theirs, run.recalled, "another agent's private memory")
+        self.assertIn(shared, run.recalled)
+        self.assertIn(mine, run.recalled, "an agent's own private memory")
+
     def test_system_prompt_is_the_cache_breakpoint(self) -> None:
         agent = self.agent([text_response("ok")])
         agent.run("task-1", "hello")

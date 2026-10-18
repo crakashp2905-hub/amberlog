@@ -14,7 +14,7 @@ outside this environment, named) · 🔶 done with a stated gap.
 
 | | Needs | Blocks |
 |---|---|---|
-| **X-CI** | GitHub Actions billing fixed. Every job on `main` since 2026-10-16 failed before starting: "recent account payments have failed" | G1, the tag in G6 |
+| ~~X-CI~~ | **Resolved 2026-10-18.** CI runs again. The first runs, on `5da2b0b` through `4e7ce31`, passed 17 of 18 jobs; `claude-contract` failed on a fixture that predated F10 (fixed, see G1) | — |
 | **X-API** | A frontier model: `ANTHROPIC_API_KEY`, or the Claude Code CLI on this machine. Neither is present | Frontier-model arms in G4, S3, M1; the live Claude-adapter check in G2 |
 | **X-DKR** | A Docker daemon | Container smoke test in G6 |
 

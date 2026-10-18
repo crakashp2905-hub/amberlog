@@ -6,6 +6,10 @@ name: Release
 #
 # What it does, in order, and why each step is a gate rather than a formality:
 #
+# 0. CI must have passed on this exact commit, every job of it, including
+#    claude-contract, which skips everywhere the anthropic SDK is not installed
+#    and so is the job a local run never catches. Branch protection cannot
+#    require checks on this plan (docs/BRANCHES.md), so the release enforces it.
 # 1. The tag must equal the version in pyproject.toml *and* in
 #    memory_fabric.__version__. They drifted once (0.8.0 vs 0.7.0) and a
 #    release is the worst place to find out.
@@ -36,6 +40,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 jobs:
   build:
@@ -45,6 +50,14 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+
+      - name: CI passed on this exact commit, every job included
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          result=$(gh run list --workflow ci.yml --commit "$GITHUB_SHA" --limit 20             --json status,conclusion -q '[.[] | select(.status == "completed")][0].conclusion')
+          echo "CI on $GITHUB_SHA: ${result:-no completed run}"
+          test "$result" = "success"
 
       - name: Tag, pyproject and __version__ agree
         run: |

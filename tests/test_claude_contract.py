@@ -67,9 +67,16 @@ class TestAgainstTheRealSdk(unittest.TestCase):
             http_client=anthropic.DefaultHttpxClient(transport=httpx2.MockTransport(handler)))
         # A default store: writes land as candidates unless an operator turns
         # auto-activation on. The seed is validated by hand, as a reviewer would.
+        # It is written at `team` scope: since scope is enforced on reads (F10),
+        # a private memory is visible only to the agent that wrote it, and this
+        # seed stands for knowledge the team shares. Seeded private, it is
+        # correctly invisible to `ag_claude`, which is how this test failed in
+        # CI while skipping locally (no SDK) -- tests/test_adapters.py now
+        # covers that recall path without the SDK.
         self.fabric = MemoryFabric()
         self.addCleanup(self.fabric.close)
-        seed = self.fabric.remember("ag_seed", "E01 at coastal sites: swap the pilot cable.")
+        seed = self.fabric.remember("ag_seed", "E01 at coastal sites: swap the pilot cable.",
+                                    scope="team")
         self.fabric.validate(seed, actor="reviewer")
         self.seed = seed
         self.agent = ClaudeMemoryAgent(self.fabric, "ag_claude", client=client)

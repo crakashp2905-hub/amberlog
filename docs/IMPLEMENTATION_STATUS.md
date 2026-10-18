@@ -169,3 +169,28 @@ As the plan orders it, inspecting before building and reusing what exists:
 | 11 Privacy-aware federation | done. **Found and fixed:** a summary of restricted content was downgraded to internal | `tests/test_privacy_federation.py` |
 | 12 Operational hardening | measured. **Write contention collapses throughput** | [p12-load.md](../research/results/p12-load.md) |
 | 13 Release evaluation | done | [RELEASE_EVALUATION.md](RELEASE_EVALUATION.md) |
+
+### 2026-10-18: release track and research directions (docs/WORKPLAN.md)
+
+- **0.11.0 release candidate** cut and accepted (`rc/0.11.0`):
+  - SQLite 1,636 OK; Postgres 224 OK;
+  - faultsim 17/17; lint and types clean;
+  - the wheel installs and `doctor` reports sound;
+  - not tagged, because of CI billing.
+- **Research results** (each linked from [SCORECARD](../research/SCORECARD.md)):
+
+  | direction | outcome |
+  |---|---|
+  | G4 | not supported on qwen (35% of headroom); underpowered on gemma |
+  | S1 | abandoned |
+  | S2 | not supported (28%) |
+  | S4 | supported, on the bar |
+  | S5 | soundness supported; the leakage bar was mis-set |
+  | S6 | supported |
+  | M1 | supported on qwen (58%); compiled filters harmful |
+  | M2 | running |
+
+- **Security findings fixed:** F12 (echo imports), F13 (acknowledgement
+  leakage), an unbounded Postgres connect. Branch protection is enforced from
+  the client, with verified backups (docs/BRANCHES.md).
+

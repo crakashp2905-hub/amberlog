@@ -308,11 +308,17 @@ More: [SCORECARD.md](research/SCORECARD.md) (every claim and its outcome) and
 
 ## Project status
 
-**Alpha (0.9.0).** The governance core, observability, adapters, federation and
-MCP server are built and tested. Open items:
+**Alpha, 0.11.0 release candidate** (`rc/0.11.0`; [release note](docs/RELEASE_NOTES_0.11.0.md),
+[acceptance](docs/RELEASE_EVALUATION.md)). The governance core, observability, adapters,
+federation, the action fence and the governance console are built and tested.
+Work in progress, with every result and failure: [docs/WORKPLAN.md](docs/WORKPLAN.md).
+Open items:
 
-- The Claude adapter has not yet been run against the live API (P3 gate).
-- Developer-experience (R8) and release-qualification (R9) gates are in progress.
+- **Not tagged:** CI cannot run while GitHub Actions billing is failing (WORKPLAN X-CI).
+- The Claude adapter has not been run against the live API, and no frontier model has
+  been tested (X-API). The container smoke test needs Docker (X-DKR).
+- Research running after the RC: the memory objective (M1: supported in the prompt,
+  harmful as compiled filters) and reflective rulebooks (M2, running).
 - Not yet published to PyPI, pending a name.
 - **Concurrency:** one store serves about 100–135 operations a second whatever the shape, with p95 under 150 ms up to 10 agent processes or 10 agents behind one `agent-api` ([P12b](research/results/p12b-catch-up.md)). Past that, use one `agent-api` process rather than a store handle per agent.
 

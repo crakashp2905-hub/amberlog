@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added after the 0.11.0 release candidate (opt-in research modules)
+
+- **Memory objective** (`objective.py`, M1): a session's statement of what is relevant,
+  as rules over memory metadata applied by `retrieve(objective=)` at the eligibility
+  chokepoint, and as rules for the agent's prompt (`prompt()`). `compile_objective` asks a
+  model and validates the result. `sanity()` refuses an objective that admits nothing.
+  Measured: helps in the prompt, hurts when the model compiles it
+  ([M1](research/results/m1-memory-objective.md)).
+- **Reflective rulebook** (`rulebook.py`, M2): an agent's rules as one versioned memory.
+  A reflection becomes a candidate, adopted only when held-out accuracy verified by
+  someone else beats the incumbent. Rules can only narrow retrieval.
+- `derive(auto_activate=)`, as `remember` has.
+- **In the RC as well:** `trust.py` and `exposure.TransferGatePolicy` (S4),
+  `independence.py` (S2), `receipts.py` (S5), `MemoryFabric.supersede_copies` (S1),
+  `ActionGate.execute` (S6). See the release note.
+
 ### Changed — breaking
 
 - **Scope is enforced on reads.** A `private` memory is visible only to the

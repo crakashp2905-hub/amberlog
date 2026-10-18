@@ -96,11 +96,9 @@ Status values:
   ordinary is not detectable by inspecting it.
 - **A certificate is not proof that a claim is true.** It records that declared
   checks passed against a specific log state and policy.
-- **No rate limiting.** Put the service behind a proxy that enforces limits.
+- **Rate limiting is per agent and per address on the agent API only** (20 requests a second, burst 40, by default). The MCP server is one agent on stdio and has none; the federation server has none and relies on the peer registry.
 - **No formal verification and no third-party audit.**
-- **Write contention.** All writes take one lock to keep the log ordered.
-  Throughput falls as writers are added ([P12](../research/results/p12-load.md)).
-  A write flood from one credential can slow every agent (S9).
+- **Write contention.** All writes take one lock to keep the log ordered, and a retrieve is a write. About 100–135 operations a second per store on the measured machine, whatever the deployment shape ([P12b](../research/results/p12b-catch-up.md)). A write flood from one credential slows every agent sharing the store, bounded on the agent API by its rate limit (S9).
 
 ## 6. Failure behaviour
 

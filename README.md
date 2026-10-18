@@ -302,7 +302,7 @@ MCP server are built and tested. Open items:
 - The Claude adapter has not yet been run against the live API (P3 gate).
 - Developer-experience (R8) and release-qualification (R9) gates are in progress.
 - Not yet published to PyPI, pending a name.
-- **Concurrency:** throughput falls sharply as agent processes are added to one store ([P12](research/results/p12-load.md)). Run a few processes per store, not one per agent.
+- **Concurrency:** one store serves about 100–135 operations a second whatever the shape, with p95 under 150 ms up to 10 agent processes or 10 agents behind one `agent-api` ([P12b](research/results/p12b-catch-up.md)). Past that, use one `agent-api` process rather than a store handle per agent.
 
 See [ROADMAP.md](ROADMAP.md) for milestones, gates and kill criteria, and
 [CHANGELOG.md](CHANGELOG.md) for what changed.

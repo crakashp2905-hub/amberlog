@@ -141,6 +141,29 @@ The governed write path adds about 0.2 ms per episode over an ungoverned vector
 store ([Phase A](research/results/phase-a-real-agent-benchmark.md)). Governance
 is not where your latency goes.
 
+### Many agents on one store
+
+Measured on one machine (Windows, 8 CPUs) with agents issuing operations back
+to back, which is the worst case: real agents wait on a model between
+operations. From [P12b](research/results/p12b-catch-up.md):
+
+| Shape | Supported, with p95 ≤ 150 ms | Beyond it |
+|---|---|---|
+| A store handle per agent process, SQLite | **10 processes** (p95 84 ms; p99 1.2 s) | p95 0.5 s at 50, 3 s at 100 |
+| A store handle per agent process, Postgres | **10 processes** (p95 128 ms; p99 222 ms) | p95 0.9 s at 50, 3 s at 100 |
+| Agents behind one `agent-api` process | **10 agents** (p95 135 ms; p99 205 ms) | flat at ~130 ops/s; p95 1.3 s at 100 |
+
+- **Aggregate ceiling: about 100–135 operations a second per store**, whatever
+  the shape. Every write takes one lock that keeps the log ordered, and a
+  retrieve is a write because exposures are logged.
+- **Past 10 agents, prefer one `agent-api` process.** Throughput is the same;
+  its p99 at 100 agents is 2.1 s against 12.1 s for a SQLite handle per
+  process.
+- **Postgres has the tighter tail** with a handle per process, at a higher
+  median. Choose it for writers on several machines, not for speed.
+- Load with think time between operations was not measured. Nothing here is
+  extrapolated to it.
+
 ## 4. Upgrades
 
 The version tracks the **memory schema**, not the Python API

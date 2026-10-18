@@ -25,7 +25,11 @@ class Posture(unittest.TestCase):
         self.assertEqual(state(auto, "new memories wait for review"), "off")
         self.assertEqual(state(reviewed, "cross-tenant refusals conceal existence"), "off")
         self.assertEqual(state(auto, "cross-tenant refusals conceal existence"), "on")
-        self.assertEqual(state(reviewed, "append-only event log enforced by the database"), "partial")
+        # Postgres triggers refuse edits; SQLite cannot. The tests run on
+        # either backend (MF_TEST_POSTGRES_URL), and so must the expectation.
+        on_postgres = bool(os.environ.get("MF_TEST_POSTGRES_URL"))
+        self.assertEqual(state(reviewed, "append-only event log enforced by the database"),
+                         "on" if on_postgres else "partial")
 
     def test_the_accepted_gaps_are_the_reviews(self) -> None:
         here = os.path.dirname(os.path.abspath(__file__))

@@ -82,7 +82,7 @@ registered.
 | P7 | A low-friction first run | `init` with a guided setup and working demo, and a `doctor` that explains every failure in plain language with its fix | ✅ `init`: store + external keys + agents file (key never printed) + MCP config + doctor, never overwriting; tested by running the printed MCP config; every doctor warning/failure now carries a fix, enforced by a test |
 | P8 | Lifecycle and deletion center | Retention rules, stale and sensitive finders, and deletion/revocation progress across stores | ✅ `lifecycle.py`: retention rules + dry-run sweep, stale (never shown) and long-waiting candidates, readable secrets and memories the current screens would flag, erasures and per-store propagation of withdrawn shared memories; `lifecycle` command and Lifecycle tab; read-only |
 | P9 | Honest, explainable status labels | Distinct labels: source recorded, reviewed, policy-checked, verified in destination. Each says what it does and does not establish, everywhere a memory is shown | ✅ `status.py`, on `show` and the dashboard; 'verified in destination' is self-reported because the protocol's `verified` state is never set (→ S1) |
-| P10 | Guided incident response | Detect → show propagation → contain → retract → reviewable incident record, as one workflow | ⬜ |
+| P10 | Guided incident response | Detect → show propagation → contain → retract → reviewable incident record, as one workflow | ✅ `response.py` + `incident`: candidates (auditor, screens, attention) → assessment (author's other memories, who saw it, stores, blast radius, gated actions with necessity) → contain (withdraw + owe stores) → a record generated from the log (.md or .json); runbook §4 now uses it |
 
 ## Last
 

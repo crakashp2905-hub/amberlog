@@ -765,6 +765,67 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_incident(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Detect, assess, contain, record. See `response.py`."""
+    from . import response
+
+    db = _shown(args.db)
+    if args.id is None:
+        found = response.candidates(fabric)
+        if args.json:
+            print(json.dumps(found, indent=2))
+            return 0
+        heading(f"Possible incidents ({len(found)})")
+        for c in found:
+            print(f"  {c['memory_id']}  {'; '.join(c['why'])}")
+        if found:
+            print(f"\n{C.DIM}Assess one: memory-fabric --db {db} incident <id>{C.RESET}")
+        return 0
+    if args.id not in fabric.state.memories:
+        print(f"{C.RED}no memory {args.id}{C.RESET}", file=sys.stderr)
+        return 4
+    if args.contain:
+        if not args.reason or not args.actor:
+            print(f"{C.RED}containing needs --reason and --actor{C.RESET}", file=sys.stderr)
+            return 2
+        result = response.contain(fabric, args.id, reason=args.reason, actor=args.actor)
+        owed = ", ".join(result.get("owed_to") or []) or "no other store"
+        print(f"contained {args.id}" + (" (already quarantined)" if result.get("already_quarantined")
+                                         else f"; retraction owed to {owed}"))
+        if result["review_next"]:
+            print(f"Same author's other active memories, review next: "
+                  f"{', '.join(result['review_next'])}")
+        print(f"{C.DIM}Record it: memory-fabric --db {db} incident {args.id} --record incident.md{C.RESET}")
+        return 0
+    if args.record:
+        data = response.record(fabric, args.id)
+        out = Path(args.record)
+        out.write_text(json.dumps(data, indent=2) if out.suffix == ".json"
+                       else response.record_markdown(data), encoding="utf-8")
+        print(f"wrote the incident record to {out} ({len(data['timeline'])} events, "
+              f"{len(data['outstanding'])} delivery/ies outstanding)")
+        return 0
+    a = response.assess(fabric, args.id)
+    if args.json:
+        print(json.dumps(a, indent=2))
+        return 0
+    heading(f"Incident assessment: {args.id}")
+    print(f"  content        {a['content']}")
+    print(f"  author         {a['author']}   state {a['state']}")
+    print(f"  author's other active memories  {len(a['author_other_active'])}")
+    print(f"  seen by        {', '.join(f'{k} x{v}' for k, v in a['seen_by'].items()) or 'nobody'}")
+    print(f"  other stores   {', '.join(s['store_id'] for s in a['stores']) or 'none'}")
+    br = a["blast_radius"]
+    print(f"  withdrawing it contests {len(br['would_contest'])}, "
+          f"leaves {len(br['would_survive'])} standing on independent support")
+    for act in a["actions_using_it"]:
+        print(f"  action seq {act['seq']}: {act['tool']} by {act['agent']}, "
+              f"{'allowed' if act['allowed'] else 'refused'}; necessary source: {act['necessary_source']}")
+    print(f"\n{C.DIM}Contain: memory-fabric --db {db} incident {args.id} --contain "
+          f"--reason WHY --actor YOU{C.RESET}")
+    return 0
+
+
 def cmd_lifecycle(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Retention rules, stale and sensitive finders, and deletion progress."""
     from .lifecycle import center
@@ -1963,6 +2024,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("dir", help="directory to create the store in")
     p.add_argument("--agent", default="my-assistant")
     p.add_argument("--tenant", default="tn_default")
+
+    p = add("incident", cmd_incident,
+            "Guided incident response: list candidates, assess one, --contain it "
+            "(WRITES), --record FILE a reviewable record")
+    p.add_argument("id", nargs="?")
+    step = p.add_mutually_exclusive_group()
+    step.add_argument("--contain", action="store_true")
+    step.add_argument("--record", metavar="FILE", help=".md (default) or .json")
+    p.add_argument("--reason", default="")
+    p.add_argument("--actor")
 
     p = add("lifecycle", cmd_lifecycle,
             "Retention rules, stale and sensitive memories, and erasure and retraction "

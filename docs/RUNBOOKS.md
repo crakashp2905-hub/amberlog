@@ -94,11 +94,17 @@ conclusions that have independent support.
    ```
 3. Confirm the retraction left: `doctor` reports any delivery that has failed
    permanently; `attention` lists what is still pending.
-4. If an action was taken on it, reconstruct the incident. This is a Python
-   call today (`memory_fabric.incident.reconstruct(fabric, action_seq)`); the
-   guided incident workflow is [WORKPLAN.md](WORKPLAN.md) P10. It reports which
-   sources the action actually depended on and whether each conclusion survives
-   their withdrawal.
+4. Follow the guided workflow, which does steps 1–3 in order and records them:
+   ```bash
+   memory-fabric --db store.db incident                    # candidates, with why
+   memory-fabric --db store.db incident <memory-id>        # spread, blast radius, actions that used it
+   memory-fabric --db store.db incident <memory-id> --contain --reason "<why>" --actor <you>
+   memory-fabric --db store.db incident <memory-id> --record incident.md
+   ```
+   The assessment lists the author's other active memories (a bad source
+   rarely writes one bad memory) and every gated action that used this one,
+   with whether it was a necessary source. The record is generated from the
+   log, so it cannot drift from what happened.
 5. **Do not** quarantine everything that was in context when something failed.
    [Phase A](../research/results/phase-a-real-agent-benchmark.md) measured that
    policy withdrawing correct memories about unrelated faults; `attention` flags

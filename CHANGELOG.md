@@ -34,6 +34,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - `share` and `agent-api-revoke` commands; `list --agent`.
 - `init`: a production-shaped store in one step, with the MCP configuration printed.
 - `lifecycle`: retention rules, stale and sensitive finders, erasure and retraction progress.
+- `incident`: guided response -- candidates, assessment, containment, and a record generated from the log.
 - `posture` (which controls are on here, and the accepted gaps) and `audit-export`
   (decisions, changes, access, deletion receipts; no content; ends with a chain checkpoint).
 - **Integrations**: framework-neutral function tools (`integrations.tools`), a LangChain

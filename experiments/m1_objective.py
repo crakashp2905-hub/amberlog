@@ -158,14 +158,21 @@ def run_seed(seed: int, client: Any, model: str, cache: Any) -> tuple[list[dict[
     for m in w["memories"]:
         mid = fab.remember("staff", m["text"], scope="team", context=m["context"])
         truth[mid] = m["relevant"]
+    from memory_fabric.objective import sanity
+
     objective = compiled(client, model, cache, w["plant"])
     gold_objective = gold(w["plant"])
+    # A compiled objective that admits nothing is a compile error: the filter
+    # is not applied, the statement stays in the prompt (objective.sanity).
+    refused = sanity(objective, [m["context"] for m in w["memories"]])
+    filter_objective = None if refused else objective
     admitted = {mid for mid in truth if objective.admits(fab.state.memories[mid].context)}
     relevant = {mid for mid, r in truth.items() if r}
     compile_quality = {
         "admission_precision": round(len(admitted & relevant) / len(admitted), 4) if admitted else 0.0,
         "admission_recall": round(len(admitted & relevant) / len(relevant), 4),
         "rules": objective.to_json(),
+        "filter_refused": refused,
     }
     oracle_ids = relevant
     rows = []
@@ -177,7 +184,7 @@ def run_seed(seed: int, client: Any, model: str, cache: Any) -> tuple[list[dict[
                 if arm in ("prompt_only", "both"):
                     system = SYSTEM + "\n\n" + objective.prompt()
                 if arm in ("filter_only", "both"):
-                    filt = objective
+                    filt = filter_objective
                 if arm == "filter_gold":
                     filt = gold_objective
                 result = fab.retrieve("agent", question, k=K, objective=filt,
@@ -215,15 +222,22 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
     key = lambda r: (r["seed"], r["task"], r["q"])  # noqa: E731
     by = {arm: {key(r): r["correct"] for r in rows if r["arm"] == arm} for arm in ARMS}
     units = sorted(by["plain"])
-    interval, discordance = stats.paired_difference([by["both"][u] for u in units],
-                                                    [by["plain"][u] for u in units])
-    verdict = Registration(hypothesis="M1", metric="accuracy", mechanism="both",
+
+    def diff(a: str, b: str) -> dict[str, Any]:
+        interval, discordance = stats.paired_difference([by[a][u] for u in units],
+                                                        [by[b][u] for u in units])
+        return {"mean": round(interval.point, 4),
+                "ci95": [round(interval.low, 4), round(interval.high, 4)],
+                "discordance": round(discordance, 4), "pairs": len(units)}
+
+    primary = diff("prompt_only", "plain")
+    verdict = Registration(hypothesis="M1a", metric="accuracy", mechanism="prompt_only",
                            baselines=["plain"], ceiling="oracle", seeds_required=10).evaluate(
-        arms, seeds=seeds, n_pairs=len(units), discordance=discordance)
+        arms, seeds=seeds, n_pairs=len(units), discordance=primary["discordance"])
     return {"arms": arms,
-            "both_minus_plain": {"mean": round(interval.point, 4),
-                                 "ci95": [round(interval.low, 4), round(interval.high, 4)],
-                                 "discordance": round(discordance, 4), "pairs": len(units)},
+            "prompt_only_minus_plain": primary,
+            "both_minus_prompt_only": diff("both", "prompt_only"),
+            "filter_only_minus_plain": diff("filter_only", "plain"),
             "no_arm_beats_the_oracle": all(arms[a]["accuracy"] <= arms["oracle"]["accuracy"]
                                            for a in ARMS),
             "verdict": verdict.to_json()}
@@ -259,8 +273,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         Path(args.out).write_text(json.dumps({**result, "rows": rows}, indent=1) + "\n",
                                   encoding="utf-8")
     print(json.dumps({k: v for k, v in result.items() if k != "compiles"}, indent=2))
-    print(json.dumps([{k: c[k] for k in ("seed", "admission_precision", "admission_recall")}
-                      for c in compiles]))
+    print(json.dumps([{k: c[k] for k in ("seed", "admission_precision", "admission_recall",
+                                          "filter_refused")} for c in compiles]))
     return 0
 
 

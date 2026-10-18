@@ -151,6 +151,7 @@ def validate(raw: Mapping[str, Any], fields: Mapping[str, Sequence[Any]],
             dropped.append(f"unknown field {rule.field!r}")
             return None
         known = list(fields[rule.field])
+        rule = Rule(rule.field, rule.op, _coerce(rule.value, known))
         values = rule.value if isinstance(rule.value, (list, tuple)) else [rule.value]
         if rule.op in ("eq", "neq", "in", "not_in") and known and not all(v in known for v in values):
             dropped.append(f"value {rule.value!r} not seen for {rule.field!r}")
@@ -166,6 +167,43 @@ def validate(raw: Mapping[str, Any], fields: Mapping[str, Sequence[Any]],
     return MemoryObjective(statement, tuple(include), exclude, tuple(dropped))
 
 
+def _coerce(value: Any, known: Sequence[Any]) -> Any:
+    """Give a proposed value the type the store's values have ("2026" -> 2026).
+
+    A model writes JSON, so a year arrives as a string about as often as a
+    number. Without this, a correct rule is dropped as "value not seen", which
+    M1's dev pilot found.
+    """
+    if isinstance(value, (list, tuple)):
+        return [_coerce(v, known) for v in value]
+    for example in known:
+        if isinstance(example, bool) or not isinstance(example, (int, float)):
+            continue
+        try:
+            return type(example)(value)
+        except (TypeError, ValueError):
+            return value
+    if known and all(isinstance(k, str) for k in known) and not isinstance(value, str):
+        return str(value)
+    return value
+
+
+def sanity(objective: MemoryObjective, contexts: Sequence[Mapping[str, Any]]) -> str | None:
+    """Why this objective should not be applied to a store with these contexts, or None.
+
+    An objective that admits **nothing** is a compilation error, not a session
+    with nothing relevant. In M1's dev pilot a model wrote "exclude every
+    source", which would have blanked retrieval for the whole session. The
+    caller should fall back to no filter, keep the statement in the prompt,
+    and show the reason to the person who wrote the objective.
+    """
+    if not contexts:
+        return None
+    if not any(objective.admits(c) for c in contexts):
+        return "it admits none of the store's memories"
+    return None
+
+
 def compile_objective(statement: str, fields: Mapping[str, Sequence[Any]], client: Any,
                       model: str) -> MemoryObjective:
     """Ask a model to turn a statement into rules over the store's fields, then validate."""
@@ -177,7 +215,10 @@ def compile_objective(statement: str, fields: Mapping[str, Sequence[Any]], clien
             "Use only these fields and values:\n" + described + "\n"
             "Return JSON: include is a list of alternatives, each a list of conditions that must "
             "all hold; exclude is a list of conditions any one of which rules a memory out. "
-            "Operators: eq, neq, in, not_in, gte, lte.")},
+            "Operators: eq, neq, in, not_in, gte, lte. "
+            "Put everything the statement calls relevant in include, with all of its conditions "
+            "in one alternative. Use exclude only for what the statement names as irrelevant, "
+            "and never exclude a value that an include alternative needs.")},
         {"role": "user", "content": statement},
     ]
     reply = client.chat(model, messages, temperature=0.0, num_predict=512, schema=SCHEMA)

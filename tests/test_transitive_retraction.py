@@ -251,7 +251,14 @@ class TransitiveRetractionTests(unittest.TestCase):
                 )
 
     def test_a_cycle_terminates_without_reaching_the_hop_limit(self) -> None:
-        """A → B → C → A, with A holding a re-import of its own memory.
+        """A → B → C, and C offers it back to A.
+
+        A re-import of A's own memory used to be accepted here, and this test
+        asserted the retraction reached it three hops later. In a two-store
+        cycle it never did (the intermediary does not forward to the store
+        that told it), so after a correction the origin served its own
+        superseded version (security review F12). Now the echo is refused at
+        the share, and the cycle is closed before any retraction travels.
 
         Termination has to come from deduplication, not from `MAX_HOPS`: the
         limit is a backstop whose job is to be a bug report. So this asserts
@@ -263,7 +270,9 @@ class TransitiveRetractionTests(unittest.TestCase):
         )
         at_b = offer(self.a, origin, self.b, "b", activate=True).imported_memory_id
         at_c = offer(self.b, at_b, self.c, "c", activate=True).imported_memory_id
-        back_at_a = offer(self.c, at_c, self.a, "a", activate=True).imported_memory_id
+        echo = offer(self.c, at_c, self.a, "a", activate=True)
+        self.assertFalse(echo.accepted, "an echo of A's own memory is refused")
+        self.assertIn("provenance chain", echo.reasons[0])
 
         self.a.request_retraction(
             origin, reason="wrong", recipients=[self.b.store_id],
@@ -273,7 +282,7 @@ class TransitiveRetractionTests(unittest.TestCase):
         for label, store, memory_id in (
             ("hop 1", self.b, at_b),
             ("hop 2", self.c, at_c),
-            ("hop 3, back at the origin", self.a, back_at_a),
+            ("the origin itself", self.a, origin),
         ):
             with self.subTest(label):
                 self.assertIs(

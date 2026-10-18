@@ -46,7 +46,7 @@ and erasure, and anyone who has watched one bad memory spread.
 | 🔌 | **Works with any MCP client**, alongside the Python SDK and a Claude API adapter. | [From an MCP client](#from-an-mcp-client) |
 | ⚡ | **Cheap.** **+0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store. | [Phase A cost gate](research/results/phase-a-real-agent-benchmark.md) |
 
-**1614 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)), 17 deterministic multi-store fault scenarios and 14 integrity
+**1619 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)), 17 deterministic multi-store fault scenarios and 14 integrity
 invariants ([matrix](docs/INVARIANTS.md)), all run in CI with nothing
 installed. What was run and what it showed: [docs/VALIDATION.md](docs/VALIDATION.md).
 

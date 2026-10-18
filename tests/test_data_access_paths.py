@@ -127,6 +127,7 @@ MUTATION = {
     "end_episode": "close one",
     "sweep_retention": "apply the retention policy",
     "request_retraction": "withdraw locally and owe every recipient, atomically",
+    "supersede_copies": "owe holders of an older version's copy a retraction of that version",
     "receive_retraction": "apply one arriving from another store",
     "erase_content": "destroy a content key. Irreversible",
     "rebuild": "replay the projection from the log",

@@ -516,6 +516,67 @@ class MemoryFabric:
             self.outbox.enqueue(retraction, recipients, _now_ms())
         return retraction
 
+    @_fresh
+    def supersede_copies(self, memory_id: str, actor: str) -> list[Retraction]:
+        """Owe every store holding an older version's copy a retraction of that version.
+
+        A revision changed nothing in the stores that held a copy: only
+        retractions travel, and offering the new version left the old import
+        active beside it (found by G4; research direction S1). This is the
+        correction half: for each store that was sent an older version, a
+        retraction of **that version only** -- `contradicted`, with
+        `evidence_reference` naming the version that replaced it -- through the
+        same outbox, transport and dispatcher as any retraction. The origin's
+        own current version is not withdrawn. A recipient withdraws exactly the
+        copy of that version (supersession is per memory and version, F11), and
+        its conclusions built on that copy are re-checked like any retraction's.
+
+        Offering the current version is the host's step, as every share is
+        (`federation.offer`). Idempotent: a (version, store) already owed is not
+        owed twice. Returns the retractions, one per superseded version.
+        """
+        memory = self._require(memory_id)
+        held: dict[str, set[int]] = {}
+        for event in self.log.read_types([ev.EventType.MEMORY_SHARED]):
+            if event.payload.get("memory_id") == memory_id:
+                held.setdefault(event.payload["recipient_store_id"], set()).add(
+                    int(event.payload.get("version", 1)))
+        already = {
+            (int(e.payload.get("origin_memory_version", 0)), recipient)
+            for e in self.log.read_types([ev.EventType.RETRACTION_REQUESTED])
+            if e.payload.get("origin_memory_id") == memory_id
+            for recipient in e.payload.get("recipients") or ()
+        }
+        owed: dict[int, list[str]] = {}
+        for recipient, versions in sorted(held.items()):
+            for version in sorted(versions):
+                if version < memory.version and (version, recipient) not in already:
+                    owed.setdefault(version, []).append(recipient)
+        out: list[Retraction] = []
+        with self._transaction():
+            for version, recipients in sorted(owed.items()):
+                retraction = Retraction(
+                    retraction_id=new_retraction_id(),
+                    origin_store_id=self.store_id,
+                    origin_memory_id=memory_id,
+                    origin_memory_version=version,
+                    origin_sequence=self.state.origin_sequence + 1,
+                    reason_code=WithdrawalBasis.CONTRADICTED.value,
+                    requested_by=actor,
+                    issued_at=iso_timestamp(self.now()),
+                    evidence_reference=f"superseded by version {memory.version}",
+                )
+                self._emit(ev.retraction_requested(
+                    ts=self.now(), retraction_id=retraction.retraction_id,
+                    origin_store_id=retraction.origin_store_id,
+                    origin_memory_id=memory_id, origin_memory_version=version,
+                    origin_sequence=retraction.origin_sequence,
+                    reason_code=retraction.reason_code, recipients=recipients,
+                    requested_by=actor))
+                self.outbox.enqueue(retraction, recipients, _now_ms())
+                out.append(retraction)
+        return out
+
     def record_share(
         self,
         memory_id: str,

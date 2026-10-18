@@ -1,9 +1,8 @@
 # Memory Fabric 0.11.0 — release candidate notes
 
-**Status: release candidate, not released.** Branch `rc/0.11.0`. Nothing is
-tagged and nothing is published. The tag waits on release gate G1, a passing
-CI run on this SHA, which GitHub Actions billing blocks (WORKPLAN X-CI). The
-acceptance evidence is in [RELEASE_EVALUATION.md](RELEASE_EVALUATION.md) §0.11.0.
+**Released as `v0.11.0`** from `rc/0.11.0`, after CI and acceptance passed on
+the tagged commit ([RELEASE_EVALUATION.md](RELEASE_EVALUATION.md)). Not on PyPI:
+the distribution name is not decided yet.
 
 ## Upgrading from 0.9.x
 

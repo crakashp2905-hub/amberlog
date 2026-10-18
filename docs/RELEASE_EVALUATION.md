@@ -1,57 +1,48 @@
 # Release evaluation: 0.11.0 (release gate G6)
 
-Release candidate `rc/0.11.0`. The acceptance runs below are at `cddd8ca`,
-on Windows 11 with Python 3.13 (SQLite) and Python 3.12 with PostgreSQL 16.2.
-**Not tagged.** The tag waits on G1, a green CI run on this SHA, which
-GitHub Actions billing blocks (WORKPLAN X-CI). Release note:
+**Tagged as `v0.11.0` from `rc/0.11.0`.** The code under test is `7d3fc25`. The
+only commit after it is this document, and CI is required to pass on the
+tagged commit itself (the release workflow refuses otherwise). Release note:
 [RELEASE_NOTES_0.11.0.md](RELEASE_NOTES_0.11.0.md).
 
-## Acceptance suites
+## Acceptance at `7d3fc25ea582`
 
-| suite | command | result |
+| suite | where | result |
 |---|---|---|
-| Unit and integration, SQLite | `python -m unittest discover -s tests -t .`, with the generated benchmark fixtures built | **1,636 OK, 15 skipped** (Postgres-only file 6, anthropic SDK not installed 5, POSIX entrypoint 3, one more) |
-| New and changed modules on Postgres 16 | 24 modules, among them `test_postgres`, the fence, receipts, independence, trust, retraction, federation, scope, collections and the console modules, with `MF_TEST_POSTGRES_URL` | **224 OK** |
-| Fault matrix | `python -m experiments.faultsim` | **17/17** (the cycle scenario now asserts F12's echo refusal) |
-| Lint, types | `ruff check .`; `mypy memory_fabric` | clean; clean (75 files) |
-| Secret scan, compile | `tools/scan_secrets.py`; `compileall` | exit 0; exit 0 |
-| Packaging | wheel built from the RC, installed in a clean venv | `memory_fabric-0.11.0-py3-none-any.whl` installs and imports; `demo` runs; `doctor` reports "Sound. Every check verified, none skipped." |
-| Container | `docker build` and the smoke test | **not run**: no Docker daemon (X-DKR) |
-| CI | GitHub Actions | **not run**: billing (X-CI) |
+| CI, 18 jobs | GitHub Actions | **green**: 9 OS × Python test jobs (Windows, macOS and Linux; 3.11–3.13), Postgres, **Docker container smoke test** (builds, serves the dashboard on the published port, runs as uid 10001, keys on the key volume), package, lint, e2e, faults, secrets, LangChain contract, **Claude contract** |
+| Unit and integration, SQLite | Windows 11, Python 3.13, benchmark fixtures built | **1,637 OK**, 15 skipped (Postgres-only 6, anthropic SDK 5, POSIX entrypoint 3, one more) |
+| New and changed modules on Postgres 16.2 | 25 modules, the adapters included | **268 OK** |
+| Fault matrix | `experiments.faultsim` | **17/17** |
+| Live integration path | `experiments.live_ollama --quick`, qwen2.5:3b, through `session.recall` → `build_context` → model → verified outcome (at `22a7d30`; only tests changed since) | no memory 0%, correct memory **100%**, wrong memory 0% (misled every time), contested **67%** |
 
-**Found by acceptance and fixed before this table:**
+**Found by acceptance and fixed before the tag:**
 
-- the fault matrix and a schema-pin test were still asserting behaviour that
-  F12 and the 0.11.0 bump had changed;
-- a Postgres connect had no timeout, so a mistyped URL hung for 131 s;
-- a posture test assumed SQLite.
+- the Claude contract fixture predated F10 (scope enforced on reads);
+- a Postgres connect had no timeout (a 131 s hang);
+- the fence tests compared clock ticks, not log order;
+- a concurrency test lost worker errors with the thread;
+- two tests were still asserting behaviour that F12 and the 0.11.0 bump had
+  changed.
 
-The first Postgres run failed 2 of 224 tests, on the last two. The re-run
-then failed the fence's concurrency test once. That was not a fence
-violation: two timestamps were *equal*, because `time.monotonic()` ticks
-every 15.6 ms on Python 3.12 for Windows. The fence tests now assert the
-log's order, which is authoritative. The cross-process fence test also runs
-on Postgres now, where the fence is `LOCK TABLE events IN EXCLUSIVE MODE`;
-it passed 3 of 3. Final set: 224 OK. S6's own measurements ran on Python
-3.13, where `time.time()` resolves to 0.1 µs, so its counts stand.
+**Not validated:** the live Claude API. There is no credential or CLI in this
+environment, so it is covered only by the SDK contract test (WORKPLAN X-API).
 
 ## Gates
 
 | gate | status |
 |---|---|
-| G1 | ⛔ X-CI for the CI run. Counts reconciled, and a hygiene test keeps them so |
-| G2 | ✅ except the live Claude adapter call (X-API) |
-| G3 | ✅ capacity measured and published |
-| G4 | ✅ run and published: **not supported** on qwen2.5:3b, underpowered on gemma3:4b, failures reported |
+| G1 | ✅ CI green on `main` (`12f0fd1`) and on this RC |
+| G2 | ✅ except the live Claude call (X-API) |
+| G3 | ✅ |
+| G4 | ✅ run and published; **not supported** on qwen2.5:3b |
 | G5 | ✅ 13 findings, 0 open critical or high |
-| G6 | this document; the tag is blocked by G1 |
+| G6 | ✅ this document |
 
 ## Rollback
 
-The schema changes are additive. Rolling back to 0.9.x code is a code
-rollback, except for one thing: 0.10.0 enforced scope on reads, and a store
-upgraded with `share --all-private-active` stays shared. That is the
-intended direction, and nothing needs undoing.
+The schema is additive. Rolling back to 0.9.x is a code rollback; a store
+upgraded with `share --all-private-active` stays shared, which is the
+intended direction.
 
 ---
 

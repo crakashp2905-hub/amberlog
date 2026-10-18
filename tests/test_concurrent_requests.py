@@ -74,12 +74,21 @@ class ConcurrentAgentRequests(unittest.TestCase):
         lock = threading.Lock()
         start = threading.Barrier(THREADS)
 
+        errors: list[str] = []
+
         def worker(i: int) -> None:
             start.wait()
             for n in range(REQUESTS):
                 op, body = (("remember", {"content": f"ag{i} note {n}: unit {n} at {n % 9} bar"})
                             if n % 3 == 0 else ("recall", {"query": f"unit {n} bar"}))
-                status = self.post(op, body, tokens[i])
+                try:
+                    status = self.post(op, body, tokens[i])
+                except Exception as exc:  # noqa: BLE001 - reported, not lost with the thread
+                    # A worker that raised used to die silently and show only as a
+                    # short count (186 != 200 on a loaded machine, 0.11.0 RC).
+                    with lock:
+                        errors.append(f"ag{i} {op} #{n}: {type(exc).__name__}: {exc}")
+                    continue
                 with lock:
                     statuses.append(status)
 
@@ -88,6 +97,7 @@ class ConcurrentAgentRequests(unittest.TestCase):
             t.start()
         for t in threads:
             t.join()
+        self.assertEqual(errors, [], f"{len(errors)} requests raised; first: {errors[:3]}")
         self.assertEqual(len(statuses), THREADS * REQUESTS)
         failures = [s for s in statuses if s != 200]
         self.assertEqual(failures, [], f"{len(failures)} of {len(statuses)} failed")

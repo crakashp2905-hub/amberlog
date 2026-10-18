@@ -13,6 +13,12 @@ Every world in a seed works at the same plant, so rules about fields
 generalise from round to round. The test set is a fixed, separate world,
 asked after every round, including round 0, before any rule exists.
 
+A rulebook is applied the way M1's `both` arm applies an objective: as a
+retrieval filter (never one that admits nothing, `objective.sanity`) and as
+rules in the prompt. The dev pilot showed why. With prompt-only rules, an
+arm beat the hand-written "oracle" rulebook, so that was not a ceiling
+(AGENTS.md 8b). Applied as a filter, perfect rules show only the relevant note.
+
 Arms (same retrieval, k = 5, same model, temperature 0):
   no_rulebook       never any rules
   reflexion_append  each round's reflection is a free-text lesson appended to the prompt,
@@ -76,18 +82,23 @@ class Store:
         for m in w["memories"]:
             self.fab.remember("staff", m["text"], scope="team", context=m["context"])
 
-    def notes(self, question: str) -> list[Any]:
+    def notes(self, question: str, objective: Any = None) -> list[Any]:
+        from memory_fabric.objective import sanity
+
+        if objective is not None and (not (objective.include or objective.exclude) or sanity(
+                objective, [m["context"] for m in self.w["memories"]])):
+            objective = None
         return self.fab.retrieve("agent", question, k=K, group_by_source_root=False,
-                                 expand_lineage=0).exposed
+                                 expand_lineage=0, objective=objective).exposed
 
     def close(self) -> None:
         self.fab.close()
 
 
 def answer(client: Any, model: str, cache: Any, rules_text: str, store: Store,
-           task: dict[str, Any]) -> dict[str, Any]:
+           task: dict[str, Any], objective: Any = None) -> dict[str, Any]:
     question = task["questions"][0]
-    notes = store.notes(question)
+    notes = store.notes(question, objective)
     system = SYSTEM + ("\n\n" + rules_text if rules_text else "")
     text = ("Notes:\n" + "\n".join(f"- {render(m)}" for m in notes)
             + f"\n\nQuestion: {question}\nAnswer with the number only.")
@@ -153,7 +164,6 @@ def rules_prompt(objective: Any) -> str:
 
 def run_seed(seed: int, client: Any, model: str, cache: Any) -> dict[str, Any]:
     from memory_fabric import MemoryFabric
-    from memory_fabric.objective import sanity
     from memory_fabric.rulebook import Rulebook
 
     rng = random.Random(seed)
@@ -165,7 +175,8 @@ def run_seed(seed: int, client: Any, model: str, cache: Any) -> dict[str, Any]:
     books = MemoryFabric(":memory:", auto_activate=True)
     gated = Rulebook(books, "gated", "agent", statement="Rules learned from outcomes")
     state: dict[str, Any] = {"ungated": gated.current(), "lessons": []}
-    gold_text = gold(plant).prompt()
+    gold_rules = gold(plant)
+    gold_text = gold_rules.prompt()
     log: dict[str, Any] = {"seed": seed, "plant": plant, "rounds": [], "decisions": []}
 
     def prompts() -> dict[str, str]:
@@ -176,11 +187,15 @@ def run_seed(seed: int, client: Any, model: str, cache: Any) -> dict[str, Any]:
                 "ungated_rewrite": rules_prompt(state["ungated"]),
                 "gated_rewrite": rules_prompt(gated.current())}
 
+    def filters() -> dict[str, Any]:
+        return {"no_rulebook": None, "reflexion_append": None, "oracle_rulebook": gold_rules,
+                "ungated_rewrite": state["ungated"], "gated_rewrite": gated.current()}
+
     def test_round(r: int) -> None:
-        current = prompts()
+        current, filt = prompts(), filters()
         scores = {}
         for arm in ARMS:
-            results = [answer(client, model, cache, current[arm], test_store, t)
+            results = [answer(client, model, cache, current[arm], test_store, t, filt[arm])
                        for t in test_world["tasks"]]
             scores[arm] = round(accuracy(results), 4)
         log["rounds"].append({"round": r, "test_accuracy": scores,
@@ -194,23 +209,24 @@ def run_seed(seed: int, client: Any, model: str, cache: Any) -> dict[str, Any]:
         train_store, val_store = Store(train[r - 1]), Store(val[r - 1])
         batch = rng.sample(train[r - 1]["tasks"], BATCH)
         vbatch = rng.sample(val[r - 1]["tasks"], BATCH)
-        current = prompts()
+        current, filt = prompts(), filters()
         # reflexion: a lesson from its own training misses
         res = [answer(client, model, cache, current["reflexion_append"], train_store, t) for t in batch]
         state["lessons"].append(reflect_lesson(client, model, cache, res))
         # ungated: rewrite and adopt
-        res = [answer(client, model, cache, current["ungated_rewrite"], train_store, t) for t in batch]
+        res = [answer(client, model, cache, current["ungated_rewrite"], train_store, t,
+                      filt["ungated_rewrite"]) for t in batch]
         proposal = reflect_rules(client, model, cache, state["ungated"], res)
-        if sanity(proposal, [m["context"] for m in train[r - 1]["memories"]]) is None:
-            state["ungated"] = proposal
+        state["ungated"] = proposal  # always adopted; an empty filter is not applied (Store.notes)
         # gated: rewrite, then adopt only on held-out, environment-scored evidence
-        res = [answer(client, model, cache, current["gated_rewrite"], train_store, t) for t in batch]
+        res = [answer(client, model, cache, current["gated_rewrite"], train_store, t,
+                      filt["gated_rewrite"]) for t in batch]
         proposal = reflect_rules(client, model, cache, gated.current(), res)
         candidate = gated.propose(proposal, f"round {r}: {sum(1 - x['correct'] for x in res)} misses")
-        incumbent = accuracy([answer(client, model, cache, current["gated_rewrite"], val_store, t)
-                              for t in vbatch])
-        challenger = accuracy([answer(client, model, cache, rules_prompt(proposal), val_store, t)
-                               for t in vbatch])
+        incumbent = accuracy([answer(client, model, cache, current["gated_rewrite"], val_store, t,
+                                     filt["gated_rewrite"]) for t in vbatch])
+        challenger = accuracy([answer(client, model, cache, rules_prompt(proposal), val_store, t,
+                                      proposal) for t in vbatch])
         decision = gated.adopt(candidate, incumbent_score=incumbent, candidate_score=challenger,
                                n=len(vbatch), verifier="env")
         log["decisions"].append({"round": r, "adopted": decision.adopted,

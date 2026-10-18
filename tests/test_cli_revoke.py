@@ -85,6 +85,17 @@ class RevokeFromTheCommandLine(unittest.TestCase):
         self.assertEqual(code, 0, output)
         self.assertEqual((self.status(a1), self.status(a2), self.status(b)), (401, 401, 200))
 
+    def test_what_an_agent_wrote_can_be_listed(self) -> None:
+        from memory_fabric.sdk import agent
+
+        mine = agent(self.fabric, "ag_a", "tn_default").remember("valve 7 sticks when cold")
+        agent(self.fabric, "ag_b", "tn_default").remember("pump 3 needs a new seal")
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            code = main(["--db", self.db, "--json", "list", "--agent", "ag_a", "--limit", "0"])
+        self.assertEqual(code, 0)
+        self.assertEqual([row["id"] for row in json.loads(out.getvalue())], [mine])
+
     def test_garbage_is_an_error_not_a_revocation(self) -> None:
         code, _ = self.run_cli("--token", "not-a-credential")
         self.assertEqual(code, 5)

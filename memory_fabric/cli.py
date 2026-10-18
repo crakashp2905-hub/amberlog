@@ -379,6 +379,7 @@ def cmd_list(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         limit=args.limit,
         sort=args.sort,
         tenant=getattr(args, "tenant", None),
+        agent=getattr(args, "agent", None),
     )
     if args.json:
         print(json.dumps(report.jsonable([r.to_json() for r in rows]), indent=2, allow_nan=False))
@@ -1524,6 +1525,7 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--state")
     p.add_argument("--scope")
     p.add_argument("--tenant", help="only memories belonging to this tenant")
+    p.add_argument("--agent", help="only memories this agent wrote (from provenance)")
     p.add_argument("--type")
     p.add_argument("-q", "--query", help="substring of content or id")
     p.add_argument("--limit", type=int, default=50)

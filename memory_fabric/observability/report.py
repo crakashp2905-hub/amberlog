@@ -264,10 +264,16 @@ def memory_rows(
     limit: int | None = None,
     sort: str = "created",
     tenant: str | None = None,
+    agent: str | None = None,
 ) -> list[MemoryRow]:
     """Filtered listing. `query` is a substring match on content, not retrieval:
     listing must never depend on the embedder or touch the exposure log."""
-    rows = [_row(fabric, memory_id) for memory_id in fabric.state.memories]
+    ids = list(fabric.state.memories)
+    if agent:
+        # Who wrote it, from provenance: the first question after a credential
+        # leaks (docs/RUNBOOKS.md §1). Filtered before rows are built.
+        ids = [i for i in ids if fabric.state.memories[i].provenance.created_by == agent]
+    rows = [_row(fabric, memory_id) for memory_id in ids]
 
     if state:
         rows = [r for r in rows if r.lifecycle_state == state]

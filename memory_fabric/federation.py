@@ -153,6 +153,10 @@ def offer(
             reasons=[f"recipient refused: {reason}" for reason in inbound.reasons],
         )
 
+    from .independence import Independence, global_ref
+
+    root_store, root_id = global_ref(source, memory_id)
+    informed = sorted(Independence(source).informed_by(memory_id))
     context = dict(memory.context)
     context[ORIGIN_KEY] = {
         "agent": memory.provenance.created_by,
@@ -167,6 +171,12 @@ def offer(
         # imports did not record one at all.
         "version": memory.version,
         "chain": [*chain, source.store_id],
+        # The original observation, named the same in every store, and the
+        # originals its author had been shown before writing it: what lets a
+        # recipient tell a laundered copy from an independent report
+        # (`independence`, S2).
+        "root": {"store": root_store, "memory_id": root_id},
+        "informed_by": [list(ref) for ref in informed],
     }
 
     imported_id = target.remember(

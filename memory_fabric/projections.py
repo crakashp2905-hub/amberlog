@@ -52,6 +52,10 @@ class ExposureRecord:
     policy_id: str
     step: int
     ts: int
+    # Who was shown it, and where in the log: what `independence` needs to
+    # tell "wrote it having seen that" from "wrote it independently".
+    agent_id: str | None = None
+    seq: int = 0
 
 
 @dataclass
@@ -92,6 +96,7 @@ class ProjectionState:
     # decision, not of the memory, and a release leaves it readable.
     withdrawal_basis: dict[str, str] = field(default_factory=dict)
     copy_of: dict[str, str] = field(default_factory=dict)
+    created_seq: dict[str, int] = field(default_factory=dict)
     """Memory id -> the memory it re-ingests.
 
     Deliberately not a parent edge. `_group_by_root` spares a memory that is
@@ -238,6 +243,7 @@ def _register_memory(state: ProjectionState, memory: Memory) -> None:
 def _on_memory_created(state: ProjectionState, event: Event) -> None:
     memory = Memory.from_json(event.payload["memory"])
     _register_memory(state, memory)
+    state.created_seq[memory.id] = event.seq or 0
     if event.episode_id:
         key = (memory.provenance.created_by, event.episode_id, _digest(memory.content))
         state.written.setdefault(key, memory.id)
@@ -267,6 +273,8 @@ def _on_exposure_decided(state: ProjectionState, event: Event) -> None:
         policy_id=payload.get("policy_id", ""),
         step=int(payload.get("step", 0)),
         ts=event.ts,
+        agent_id=event.agent_id,
+        seq=event.seq or 0,
     )
     state.exposures.append(record)
     stats = state.stats_for(record.memory_id)

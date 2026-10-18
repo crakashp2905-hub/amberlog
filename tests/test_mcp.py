@@ -35,6 +35,7 @@ class McpCase(unittest.TestCase):
         writer = agent(self.fabric, "ag_writer")
         self.memory_id = writer.remember("E01 at coastal: swap the pilot cable.")
         self.operator.validate(self.memory_id)
+        self.operator.share(self.memory_id, "team")
         self.server = McpServer(agent(self.fabric, "ag_mcp"), self.fabric)
 
     def call(self, name: str, arguments: dict) -> tuple[dict, bool]:

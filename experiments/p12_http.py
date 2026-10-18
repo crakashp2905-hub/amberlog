@@ -106,14 +106,19 @@ def _agent(port: int, token: str, name: str, ops: int, seed: int, barrier: Any,
 def run_one(agents: int, ops: int = OPS_PER_AGENT) -> dict[str, Any]:
     from memory_fabric import MemoryFabric
     from memory_fabric.sdk import agent as sdk_agent
+    from memory_fabric.sdk import operator as sdk_operator
 
     with tempfile.TemporaryDirectory() as tmp:
         path = str(Path(tmp) / "http.db")
         seed = MemoryFabric(path, auto_activate=True)
         writer = sdk_agent(seed, "ag_seed", "tn_default")
+        reviewer = sdk_operator(seed, "op")
         rng = random.Random(0)
         for i in range(SEED_MEMORIES):
-            writer.remember(f"unit {rng.randint(1, 50)} runs at {rng.randint(1, 9)} bar, logged {i}")
+            # An agent's write is private to it; sharing to the team is what
+            # lets the other agents read the seed corpus, as P12's do.
+            reviewer.share(writer.remember(
+                f"unit {rng.randint(1, 50)} runs at {rng.randint(1, 9)} bar, logged {i}"), "team")
         seed.close()
         names = [f"ag{i}" for i in range(agents)]
         agents_file = str(Path(tmp) / "agents")

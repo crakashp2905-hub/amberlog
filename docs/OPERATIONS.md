@@ -183,6 +183,19 @@ writers being unsupported.
 
 ## 4. Upgrades
 
+**Upgrading across the scope change (2026-10-18).** Scope is now enforced on
+reads: a `private` memory is visible only to the agent that wrote it. Before,
+every active memory was readable by its whole tenant. To keep that visibility
+for memories written before the upgrade, decide it once, explicitly:
+
+```bash
+memory-fabric --db store.db share --all-private-active --actor <you>
+```
+
+It shares each active private memory to `team` through the firewall, so a
+restricted memory is refused and listed rather than widened. Skip it if
+per-agent privacy is what you wanted all along.
+
 **Older store, newer code: supported.** Every field added since 0.2.0 is
 nullable with a defined absent-meaning, and `tests/test_version_skew.py` checks
 each one — absent tenant means `tn_default`, absent validity means "applies

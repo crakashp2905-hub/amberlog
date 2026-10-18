@@ -24,6 +24,8 @@ restricted memory content").
 
 from __future__ import annotations
 
+from .model import visible_to
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -158,6 +160,7 @@ INTEGRITY_MOVED = "integrity_moved"
 WRONG_AGENT = "wrong_agent"
 WRONG_STORE = "wrong_store"
 WRONG_TENANT = "wrong_tenant"
+NOT_VISIBLE = "not_visible"
 
 
 class Enforcer:
@@ -175,8 +178,9 @@ class Enforcer:
         risk: RiskLevel = RiskLevel.LOW,
         include_contested: bool = False,
         tenant_id: str | None = None,
+        agent_id: str | None = None,
     ) -> AccessDecision:
-        """Resolve tenant, then lifecycle, then decide by risk.
+        """Resolve tenant, then scope, then lifecycle, then decide by risk.
 
         The order is deliberate: establish what is *known* about the memory
         before asking what the caller intends to do with it, so the same facts
@@ -217,6 +221,14 @@ class Enforcer:
             return AccessDecision(
                 memory_id=memory_id, version=0, verdict=Verdict.DENY,
                 reason_code=WRONG_TENANT, risk=risk, integrity_revision=revision,
+            )
+        if not visible_to(memory, agent_id):
+            # Another agent's private memory: refused before lifecycle, with
+            # version 0, for the reason the tenant check is -- "not yours" is
+            # all the caller may learn about it.
+            return AccessDecision(
+                memory_id=memory_id, version=0, verdict=Verdict.DENY,
+                reason_code=NOT_VISIBLE, risk=risk, integrity_revision=revision,
             )
 
         lifecycle = memory.lifecycle_state

@@ -376,7 +376,7 @@ class FabricMemory:
         self.by_key: dict[tuple[str, str], list[str]] = {}
 
     def write(self, agent: str, content: str, fact_key) -> str:
-        mid = self.fabric.remember(agent_id=agent, content=content)
+        mid = self.fabric.remember(agent_id=agent, content=content, scope="team")
         self.by_key.setdefault(fact_key, []).append(mid)
         return mid
 

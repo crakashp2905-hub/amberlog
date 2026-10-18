@@ -166,20 +166,20 @@ def build_stores(cases: list[Case], items: list[Item]) -> tuple[MemoryFabric, Me
     for case in cases:
         group = by_case[case.index]
         for it in group:
-            it.naive_id = naive.remember(it.author, it.content)
+            it.naive_id = naive.remember(it.author, it.content, scope="team")
             if naive.lifecycle_of(it.naive_id) is not LifecycleState.ACTIVE:
                 naive.release(it.naive_id, actor="naive")
                 naive.validate(it.naive_id, actor="naive")
         if case.kind == "superseded":
             old, new = group[0], group[1]
-            old.fabric_id = fabric.remember(old.author, old.content)
+            old.fabric_id = fabric.remember(old.author, old.content, scope="team")
             fabric.revise(old.fabric_id, new.content, new.author, reason="recalibrated")
             new.fabric_id = old.fabric_id
             rest = group[2:]
         else:
             rest = group
         for it in rest:
-            it.fabric_id = fabric.remember(it.author, it.content)
+            it.fabric_id = fabric.remember(it.author, it.content, scope="team")
         if case.kind in ("poison_detected", "withdrawn_only"):
             wrong = next(it for it in group if it.role == "wrong")
             fabric.quarantine(wrong.fabric_id, reason="found wrong", actor="reviewer",

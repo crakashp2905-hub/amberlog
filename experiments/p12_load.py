@@ -74,7 +74,7 @@ def _worker(url: str, agent: str, ops: int, seed: int, barrier: Any, out: Any) -
             if roll < 0.3:
                 op = "remember"
                 fabric.remember(agent, f"{agent} reading {i}: unit {rng.randint(1, 50)} at "
-                                       f"{rng.randint(1, 9)} bar")
+                                       f"{rng.randint(1, 9)} bar", scope="team")
             elif roll < 0.8:
                 op = "retrieve"
                 fabric.retrieve(agent, f"unit {rng.randint(1, 50)} bar", k=5)
@@ -110,7 +110,7 @@ def _prepare(backend: str, base_url: str | None) -> tuple[str, Any]:
     rng = random.Random(0)
     for i in range(SEED_MEMORIES):
         fabric.remember(f"seed{i % 7}", f"unit {rng.randint(1, 50)} runs at {rng.randint(1, 9)} bar, "
-                                        f"logged {i}")
+                                        f"logged {i}", scope="team")
     fabric.close()
     return url, cleanup
 

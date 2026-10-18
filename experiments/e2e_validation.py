@@ -84,7 +84,7 @@ def scenario_action_time_and_tenancy(tmp: Path) -> None:
     store = tmp / "e1.db"
     seed = MemoryFabric(store, auto_activate=True)
     fact = seed.remember("ag_seed", "Valve 7 on the coastal line is upstream of pump 3.",
-                         tenant_id="tn_acme")
+                         tenant_id="tn_acme", scope="team")
     seed.close()
     agents = tmp / "agents"
     agents.write_text(f"ag_a:tn_acme:{KEY_A}\nag_g:tn_globex:{KEY_G}\n")
@@ -191,8 +191,8 @@ def scenario_backup_restore(tmp: Path) -> None:
     print("E3 backup and restore")
     store, copy = tmp / "b.db", tmp / "b-copy.db"
     f = MemoryFabric(store, auto_activate=True)
-    keep = f.remember("ag", "Hoist 6 is rated 2 tonnes.")
-    gone = f.remember("ag", "Hoist 6 is rated 3 tonnes.")
+    keep = f.remember("ag", "Hoist 6 is rated 2 tonnes.", scope="team")
+    gone = f.remember("ag", "Hoist 6 is rated 3 tonnes.", scope="team")
     f.quarantine(gone, reason="wrong", basis="contradicted")
     checkpoint = f.log.chain.checkpoint()
     f.close()

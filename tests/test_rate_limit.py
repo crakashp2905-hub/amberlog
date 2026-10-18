@@ -73,6 +73,7 @@ class ApiCase(unittest.TestCase):
         self.mid = agent(self.fabric, "ag_seed", "tn_acme").remember(
             "E01 at coastal sites: swap the pilot cable.")
         operator(self.fabric, "op").validate(self.mid)
+        operator(self.fabric, "op").share(self.mid, "team")
         self.service = MemoryService(fabric=self.fabric)
         register_all(self.service, load_agents(path))
         self.clock = Clock()
@@ -172,6 +173,7 @@ class TestBoundedTokens(ApiCase):
             other = agent(self.fabric, "ag_seed", "tn_acme").remember(
                 "E02 at inland sites: check the float switch.")
             operator(self.fabric, "op").validate(other)
+            operator(self.fabric, "op").share(other, "team")
             self.api.handle("fetch", a, {"memory_id": other})
             self.assertEqual(list(self.api._issued["ag_a"]), [other])
             with self.assertRaises(_ApiError) as caught:

@@ -92,8 +92,17 @@ def rule_value_must_show_benefit(request: FirewallRequest) -> tuple[FirewallDeci
     episodes where a memory happened to be retrieved is the exact confusion
     between value and relevance that this system exists to avoid, so it is
     reported as insufficient rather than silently accepted.
+
+    **Federated only.** It applied to `team` as well, which did nothing while
+    retrieval ignored scope. Once scope is enforced on reads, a value gate on
+    `team` means a newly validated memory can never reach its own teammates in
+    a deployment with no outcome signal -- the common case. Promotion to
+    `team` stays gated by the other rules (active, not restricted, capabilities
+    granted) and by an actor who decided it; leaving the store keeps this one.
+    Phase B also measured the gate at the store boundary costing more than it
+    protected (README, consequence 3); it is kept there pending that question.
     """
-    if request.target_scope.rank <= Scope.PRIVATE.rank:
+    if request.target_scope is not Scope.FEDERATED:
         return None
     value = request.value
     if value is None or value.n_eff <= 0.0:

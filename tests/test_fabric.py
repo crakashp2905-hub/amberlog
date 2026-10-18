@@ -203,17 +203,26 @@ class TestOutcomes(FabricTestCase):
 
 
 class TestSharing(FabricTestCase):
-    def test_sharing_without_evidence_is_refused(self) -> None:
+    def test_leaving_the_store_without_evidence_is_refused(self) -> None:
+        f = self.fabric
+        mid = f.remember("agent-a", "An unproven but harmless claim.")
+        ruling = f.share(mid, Scope.FEDERATED)
+        self.assertIs(ruling.decision, FirewallDecision.REQUIRE_VALIDATION)
+        self.assertIs(f.get(mid).scope, Scope.PRIVATE)
+
+    def test_reaching_the_team_needs_no_value_evidence(self) -> None:
+        # Scope is enforced on reads, so a value gate here would keep every
+        # new memory from its own teammates (firewall.rule_value_must_show_benefit).
         f = self.fabric
         mid = f.remember("agent-a", "An unproven but harmless claim.")
         ruling = f.share(mid, Scope.TEAM)
-        self.assertIs(ruling.decision, FirewallDecision.REQUIRE_VALIDATION)
-        self.assertIs(f.get(mid).scope, Scope.PRIVATE)
+        self.assertIs(ruling.decision, FirewallDecision.ALLOW)
+        self.assertIs(f.get(mid).scope, Scope.TEAM)
 
     def test_a_refusal_is_recorded_in_the_audit_trail(self) -> None:
         f = self.fabric
         mid = f.remember("agent-a", "An unproven claim.")
-        f.share(mid, Scope.TEAM)
+        f.share(mid, Scope.FEDERATED)
         self.assertIn("share refused", f.explain(mid).narrative())
 
     def test_restricted_memory_cannot_be_shared(self) -> None:

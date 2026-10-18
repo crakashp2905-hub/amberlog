@@ -547,7 +547,8 @@ class CertificateVerifier:
             reasons.append(NO_SUPPORTING_EVIDENCE)
         usable_ids: list[str] = []
         for ref in supporting:
-            decision = fabric.enforcer.check(ref.memory_id, risk=risk, tenant_id=tenant_id)
+            decision = fabric.enforcer.check(ref.memory_id, risk=risk, tenant_id=tenant_id,
+                                             agent_id=agent_id)
             code = ""
             if decision.reason_code == "not_found":
                 code = EVIDENCE_NOT_FOUND

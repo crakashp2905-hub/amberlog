@@ -191,7 +191,7 @@ def build_context(case: Mapping[str, Any]) -> Context:
             parents=parents,
             method="consolidated" if parents else "observed",
             valid_from=memory.get("valid_from"),
-            valid_to=memory.get("valid_to"),
+            valid_to=memory.get("valid_to"), scope="team",
         )
         store_id[memory["id"]] = stored
         bench_id[stored] = memory["id"]

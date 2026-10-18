@@ -134,7 +134,7 @@ def build_store(
             "depot-engineer",
             f"When fault code {code} appears on a depot charger, "
             f"the correct response is {action}.",
-            context={"fault": code},
+            context={"fault": code}, scope="team",
         )
         if code == tested:
             right_ids.add(memory_id)
@@ -145,7 +145,7 @@ def build_store(
             "night-shift",
             f"When fault code {tested} appears on a depot charger, "
             f"the correct response is {rival_action}.",
-            context={"fault": tested},
+            context={"fault": tested}, scope="team",
         )
         right_ids.add(rival)
         fabric.challenge(
@@ -271,7 +271,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     probe = MemoryFabric(auto_activate=True, seed=0, embedder=embedder)
     probe.remember("probe", 
         f"When fault code {codes[0]} appears on a depot charger, "
-        f"the correct response is {truth[codes[0]]}.", context={"fault": codes[0]})
+        f"the correct response is {truth[codes[0]]}.", context={"fault": codes[0]}, scope="team")
     probe.close()
     if embedder.calls != warm_calls:
         print("  WARNING: warm corpus does not match the index text; every store "

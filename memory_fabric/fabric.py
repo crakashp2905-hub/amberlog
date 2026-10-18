@@ -92,6 +92,7 @@ from .model import (
     WithdrawalBasis,
     ValueEstimate,
     context_key,
+    visible_to,
 )
 from .projections import Episode, Projection, _digest
 from .vectors import (
@@ -1616,6 +1617,14 @@ class MemoryFabric:
         if self.recognise_copies:
             copy_of = self.copy_index.find(content)
 
+        # Writing at a wider scope skips the firewall that `share` runs, which
+        # is fine for host code except where a rule is absolute: a restricted
+        # memory stays private (firewall.rule_restricted_stays_private), and
+        # writing it straight into `team` would be the same leak by the side door.
+        if (SecurityClass(security_class) is SecurityClass.RESTRICTED
+                and Scope(scope) is not Scope.PRIVATE):
+            raise PolicyViolation("a restricted memory stays private; it cannot be "
+                                  f"written at scope {Scope(scope).value}")
         activate = self.auto_activate if auto_activate is None else auto_activate
         ruling = self.firewall.screen_ingest(
             _screened_text(content, context, structured))
@@ -1794,6 +1803,7 @@ class MemoryFabric:
         context: Mapping[str, Any] | None = None,
         tenant_id: str | None = None,
         security_class: str | SecurityClass | None = None,
+        scope: str | Scope = Scope.PRIVATE,
     ) -> str:
         """Create a memory derived from existing ones, recording the edges.
 
@@ -1833,6 +1843,12 @@ class MemoryFabric:
                     key=order.index, default=SecurityClass.PUBLIC)
         requested = SecurityClass(security_class or SecurityClass.INTERNAL)
         effective = max(requested, floor, key=order.index)
+        # Visibility follows the same rule the other way: no wider than the
+        # narrowest premise, so a conclusion cannot show teammates what a
+        # private premise would not.
+        narrowest = min((self._require(pid).scope for pid in parents),
+                        key=lambda s: s.rank, default=Scope.FEDERATED)
+        visible = min(Scope(scope), narrowest, key=lambda s: s.rank)
         derived = self.remember(
             agent_id=agent_id,
             content=content,
@@ -1842,6 +1858,7 @@ class MemoryFabric:
             method=method,
             tenant_id=tenant_id,
             security_class=effective,
+            scope=visible,
         )
 
         # Check the support of what was just written.
@@ -1949,7 +1966,8 @@ class MemoryFabric:
         * **when did things happen** — neither. An ordering question needs the whole history, and filtering it is how 19 points go missing.
         """
         eligible = self._eligible_ids(
-            include_contested=include_contested, tenant_id=tenant_id
+            include_contested=include_contested, tenant_id=tenant_id,
+            agent_id=agent_id,
         )
         pool_size = pool if pool is not None else max(k * 4, k)
         # Temporal applicability narrows the *eligible set*, before the index
@@ -2095,7 +2113,8 @@ class MemoryFabric:
         verdict — see `chains.EvidenceChain.why`.
         """
         eligible = self._eligible_ids(
-            include_contested=include_contested, tenant_id=tenant_id
+            include_contested=include_contested, tenant_id=tenant_id,
+            agent_id=agent_id,
         )
         eligible = self._applicable_at(eligible, as_of, until)
         if not eligible:
@@ -2418,7 +2437,8 @@ class MemoryFabric:
         return out[:limit]
 
     def _eligible_ids(
-        self, include_contested: bool = False, tenant_id: str | None = None
+        self, include_contested: bool = False, tenant_id: str | None = None,
+        agent_id: str | None = None,
     ) -> set[str]:
         """The one chokepoint every retrieval narrows through.
 
@@ -2438,6 +2458,7 @@ class MemoryFabric:
             if memory.lifecycle_state in allowed
             and memory.lifecycle_state not in BLOCKED_STATES
             and (tenant_id is None or memory.tenant_id == tenant_id)
+            and visible_to(memory, agent_id)
         }
 
     def cite(self, agent_id: str, episode_id: str, memory_id: str, step: int = 0) -> None:
@@ -3020,7 +3041,7 @@ class MemoryFabric:
         """
         decision = self.enforcer.check(
             memory_id, risk=risk, include_contested=include_contested,
-            tenant_id=tenant_id,
+            tenant_id=tenant_id, agent_id=agent_id,
         )
         if not decision.usable:
             if audit:

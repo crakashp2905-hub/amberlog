@@ -28,7 +28,7 @@ class Fixture(unittest.TestCase):
         self.addCleanup(self.fabric.close)
 
     def support(self, *contents: str, strict: bool = False):
-        ids = [self.fabric.remember(f"ag{i}", text) for i, text in enumerate(contents)]
+        ids = [self.fabric.remember(f"ag{i}", text, scope="team") for i, text in enumerate(contents)]
         checks = [C.CHECK_STRICT_INDEPENDENCE if strict else C.CHECK_INDEPENDENT_SUPPORT]
         cert = self.fabric.certify("claim", ids, "ag9", required_checks=checks,
                                    min_independent_sources=2)
@@ -43,8 +43,8 @@ class TestCopies(Fixture):
         self.assertIn(C.INSUFFICIENT_INDEPENDENT_SUPPORT, result.reason_codes)
 
     def test_a_summary_is_not_independent_of_its_source(self) -> None:
-        source = self.fabric.remember("ag1", ORIGINAL)
-        summary = self.fabric.derive("ag2", "Harbour crane 5 max 12 t.", parents=[source])
+        source = self.fabric.remember("ag1", ORIGINAL, scope="team")
+        summary = self.fabric.derive("ag2", "Harbour crane 5 max 12 t.", parents=[source], scope="team")
         self.assertEqual(self.fabric.source_root(summary), self.fabric.source_root(source))
 
 

@@ -362,6 +362,18 @@ class OperatorClient:
     def validate(self, memory_id: str, reason: str = "validated") -> Memory:
         return self._fabric.validate(memory_id, actor=self._actor, reason=reason)
 
+    def share(self, memory_id: str, scope: str = "team",
+              granted_capabilities: Sequence[str] = ()) -> Any:
+        """Widen who may read a memory, through the firewall.
+
+        An agent's own writes are private to it. `team` makes one readable by
+        every agent in its tenant; `federated` also lets it leave the store.
+        The decision and its reasons are logged either way, and a refusal
+        leaves the scope unchanged.
+        """
+        return self._fabric.share(memory_id, scope, actor=self._actor,
+                                  granted_capabilities=granted_capabilities)
+
     def erase_content(self, memory_id: str, reason: str) -> bool:
         """Crypto-erasure. Irreversible, and the audit trail survives it."""
         return self._fabric.erase_content(memory_id, reason=reason, actor=self._actor)

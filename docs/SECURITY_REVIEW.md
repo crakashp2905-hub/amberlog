@@ -7,8 +7,9 @@ was found, and the state of every item at the end. It is an internal review by
 the project's own developer, not an external audit, and claims nothing beyond
 the checks it names.
 
-**Result: no open critical or high finding.** Two high findings were open at
-the start of the review and both are fixed and tested. The open items are
+**Result: no open critical or high finding.** Three high findings were found
+-- two during the review and a third (F10) after it first closed, which
+reopened it -- and all three are fixed and tested. The open items are
 medium or low, each accepted with a stated reason, and none is a release
 blocker by the criteria in §4.
 
@@ -52,6 +53,7 @@ security consequence.
 | F6 | An oversized request was refused without reading its body, so the client saw a connection reset instead of 413, 1 run in 5 on Windows. | Low | **Fixed** (`8ffba19`) |
 | F7 | A memory unindexed by `forget` and validated back stayed unretrievable in that process; `revise` could index superseded text after a concurrent revision. | Low (correctness) | **Fixed** (`ec1fa43`); `test_catch_up.py` |
 | F8 | `sdk._wrap` could hand an agent a memory without the exposure token `verify` needs. | Low | **Fixed** (`3c27c35`): refused instead |
+| F10 | **Scope was not enforced on reads.** Retrieval and the enforced read checked lifecycle and tenant only, so a validated `private` memory -- restricted ones included -- was returned to every agent in its tenant, although the specification and glossary define scope as visibility. Found while building the console's reach view, after this review first closed. | High | **Fixed**: private is the writing agent only, on retrieval, the enforced read, certificates and the SDK; restricted memories cannot be written or shared wider; `derive` is capped by its premises; the value gate moved to `federated` so team sharing works. S19, `test_scope_visibility.py`. Breaking, with an upgrade command |
 | F9 | `tests/test_memeval.py` never ran in CI, and its `import pytest` would have errored the job: CI runs `unittest` with nothing installed. | Low (assurance) | **Fixed** (`8ffba19`); `test_suite_hygiene.py` forbids pytest-only files |
 
 **The pattern sweep found nothing.** String-built SQL appears only in a

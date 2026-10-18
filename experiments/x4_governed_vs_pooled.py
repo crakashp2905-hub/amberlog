@@ -154,7 +154,7 @@ def run_governed(
                 lesson = lessons[i]
                 mid = fabric.remember(
                     f"engineer-{lesson.site}", lesson.content,
-                    context={"site": lesson.site, "fault": lesson.fault},
+                    context={"site": lesson.site, "fault": lesson.fault}, scope="team",
                 )
                 fabric.validate(mid, actor="depot-supervisor")
                 ids[i] = mid
@@ -182,7 +182,7 @@ def run_governed(
                     continue
                 fabric.remember(
                     f"engineer-{correction.site}", correction.text,
-                    context={"site": correction.site, "fault": correction.fault},
+                    context={"site": correction.site, "fault": correction.fault}, scope="team",
                 )
                 fabric.quarantine(
                     ids[lesson_index],

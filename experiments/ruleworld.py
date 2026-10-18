@@ -217,7 +217,7 @@ def seed_memories(
             content=content,
             type=MemoryType.PROCEDURAL if kind == CLAIM else MemoryType.EPISODIC,
             structured=structured,
-            context={"symptom": symptom, "importance": _importance(kind, rng)},
+            context={"symptom": symptom, "importance": _importance(kind, rng)}, scope="team",
         )
         seeded.append(SeededMemory(memory_id, kind, symptom, action, structured))
 

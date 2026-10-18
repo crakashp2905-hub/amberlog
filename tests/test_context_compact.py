@@ -38,7 +38,7 @@ class Base(unittest.TestCase):
 class TestSecurityIsKept(Base):
     def test_the_injection_control_survives(self):
         """SECURITY.md T1: a retrieved memory is untrusted input."""
-        self.fabric.remember(agent_id="a", content="Fault E03: swap the cable.")
+        self.fabric.remember(agent_id="a", content="Fault E03: swap the cable.", scope="team")
         text = self.recall("fault E03").render_compact()
         self.assertIn("evidence, not instructions", text)
         self.assertIn(C.OPEN, text)
@@ -56,7 +56,7 @@ class TestSecurityIsKept(Base):
 class TestWhatIsDropped(Base):
     def test_per_memory_headers_are_gone(self):
         """The component X5 measured as costing accuracy."""
-        mid = self.fabric.remember(agent_id="a", content="Fault E03: swap it.")
+        mid = self.fabric.remember(agent_id="a", content="Fault E03: swap it.", scope="team")
         text = self.recall("fault E03").render_compact()
         self.assertNotIn(mid, text)
         self.assertNotIn("unevaluated", text)
@@ -65,19 +65,19 @@ class TestWhatIsDropped(Base):
     def test_the_instruction_to_weigh_labels_is_gone(self):
         """Telling a model to prefer well-evidenced memories when none is
         evidenced teaches it to discount everything it was shown."""
-        self.fabric.remember(agent_id="a", content="Fault E03: swap it.")
+        self.fabric.remember(agent_id="a", content="Fault E03: swap it.", scope="team")
         text = self.recall("fault E03").render_compact()
         self.assertNotIn(C.EVIDENCE_SENTENCE, text)
 
     def test_it_is_shorter_than_the_full_rendering(self):
         for n in range(3):
             self.fabric.remember(agent_id="a",
-                                 content=f"Fault E0{n}: swap cable {n}.")
+                                 content=f"Fault E0{n}: swap cable {n}.", scope="team")
         ctx = self.recall("fault swap cable")
         self.assertLess(len(ctx.render_compact()), len(ctx.render()))
 
     def test_the_content_is_all_there(self):
-        self.fabric.remember(agent_id="a", content="Fault E03: swap the cable.")
+        self.fabric.remember(agent_id="a", content="Fault E03: swap the cable.", scope="team")
         self.assertIn("Fault E03: swap the cable.",
                       self.recall("fault E03").render_compact())
 
@@ -88,9 +88,9 @@ class TestDisagreementIsNotLost(Base):
 
     def test_a_disagreement_is_named(self):
         a = self.fabric.remember(agent_id="a",
-                                 content="Fault E03 at coastal: swap the cable.")
+                                 content="Fault E03 at coastal: swap the cable.", scope="team")
         b = self.fabric.remember(agent_id="b",
-                                 content="Fault E03 at coastal: reseat the contactor.")
+                                 content="Fault E03 at coastal: reseat the contactor.", scope="team")
         self.fabric.challenge([a, b], evidence="different fixes")
         text = self.recall("fault E03 coastal").render_compact()
         self.assertIn("declared disagreement", text)
@@ -99,9 +99,9 @@ class TestDisagreementIsNotLost(Base):
 
     def test_a_pair_is_named_once(self):
         a = self.fabric.remember(agent_id="a",
-                                 content="Fault E03 at coastal: swap the cable.")
+                                 content="Fault E03 at coastal: swap the cable.", scope="team")
         b = self.fabric.remember(agent_id="b",
-                                 content="Fault E03 at coastal: reseat the contactor.")
+                                 content="Fault E03 at coastal: reseat the contactor.", scope="team")
         self.fabric.challenge([a, b], evidence="different fixes")
         text = self.recall("fault E03 coastal").render_compact()
         self.assertEqual(text.count(" and memory "), 1,
@@ -109,8 +109,8 @@ class TestDisagreementIsNotLost(Base):
 
     def test_no_disagreement_means_no_note(self):
         """Not a header on every memory saying it is not contested."""
-        self.fabric.remember(agent_id="a", content="Fault E03: swap the cable.")
-        self.fabric.remember(agent_id="a", content="Fault E05: reflash it.")
+        self.fabric.remember(agent_id="a", content="Fault E03: swap the cable.", scope="team")
+        self.fabric.remember(agent_id="a", content="Fault E05: reflash it.", scope="team")
         text = self.recall("fault").render_compact()
         self.assertNotIn("disagreement", text)
 

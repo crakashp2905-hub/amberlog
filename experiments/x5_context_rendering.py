@@ -153,7 +153,7 @@ def run_seed(seed: int, client: Any, embedder: Any, model: str,
                 lesson = lessons[i]
                 mid = fabric.remember(
                     f"engineer-{lesson.site}", lesson.content,
-                    context={"site": lesson.site, "fault": lesson.fault})
+                    context={"site": lesson.site, "fault": lesson.fault}, scope="team")
                 fabric.validate(mid, actor="depot-supervisor")
                 ids[i] = mid
 

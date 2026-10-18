@@ -411,7 +411,7 @@ def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
                 parents=parents,
                 method="consolidated" if parents else "observed",
                 valid_from=memory.get("valid_from"),
-                valid_to=memory.get("valid_to"),
+                valid_to=memory.get("valid_to"), scope="team",
             )
             local[memory["id"]] = stored
             ids[stored] = memory["id"]
@@ -478,7 +478,7 @@ def _build_fabric(case: Mapping[str, Any], retrieval: str | None = None):
             parents=parents,
             method="consolidated" if parents else "observed",
             valid_from=memory.get("valid_from"),
-            valid_to=memory.get("valid_to"),
+            valid_to=memory.get("valid_to"), scope="team",
         )
         local[memory["id"]] = stored
         ids[stored] = memory["id"]

@@ -5,7 +5,38 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Changed — breaking
+
+- **Scope is enforced on reads.** A `private` memory is visible only to the
+  agent that wrote it; `team` and `federated` are visible to every agent in
+  the tenant. Until now retrieval checked only lifecycle and tenant, so a
+  validated private memory, restricted ones included, was returned to every
+  agent in its tenant although the specification defines scope as visibility
+  ([security review](docs/SECURITY_REVIEW.md) F10). **Upgrading a store:**
+  `memory-fabric --db store.db share --all-private-active --actor <you>`
+  restores the previous effective visibility through the firewall, and
+  restricted memories are refused and listed.
+- **Promotion to `team` no longer needs value evidence.** The value rule now
+  guards leaving the store (`federated`) only; with scope enforced on reads, a
+  value gate on `team` would keep every new memory from its own teammates.
+- `derive(scope=...)`: a conclusion is no wider than its narrowest premise.
+- A restricted memory written at a scope wider than `private` is refused.
+
 ### Added
+
+- `share` and `agent-api-revoke` commands; `list --agent`; four status labels
+  on every memory page ([status.py](memory_fabric/status.py)).
+
+### Fixed
+
+- Concurrent requests to the agent API and the federation server shared one
+  SQLite connection; a revocation read could be corrupted (security review F1).
+- Crypto-erasure left earlier versions' plaintext and the copy-index term set
+  in a running process (F2, F3).
+- Cross-process refresh replayed the whole log on nearly every call: 4.4 ->
+  103 ops/s at 100 agents ([P12b](research/results/p12b-catch-up.md)).
+
+### Added (earlier in this cycle)
 - **Evidence certificates** (`certificates.py`, schema 0.9.0): a versioned record of the evidence a decision rests on (ids, versions, recorded premises, source roots, policy, log position). `verify_certificate` re-checks all of it against the store and fails closed, with stable reason codes. A certificate is not proof and not a capability.
 - **Action gate** (`actions.py`): the tool grant is checked before any evidence, so valid memory never grants a tool. Protected tools need a certificate that still verifies; rules can require independent sources and a human approval bound to the certificate digest. Every decision appends an `ActionGated` event (ids and versions, no content). See `examples/action_gate.py`.
 - **Mental models** (`mental_models.py`): evidence-backed summaries that go stale when their evidence changes, with a coalesced and idempotent refresh queue. A stale model cannot pass a protected action.

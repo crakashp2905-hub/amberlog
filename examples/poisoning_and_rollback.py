@@ -45,7 +45,7 @@ def main() -> None:
         "diagnostic-agent",
         "The battery temperature threshold is 45 degrees C.",
         context={"domain": "ev", "vehicle": "model-x"},
-        source_episodes=[episode.id],
+        source_episodes=[episode.id], scope="team",
     )
     fabric.record_outcome(episode.id, outcome=1.0, verifier_id="test-rig")
     print(f"  observation  {observation}")
@@ -55,23 +55,23 @@ def main() -> None:
     belief = fabric.derive(
         "diagnostic-agent",
         "Warn the operator whenever the pack exceeds 45 degrees C.",
-        parents=[observation],
+        parents=[observation], scope="team",
     )
     procedure = fabric.derive(
         "ops-agent",
         "Procedure: poll pack temperature every 5s, warn above 45, shut down above 60.",
         parents=[belief],
-        type=MemoryType.PROCEDURAL,
+        type=MemoryType.PROCEDURAL, scope="team",
     )
     print(f"  belief       {belief}")
     print(f"  procedure    {procedure}")
 
-    unrelated = fabric.remember("ops-agent", "Tyre pressure should be 34 psi.")
+    unrelated = fabric.remember("ops-agent", "Tyre pressure should be 34 psi.", scope="team")
     print(f"  unrelated    {unrelated}")
 
     rule("3. Someone tries to share the procedure with the wider fleet")
 
-    ruling = fabric.share(procedure, Scope.TEAM, granted_capabilities=["telemetry"])
+    ruling = fabric.share(procedure, Scope.FEDERATED, granted_capabilities=["telemetry"])
     print(f"  decision: {ruling.decision.value}")
     for reason in ruling.reasons:
         print(f"    - {reason}")

@@ -36,6 +36,25 @@ class Scope(str, Enum):
         return {"private": 0, "team": 1, "federated": 2}[self.value]
 
 
+def visible_to(memory: "Memory", agent_id: str | None) -> bool:
+    """Whether scope lets `agent_id` read `memory` inside its own store.
+
+    `private` is the agent that wrote it; `team` and `federated` are every
+    agent in the memory's tenant (tenancy is checked separately, first).
+    `agent_id` None is a caller that is not agent-scoped -- an operator, or
+    the store's own maintenance -- and scope does not restrict it, the same
+    convention `tenant_id` None follows in the enforcer.
+
+    Retrieval ignored scope until 2026-10-18: a validated private memory, a
+    restricted one included, was returned to every agent in the tenant,
+    although the specification and glossary define scope as visibility
+    (docs/SECURITY_REVIEW.md F10).
+    """
+    if agent_id is None or memory.scope is not Scope.PRIVATE:
+        return True
+    return memory.provenance.created_by == agent_id
+
+
 class WithdrawalBasis(str, Enum):
     """Why a memory was taken out of circulation.
 

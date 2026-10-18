@@ -754,6 +754,37 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_share(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Widen who may read memories, through the firewall, with every decision logged.
+
+    Scope is enforced on reads: a private memory is visible only to the agent
+    that wrote it. `--all-private-active` is the upgrade path for a store
+    written before that, where every active memory was readable by the whole
+    tenant: it shares each one to the given scope through the same firewall,
+    so a restricted memory is still refused, and prints what it refused.
+    """
+    from .model import LifecycleState, Scope
+
+    if args.all_private_active:
+        targets = [m.id for m in fabric.state.memories.values()
+                   if m.scope is Scope.PRIVATE and m.lifecycle_state is LifecycleState.ACTIVE]
+    elif args.id:
+        targets = [args.id]
+    else:
+        print(f"{C.RED}name a memory id, or pass --all-private-active{C.RESET}", file=sys.stderr)
+        return 2
+    shared = refused = 0
+    for memory_id in targets:
+        ruling = fabric.share(memory_id, args.scope, actor=args.actor)
+        if ruling.permits_sharing:
+            shared += 1
+        else:
+            refused += 1
+            print(f"{C.YELLOW}refused{C.RESET} {memory_id}: {'; '.join(ruling.reasons)}")
+    print(f"shared {shared} to {args.scope}; refused {refused}")
+    return 0 if refused == 0 or args.all_private_active else 4
+
+
 def cmd_agent_api_revoke(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Revoke one leaked credential, or every credential an agent holds.
 
@@ -1681,6 +1712,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agents-file", required=True)
     p.add_argument("--agent", required=True)
     p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
+
+    p = add("share", cmd_share,
+            "WRITES: widen who may read a memory (private -> team -> federated), "
+            "through the firewall, logged")
+    p.add_argument("id", nargs="?", help="the memory to share")
+    p.add_argument("--scope", choices=["team", "federated"], default="team")
+    p.add_argument("--actor", default="operator", help="who is deciding this")
+    p.add_argument("--all-private-active", action="store_true",
+                   help="share every active private memory: the upgrade path for stores "
+                        "written before scope was enforced on reads")
 
     p = add("agent-api-revoke", cmd_agent_api_revoke,
             "WRITES: revoke a leaked credential, or all of one agent's; a running "

@@ -40,13 +40,13 @@ def populated(path: str = ":memory:", **kwargs) -> MemoryFabric:
     """A small store with a retraction, a disagreement and a secret."""
     fabric = MemoryFabric(path, auto_activate=True, seed=3, **kwargs)
     root = fabric.remember(
-        "agent-a", "The threshold is 45C.", context={"domain": "ev"}
+        "agent-a", "The threshold is 45C.", context={"domain": "ev"}, scope="team"
     )
-    belief = fabric.derive("agent-a", "Warn above 45C.", parents=[root])
+    belief = fabric.derive("agent-a", "Warn above 45C.", parents=[root], scope="team")
     fabric.derive("agent-b", "Procedure: warn above 45, stop above 60.", parents=[belief],
-                  type=MemoryType.PROCEDURAL)
-    fabric.remember("agent-c", "Tyre pressure is 34 psi.")
-    fabric.remember("agent-d", "key AKIAIOSFODNN7EXAMPLE")  # quarantined on ingest
+                  type=MemoryType.PROCEDURAL, scope="team")
+    fabric.remember("agent-c", "Tyre pressure is 34 psi.", scope="team")
+    fabric.remember("agent-d", "key AKIAIOSFODNN7EXAMPLE", scope="team")  # quarantined on ingest
     fabric.quarantine(root, reason="rig misconfigured", actor="safety")
     fabric._root, fabric._belief = root, belief
     return fabric
@@ -85,7 +85,7 @@ class TestOverview(unittest.TestCase):
             path, auto_activate=True, seed=1, exposure_policy=EpsilonGreedyPolicy(epsilon=0.5)
         )
         try:
-            fabric.remember("agent-a", "Retry once on a failed deploy.")
+            fabric.remember("agent-a", "Retry once on a failed deploy.", scope="team")
             for index in range(10):
                 episode = fabric.start_episode("agent-a", f"t{index}", {})
                 fabric.retrieve("agent-a", "retry a failed deploy", episode_id=episode.id)
@@ -114,7 +114,7 @@ class TestOverview(unittest.TestCase):
     def test_deterministic_log_is_reported_as_unusable_for_causal_claims(self) -> None:
         fabric = MemoryFabric(auto_activate=True, exposure_policy="always")
         try:
-            fabric.remember("agent-a", "A fact about deploys.")
+            fabric.remember("agent-a", "A fact about deploys.", scope="team")
             episode = fabric.start_episode("agent-a", "t", {})
             fabric.retrieve("agent-a", "a fact about deploys", episode_id=episode.id)
             fabric.record_outcome(episode.id, 1.0, verifier_id="ci")
@@ -187,8 +187,8 @@ class TestAttention(unittest.TestCase):
 
     def test_retraction_and_disagreement_are_separate_kinds(self) -> None:
         """They need different actions, so they must not share one message."""
-        a = self.fabric.remember("agent-e", "Retry three times.")
-        b = self.fabric.remember("agent-f", "Never retry.")
+        a = self.fabric.remember("agent-e", "Retry three times.", scope="team")
+        b = self.fabric.remember("agent-f", "Never retry.", scope="team")
         self.fabric.challenge([a, b], evidence="contradictory")
 
         items = report.attention(self.fabric)
@@ -223,7 +223,7 @@ class TestAttention(unittest.TestCase):
 
     def test_clean_store_needs_no_attention(self) -> None:
         with MemoryFabric(auto_activate=True) as fabric:
-            fabric.remember("agent-a", "An ordinary fact.")
+            fabric.remember("agent-a", "An ordinary fact.", scope="team")
             self.assertEqual(report.attention(fabric), [])
 
 
@@ -290,7 +290,7 @@ class TestSecretsAreNotDisplayed(unittest.TestCase):
     def setUp(self) -> None:
         self.fabric = MemoryFabric(auto_activate=True)
         self.mid = self.fabric.remember(
-            "agent-a", f"To deploy, export AWS_ACCESS_KEY_ID={SECRET} and run make ship."
+            "agent-a", f"To deploy, export AWS_ACCESS_KEY_ID={SECRET} and run make ship.", scope="team"
         )
 
     def tearDown(self) -> None:
@@ -323,7 +323,7 @@ class TestSecretsAreNotDisplayed(unittest.TestCase):
         self.assertIn(SECRET, self.fabric.get(self.mid).content)
 
     def test_clean_content_is_not_altered(self) -> None:
-        mid = self.fabric.remember("agent-a", "Prefer email follow-up after onboarding.")
+        mid = self.fabric.remember("agent-a", "Prefer email follow-up after onboarding.", scope="team")
         row = next(r for r in report.memory_rows(self.fabric) if r.id == mid)
         self.assertEqual(row.content, "Prefer email follow-up after onboarding.")
         self.assertEqual(row.redacted_kinds, [])
@@ -674,7 +674,7 @@ class TestCli(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             path = str(Path(tmp) / "store.db")
             fabric = MemoryFabric(path, auto_activate=True)
-            fabric.remember("agent-a", "An ordinary fact.")
+            fabric.remember("agent-a", "An ordinary fact.", scope="team")
             fabric.close()
             buffer = io.StringIO()
             with contextlib.redirect_stdout(buffer):
@@ -682,7 +682,7 @@ class TestCli(unittest.TestCase):
             self.assertEqual(clean, 0)
 
             fabric = MemoryFabric(path, auto_activate=True)
-            fabric.remember("agent-b", "token AKIAIOSFODNN7EXAMPLE")
+            fabric.remember("agent-b", "token AKIAIOSFODNN7EXAMPLE", scope="team")
             fabric.close()
             with contextlib.redirect_stdout(buffer):
                 dirty = self.run_cli("--db", path, "attention")

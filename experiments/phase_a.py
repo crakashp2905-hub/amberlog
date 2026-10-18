@@ -474,7 +474,7 @@ def run_fabric_arm(
                 mid = fabric.remember(
                     f"engineer-{lesson.site}",
                     lesson.content,
-                    context={"site": lesson.site, "fault": lesson.fault},
+                    context={"site": lesson.site, "fault": lesson.fault}, scope="team",
                 )
                 fabric.validate(mid, actor="depot-supervisor")
                 ids[i] = mid

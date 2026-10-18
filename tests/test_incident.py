@@ -26,17 +26,17 @@ class KnownIncident(unittest.TestCase):
     def setUp(self) -> None:
         f = self.fabric = MemoryFabric(auto_activate=True, seed=0)
         self.addCleanup(f.close)
-        self.poison = f.remember("mallory", POISON)
-        self.honest = f.remember("ana", HONEST)
-        self.decoy = f.remember("eve", "Canteen reopens at 6.")
+        self.poison = f.remember("mallory", POISON, scope="team")
+        self.honest = f.remember("ana", HONEST, scope="team")
+        self.decoy = f.remember("eve", "Canteen reopens at 6.", scope="team")
         self.rating = f.derive("ben", "Crane 9 rating summary", parents=[self.poison],
                                context=justification_context(
-                                   [(self.poison, JustificationKind.REQUIRED)]))
+                                   [(self.poison, JustificationKind.REQUIRED)]), scope="team")
         self.plan = f.derive("cho", "Lift plan for crane 9",
                              parents=[self.rating, self.honest],
                              context=justification_context([
                                  (self.rating, JustificationKind.REQUIRED),
-                                 (self.honest, JustificationKind.REQUIRED)]))
+                                 (self.honest, JustificationKind.REQUIRED)]), scope="team")
         f.retrieve("actor", "crane 9 lift plan canteen", k=5)
         gate = ActionGate(f, ActionPolicy(tools={"lift": ToolRule("lift")},
                                           grants={"actor": frozenset({"lift"})}))
@@ -93,10 +93,10 @@ class AlternativeSupport(unittest.TestCase):
     def test_an_independently_corroborated_source_is_not_necessary(self) -> None:
         f = MemoryFabric(auto_activate=True)
         self.addCleanup(f.close)
-        a = f.remember("ana", "Tug 3 overheated at 40C in July.")
-        b = f.remember("ben", "Tug 3 engine log shows 41C in August.")
+        a = f.remember("ana", "Tug 3 overheated at 40C in July.", scope="team")
+        b = f.remember("ben", "Tug 3 engine log shows 41C in August.", scope="team")
         c = f.derive("cho", "Tug 3 runs hot.", parents=[a, b], context=justification_context(
-            [(a, JustificationKind.ALTERNATIVE), (b, JustificationKind.ALTERNATIVE)]))
+            [(a, JustificationKind.ALTERNATIVE), (b, JustificationKind.ALTERNATIVE)]), scope="team")
         gate = ActionGate(f, ActionPolicy(tools={"t": ToolRule("t")},
                                           grants={"x": frozenset({"t"})}))
         gate.authorize("t", "x", f.certify("c", [c], "x"))

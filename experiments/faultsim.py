@@ -289,7 +289,7 @@ class World:
 def observe(store: str, agent: str, content: str, key: str) -> Callable[[World], None]:
     def step(world: World) -> None:
         fabric = world.store(store)
-        memory_id = fabric.remember(agent, content)
+        memory_id = fabric.remember(agent, content, scope="team")
         fabric.validate(memory_id, actor="supervisor")
         world.memories[key] = memory_id
         world.log.append(f"{store}: observed {key}")
@@ -305,7 +305,7 @@ def derive(
         resolved = {world.memories[p]: kind for p, kind in parents.items()}
         memory_id = fabric.derive(
             agent, content, parents=list(resolved),
-            context=justification_context(resolved.items()),
+            context=justification_context(resolved.items()), scope="team",
         )
         fabric.validate(memory_id, actor="supervisor")
         world.memories[key] = memory_id

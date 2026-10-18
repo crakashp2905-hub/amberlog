@@ -607,9 +607,16 @@ class MemoryFabric:
             }.get(outcome, PropagationState.REJECTED)
             return ack(state, f"duplicate: {detail}")
 
-        # 5. Version and cursor rules.
-        cursor = self.outbox.cursor_for(retraction.origin_store_id)
-        if retraction.origin_sequence < cursor:
+        # 5. Supersession, per origin memory. It used to compare against one
+        #    cursor per *origin store*, so a retraction delayed by an outage
+        #    was discarded as "superseded" once a later retraction of a
+        #    *different* memory had arrived first -- and the withdrawn memory
+        #    stayed active here while the origin recorded the delivery as
+        #    settled (docs/SECURITY_REVIEW.md F11). Stale means: a retraction of
+        #    this same memory with a higher origin sequence was already applied.
+        cursor = self._latest_applied_sequence(retraction.origin_store_id,
+                                               retraction.origin_memory_id)
+        if cursor is not None and retraction.origin_sequence < cursor:
             with self._transaction():
                 self.outbox.record_inbox(
                     retraction, "superseded", f"below cursor {cursor}", _now_ms()
@@ -680,6 +687,17 @@ class MemoryFabric:
         if forwarded:
             detail += f"; forwarded to {forwarded} peer(s)"
         return ack(PropagationState.ENFORCED, detail)
+
+    def _latest_applied_sequence(self, origin_store_id: str,
+                                 origin_memory_id: str) -> int | None:
+        """The highest origin sequence of a retraction of this memory applied here."""
+        applied = {
+            e.payload["retraction_id"]
+            for e in self.log.read_types([ev.EventType.RETRACTION_APPLIED])
+            if e.payload.get("origin_store_id") == origin_store_id
+            and e.payload.get("origin_memory_id") == origin_memory_id
+        }
+        return self.outbox.max_inbox_sequence(origin_store_id, applied) if applied else None
 
     def _forward_retraction(
         self, retraction: Retraction, targets: Sequence[str]

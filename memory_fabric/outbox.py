@@ -397,6 +397,17 @@ class Outbox:
             ),
         )
 
+    def max_inbox_sequence(self, origin_store_id: str, retraction_ids: set[str]) -> int | None:
+        """The highest origin sequence among these retractions' inbox records."""
+        best: int | None = None
+        for retraction_id in retraction_ids:
+            row = self._conn.execute(
+                "SELECT MAX(origin_sequence) AS s FROM inbox WHERE origin_store_id = ? "
+                "AND retraction_id = ?", (origin_store_id, retraction_id)).fetchone()
+            if row is not None and row["s"] is not None:
+                best = int(row["s"]) if best is None else max(best, int(row["s"]))
+        return best
+
     def cursor_for(self, origin_store_id: str) -> int:
         row = self._conn.execute(
             "SELECT sequence_seen FROM origin_cursor WHERE origin_store_id = ?",
@@ -424,7 +435,14 @@ class Outbox:
         """What a recipient tells an origin on reconnect, so the origin can
         replay everything above it. The cursor is the recipient's, never the
         origin's guess about it: replaying too much is safe because processing
-        is idempotent, and replaying too little is the only real failure."""
+        is idempotent, and replaying too little is the only real failure.
+
+        A limit, stated: it is the highest sequence seen, so a retraction
+        delayed past a later one sits below it and reconciliation will not ask
+        for it again. Delivery does not depend on reconciliation -- the
+        origin's outbox keeps retrying, and one that exhausts its retries shows
+        as `failed` in `doctor` -- but a recipient cannot use this cursor to
+        prove it missed nothing."""
         return self.cursor_for(origin_store_id)
 
     # --- plumbing --------------------------------------------------------

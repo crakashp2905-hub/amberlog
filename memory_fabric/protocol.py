@@ -23,6 +23,8 @@ can.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 import hmac
 import json

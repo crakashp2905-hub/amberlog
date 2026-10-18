@@ -24,6 +24,8 @@ restricted memory content").
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from .model import visible_to
 
 from dataclasses import dataclass, field

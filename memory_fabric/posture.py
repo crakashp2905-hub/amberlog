@@ -17,6 +17,8 @@ reviewer holding it can check later that the log still agrees
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import json
 from dataclasses import dataclass
 from pathlib import Path

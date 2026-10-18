@@ -15,6 +15,8 @@ recipient and is never the origin's guess about it.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 

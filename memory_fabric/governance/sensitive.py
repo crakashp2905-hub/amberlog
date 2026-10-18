@@ -9,6 +9,8 @@ never the only control on a restricted memory.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import base64
 import binascii
 import math

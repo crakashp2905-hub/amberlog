@@ -7,6 +7,8 @@ defines the authoritative replay order.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from .dbtypes import Connection, Row
 
 import json

@@ -9,6 +9,8 @@ browses would contaminate the very data the value estimates are computed from.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone

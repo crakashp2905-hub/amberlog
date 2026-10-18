@@ -43,6 +43,8 @@ is not governed between visits.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import json
 import os
 import threading
@@ -134,6 +136,15 @@ class MemoryManager:
         return last
 
     def run_once(self) -> ManagerReport:
+        # The whole cycle holds the store's lock. A server shares one database
+        # connection between its request threads and this one, and parts of a
+        # cycle read the log directly; unlocked, that is F1 again (concurrent
+        # statements on one SQLite connection). Found when CI's MCP test
+        # crashed at shutdown with the manager mid-call.
+        with self.fabric.lock:
+            return self._run_once_locked()
+
+    def _run_once_locked(self) -> ManagerReport:
         if callable(getattr(self.fabric, "refresh", None)):
             self.fabric.refresh()
         if not self.acquire():

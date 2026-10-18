@@ -9,6 +9,8 @@ Read commands never write. The commands that do change something — `release`,
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import argparse
 import json
 import os
@@ -698,9 +700,13 @@ def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     if access_log == "-":
         access_log = None
 
-    _start_manager(fabric, args)
-    serve(fabric, host=args.host, port=args.port, quiet=args.quiet, auth=config,
-          access_log=access_log)
+    manager = _start_manager(fabric, args)
+    try:
+        serve(fabric, host=args.host, port=args.port, quiet=args.quiet, auth=config,
+              access_log=access_log)
+    finally:
+        if manager is not None:
+            manager.stop()
     return 0
 
 
@@ -727,8 +733,14 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             "user's local assistant, never for a shared or federated store.",
             file=sys.stderr,
         )
-    _start_manager(fabric, args)
-    return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
+    manager = _start_manager(fabric, args)
+    try:
+        return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
+    finally:
+        # Stopped before the interpreter finalises: a manager thread inside a
+        # SQLite call at exit crashed the process (CI, exit -11).
+        if manager is not None:
+            manager.stop()
 
 
 def _print_scope(fabric: MemoryFabric, memory_id: str, as_json: bool) -> None:
@@ -802,11 +814,13 @@ def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     print(f"  Issue a credential:  memory-fabric --db {_shown(args.db)} agent-api-issue "
           f"--agents-file {args.agents_file} --agent <id>")
     try:
-        _start_manager(fabric, args)
+        manager = _start_manager(fabric, args)
         server.serve_forever()
     except KeyboardInterrupt:
         print("\nstopped")
     finally:
+        if manager is not None:
+            manager.stop()
         server.server_close()
     return 0
 

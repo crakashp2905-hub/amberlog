@@ -8,6 +8,8 @@ because the record *is* the change.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import functools
 
 import random

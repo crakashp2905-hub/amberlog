@@ -19,6 +19,8 @@ Two things it provides:
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import hashlib
 import json
 import time

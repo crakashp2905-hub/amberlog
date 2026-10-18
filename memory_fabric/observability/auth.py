@@ -20,6 +20,8 @@ is written out.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hmac
 import re
 import secrets

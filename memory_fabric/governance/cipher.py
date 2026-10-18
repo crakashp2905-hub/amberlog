@@ -59,6 +59,8 @@ between memories, between versions, or between stores fails authentication.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 import hmac
 import os

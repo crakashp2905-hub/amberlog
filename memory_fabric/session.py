@@ -13,6 +13,8 @@ quietly attributing work to the wrong agent (SECURITY.md, known gaps).
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 

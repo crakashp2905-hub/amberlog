@@ -57,6 +57,8 @@ will be below 1.0 by construction.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import re
 import time
 from dataclasses import dataclass, field

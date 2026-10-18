@@ -49,6 +49,8 @@ the same thing is a correction (`revise` is the governed way to make one).
 
 from __future__ import annotations
 
+__stability__ = "experimental"
+
 import re
 from typing import TYPE_CHECKING, Any, Sequence
 

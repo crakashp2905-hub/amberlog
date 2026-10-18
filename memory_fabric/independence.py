@@ -48,6 +48,8 @@ principle 9 applies: that waits on S2's result.
 
 from __future__ import annotations
 
+__stability__ = "experimental"
+
 from typing import TYPE_CHECKING, Iterable, Sequence
 
 if TYPE_CHECKING:  # pragma: no cover

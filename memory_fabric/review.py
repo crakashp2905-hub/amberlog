@@ -23,6 +23,8 @@ false positive can be released deliberately, never by accident.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 

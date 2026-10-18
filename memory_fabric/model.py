@@ -7,6 +7,8 @@ event log and is never written directly.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import json
 from dataclasses import dataclass, field, replace
 from enum import Enum

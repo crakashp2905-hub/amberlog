@@ -10,3 +10,5 @@ import time; the core stays dependency-free.
   `remember`) in OpenAI or Anthropic tool format, with a dispatcher.
 - `langchain`: a LangChain retriever, when `langchain_core` is installed.
 """
+
+__stability__ = "beta"

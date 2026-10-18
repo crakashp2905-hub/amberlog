@@ -46,7 +46,7 @@ and erasure, and anyone who has watched one bad memory spread.
 | 🔌 | **Works with any MCP client**, alongside the Python SDK and a Claude API adapter. | [From an MCP client](#from-an-mcp-client) |
 | ⚡ | **Cheap.** **+0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store. | [Phase A cost gate](research/results/phase-a-real-agent-benchmark.md) |
 
-**1664 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)), 17 deterministic multi-store fault scenarios and 14 integrity
+**1668 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)), 17 deterministic multi-store fault scenarios and 14 integrity
 invariants ([matrix](docs/INVARIANTS.md)), all run in CI with nothing
 installed. What was run and what it showed: [docs/VALIDATION.md](docs/VALIDATION.md).
 
@@ -82,7 +82,7 @@ Then inspect it:
 
 ```bash
 memory-fabric --db demo.db --create demo
-memory-fabric --db demo.db attention     # triage: what needs a human, worst first
+memory-fabric --db demo.db attention     # triage: what needs a human, worst first (exits 1 if anything is high)
 memory-fabric --db demo.db serve         # the same, as a local dashboard
 ```
 
@@ -329,6 +329,9 @@ See [ROADMAP.md](ROADMAP.md) for milestones, gates and kill criteria, and
 | Topic | Document |
 |---|---|
 | Running it for real | [DEPLOYMENT.md](DEPLOYMENT.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) |
+| Something is wrong | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
+| Upgrading or moving in | [docs/MIGRATION.md](docs/MIGRATION.md) |
+| What is stable, what is tested, how far it scales | [STABILITY.md](STABILITY.md) |
 | Two-store federation in five minutes | [docs/REFERENCE_DEPLOYMENT.md](docs/REFERENCE_DEPLOYMENT.md) |
 | Architecture and data model | [ARCHITECTURE.md](ARCHITECTURE.md), [SPEC.md](SPEC.md) |
 | Federation protocol | [docs/PROTOCOL.md](docs/PROTOCOL.md) |

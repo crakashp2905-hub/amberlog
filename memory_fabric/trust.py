@@ -42,6 +42,8 @@ What it cannot do, stated:
 
 from __future__ import annotations
 
+__stability__ = "experimental"
+
 import random
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Mapping, Sequence

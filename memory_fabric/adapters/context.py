@@ -17,6 +17,8 @@ use. Each block carries its state and what is known about its value.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Iterable, Sequence
 

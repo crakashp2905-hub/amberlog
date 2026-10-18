@@ -47,6 +47,8 @@ over HTTP.
 
 from __future__ import annotations
 
+__stability__ = "experimental"
+
 import hashlib
 import json
 import time

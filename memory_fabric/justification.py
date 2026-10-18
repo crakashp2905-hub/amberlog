@@ -30,6 +30,8 @@ justification; only evidence does. Nothing here consults a timestamp.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Iterable

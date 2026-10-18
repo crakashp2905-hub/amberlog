@@ -37,6 +37,8 @@ Translation, all of it:
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import re
 import sqlite3
 import threading

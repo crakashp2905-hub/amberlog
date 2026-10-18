@@ -9,6 +9,8 @@ give one memory a real comparison group.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import random
 from typing import Any
 

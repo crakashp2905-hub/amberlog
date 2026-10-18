@@ -13,6 +13,8 @@ refuse to draw causal conclusions from them.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import random
 from dataclasses import dataclass
 from typing import Protocol, Sequence

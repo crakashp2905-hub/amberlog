@@ -22,6 +22,8 @@ Every pattern has a positive and a near-miss negative in
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import re
 from typing import Pattern
 

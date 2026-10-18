@@ -29,6 +29,8 @@ be passed per call can be omitted per call.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import copy
 import json
 import logging

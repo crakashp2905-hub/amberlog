@@ -41,6 +41,8 @@ The cipher itself is in `cipher.py`, including why `enc:v1` was replaced.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from ..dbtypes import Connection
 
 import secrets

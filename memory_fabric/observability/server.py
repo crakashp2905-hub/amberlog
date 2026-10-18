@@ -15,6 +15,8 @@ Three deliberate constraints:
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import json
 import re
 import threading

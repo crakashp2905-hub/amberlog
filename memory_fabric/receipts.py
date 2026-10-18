@@ -59,6 +59,8 @@ Opt-in: acknowledgements are unchanged on the wire.
 
 from __future__ import annotations
 
+__stability__ = "experimental"
+
 import hashlib
 import hmac
 import json

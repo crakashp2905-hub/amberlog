@@ -7,6 +7,8 @@ carries the full list of reasons for the audit trail.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field
 from typing import Callable, Iterable, Sequence
 

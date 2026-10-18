@@ -34,6 +34,8 @@ because none of those is expressible in a rule.
 
 from __future__ import annotations
 
+__stability__ = "experimental"
+
 import json
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any

@@ -17,6 +17,8 @@ Needs `langchain_core`, imported only when `fabric_retriever` is called.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 from typing import Any
 
 from ..sdk import AgentClient

@@ -46,6 +46,8 @@ other agent wait.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import base64
 import json
 import logging

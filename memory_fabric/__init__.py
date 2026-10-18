@@ -15,6 +15,8 @@ ones due at P4.
     print(fabric.explain(mid).narrative())
 """
 
+__stability__ = "stable"
+
 from .estimators import IPSEstimator, NaiveUsageEstimator, ValueEstimator
 from .eventlog import EventLog
 from .events import Event, EventType

@@ -204,6 +204,21 @@ jobs:
       - run: pip install -e .
       - run: python -m experiments.e2e_validation --quick
 
+  rollback:
+    # Upgrade-and-rollback with real older code: back up on the last release,
+    # upgrade and write with this commit, check the old code refuses the
+    # upgraded store, restore the backup, and check both versions call it
+    # sound (experiments/rollback_drill.py; docs/OPERATIONS.md §4-5).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m experiments.rollback_drill --old-ref v0.11.0
+
   claude-contract:
     # The Claude adapter through the real anthropic SDK, HTTP stubbed: the SDK
     # must accept every argument the adapter sends and the adapter must read

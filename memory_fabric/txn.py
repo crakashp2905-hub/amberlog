@@ -30,6 +30,8 @@ cleanup is explicit rather than left to chance.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from .dbtypes import Connection
 
 import sqlite3

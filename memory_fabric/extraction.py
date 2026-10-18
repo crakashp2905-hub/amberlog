@@ -54,6 +54,8 @@ wired into `remember` by default.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import json
 import re
 from dataclasses import dataclass, field

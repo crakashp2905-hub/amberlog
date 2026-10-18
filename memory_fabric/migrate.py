@@ -21,6 +21,8 @@ Anything else is reported as skipped with its line, not guessed at.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import json
 from dataclasses import dataclass, field
 from pathlib import Path

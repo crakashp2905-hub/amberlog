@@ -10,6 +10,8 @@ explicit commands, so nothing an operator does while *looking* at the store can
 change it.
 """
 
+__stability__ = "stable"
+
 from .report import (
     AttentionItem,
     LineageNodeView,

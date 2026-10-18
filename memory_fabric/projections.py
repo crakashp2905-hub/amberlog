@@ -7,6 +7,8 @@ nothing but events, and unknown event types are ignored rather than fatal.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 from dataclasses import dataclass, field, replace
 from typing import Any, Iterable, Mapping

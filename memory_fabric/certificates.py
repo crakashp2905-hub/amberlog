@@ -38,6 +38,8 @@ docs/SAFETY_AND_SECURITY.md (S14), not solved.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 import json
 from dataclasses import dataclass, field

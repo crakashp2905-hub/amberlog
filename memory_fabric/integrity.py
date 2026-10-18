@@ -49,6 +49,8 @@ events nobody hashed then proves only that they are self-consistent today.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from .dbtypes import Connection
 
 import hashlib

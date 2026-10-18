@@ -12,6 +12,8 @@ Typing only. Nothing here runs, and importing it does not import psycopg.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import sqlite3
 from typing import TYPE_CHECKING, Union
 

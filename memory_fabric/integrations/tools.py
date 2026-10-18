@@ -17,6 +17,8 @@ as an answer.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import json
 from typing import Any, Mapping
 

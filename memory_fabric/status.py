@@ -33,6 +33,8 @@ research task S1 in docs/WORKPLAN.md.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
 

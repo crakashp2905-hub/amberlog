@@ -40,6 +40,8 @@ relations would be worth, given perfect declarations, which is what principle
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 from enum import Enum
 
 

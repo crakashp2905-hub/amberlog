@@ -24,6 +24,8 @@ Both are thin wrappers over the engine. The point is what they *omit*.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass
 from typing import Any, Mapping, Sequence
 

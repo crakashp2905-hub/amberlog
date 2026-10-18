@@ -7,6 +7,8 @@ them. Events are therefore append-only and never mutated.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence
 

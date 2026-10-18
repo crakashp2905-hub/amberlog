@@ -33,6 +33,8 @@ often the compilation is right.
 
 from __future__ import annotations
 
+__stability__ = "experimental"
+
 import json
 from dataclasses import dataclass, field
 from typing import Any, Mapping, Sequence

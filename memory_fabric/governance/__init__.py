@@ -6,6 +6,8 @@ where did this come from, may it be shared, does it contain something it should
 not, and how do we pull it back.
 """
 
+__stability__ = "stable"
+
 from .sensitive import Finding, SensitiveDataDetector
 from .firewall import Firewall, FirewallRuling
 from .retention import RetentionPolicy

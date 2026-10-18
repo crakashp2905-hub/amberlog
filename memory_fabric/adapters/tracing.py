@@ -44,6 +44,8 @@ a non-local host, `allow_remote_content=True`.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import json
 import pathlib
 import threading

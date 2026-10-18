@@ -63,6 +63,8 @@ The price and the limits, stated:
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import threading
 import time
 from dataclasses import dataclass, field, replace

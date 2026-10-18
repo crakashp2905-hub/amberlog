@@ -28,6 +28,8 @@ event-triggered and risk-budgeted policies).
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 from collections import Counter
 from dataclasses import dataclass, field
 from typing import Any

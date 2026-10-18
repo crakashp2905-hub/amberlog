@@ -9,6 +9,8 @@ in an SDK the caller does not use.
 - `transcripts.py` — turning existing conversation logs into episodic memories.
 """
 
+__stability__ = "stable"
+
 from .context import (
     INJECTION_PREAMBLE,
     MemoryBlock,

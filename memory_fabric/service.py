@@ -41,6 +41,8 @@ rather than at the next restart.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Sequence
 

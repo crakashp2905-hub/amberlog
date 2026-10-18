@@ -12,6 +12,8 @@ pre-registered margin then the causal machinery is not justified
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import math
 from collections import defaultdict
 from dataclasses import dataclass

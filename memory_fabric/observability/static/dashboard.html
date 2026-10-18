@@ -216,6 +216,7 @@
       <button data-tab="memories" aria-selected="false">Memories<span class="count" id="c-memories"></span></button>
       <button data-tab="episodes" aria-selected="false">Episodes<span class="count" id="c-episodes"></span></button>
       <button data-tab="search" aria-selected="false">Search</button>
+      <button data-tab="posture" aria-selected="false">Posture</button>
     </nav>
   </div>
 </header>
@@ -256,6 +257,16 @@
   <section id="tab-episodes" hidden>
     <h2>Episodes</h2>
     <div id="episodes-table"></div>
+  </section>
+
+  <section id="tab-posture" hidden>
+    <h2>Security posture</h2>
+    <div class="note">Read from this store, not asserted. A control being on says what the
+      store does, not that the deployment around it is sound. Export the audit trail with
+      <code>memory-fabric audit-export --out FILE</code>.</div>
+    <div id="posture-controls"></div>
+    <h2>Accepted gaps</h2>
+    <div id="posture-gaps"></div>
   </section>
 
   <section id="tab-search" hidden>
@@ -369,6 +380,21 @@ async function loadAttention() {
           ${actionBlock(i.action)}
         </div>`).join("")
     : `<div class="empty">Nothing needs attention.</div>`;
+}
+
+/* ---------- posture ---------- */
+
+async function loadPosture() {
+  const p = await api("/api/posture");
+  const cls = {on: "active", partial: "medium", off: "high"};
+  $("posture-controls").innerHTML = `<dl class="kv">${p.controls.map((c) => `
+    <dt>${esc(c.name)}</dt>
+    <dd>${badge(c.state, cls[c.state])} ${esc(c.detail)}
+      <div class="sub">${esc(c.evidence)}</div></dd>`).join("")}</dl>`;
+  $("posture-gaps").innerHTML = p.accepted_gaps.map((g) => `
+    <div class="card medium"><div class="card-head">${badge(g.id, "medium")}
+      <span class="card-title">${esc(g.gap)}</span></div>
+      ${g.mitigation ? `<div class="card-detail">${esc(g.mitigation)}</div>` : ""}</div>`).join("");
 }
 
 /* ---------- review ---------- */
@@ -608,10 +634,11 @@ function closeDetail() { $("drawer-bg").hidden = true; }
 
 /* ---------- wiring ---------- */
 
-const TABS = ["attention", "review", "memories", "episodes", "search"];
+const TABS = ["attention", "review", "memories", "episodes", "search", "posture"];
 const LOADERS = {
   attention: loadAttention,
   review: loadReview,
+  posture: loadPosture,
   memories: loadMemories,
   episodes: loadEpisodes,
   search: async () => {},

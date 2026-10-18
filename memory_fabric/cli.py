@@ -765,6 +765,40 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_posture(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Which controls are on in this store, and the gaps no setting closes."""
+    from .posture import posture
+
+    data = posture(fabric)
+    if args.json:
+        print(json.dumps(data, indent=2))
+        return 0
+    heading("Controls")
+    colour = {"on": C.GREEN, "partial": C.YELLOW, "off": C.RED}
+    for c in data["controls"]:
+        print(f"  {colour[c['state']]}{c['state']:<8}{C.RESET}{c['name']}")
+        print(f"  {'':<8}{C.DIM}{c['detail']}{C.RESET}")
+    print()
+    heading("Accepted gaps (docs/SECURITY_REVIEW.md)")
+    for g in data["accepted_gaps"]:
+        print(f"  {g['id']}  {g['gap']}" + (f"\n      {C.DIM}{g['mitigation']}{C.RESET}"
+                                             if g["mitigation"] else ""))
+    return 0
+
+
+def cmd_audit_export(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Write decisions, changes, access events and deletion receipts, without content."""
+    from .posture import export_audit
+
+    manifest = export_audit(fabric, args.out, kinds=args.kind or
+                            ("decisions", "changes", "access", "deletions"),
+                            since_seq=args.since_seq)
+    print(f"wrote {manifest['events']} events to {args.out} "
+          f"({', '.join(f'{k} {n}' for k, n in sorted(manifest['counts'].items())) or 'none'}); "
+          f"content excluded; ends with a chain checkpoint")
+    return 0
+
+
 def cmd_import(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Import another store's export as reviewable candidates. See `migrate.py`."""
     from .migrate import import_records, read_records
@@ -1876,6 +1910,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agents-file", required=True)
     p.add_argument("--agent", required=True)
     p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
+
+    add("posture", cmd_posture,
+        "Which security controls are on in this store, and the accepted gaps")
+    p = add("audit-export", cmd_audit_export,
+            "Export decisions, changes, access events and deletion receipts as JSONL, "
+            "without memory content, ending with a hash-chain checkpoint")
+    p.add_argument("--out", required=True)
+    p.add_argument("--kind", action="append", choices=["decisions", "changes", "access", "deletions"])
+    p.add_argument("--since-seq", type=int, default=0)
 
     p = add("import", cmd_import,
             "WRITES: import another store's export (JSON list or JSONL: Mem0, LangChain "

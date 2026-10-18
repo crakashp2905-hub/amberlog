@@ -152,6 +152,11 @@ class Api:
             case ["attention"]:
                 return [i.to_json() for i in report.attention(f)]
 
+            case ["posture"]:
+                from ..posture import posture
+
+                return posture(f)
+
             case ["review"]:
                 # The queue only. Decisions are writes and stay in the CLI and
                 # SDK: this server has no endpoint that changes a memory.

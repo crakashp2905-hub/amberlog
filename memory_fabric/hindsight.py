@@ -39,12 +39,13 @@ if TYPE_CHECKING:  # pragma: no cover
     from .model import Memory
 
 FALSITY = ("contradicted", "detected as false", "wrong", "poison", "prompt injection")
-HOSTILE = ("prompt injection",)
+HOSTILE = ("prompt injection", "hostile")
 """Signals no honest author produces. A contradicted withdrawal can be an honest mistake."""
 SUSPECT = "[SOURCE WAS WRONG BEFORE: another note by this author was withdrawn as false]"
 
 
-def discredited_authors(fabric: "MemoryFabric", signals: Sequence[str] = FALSITY) -> set[str]:
+def discredited_authors(fabric: "MemoryFabric", signals: Sequence[str] = FALSITY,
+                        federated: bool = True) -> set[str]:
     """Authors with a memory withdrawn on one of these grounds.
 
     `signals=HOSTILE` discredits only sources caught doing something no honest
@@ -52,6 +53,18 @@ def discredited_authors(fabric: "MemoryFabric", signals: Sequence[str] = FALSITY
     valid note by an honest technician who made one mistake).
     """
     out: set[str] = set()
+    # A hostile finding recorded here, or a peer's authenticated notice about
+    # one of its sources (`SourceNotice`): the signal that never left the
+    # origin store before (T2).
+    for event in fabric.log.read_types([EventType.SOURCE_DISCREDITED]):
+        payload = event.payload
+        from_peer = payload.get("origin_store_id") != fabric.store_id
+        if from_peer and not federated:
+            continue
+        if payload.get("authorised") and any(word in str(payload.get("signal", ""))
+                                             for word in ("hostile",)):
+            if any(s in ("prompt injection", "hostile") for s in signals):
+                out.add(str(payload["author_ref"]))
     for event in fabric.log.read_types([EventType.LIFECYCLE_CHANGED]):
         payload = event.payload
         if payload.get("to") not in (LifecycleState.QUARANTINED.value,
@@ -70,9 +83,9 @@ def discredited_authors(fabric: "MemoryFabric", signals: Sequence[str] = FALSITY
 
 
 def suspects(fabric: "MemoryFabric", memories: Iterable["Memory"] | None = None,
-             signals: Sequence[str] = FALSITY) -> set[str]:
+             signals: Sequence[str] = FALSITY, federated: bool = True) -> set[str]:
     """Ids of active memories whose author has been discredited."""
-    bad = discredited_authors(fabric, signals)
+    bad = discredited_authors(fabric, signals, federated)
     pool = fabric.state.memories.values() if memories is None else memories
     return {m.id for m in pool
             if m.lifecycle_state is LifecycleState.ACTIVE and author(m) in bad}
@@ -84,6 +97,6 @@ def annotate(fabric: "MemoryFabric", memories: Sequence["Memory"]) -> list[str]:
 
 
 def withhold(fabric: "MemoryFabric", memories: Sequence["Memory"],
-             signals: Sequence[str] = FALSITY) -> list[str]:
-    flagged = suspects(fabric, memories, signals)
+             signals: Sequence[str] = FALSITY, federated: bool = True) -> list[str]:
+    flagged = suspects(fabric, memories, signals, federated)
     return [m.content for m in memories if m.id not in flagged]

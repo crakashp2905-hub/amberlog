@@ -46,6 +46,7 @@ class EventType:
     ACTION_EXECUTED = "ActionExecuted"
     MANAGER_LEASE = "ManagerLease"
     MAINTENANCE_RAN = "MaintenanceRan"
+    SOURCE_DISCREDITED = "SourceDiscredited"
 
 
 @dataclass(frozen=True)
@@ -752,3 +753,20 @@ def maintenance_ran(ts: int, holder: str, since_seq: int, until_seq: int,
     return Event(type=EventType.MAINTENANCE_RAN, ts=ts, agent_id=holder,
                  payload={"since_seq": since_seq, "until_seq": until_seq,
                           "tasks": dict(tasks)})
+
+
+def source_discredited(ts: int, author_ref: str, signal: str, origin_store_id: str,
+                       notice_id: str, reason_code: str, actor: str,
+                       authorised: bool = True) -> Event:
+    """A source was found hostile here, or a peer said so in a signed notice (0.12.0).
+
+    `author_ref` is how this store names the source: a local agent id, or
+    `<origin store>/<agent>` for a peer's author, the form imports resolve to.
+    An unauthenticated notice is recorded with `authorised: false` and changes
+    nothing.
+    """
+    return Event(type=EventType.SOURCE_DISCREDITED, ts=ts, agent_id=actor,
+                 payload={"author_ref": author_ref, "signal": signal,
+                          "origin_store_id": origin_store_id, "notice_id": notice_id,
+                          "reason_code": reason_code, "authorised": authorised})
+

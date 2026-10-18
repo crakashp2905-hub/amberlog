@@ -147,6 +147,15 @@ class InProcessTransport:
         )
         return store.receive_retraction(retraction, sender_authorised=authorised)
 
+    def send_notice(self, recipient_store_id: str, notice: Any) -> bool:
+        if recipient_store_id in self.offline:
+            raise TransportError(f"{recipient_store_id} is offline")
+        store = self.stores.get(recipient_store_id)
+        if store is None:
+            raise TransportError(f"no route to {recipient_store_id}", permanent=True)
+        authorised = notice.origin_store_id in self.registry if len(self.registry) else True
+        return bool(store.receive_notice(notice, sender_authorised=authorised))
+
 
 class HttpTransport:
     """The real transport: authenticated HTTP POST, stdlib only."""
@@ -157,6 +166,24 @@ class HttpTransport:
         self.registry = registry
         self.origin_store_id = origin_store_id
         self.timeout = timeout
+
+    def send_notice(self, recipient_store_id: str, notice: Any) -> bool:
+        """POST a signed source notice to a peer's `/federation/notice`."""
+        peer = self.registry.get(recipient_store_id)
+        if peer is None:
+            raise TransportError(f"no peer configured for {recipient_store_id}", permanent=True)
+        body = json.dumps({"notice": notice.to_json(),
+                           "signature": notice.sign(peer.key, peer.key_id)}).encode("utf-8")
+        request = urllib.request.Request(peer.endpoint.rstrip("/") + "/federation/notice",
+                                         data=body, headers={"Content-Type": "application/json"},
+                                         method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                return bool(json.load(response).get("accepted"))
+        except urllib.error.HTTPError as exc:
+            raise TransportError(f"notice refused: {exc.code}", permanent=exc.code < 500) from exc
+        except (urllib.error.URLError, OSError) as exc:
+            raise TransportError(f"cannot reach {recipient_store_id}: {exc}") from exc
 
     def send(self, recipient_store_id: str, retraction: Retraction) -> Acknowledgement:
         peer = self.registry.get(recipient_store_id)
@@ -282,6 +309,8 @@ def build_federation_server(
         def do_POST(self) -> None:  # noqa: N802
             if self.path == "/federation/retraction":
                 self._retraction()
+            elif self.path == "/federation/notice":
+                self._notice()
             elif self.path == "/federation/reconcile":
                 self._reconcile()
             else:
@@ -344,6 +373,26 @@ def build_federation_server(
                 else HTTPStatus.CONFLICT
             )
             self._reply(status, ack.to_json())
+
+        def _notice(self) -> None:
+            from .protocol import SourceNotice
+
+            try:
+                body = self._read_body()
+                notice = SourceNotice.from_json(body.get("notice", {}))
+            except ProtocolError as exc:
+                self._reply(HTTPStatus.BAD_REQUEST, {"rejection_code": exc.code.value})
+                return
+            key = registry.key_for(notice.origin_store_id)
+            if key is None or not notice.verify(body.get("signature") or {}, key):
+                with _store_lock(fabric):
+                    fabric.receive_notice(notice, sender_authorised=False)
+                self._reply(HTTPStatus.UNAUTHORIZED,
+                            {"rejection_code": RejectionCode.UNAUTHORIZED.value})
+                return
+            with _store_lock(fabric):
+                fabric.receive_notice(notice, sender_authorised=True)
+            self._reply(HTTPStatus.OK, {"accepted": True})
 
         def _reconcile(self) -> None:
             """A recipient asks: what have I missed from you since my cursor?

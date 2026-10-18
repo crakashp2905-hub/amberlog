@@ -20,7 +20,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 
-if TYPE_CHECKING:  # pragma: no cover
+if TYPE_CHECKING:
+    from .protocol import SourceNotice  # pragma: no cover
     from .certificates import CertificateVerification, EvidenceCertificate
     from .session import AgentSession
 
@@ -38,6 +39,7 @@ from . import extraction as extracting
 from .relations import PULLS_IN_SUBJECT, RelationKind
 from .relevance import ReasonCode as _ReasonCode
 from .lineage import LineageGraph, LineageView
+import hashlib
 import json
 from datetime import datetime, timezone
 
@@ -517,6 +519,58 @@ class MemoryFabric:
             )
             self.outbox.enqueue(retraction, recipients, _now_ms())
         return retraction
+
+    @_fresh
+    def discredit_source(self, author: str, actor: str, signal: str = "hostile",
+                         reason_code: str = "injection_screen") -> "SourceNotice":
+        """Record that a local source was caught being hostile; return the notice for peers.
+
+        Idempotent per (author, signal). The notice goes to the stores that
+        hold this author's shared memories (`notice_recipients`), and the
+        background manager sends it (`manager.py`).
+        """
+        from .protocol import SOURCE_SIGNALS, SourceNotice
+
+        if signal not in SOURCE_SIGNALS:
+            raise PolicyViolation(f"signal must be one of {SOURCE_SIGNALS}")
+        notice_id = "sn_" + hashlib.sha256(
+            f"{self.store_id}/{author}/{signal}".encode()).hexdigest()[:26]
+        if not any(e.payload.get("notice_id") == notice_id
+                   for e in self.log.read_types([ev.EventType.SOURCE_DISCREDITED])):
+            self._emit(ev.source_discredited(ts=self.now(), author_ref=author, signal=signal,
+                                             origin_store_id=self.store_id,
+                                             notice_id=notice_id, reason_code=reason_code,
+                                             actor=actor))
+        return SourceNotice(notice_id=notice_id, origin_store_id=self.store_id, author=author,
+                            signal=signal, reason_code=reason_code,
+                            issued_at=iso_timestamp(self.now()))
+
+    def notice_recipients(self, author: str) -> list[str]:
+        """Stores holding a memory this author wrote here and shared."""
+        out: set[str] = set()
+        for memory_id, recipients in self.state.shared_to.items():
+            memory = self.state.memories.get(memory_id)
+            if memory is not None and memory.provenance.created_by == author:
+                out.update(recipients)
+        return sorted(out)
+
+    @_fresh
+    def receive_notice(self, notice: "SourceNotice", sender_authorised: bool = True) -> bool:
+        """Record a peer's signed notice. Idempotent. Returns whether it was accepted."""
+        author_ref = f"{notice.origin_store_id}/{notice.author}"
+        seen = any(e.payload.get("notice_id") == notice.notice_id
+                   and e.payload.get("authorised")
+                   for e in self.log.read_types([ev.EventType.SOURCE_DISCREDITED]))
+        if seen:
+            return True
+        self._emit(ev.source_discredited(ts=self.now(), author_ref=author_ref,
+                                         signal=notice.signal,
+                                         origin_store_id=notice.origin_store_id,
+                                         notice_id=notice.notice_id,
+                                         reason_code=notice.reason_code,
+                                         actor=notice.origin_store_id,
+                                         authorised=sender_authorised))
+        return sender_authorised
 
     @_fresh
     def supersede_copies(self, memory_id: str, actor: str) -> list[Retraction]:

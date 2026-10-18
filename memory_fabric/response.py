@@ -132,7 +132,95 @@ def record(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
     outstanding = [d for d in deliveries if d["state"] not in ("enforced", "verified")]
     return {"generated_ms": int(time.time() * 1000), "store_id": fabric.store_id,
             "assessment": assess(fabric, memory_id), "timeline": timeline,
-            "deliveries": deliveries, "outstanding": outstanding}
+            "deliveries": deliveries, "outstanding": outstanding,
+            "verification": verify_recovery(fabric, memory_id)}
+
+
+def influence(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
+    """Exposure, reliance and action, kept apart.
+
+    Retrieval alone is not influence. A memory shown to an agent is
+    *exposure* (the exposure log). One the agent cited in an episode is
+    *reliance* (`MemoryCited`). One that was evidence for a gated or executed
+    tool call is *action*. They are separate questions, and an incident
+    report that collapses them either overstates the damage or misses it.
+    """
+    exposed: dict[str, int] = {}
+    relied: list[dict[str, Any]] = []
+    acted: list[dict[str, Any]] = []
+    for event in fabric.log.read_types([EventType.EXPOSURE_DECIDED, EventType.MEMORY_CITED,
+                                        EventType.ACTION_GATED, EventType.ACTION_EXECUTED]):
+        p = event.payload
+        if event.type == EventType.EXPOSURE_DECIDED:
+            if p.get("memory_id") == memory_id and p.get("exposed"):
+                agent = event.agent_id or "unknown"
+                exposed[agent] = exposed.get(agent, 0) + 1
+        elif event.type == EventType.MEMORY_CITED:
+            if p.get("memory_id") == memory_id:
+                relied.append({"seq": event.seq, "agent": event.agent_id,
+                               "episode": event.episode_id})
+        elif memory_id in [m for m, _ in p.get("evidence") or ()]:
+            acted.append({"seq": event.seq, "type": event.type, "tool": p.get("tool"),
+                          "allowed": p.get("allowed"), "outcome": p.get("outcome")})
+    return {"exposed_to": exposed, "relied_on_in": relied, "actions": acted}
+
+
+def verify_recovery(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
+    """Check, from the store's own state, whether a contained memory is contained.
+
+    It does not trust that `contain` ran or what an operator says. Each check
+    reads current state:
+
+    1. the memory itself cannot be retrieved or used;
+    2. every conclusion derived from it is withdrawn or contested, unless it
+       still stands on independent support (`correction.preview`'s rules);
+    3. every copy the store sent is confirmed withdrawn at its recipient.
+       A pending, failed or offline peer is **unresolved**, never assumed done;
+    4. any action that used it is listed for a person to judge. The store
+       cannot undo an external side effect, so it never calls that resolved.
+
+    `status` is `contained` only when 1–3 hold. With 4 non-empty it is
+    `contained, actions need review`. Otherwise it is `unresolved`, with the
+    reasons.
+    """
+    from .correction import status as delivery_status
+    from .model import EXPOSABLE_STATES
+
+    memory = fabric.state.memories.get(memory_id)
+    unresolved: list[str] = []
+    if memory is None:
+        return {"memory_id": memory_id, "status": "unknown", "unresolved": ["no such memory"]}
+    if memory.lifecycle_state in EXPOSABLE_STATES:
+        unresolved.append(f"the memory is still {memory.lifecycle_state.value}")
+    children = [m for m in fabric.state.memories.values()
+                if any(pid == memory_id for pid, _ in m.provenance.parents)]
+    still_active = []
+    for child in children:
+        if child.lifecycle_state in EXPOSABLE_STATES:
+            others = [pid for pid, _ in child.provenance.parents if pid != memory_id
+                      and fabric.state.memories.get(pid) is not None
+                      and fabric.state.memories[pid].lifecycle_state in EXPOSABLE_STATES]
+            if not others:
+                still_active.append(child.id)
+    if still_active:
+        unresolved.append(f"{len(still_active)} derived memory(ies) still active with no other "
+                          f"support: {', '.join(still_active[:5])}")
+    peers = delivery_status(fabric, memory_id)
+    pending = [d for d in peers if d["state"] not in ("enforced", "verified")]
+    if pending:
+        unresolved.append(f"{len(pending)} store(s) not confirmed: "
+                          + ", ".join(f"{d.get('store_id', '?')} ({d['state']})" for d in pending))
+    used = influence(fabric, memory_id)
+    allowed_actions = [a for a in used["actions"] if a.get("allowed") or a.get("outcome") == "executed"]
+    if unresolved:
+        verdict = "unresolved"
+    elif allowed_actions:
+        verdict = "contained, actions need review"
+    else:
+        verdict = "contained"
+    return {"memory_id": memory_id, "status": verdict, "unresolved": unresolved,
+            "derived": [c.id for c in children], "stores": peers,
+            "influence": used, "actions_to_review": allowed_actions}
 
 
 def record_markdown(data: dict[str, Any]) -> str:

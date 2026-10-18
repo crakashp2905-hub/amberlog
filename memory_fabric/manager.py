@@ -60,7 +60,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
     from .transport import Transport
 
-TASKS = ("dispatch", "retention", "audit", "conflicts", "checkpoint", "health")
+TASKS = ("sources", "dispatch", "retention", "audit", "conflicts", "checkpoint", "health")
 MAX_BACKOFF = 32
 
 
@@ -170,6 +170,44 @@ class MemoryManager:
         return ManagerReport(leader=True, tasks=report)
 
     # --- tasks ---------------------------------------------------------------
+
+    def _task_sources(self, since: int) -> dict[str, Any]:
+        """Discredit sources the injection screens caught, and tell the peers holding their memories.
+
+        Only the hostile signal, an ingest screen catching an injection, is
+        acted on. T2 measured that discrediting on ordinary withdrawals
+        punishes honest authors. A notice that cannot be delivered now is sent
+        again next cycle: sending is idempotent at the recipient.
+        """
+        from .model import WithdrawalBasis
+
+        caught: set[str] = set()
+        for memory_id, basis in self.fabric.state.withdrawal_basis.items():
+            memory = self.fabric.state.memories.get(memory_id)
+            if memory is None or basis != WithdrawalBasis.SENSITIVE_DATA.value:
+                continue
+            reason = self._withdrawal_reason(memory_id)
+            if "injection" in reason and not isinstance(memory.context.get("federation"), dict):
+                caught.add(memory.provenance.created_by)
+        sent, failed = 0, []
+        for author in sorted(caught):
+            notice = self.fabric.discredit_source(author, actor=self.holder)
+            if self.transport is None or not hasattr(self.transport, "send_notice"):
+                continue
+            for peer in self.fabric.notice_recipients(author):
+                try:
+                    self.transport.send_notice(peer, notice)
+                    sent += 1
+                except Exception as exc:  # noqa: BLE001 - retried next cycle
+                    failed.append(f"{peer}: {type(exc).__name__}")
+        return {"discredited": sorted(caught), "notices_sent": sent, "failed": failed[:10]}
+
+    def _withdrawal_reason(self, memory_id: str) -> str:
+        reason = ""
+        for event in self.fabric.log.read_types([ev.EventType.LIFECYCLE_CHANGED]):
+            if event.payload.get("memory_id") == memory_id:
+                reason = str(event.payload.get("reason") or "")
+        return reason.lower()
 
     def _task_dispatch(self, since: int) -> dict[str, Any]:
         if self.transport is None:

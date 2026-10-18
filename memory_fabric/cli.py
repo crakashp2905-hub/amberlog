@@ -859,6 +859,20 @@ def cmd_incident(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     if args.id not in fabric.state.memories:
         print(f"{C.RED}no memory {args.id}{C.RESET}", file=sys.stderr)
         return 4
+    if args.verify:
+        result = response.verify_recovery(fabric, args.id)
+        if args.json:
+            print(json.dumps(result, indent=2, default=str))
+        else:
+            print(f"{args.id}: {result['status']}")
+            for reason in result["unresolved"]:
+                print(f"  unresolved: {reason}")
+            for action in result["actions_to_review"]:
+                print(f"  action to review: {action.get('tool')} (seq {action.get('seq')})")
+            used = result["influence"]
+            print(f"  exposed to {len(used['exposed_to'])} agent(s); relied on in "
+                  f"{len(used['relied_on_in'])} episode(s); evidence for {len(used['actions'])} action(s)")
+        return {"contained": 0, "contained, actions need review": 1}.get(result["status"], 3)
     if args.contain:
         if not args.reason or not args.actor:
             print(f"{C.RED}containing needs --reason and --actor{C.RESET}", file=sys.stderr)
@@ -2166,6 +2180,9 @@ def build_parser() -> argparse.ArgumentParser:
     step = p.add_mutually_exclusive_group()
     step.add_argument("--contain", action="store_true")
     step.add_argument("--record", metavar="FILE", help=".md (default) or .json")
+    step.add_argument("--verify", action="store_true",
+                      help="check containment from the store's state: exit 0 contained, "
+                           "1 contained with actions to review, 3 unresolved")
     p.add_argument("--reason", default="")
     p.add_argument("--actor")
 

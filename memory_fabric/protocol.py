@@ -523,3 +523,65 @@ class Acknowledgement:
 
 def _optional_str(value: Any) -> str | None:
     return None if value is None else str(value)
+
+
+SOURCE_SIGNALS = ("hostile",)
+"""Signals a notice may carry. Only `hostile`: T2 measured that discrediting a
+source on any withdrawal punishes honest mistakes, so an ordinary withdrawal
+is not a reason to warn other stores about its author."""
+
+
+@dataclass(frozen=True)
+class SourceNotice:
+    """An origin's signed statement that one of its sources was caught being hostile.
+
+    Sent to the stores holding that source's memories, so they learn what the
+    origin's ingest screen learned (research T2: the signal never left the
+    origin). It proves who sent it and that it is unchanged, nothing more. A
+    recipient decides what to do, and `hindsight` withholds that source's
+    imports.
+    """
+
+    notice_id: str
+    origin_store_id: str
+    author: str
+    signal: str
+    reason_code: str
+    issued_at: str
+    protocol_version: int = PROTOCOL_VERSION
+
+    def to_json(self) -> dict[str, Any]:
+        return {"protocol_version": self.protocol_version, "notice_id": self.notice_id,
+                "origin_store_id": self.origin_store_id, "author": self.author,
+                "signal": self.signal, "reason_code": self.reason_code,
+                "issued_at": self.issued_at}
+
+    def canonical(self) -> bytes:
+        return json.dumps(self.to_json(), sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+    def sign(self, key: bytes, key_id: str = "k1") -> dict[str, str]:
+        return {"alg": "hmac-sha256", "key_id": key_id,
+                "value": hmac.new(key, self.canonical(), hashlib.sha256).hexdigest()}
+
+    def verify(self, signature: Mapping[str, str], key: bytes) -> bool:
+        if signature.get("alg") != "hmac-sha256":
+            return False
+        expected = hmac.new(key, self.canonical(), hashlib.sha256).hexdigest()
+        return hmac.compare_digest(expected, str(signature.get("value", "")))
+
+    @classmethod
+    def from_json(cls, payload: Mapping[str, Any]) -> "SourceNotice":
+        if payload.get("protocol_version") != PROTOCOL_VERSION:
+            raise ProtocolError(RejectionCode.PROTOCOL_VERSION_UNSUPPORTED, "unsupported protocol version")
+        try:
+            notice = cls(notice_id=str(payload["notice_id"]),
+                         origin_store_id=str(payload["origin_store_id"]),
+                         author=str(payload["author"]), signal=str(payload["signal"]),
+                         reason_code=str(payload.get("reason_code", "")),
+                         issued_at=str(payload.get("issued_at", "")))
+        except KeyError as exc:
+            raise ProtocolError(RejectionCode.MALFORMED, f"missing {exc}") from exc
+        if notice.signal not in SOURCE_SIGNALS:
+            raise ProtocolError(RejectionCode.MALFORMED, "unknown signal")
+        return notice
+

@@ -127,6 +127,23 @@ def offer(
             reasons=[f"sender refused: {reason}" for reason in outbound.reasons],
         )
 
+    # Every store this memory has passed through, oldest first. A re-share of
+    # an import names the intermediary as its origin, so without the chain a
+    # memory shared A -> B -> A came home as a *new* import of A's own memory:
+    # an echo. B never forwards A's retraction back to A (A is where it came
+    # from), so when A corrected the memory its own older version stayed active
+    # beside the new one, at the origin itself (found by S1's CorrectionSim).
+    # A store on the chain already holds this memory; it is not offered again.
+    chain = _chain(memory)
+    if target.store_id in chain or target.store_id == source.store_id:
+        return OfferResult(
+            source_memory_id=memory_id,
+            accepted=False,
+            decision=FirewallDecision.DENY,
+            reasons=["recipient refused: it is already on this memory's provenance "
+                     "chain (an echo of a memory it holds)"],
+        )
+
     inbound = _inbound_check(target, memory, granted_capabilities)
     if not inbound.permits_sharing:
         return OfferResult(
@@ -149,6 +166,7 @@ def offer(
         # import of v3. Provenance has always carried versions for parents;
         # imports did not record one at all.
         "version": memory.version,
+        "chain": [*chain, source.store_id],
     }
 
     imported_id = target.remember(
@@ -185,6 +203,21 @@ def offer(
         reasons=inbound.reasons,
         imported_memory_id=imported_id,
     )
+
+
+def _chain(memory: Memory) -> list[str]:
+    """The stores a memory passed through before its current holder, oldest first.
+
+    Imports made before the chain was recorded name only their immediate
+    origin, which is the most that can be recovered for them.
+    """
+    origin = memory.context.get(ORIGIN_KEY)
+    if not isinstance(origin, dict):
+        return []
+    chain = origin.get("chain")
+    if isinstance(chain, list) and all(isinstance(s, str) for s in chain):
+        return list(chain)
+    return [origin["store"]] if isinstance(origin.get("store"), str) else []
 
 
 def _inbound_check(target: "MemoryFabric", memory: Memory, granted: Iterable[str]):

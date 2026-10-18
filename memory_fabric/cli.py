@@ -746,6 +746,37 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_agent_api_revoke(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Revoke one leaked credential, or every credential an agent holds.
+
+    Revocations are rows in the store, so a running `agent-api` server on the
+    same store refuses the credential on its next request; nothing restarts.
+    A token is read from stdin when given as `-`, so it does not land in
+    shell history.
+    """
+    from .agent_api import ConfigurationError, decode_credential
+    from .identity import IdentityError
+
+    try:
+        service = _agent_service(fabric, args.agents_file)
+        if not service.revocations_are_durable:  # pragma: no cover - default is durable
+            print(f"{C.RED}revocations here would not survive a restart; refusing{C.RESET}",
+                  file=sys.stderr)
+            return 5
+        if args.agent:
+            service.revoke_agent(args.agent)
+            print(f"revoked every credential of {args.agent}")
+            return 0
+        token = sys.stdin.read().strip() if args.token == "-" else args.token
+        credential = decode_credential(token)
+        service.revoke(credential)
+        print(f"revoked credential {credential.credential_id} of {credential.agent_id}")
+        return 0
+    except (ConfigurationError, IdentityError, OSError, ValueError) as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 5
+
+
 def cmd_migrate_keys(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Move this store's content keys out of the database into a directory.
 
@@ -1641,6 +1672,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agents-file", required=True)
     p.add_argument("--agent", required=True)
     p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
+
+    p = add("agent-api-revoke", cmd_agent_api_revoke,
+            "WRITES: revoke a leaked credential, or all of one agent's; a running "
+            "agent-api on this store refuses it on the next request")
+    p.add_argument("--agents-file", required=True)
+    who = p.add_mutually_exclusive_group(required=True)
+    who.add_argument("--agent", help="revoke every credential this agent holds")
+    who.add_argument("--token", help="the leaked credential, or - to read it from stdin")
 
     p = add("migrate-keys", cmd_migrate_keys,
             "WRITES: move content keys out of the database into a directory, "

@@ -7,7 +7,7 @@ import unittest
 
 from memory_fabric import MemoryFabric
 from memory_fabric.events import EventType
-from memory_fabric.objective import MemoryObjective, Rule, compile_objective, validate
+from memory_fabric.objective import MemoryObjective, Rule, compile_objective, sanity, validate
 
 OBJ = MemoryObjective(
     "Night shift at Brook: approved Brook procedures and plant-wide safety rules only.",
@@ -42,6 +42,20 @@ class Rules(unittest.TestCase):
         self.assertEqual(objective.include, ((Rule("plant", "eq", "brook"),),))
         self.assertEqual(objective.exclude, ())
         self.assertEqual(len(objective.dropped), 3)
+
+
+class Robustness(unittest.TestCase):
+    def test_a_proposed_value_takes_the_fields_type(self) -> None:
+        objective = validate({"include": [[{"field": "revision", "op": "eq", "value": "2026"}]],
+                              "exclude": []}, {"revision": [2025, 2026]}, "s")
+        self.assertEqual(objective.include, ((Rule("revision", "eq", 2026),),))
+        self.assertTrue(objective.admits({"revision": 2026}))
+
+    def test_an_objective_that_admits_nothing_is_refused(self) -> None:
+        contexts = [{"source": "staff"}, {"source": "vendor"}]
+        blank = MemoryObjective("s", exclude=(Rule("source", "in", ["staff", "vendor"]),))
+        self.assertIn("admits none", sanity(blank, contexts) or "")
+        self.assertIsNone(sanity(OBJ, [{"plant": "all", "status": "approved"}]))
 
 
 class Retrieval(unittest.TestCase):

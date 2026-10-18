@@ -24,6 +24,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ### Added
 
+- **The action fence (schema 0.11.0, `ActionExecuted`).** `ActionGate.execute`
+  verifies and runs a protected tool inside one store write transaction, so a
+  retraction can no longer land between "verified" and "done" (threat S14,
+  previously accepted as a residual race). It takes a lease (bounded below the
+  busy timeout), idempotency keys and explicit, re-verifying retries, and
+  `unfenced_changes()` reports what changed under a lease overrun.
+- **Exposure-based evidence independence** (`independence.py`, opt-in, S2):
+  a report is not a second source when its author had been shown the first.
+  Imports carry `root` and `informed_by`, so this holds across stores.
+
 - **Collections** (schema 0.10.0, `CollectionChanged`): named sets of memories in
   a tenant. Attaching an agent (`read`) lets it read the members even when
   private; `write`, `approve` and `retract` let an authenticated agent add to,

@@ -23,12 +23,50 @@ on memory and is not blocked by a memory outage. Unknown tools are refused.
 the tool, the agent, the verdict, the reason codes, the certificate digest and
 the evidence ids and versions. Never content. This is the link Task 9 needs
 from evidence to action.
+
+## The fence: closing the window between "verified" and "done" (S6)
+
+`authorize` answers "may this run now?", and the answer is stale the moment it
+returns. A retraction committed after `verify` and before the tool's side
+effect was not seen. That is threat S14, which was accepted as a residual race.
+
+`execute` closes it for a tool the store can wait on. Verification and the
+tool run inside **one store write transaction** (`BEGIN IMMEDIATE`, plus the
+in-process lock), so no retraction, quarantine or revocation can commit
+between them. A concurrent writer in this process or any other waits for the
+action, and then commits after it. The outcome is linearisable: every action
+happened either before a withdrawal of its evidence or not at all. Readers are
+not blocked, because the log is in WAL mode.
+
+The price and the limits, stated:
+
+- **Writers wait** up to the lease. A writer in another process waits up to
+  its SQLite busy timeout (5 s by default), so `lease_s` must stay below it,
+  or that writer fails with "database is locked" and must retry. `execute`
+  refuses a lease at or above `MAX_LEASE_S`.
+- **A tool that overruns its lease** has the fence released, so a hung tool
+  cannot stop every write to the store. The call returns `timed_out`, the
+  record says `fenced: false`, and `unfenced_changes()` reports any change to
+  the evidence after that point. The window is bounded and recorded, not
+  closed.
+- **The tool must not call this store.** It runs on a worker thread while the
+  caller holds the store's lock, so a store call from inside it waits until
+  the lease runs out.
+- **A crash mid-action** rolls the transaction back, so neither the decision
+  nor the outcome is recorded. The tool receives the idempotency key so that
+  it, the only party that can know, deduplicates a retry.
+- **Retry.** A key whose last attempt `executed` is not run again
+  (`already_executed`). One that `timed_out` or `failed` has an unknown
+  effect, so it runs again only with `retry=True`, and then it re-verifies
+  from scratch. A stale verification is never reused.
 """
 
 from __future__ import annotations
 
+import threading
+import time
 from dataclasses import dataclass, field, replace
-from typing import Any, Mapping
+from typing import Any, Callable, Mapping
 
 from . import events as ev
 from .certificates import (
@@ -52,6 +90,18 @@ CERTIFICATE_REQUIRED = "certificate_required"
 HUMAN_APPROVAL_REQUIRED = "human_approval_required"
 APPROVAL_INVALID = "approval_invalid"
 CREDENTIAL_INVALID = "credential_invalid"
+RETRY_REQUIRED = "retry_required"
+
+# Execution outcomes (`execute`).
+EXECUTED = "executed"
+FAILED = "failed"
+TIMED_OUT = "timed_out"
+ALREADY_EXECUTED = "already_executed"
+REFUSED = "refused"
+
+MAX_LEASE_S = 4.0
+"""Below the store's default 5 s busy timeout, so a writer in another process
+waiting on the fence gets in before it gives up."""
 
 
 @dataclass(frozen=True)
@@ -97,6 +147,22 @@ class ActionDecision:
     @property
     def reason_code(self) -> str:
         return self.reason_codes[0]
+
+
+@dataclass(frozen=True)
+class ActionExecution:
+    """What `ActionGate.execute` did."""
+
+    outcome: str
+    decision: ActionDecision | None
+    key: str
+    result: Any = None
+    error: str | None = None
+    fenced: bool = True
+
+    @property
+    def ran(self) -> bool:
+        return self.outcome in (EXECUTED, FAILED, TIMED_OUT)
 
 
 class ActionGate:
@@ -180,6 +246,85 @@ class ActionGate:
         return self._decide(tool, agent_id, (ALLOWED,), verification, rule,
                             allowed=True, certificate=certificate, tenant_id=tenant_id)
 
+    def execute(
+        self,
+        tool: str,
+        agent_id: str,
+        run: Callable[[str], Any],
+        certificate: EvidenceCertificate | Mapping[str, Any] | None = None,
+        *,
+        key: str,
+        lease_s: float = 2.0,
+        tenant_id: str | None = None,
+        approval: Approval | None = None,
+        session: Any = None,
+        retry: bool = False,
+    ) -> ActionExecution:
+        """Authorize and run `run(key)` with no window between them (module docstring).
+
+        `run` is the tool's side effect. It receives `key` so it can
+        deduplicate. It must not call this store.
+        """
+        if not 0 < lease_s < MAX_LEASE_S:
+            raise ValueError(f"lease_s must be in (0, {MAX_LEASE_S}); writers in other "
+                             "processes give up after the store's busy timeout")
+        prior = self._last_execution(key)
+        if prior is not None:
+            if prior["outcome"] == EXECUTED:
+                return ActionExecution(ALREADY_EXECUTED, None, key)
+            if not retry:
+                return ActionExecution(REFUSED, None, key, error=(
+                    f"{RETRY_REQUIRED}: the last attempt {prior['outcome']} with an unknown "
+                    "effect; pass retry=True to re-verify and run again"))
+        if isinstance(certificate, Mapping):
+            try:
+                certificate = EvidenceCertificate.from_json(certificate)
+            except CertificateError:
+                pass  # authorize reports it
+        fabric = self.fabric
+        with fabric.lock, fabric._transaction():
+            decision = self.authorize(tool, agent_id, certificate, tenant_id=tenant_id,
+                                      approval=approval, session=session)
+            if not decision.allowed:
+                return ActionExecution(REFUSED, decision, key)
+            box: dict[str, Any] = {}
+
+            def work() -> None:
+                try:
+                    box["result"] = run(key)
+                except BaseException as exc:  # noqa: BLE001 - reported, not swallowed
+                    box["error"] = f"{type(exc).__name__}: {exc}"
+
+            started = time.monotonic()
+            worker = threading.Thread(target=work, name=f"action-{key}", daemon=True)
+            worker.start()
+            worker.join(lease_s)
+            elapsed_ms = int((time.monotonic() - started) * 1000)
+            if worker.is_alive():
+                outcome, fenced = TIMED_OUT, False
+            elif "error" in box:
+                outcome, fenced = FAILED, True
+            else:
+                outcome, fenced = EXECUTED, True
+            verification = decision.verification
+            evidence = ([[e.memory_id, e.version] for e in certificate.evidence]
+                        if isinstance(certificate, EvidenceCertificate) else [])
+            fabric._emit(ev.action_executed(
+                ts=fabric.now(), agent_id=decision.agent_id, key=key, tool=tool,
+                outcome=outcome, fenced=fenced,
+                watermark=verification.verified_at_watermark if verification else None,
+                lease_ms=int(lease_s * 1000), elapsed_ms=elapsed_ms, evidence=evidence,
+                tenant_id=tenant_id))
+        return ActionExecution(outcome, decision, key, result=box.get("result"),
+                               error=box.get("error"), fenced=fenced)
+
+    def _last_execution(self, key: str) -> Mapping[str, Any] | None:
+        last = None
+        for event in self.fabric.log.read_types([ev.EventType.ACTION_EXECUTED]):
+            if event.payload.get("key") == key:
+                last = event.payload
+        return last
+
     # --- audit -----------------------------------------------------------
 
     def _decide(
@@ -229,3 +374,29 @@ class ActionGate:
                         notes=("audit write failed",),
                     )
         return decision
+
+
+def unfenced_changes(fabric: Any) -> list[dict[str, Any]]:
+    """Changes to an action's evidence that landed after its fence was released.
+
+    For every `timed_out` execution: lifecycle changes to any memory it rested
+    on, recorded after the execution. Each is a withdrawal the tool may have
+    acted against. That is the bounded remainder of S14, made visible rather
+    than closed. A fenced execution cannot appear here, because nothing could
+    commit inside its window.
+    """
+    out: list[dict[str, Any]] = []
+    pending: list[tuple[int, Mapping[str, Any]]] = []
+    for event in fabric.log.read_types([ev.EventType.ACTION_EXECUTED,
+                                        ev.EventType.LIFECYCLE_CHANGED]):
+        if event.type == ev.EventType.ACTION_EXECUTED:
+            if not event.payload.get("fenced", True):
+                pending.append((event.seq or 0, event.payload))
+            continue
+        memory_id = event.payload.get("memory_id")
+        for seq, execution in pending:
+            if any(e[0] == memory_id for e in execution.get("evidence", [])):
+                out.append({"key": execution["key"], "tool": execution["tool"],
+                            "memory_id": memory_id, "change_seq": event.seq,
+                            "execution_seq": seq})
+    return out

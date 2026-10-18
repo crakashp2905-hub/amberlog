@@ -41,6 +41,7 @@ class EventType:
     MEMORY_SHARED = "MemoryShared"
     ACTION_GATED = "ActionGated"
     COLLECTION_CHANGED = "CollectionChanged"
+    ACTION_EXECUTED = "ActionExecuted"
 
 
 @dataclass(frozen=True)
@@ -685,3 +686,43 @@ def collection_changed(
     if permissions:
         payload["permissions"] = sorted(permissions)
     return Event(type=EventType.COLLECTION_CHANGED, ts=ts, agent_id=actor, payload=payload)
+
+
+def action_executed(
+    ts: int,
+    agent_id: str,
+    key: str,
+    tool: str,
+    outcome: str,
+    fenced: bool,
+    watermark: int | None,
+    lease_ms: int,
+    elapsed_ms: int,
+    evidence: list[list[Any]],
+    tenant_id: str | None = None,
+) -> Event:
+    """A protected tool call that ran under the action fence (schema 0.11.0).
+
+    `ActionGate.execute`. `key` is the caller's idempotency key, which the
+    tool receives too. `outcome` is executed / failed / timed_out. `fenced`
+    false means the lease ran out while the tool was still running, so its
+    side effect may land after the store moved on. `actions.unfenced_changes`
+    reports any change to its evidence after this event. Ids only, never
+    content.
+    """
+    return Event(
+        type=EventType.ACTION_EXECUTED,
+        ts=ts,
+        agent_id=agent_id,
+        payload={
+            "key": key,
+            "tool": tool,
+            "outcome": outcome,
+            "fenced": fenced,
+            "watermark": watermark,
+            "lease_ms": lease_ms,
+            "elapsed_ms": elapsed_ms,
+            "evidence": [list(e) for e in evidence],
+            "tenant_id": tenant_id,
+        },
+    )

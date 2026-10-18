@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.10.0`
+- **Schema version:** `0.11.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,35 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.11.0 — the action fence, exposure records and the provenance chain
+
+Additive: one event type and three projection fields. A 0.10.0 log replays
+unchanged. A 0.10.0 reader skips the new event, as it skips any type it does
+not model, so it does not know which actions ran under the fence.
+
+**`ActionExecuted`**, payload `{key, tool, outcome, fenced, watermark,
+lease_ms, elapsed_ms, evidence: [[memory_id, version]], tenant_id}`. Emitted
+by `ActionGate.execute`, inside the same write transaction as the
+verification it follows (S6). `outcome` is `executed` / `failed` /
+`timed_out`, and `fenced: false` marks a run whose lease expired. `key` is the
+caller's idempotency key. Ids only, never content.
+
+Projection, with no new event behind it:
+
+- an exposure record carries `agent_id` and the log `seq` it came from;
+- `created_seq[memory_id]` is the sequence of a memory's `MemoryCreated`;
+- `independence.py` (S2) reads all three.
+
+An import's `context.federation` gains three fields:
+
+- `chain`: every store the memory passed through, oldest first. An offer into
+  a store on the chain is refused (F12);
+- `root`: the original's `{store, memory_id}`;
+- `informed_by`: the originals its author had been shown before writing it.
+
+Imports recorded earlier have none of the three. Their immediate origin is
+used instead, which is all that can be recovered for them.
 
 ### 0.10.0 — collections, and scope enforced on reads
 

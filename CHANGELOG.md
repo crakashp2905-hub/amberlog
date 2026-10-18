@@ -43,6 +43,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ### Fixed
 
+- **Echo imports.** A memory shared around a cycle (A -> B -> A) is no longer imported back into a store that already holds it; imports record their provenance chain (`context.federation.chain`). Before, a correction at A left A serving its own superseded versions ([security review](docs/SECURITY_REVIEW.md) F12).
+
 - Concurrent requests to the agent API and the federation server shared one
   SQLite connection; a revocation read could be corrupted (security review F1).
 - Crypto-erasure left earlier versions' plaintext and the copy-index term set

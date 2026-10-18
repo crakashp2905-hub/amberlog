@@ -111,6 +111,12 @@ decision had seen.
 | **P1b** | Discriminating links for covering candidates | ❌ **not supported**: the switch changed nothing reachable ([result](results/p1b-links.md)) |
 | **P1c/P1d** | Prefer the chain whose weakest link is strongest | ❌ **P1c not supported** when pooled over both chain families (0.250 → 0.458, threshold 0.550). ✅ **P1d supported** when registered afterwards for three hops only, on a fresh holdout: 0.417 → 0.917. P1d was registered after P1c's result, so it is the weaker kind of evidence. Now on by default ([P1c](results/p1c-strength.md), [P1d](results/p1d-strength-mh3.md)) |
 
+## 2d. Release-track research (docs/WORKPLAN.md, 2026-10-18)
+
+| | claim | outcome |
+|---|---|---|
+| **S1** | Version-scoped correction closes ≥ 40% of the correct-state headroom over the best baseline, converges in every seed, and invalidates no more than retraction alone | ⛔ **ABANDONED on degenerate headroom**: `delete_and_reshare` already reaches 0.9545 against a ceiling of 0.9568 (headroom 0.0023). The 8c check was not run before registering. `versioned` matches it exactly, converges 20/20 and invalidates nothing unnecessarily; `naive_overwrite` converges 3/20, `retraction_only` 0/20. Building the harness found **F12** (echo imports around a cycle left an origin serving its own superseded versions), now fixed ([result](results/s1-correction-sim.md)) |
+
 ## 3. Integrity engineering (roadmap phases 0–7)
 
 Not hypotheses. Deterministic guarantees, so the unit is "tested or not", and a

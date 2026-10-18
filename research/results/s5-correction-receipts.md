@@ -75,9 +75,13 @@ exploratory:
 - **A measured leak in today's protocol.** Every acknowledgement tells the
   origin how much the recipient did between two retractions (its log head),
   how many copies it held, and how many stores it re-shared to. Recorded as
-  finding F13 in the security review: medium, open. The fix is to stop
-  sending `state_revision` and the counts in `detail` to the origin. That is
-  a wire change, which needs a protocol version.
+  finding F13 in the security review: medium, fixed in `ab3861a` with no
+  wire change.
+- **F13 is now fixed and re-measured.** The same harness, seeds 0–4, ran at
+  `ab3861a`. Today's acknowledgement now scores **0.000 on activity, copies,
+  peers and dependents** ([s5-receipt-leakage-after-f13.json](s5-receipt-leakage-after-f13.json)).
+  `state_revision` counts the origin's own retractions, and `detail` says only
+  "withdrawn".
 - **`receipts.py` is the replacement, opt-in.** It is fixed-size, with no
   counts and no sequence. It binds at audit against the recipient's
   hash-chained log, and recomputing the opening needs no new event.

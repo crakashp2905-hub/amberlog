@@ -82,26 +82,89 @@ def origin_of(fabric: "MemoryFabric", memory_id: str) -> str | None:
     return global_ref(fabric, memory_id)[0]
 
 
-class TransferTrust:
-    """Built from a store's log. Construct a fresh one to include later episodes."""
+HALF_LIVES: tuple[float | None, ...] = (None, 200.0, 60.0, 20.0)
+"""Candidate half-lives, in episodes of the same context, for `adaptive` (T1)."""
 
-    def __init__(self, fabric: "MemoryFabric") -> None:
+
+class TransferTrust:
+    """Built from a store's log. Construct a fresh one to include later episodes.
+
+    **Forgetting (T1, `research/prereg/t1-learned-staleness.md`).** S4 found
+    that cumulative posteriors recover slowly when a context changes. That is
+    the cost of never forgetting.
+
+    - `half_life` discounts each observation by `0.5 ** (age / half_life)`,
+      where age is the number of later episodes in the same context.
+    - `adaptive=True` learns that rate **per context** from outcomes: for each
+      context it keeps the candidate half-life whose posteriors would have
+      best predicted that context's outcomes, each before it was seen
+      (prequential log score). A stable context keeps its memory; a context
+      that keeps changing learns to forget.
+    """
+
+    def __init__(self, fabric: "MemoryFabric", half_life: float | None = None,
+                 adaptive: bool = False,
+                 candidates: Sequence[float | None] = HALF_LIVES) -> None:
         self.fabric = fabric
         self.table: dict[tuple[str, str], Beta] = {}
+        self.chosen: dict[str, float | None] = {}
         cited: dict[str, list[str]] = {}
         for event in fabric.log.read_types([EventType.MEMORY_CITED]):
             if event.episode_id:
                 cited.setdefault(event.episode_id, []).append(event.payload["memory_id"])
+        # Per context, in order: (cells the episode informs, outcome).
+        history: dict[str, list[tuple[list[str], float]]] = {}
         for episode_id, episode in fabric.state.episodes.items():
             if episode.outcome is None:
                 continue
             ctx = context_key(episode.context)
-            origins = {o for m in cited.get(episode_id, []) if (o := origin_of(fabric, m))}
-            for origin in origins or {DEFAULT}:
-                cell = self.table.setdefault((origin, ctx), Beta())
-                success = max(0.0, min(1.0, episode.outcome))
-                cell.a += success
-                cell.b += 1.0 - success
+            origins = sorted({o for m in cited.get(episode_id, []) if (o := origin_of(fabric, m))})
+            history.setdefault(ctx, []).append(
+                (origins or [DEFAULT], max(0.0, min(1.0, episode.outcome))))
+        for ctx, events in history.items():
+            h = self._choose_half_life(events, candidates) if adaptive else half_life
+            self.chosen[ctx] = h
+            for cell, beta in self._fold(events, h).items():
+                self.table[(cell, ctx)] = beta
+
+    @staticmethod
+    def _fold(events: list[tuple[list[str], float]], half_life: float | None) -> dict[str, Beta]:
+        n = len(events)
+        out: dict[str, Beta] = {}
+        for i, (cells, success) in enumerate(events):
+            w = 1.0 if half_life is None else 0.5 ** ((n - 1 - i) / half_life)
+            for cell in cells:
+                b = out.setdefault(cell, Beta())
+                b.a += w * success
+                b.b += w * (1.0 - success)
+        return out
+
+    @staticmethod
+    def _choose_half_life(events: list[tuple[list[str], float]],
+                          candidates: Sequence[float | None]) -> float | None:
+        import math
+
+        best, best_score = None, -math.inf
+        for h in candidates:
+            decay = 1.0 if h is None else 0.5 ** (1.0 / h)
+            cells: dict[str, list[float]] = {}
+            score = 0.0
+            for chosen_cells, success in events:
+                for cell in chosen_cells:
+                    a, b = cells.get(cell, [1.0, 1.0])
+                    p = a / (a + b)
+                    score += math.log(max(1e-6, p if success >= 0.5 else 1.0 - p))
+                # every cell in the context ages by one episode
+                for v in cells.values():
+                    v[0] = 1.0 + (v[0] - 1.0) * decay
+                    v[1] = 1.0 + (v[1] - 1.0) * decay
+                for cell in chosen_cells:
+                    v = cells.setdefault(cell, [1.0, 1.0])
+                    v[0] += success
+                    v[1] += 1.0 - success
+            if score > best_score:
+                best, best_score = h, score
+        return best
 
     def trust(self, origin: str, context: Mapping[str, Any] | None) -> Beta:
         return self.table.get((origin, context_key(context)), Beta())

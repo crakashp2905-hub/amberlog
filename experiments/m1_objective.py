@@ -140,7 +140,18 @@ def ask(client: Any, model: str, cache: Any, system: str, text: str) -> str:
 def compiled(client: Any, model: str, cache: Any, plant: str) -> Any:
     from memory_fabric.objective import MemoryObjective, compile_objective
 
-    key = hashlib.sha256(f"compile\n{model}\n{statement(plant)}".encode()).hexdigest()
+    # Keyed on the compiler's own source as well as the statement. Keyed on the
+    # statement alone, the registered test run reused the dev pilot's
+    # compilations from *before* the compiler was fixed, for every plant the
+    # pilot had seen (disclosed in research/results/m1-memory-objective.md).
+    import inspect
+
+    from memory_fabric import objective as objective_module
+
+    source = (inspect.getsource(objective_module.compile_objective)
+              + inspect.getsource(objective_module.validate)
+              + json.dumps(objective_module.SCHEMA, sort_keys=True))
+    key = hashlib.sha256(f"compile\n{model}\n{statement(plant)}\n{source}".encode()).hexdigest()
     hit = cache.get(key)
     if hit is not None:
         return MemoryObjective.from_json(json.loads(hit))

@@ -152,6 +152,13 @@ class Api:
             case ["attention"]:
                 return [i.to_json() for i in report.attention(f)]
 
+            case ["review"]:
+                # The queue only. Decisions are writes and stay in the CLI and
+                # SDK: this server has no endpoint that changes a memory.
+                from ..review import queue
+
+                return [i.to_json() for i in queue(f)]
+
             case ["propagation"]:
                 # Invariant 9 made visible. Read-only, like everything here:
                 # the dashboard shows propagation state, it does not drive it.

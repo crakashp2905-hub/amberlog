@@ -765,6 +765,43 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_review(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """The review queue, or one decision on one memory. See `review.py`."""
+    from .review import ReviewError, decide, queue
+
+    decision = next((d for d in ("approve", "limit", "reject") if getattr(args, d)), None)
+    if args.correct is not None:
+        decision = "correct"
+    if args.id is None:
+        items = queue(fabric, tenant=args.tenant)
+        if args.json:
+            print(json.dumps([i.to_json() for i in items], indent=2))
+            return 0
+        heading(f"Waiting for review ({len(items)})")
+        if not items:
+            print("  nothing waiting")
+            return 0
+        table(["ID", "KIND", "AUTHOR", "CONTENT"],
+              [[i.memory_id[:10], i.kind, i.author, i.content] for i in items])
+        print(f"\n{C.DIM}Decide with: memory-fabric --db {_shown(args.db)} review <id> --actor <you> "
+              f"--approve | --limit | --correct TEXT | --reject --reason WHY{C.RESET}")
+        return 0
+    if decision is None:
+        print(f"{C.RED}choose --approve, --limit, --correct or --reject{C.RESET}", file=sys.stderr)
+        return 2
+    try:
+        result = decide(fabric, args.id, decision, reviewer=args.actor or "",
+                        reason=args.reason, correction=args.correct,
+                        override_screen=args.override_screen)
+    except ReviewError as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 4
+    print(f"{decision}: {args.id} is now {result['state']}, scope {result['scope']}")
+    if "note" in result:
+        print(f"{C.YELLOW}{result['note']}{C.RESET}")
+    return 0
+
+
 def cmd_share(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Widen who may read memories, through the firewall, with every decision logged.
 
@@ -1723,6 +1760,21 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agents-file", required=True)
     p.add_argument("--agent", required=True)
     p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
+
+    p = add("review", cmd_review,
+            "The review queue. With an id and a decision, WRITES it: approve (usable by "
+            "the team), limit (usable by its author only), correct, or reject")
+    p.add_argument("id", nargs="?")
+    choice = p.add_mutually_exclusive_group()
+    choice.add_argument("--approve", action="store_true")
+    choice.add_argument("--limit", action="store_true")
+    choice.add_argument("--reject", action="store_true")
+    choice.add_argument("--correct", metavar="TEXT")
+    p.add_argument("--reason", default="")
+    p.add_argument("--actor", help="the reviewer; required for a decision")
+    p.add_argument("--override-screen", action="store_true",
+                   help="approve a memory an ingest screen quarantined")
+    p.add_argument("--tenant", help="only this tenant's queue")
 
     p = add("share", cmd_share,
             "WRITES: widen who may read a memory (private -> team -> federated), "

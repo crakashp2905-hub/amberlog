@@ -212,6 +212,7 @@
     <div class="tiles" id="tiles"></div>
     <nav id="nav">
       <button data-tab="attention" aria-selected="true">Needs attention<span class="count" id="c-attention"></span></button>
+      <button data-tab="review" aria-selected="false">Review<span class="count" id="c-review"></span></button>
       <button data-tab="memories" aria-selected="false">Memories<span class="count" id="c-memories"></span></button>
       <button data-tab="episodes" aria-selected="false">Episodes<span class="count" id="c-episodes"></span></button>
       <button data-tab="search" aria-selected="false">Search</button>
@@ -225,6 +226,15 @@
     <div id="diagnostics"></div>
     <h2>Needs attention</h2>
     <div id="attention-list"></div>
+  </section>
+
+  <section id="tab-review" hidden>
+    <h2>Waiting for review</h2>
+    <div class="note">New memories are private candidates: nothing reaches retrieval until
+      someone validates it, and nothing reaches teammates until someone shares it. Each item
+      shows the commands for its four decisions. This page only reads; decisions are made
+      from the command line, where each one records its reviewer.</div>
+    <div id="review-list"></div>
   </section>
 
   <section id="tab-memories" hidden>
@@ -359,6 +369,26 @@ async function loadAttention() {
           ${actionBlock(i.action)}
         </div>`).join("")
     : `<div class="empty">Nothing needs attention.</div>`;
+}
+
+/* ---------- review ---------- */
+
+async function loadReview() {
+  const items = await api("/api/review");
+  $("c-review").textContent = items.length ? `(${items.length})` : "";
+  $("review-list").innerHTML = items.length
+    ? items.map((i) => `
+        <div class="card ${i.kind === "screened" ? "high" : "low"}">
+          <div class="card-head">
+            ${badge(i.kind, i.kind === "screened" ? "high" : "")}
+            <span class="card-title">${esc(i.author)}</span>
+            <span class="id link-id" data-id="${esc(i.memory_id)}">${esc(i.memory_id)}</span>
+          </div>
+          <div class="content-quote">${esc(i.content)}</div>
+          <div class="card-detail">${esc(i.reason)}</div>
+          ${["approve", "limit", "correct", "reject"].map((d) => actionBlock(i.commands[d])).join("")}
+        </div>`).join("")
+    : `<div class="empty">Nothing waiting for review.</div>`;
 }
 
 /* ---------- memories ---------- */
@@ -563,9 +593,10 @@ function closeDetail() { $("drawer-bg").hidden = true; }
 
 /* ---------- wiring ---------- */
 
-const TABS = ["attention", "memories", "episodes", "search"];
+const TABS = ["attention", "review", "memories", "episodes", "search"];
 const LOADERS = {
   attention: loadAttention,
+  review: loadReview,
   memories: loadMemories,
   episodes: loadEpisodes,
   search: async () => {},

@@ -1293,7 +1293,8 @@ def _check_replay(fabric: MemoryFabric) -> Finding:
 def _check_schema(fabric: MemoryFabric) -> Finding:
     written = fabric.log.schema_versions()
     if not written:
-        return Finding("warn", "schema version", "the log is empty, so nothing to compare")
+        return Finding("warn", "schema version", "the log is empty, so nothing to compare",
+                       "Nothing to fix: write a memory, or run `demo` to see a populated store.")
     newer = [
         v for v in written
         if report._version(v) > report._version(SCHEMA_VERSION)
@@ -1659,7 +1660,10 @@ def cmd_doctor(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             # outcome of "I could not tell" is a warning with the reason.
             findings.append(
                 Finding("warn", getattr(check, "__name__", "check"),
-                        f"this check could not run: {exc!r}")
+                        f"this check could not run: {exc!r}",
+                        "The store may be sound; this check could not tell. Re-run with the "
+                        "store's key directory (--keys) if content is sealed externally, and "
+                        "report the error if it persists.")
             )
 
     failures = [f for f in findings if f.status == "fail"]
@@ -1911,6 +1915,12 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agent", required=True)
     p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
 
+    p = sub.add_parser("init", help="WRITES: set up a store, external keys and an agent "
+                       "in one step, then run doctor", description=cmd_init.__doc__)
+    p.add_argument("dir", help="directory to create the store in")
+    p.add_argument("--agent", default="my-assistant")
+    p.add_argument("--tenant", default="tn_default")
+
     add("posture", cmd_posture,
         "Which security controls are on in this store, and the accepted gaps")
     p = add("audit-export", cmd_audit_export,
@@ -2003,10 +2013,60 @@ def build_parser() -> argparse.ArgumentParser:
 CREATING_COMMANDS = frozenset({"demo"})
 
 
+def cmd_init(args: argparse.Namespace) -> int:
+    """Set up a store the way production should run it, in one step.
+
+    A directory with the store, its content keys kept *outside* the database
+    (the production default: a copy of the `.db` alone reads nothing), and an
+    agents file with one agent and a fresh signing key, owner-only. Prints the
+    MCP client configuration and the next commands, then runs `doctor`. It
+    never overwrites: an existing store is an error, not a reset.
+    """
+    import secrets
+
+    from .governance.erasure import DirectoryKeyProvider
+
+    root = Path(args.dir)
+    db, keys, agents = root / "store.db", root / "keys", root / "agents.txt"
+    if db.exists() or agents.exists():
+        print(f"{C.RED}{root} already holds a store; init never overwrites one{C.RESET}",
+              file=sys.stderr)
+        return 2
+    keys.mkdir(parents=True, exist_ok=True)
+    fabric = MemoryFabric(str(db), key_provider=DirectoryKeyProvider(str(keys)))
+    store_id = fabric.store_id
+    fabric.close()
+    agents.write_text(
+        "# agent_id:tenant_id:hex_key -- server-only, owner-readable. Add a line per agent.\n"
+        f"{args.agent}:{args.tenant}:{secrets.token_hex(32)}\n", encoding="utf-8")
+    try:
+        os.chmod(agents, 0o600)
+        os.chmod(keys, 0o700)
+    except OSError:  # pragma: no cover - permissions are advisory on some filesystems
+        pass
+    db_s, keys_s = str(db), str(keys)
+    print(f"{C.GREEN}created{C.RESET} store {store_id}")
+    print(f"  store       {db_s}")
+    print(f"  keys        {keys_s}   {C.DIM}(outside the database; back it up separately){C.RESET}")
+    print(f"  agents      {agents}   {C.DIM}(holds a signing key; keep it on the server){C.RESET}")
+    print("\nConnect an MCP client (Claude Code, Claude Desktop, an IDE) with:")
+    print(json.dumps({"mcpServers": {"memory-fabric": {
+        "command": "memory-fabric",
+        "args": ["--db", db_s, "--keys", keys_s, "mcp", "--agent", args.agent]}}}, indent=2))
+    print("\nNext:")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} review      # what agents wrote, waiting for you")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} serve       # the dashboard")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} agent-api --agents-file {agents}")
+    print()
+    return main(["--db", db_s, "--keys", keys_s, "doctor"])
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     configure_output()
     parser = build_parser()
     args = parser.parse_args(argv)
+    if args.command == "init":  # creates its own layout; opens no --db
+        return cmd_init(args)
 
     # Opening a store creates it, so a typo in --db would otherwise produce an
     # empty store and a confident report of nothing wrong. For an inspection

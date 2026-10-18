@@ -254,6 +254,18 @@ class McpServer:
             "instructions": INSTRUCTIONS,
         }
 
+    def call(self, name: str, arguments: Mapping[str, Any]) -> tuple[Any, bool]:
+        """Run one tool outside JSON-RPC: `(payload, is_error)`.
+
+        For integrations that speak another tool protocol (OpenAI-style
+        function calling, LangGraph) but should get exactly this server's
+        validation, enforcement and server-side tokens rather than a copy.
+        """
+        if name not in self._handlers:
+            return {"error": f"unknown tool {name!r}"}, True
+        result = self._call(name, arguments)
+        return json.loads(result["content"][0]["text"]), bool(result.get("isError"))
+
     def _call(self, name: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
         try:
             payload = self._handlers[name](arguments)

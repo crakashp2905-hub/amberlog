@@ -32,6 +32,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - A review queue (`review`), safe correction with a preview that is the outcome
   (`correct`), reach on every memory page, and four status labels.
 - `share` and `agent-api-revoke` commands; `list --agent`.
+- **Integrations**: framework-neutral function tools (`integrations.tools`), a LangChain
+  retriever (`integrations.langchain`, extra `langchain`), and `import` from other stores'
+  exports as candidates waiting for review.
 
 ### Fixed
 

@@ -765,6 +765,29 @@ def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_import(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Import another store's export as reviewable candidates. See `migrate.py`."""
+    from .migrate import import_records, read_records
+
+    try:
+        report = import_records(fabric, read_records(args.file), source=args.source,
+                                default_agent=args.agent, tenant_id=args.tenant)
+    except (OSError, ValueError) as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 4
+    if args.json:
+        print(json.dumps(report.to_json(), indent=2))
+        return 0
+    print(f"imported {len(report.imported)} from {args.source} as candidates; "
+          f"{len(report.quarantined)} quarantined by a screen, "
+          f"{len(report.duplicates)} recognised as copies, {len(report.skipped)} skipped")
+    for line in report.skipped[:20]:
+        print(f"  {C.DIM}skipped {line}{C.RESET}")
+    print(f"{C.DIM}Nothing imported is retrievable until reviewed: "
+          f"memory-fabric --db {_shown(args.db)} review{C.RESET}")
+    return 0
+
+
 def cmd_collection(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """List collections, or change one. Every change is an audited event."""
     from .fabric import PolicyViolation
@@ -1853,6 +1876,15 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--agents-file", required=True)
     p.add_argument("--agent", required=True)
     p.add_argument("--ttl", type=int, default=3600, help="lifetime in seconds")
+
+    p = add("import", cmd_import,
+            "WRITES: import another store's export (JSON list or JSONL: Mem0, LangChain "
+            "documents, plain content) as private candidates waiting for review")
+    p.add_argument("file")
+    p.add_argument("--source", required=True, help="where it came from, recorded on each memory")
+    p.add_argument("--agent", default="importer",
+                   help="author for records that do not name one")
+    p.add_argument("--tenant")
 
     p = add("collection", cmd_collection,
             "Collections: named sets of memories agents can be attached to. list, or WRITES: "

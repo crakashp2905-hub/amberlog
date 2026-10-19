@@ -180,8 +180,8 @@ def main(argv: list[str]) -> int:
             current = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
             diff = list(difflib.unified_diff(current, outputs[path].splitlines(), "committed",
                                              "generated", lineterm="", n=0))
-            print("
-".join(diff[:40]))
+            for line in diff[:40]:
+                print(line)
         if stale:
             print(f"out of date: {[p.name for p in stale]}; run python tools/gen_reference.py")
             return 1

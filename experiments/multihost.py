@@ -133,12 +133,20 @@ class Topology:
         return path
 
     def start(self, n: str) -> None:
+        # stderr to a file, never a pipe nobody reads: a full pipe blocks the
+        # server, and macOS's small pipe buffer did exactly that in CI.
+        log = open(self.dir / f"{n}.log", "ab")
         self.procs[n] = subprocess.Popen(
             [sys.executable, "-m", "memory_fabric", "--db", str(self.db[n]),
              "--share-policy", "reviewed", "federate", "--peers", str(self.peers_file(n)),
              "--port", str(self.port[n]), "--maintain-interval", "1"],
-            cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE)
-        wait_health(f"http://127.0.0.1:{self.port[n]}")
+            cwd=ROOT, stdout=subprocess.DEVNULL, stderr=log)
+        log.close()
+        try:
+            wait_health(f"http://127.0.0.1:{self.port[n]}", timeout_s=60)
+        except RuntimeError:
+            print((self.dir / f"{n}.log").read_text(errors="replace")[-3000:], file=sys.stderr)
+            raise
 
     def stop(self, n: str) -> None:
         proc = self.procs.pop(n, None)

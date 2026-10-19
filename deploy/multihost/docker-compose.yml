@@ -15,6 +15,11 @@ x-store: &store
   user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
   volumes:
     - ./work:/work
+  # The image keeps content keys in /keys, owned by its own user; these
+  # stores were prepared with their keys in the database, and run as the host
+  # user, so the variable is cleared.
+  environment:
+    MEMORY_FABRIC_KEYS: ""
   entrypoint: ["memory-fabric"]
 
 services:

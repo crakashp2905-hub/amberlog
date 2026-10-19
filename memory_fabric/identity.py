@@ -62,6 +62,28 @@ ROLE_AGENT = "agent"
 ROLE_OPERATOR = "operator"
 ROLE_AUDITOR = "auditor"
 
+# Seven separate permissions. A role is a bundle of them; a principal can also
+# hold one directly as the role `perm:<name>`, so a deployment can grant
+# exactly `execute` to an agent without making it anything else.
+PERM_READ = "read"
+PERM_WRITE = "write"
+PERM_DELETE = "delete"
+PERM_CORRECT = "correct"
+PERM_EXPORT = "export"
+PERM_ADMINISTER = "administer"
+PERM_EXECUTE = "execute"
+PERMISSIONS = (PERM_READ, PERM_WRITE, PERM_DELETE, PERM_CORRECT, PERM_EXPORT,
+               PERM_ADMINISTER, PERM_EXECUTE)
+ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
+    ROLE_AGENT: frozenset({PERM_READ, PERM_WRITE, PERM_EXECUTE}),
+    # No `execute`: the role that can correct, delete and administer memory
+    # cannot also act on it. Separation of duties, so one stolen operator
+    # credential cannot both plant evidence and act on it.
+    ROLE_OPERATOR: frozenset({PERM_READ, PERM_WRITE, PERM_DELETE, PERM_CORRECT, PERM_EXPORT,
+                              PERM_ADMINISTER}),
+    ROLE_AUDITOR: frozenset({PERM_READ, PERM_EXPORT}),
+}
+
 DEFAULT_TTL_SECONDS = 3600
 
 
@@ -90,6 +112,25 @@ class Principal:
 
     def may(self, role: str) -> bool:
         return role in self.roles
+
+    def permissions(self) -> frozenset[str]:
+        out: set[str] = set()
+        for role in self.roles:
+            out |= ROLE_PERMISSIONS.get(role, frozenset())
+            if role.startswith("perm:") and role[5:] in PERMISSIONS:
+                out.add(role[5:])
+        return frozenset(out)
+
+    def can(self, permission: str) -> bool:
+        if permission not in PERMISSIONS:
+            raise ValueError(f"unknown permission {permission!r}; known: {PERMISSIONS}")
+        return permission in self.permissions()
+
+    def require_permission(self, permission: str) -> None:
+        if not self.can(permission):
+            raise IdentityError(
+                f"{self.agent_id} lacks the {permission!r} permission "
+                f"(roles {sorted(self.roles)})")
 
     def require(self, role: str) -> None:
         if not self.may(role):

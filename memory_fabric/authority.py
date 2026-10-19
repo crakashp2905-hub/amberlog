@@ -100,6 +100,11 @@ def _first(fabric: "MemoryFabric", memory_id: str) -> Any:
 
 
 def _own_kind(memory: Any, first: Any) -> str:
+    # Bound at the first write, and only ever escalated: a later version that
+    # reads as an instruction makes the memory one (delayed activation), and
+    # no later version can relabel an instruction as anything else.
+    if directive.assess(memory.content).flagged:
+        return "instruction"
     declared = (first.context or {}).get("kind")
     if declared in KINDS:
         return str(declared)

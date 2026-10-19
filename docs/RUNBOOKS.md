@@ -145,3 +145,36 @@ conclusions that have independent support.
 3. Move agents behind one `agent-api` process instead of one store handle each.
 4. If p50 rises with *one* process, it is not contention: check the store's size
    against the retrieval figures in the same section.
+
+## 8. Restoring from a backup
+
+Take backups with custody of everything needed to read them:
+
+```bash
+memory-fabric --db store.db --keys ./keys backup /backups/store.bak --with-keys   --include agents.txt --include ./checkpoints
+```
+
+This writes `store.bak`, `store.bak.keys/`, `store.bak.config/` and
+`store.bak.manifest.json` (the sha256 of every file, the event count and the
+chain head). Keep the key copy as protected as the original.
+
+To restore:
+
+```bash
+memory-fabric restore /backups/store.bak ./restored
+```
+
+It refuses a backup whose files do not match the manifest (exit 5), refuses
+to write into an existing directory (exit 4), and replays the restored log
+to check the event count and chain head. Then:
+
+1. `memory-fabric --db ./restored/store.db --keys ./restored/keys doctor`
+2. Compare the chain head with your latest off-host checkpoint
+   (`--checkpoint-dir`). A restored store *behind* the checkpoint has lost
+   events since the backup: say so in the incident record.
+3. Peers may hold retractions the restored store no longer remembers
+   sending. Run `memory-fabric maintain --once` with `--peers` so the
+   outbox is re-dispatched; delivery is idempotent at the recipient.
+
+The drill is `tests/test_backup_custody.py`, which runs on every CI build.
+

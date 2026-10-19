@@ -60,6 +60,7 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable, Mapping
 
+from .limits import LimitExceeded
 from .enforcement import ExposureToken, RiskLevel
 from .identity import Credential, IdentityError, ROLE_AGENT
 from .sdk import AgentClient, NotUsable, UsableMemory, public_error
@@ -426,6 +427,10 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
                                     remote=self.client_address[0])
             except _ApiError as exc:
                 self._reply(exc.status, {"error": exc.message}, exc.retry_after)
+            except LimitExceeded as exc:
+                self._reply(HTTPStatus.TOO_MANY_REQUESTS if exc.code != "payload_too_large"
+                            else HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                            {"error": exc.code}, 1)
             except Exception as exc:  # a refused write is an answer, not a crash
                 logging.getLogger(__name__).warning("request refused", exc_info=exc)
                 self._reply(HTTPStatus.UNPROCESSABLE_ENTITY, {"error": public_error(exc)})

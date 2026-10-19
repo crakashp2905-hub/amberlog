@@ -668,7 +668,15 @@ def cmd_maintain(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def _server_limits(fabric: MemoryFabric) -> None:
+    """Servers meter writes: payload size, per-agent quota, per-peer import budget (`limits.py`)."""
+    from .limits import SERVER_DEFAULTS, Meter
+
+    fabric.limits = Meter(SERVER_DEFAULTS)
+
+
 def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    _server_limits(fabric)
     from .observability.auth import (
         ENV_TOKEN, InsecureConfiguration, build_config, load_operators,
     )
@@ -717,6 +725,7 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     for one agent cannot act as another by changing an argument. Stdout is the
     protocol stream; the one human-readable line goes to stderr.
     """
+    _server_limits(fabric)
     from .adapters.mcp import McpServer, serve_stdio
     from .sdk import agent
 
@@ -796,6 +805,7 @@ def _agent_service(fabric: MemoryFabric, agents_file: str):
 
 def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Serve agents over authenticated HTTP. See `agent_api.py`."""
+    _server_limits(fabric)
     from .agent_api import AgentApi, ConfigurationError, RateLimit, build_agent_server
 
     try:
@@ -1345,7 +1355,115 @@ def cmd_backup(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         return 5
     size = target.stat().st_size
     print(f"  {size / 1_000_000:.1f} MB")
+    _backup_custody(fabric, args, target, copied)
     return 0
+
+
+def _sha256(path: Path) -> str:
+    import hashlib
+
+    digest = hashlib.sha256()
+    with open(path, "rb") as handle:
+        for block in iter(lambda: handle.read(1 << 20), b""):
+            digest.update(block)
+    return digest.hexdigest()
+
+
+def _backup_custody(fabric: MemoryFabric, args: argparse.Namespace, target: Path,
+                    events: int) -> None:
+    """Keys and config beside the copy, and a manifest of every file's hash.
+
+    The manifest is what `restore` checks first: a backup whose files do not
+    match it is refused, so a truncated or edited copy is found at restore
+    time rather than after an operator relies on it.
+    """
+    import shutil
+
+    files: dict[str, str] = {target.name: _sha256(target)}
+    if getattr(args, "with_keys", False):
+        if not args.keys:
+            print(f"{C.YELLOW}--with-keys needs --keys DIR (the key directory); "
+                  f"none was given, so no keys were copied.{C.RESET}", file=sys.stderr)
+        else:
+            keys = target.with_name(target.name + ".keys")
+            shutil.copytree(args.keys, keys, dirs_exist_ok=bool(args.force))
+            for f in sorted(keys.rglob("*")):
+                if f.is_file():
+                    files[str(f.relative_to(target.parent)).replace("\\", "/")] = _sha256(f)
+            print(f"  keys copied to {keys}")
+    for include in getattr(args, "include", []) or []:
+        source = Path(include)
+        config = target.with_name(target.name + ".config")
+        config.mkdir(exist_ok=True)
+        dest = config / source.name
+        if source.is_dir():
+            shutil.copytree(source, dest, dirs_exist_ok=True)
+        else:
+            shutil.copy2(source, dest)
+        for f in sorted([dest] if dest.is_file() else dest.rglob("*")):
+            if f.is_file():
+                files[str(f.relative_to(target.parent)).replace("\\", "/")] = _sha256(f)
+    head_seq, head = fabric.log.chain.head()
+    manifest = {"format": "memory-fabric-backup-v1", "store_id": fabric.store_id,
+                "events": events, "chain_head": {"seq": head_seq, "digest": head},
+                "schema_version": SCHEMA_VERSION, "files": files}
+    target.with_name(target.name + ".manifest.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8")
+    print(f"  manifest {target.name}.manifest.json ({len(files)} file(s))")
+
+
+def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
+    """Restore a backup into a new directory, refusing one that does not match its manifest."""
+    import shutil
+
+    backup = Path(args.backup)
+    manifest_path = backup.with_name(backup.name + ".manifest.json")
+    if not manifest_path.exists():
+        print(f"{C.RED}no manifest at {manifest_path}; back up again with this "
+              f"version to get one{C.RESET}", file=sys.stderr)
+        return 2
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    bad = [name for name, digest in manifest["files"].items()
+           if not (backup.parent / name).is_file()
+           or _sha256(backup.parent / name) != digest]
+    if bad:
+        print(f"{C.RED}the backup does not match its manifest: {', '.join(bad[:5])}. "
+              f"Do not restore it.{C.RESET}", file=sys.stderr)
+        return 5
+    dest = Path(args.dest)
+    if dest.exists():
+        print(f"{C.RED}{dest} exists; restore into a new directory{C.RESET}", file=sys.stderr)
+        return 4
+    dest.mkdir(parents=True)
+    shutil.copy2(backup, dest / "store.db")
+    keys_src = backup.with_name(backup.name + ".keys")
+    keys = dest / "keys" if keys_src.is_dir() else None
+    if keys is not None:
+        shutil.copytree(keys_src, keys)
+    config_src = backup.with_name(backup.name + ".config")
+    if config_src.is_dir():
+        shutil.copytree(config_src, dest / "config")
+    restored = MemoryFabric(str(dest / "store.db"),
+                            key_provider=DirectoryKeyProvider(str(keys)) if keys else None)
+    try:
+        events = len(restored.log)
+        head = list(restored.log.chain.head())
+        memories = len(restored.state.memories)
+        verification = restored.log.chain.verify(restored.log.read())
+    finally:
+        restored.close()
+    if events != manifest["events"] or head != [manifest["chain_head"]["seq"],
+                                                manifest["chain_head"]["digest"]]:
+        print(f"{C.RED}restored {events} events, head {head}; the manifest says "
+              f"{manifest['events']} and {manifest['chain_head']}{C.RESET}", file=sys.stderr)
+        return 5
+    ok = getattr(verification, "ok", True)
+    print(f"restored {events} events, {memories} memories into {dest}; chain head matches"
+          f"{'' if ok else '; CHAIN DOES NOT VERIFY'}")
+    if keys is None:
+        print(f"  {C.YELLOW}no keys in this backup: if the store's keys were external, "
+              f"its content cannot be read until they are restored.{C.RESET}")
+    return 0 if ok else 5
 
 
 def cmd_demo(fabric: MemoryFabric, args: argparse.Namespace) -> int:
@@ -1943,6 +2061,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--json", action="store_true", help="emit JSON instead of tables")
     parser.add_argument(
+        "--log-format", choices=("text", "json"),
+        default=os.environ.get("MEMORY_FABRIC_LOG_FORMAT") or "text",
+        help="diagnostic log format on stderr; json is one object per line "
+        "(default: $MEMORY_FABRIC_LOG_FORMAT or text)")
+    parser.add_argument(
+        "--log-level", default=os.environ.get("MEMORY_FABRIC_LOG_LEVEL") or "WARNING",
+        help="diagnostic log level (default: $MEMORY_FABRIC_LOG_LEVEL or WARNING)")
+    parser.add_argument(
         "--keys",
         metavar="DIR",
         default=os.environ.get("MEMORY_FABRIC_KEYS") or None,
@@ -2276,6 +2402,18 @@ def build_parser() -> argparse.ArgumentParser:
             "Consistent snapshot of the event log, verified by replaying it")
     p.add_argument("path", help="where to write the copy")
     p.add_argument("--force", action="store_true", help="overwrite an existing file")
+    p.add_argument("--with-keys", action="store_true",
+                   help="also copy the key directory named by --keys, beside the copy "
+                   "(<path>.keys/). Keep that copy as protected as the original")
+    p.add_argument("--include", action="append", default=[], metavar="PATH",
+                   help="a config file or directory to keep with the backup "
+                   "(<path>.config/): agents.txt, a peers file, a checkpoint directory. "
+                   "Repeatable")
+
+    p = add("restore", cmd_restore,
+            "WRITES: restore a backup made with `backup`, after checking its manifest")
+    p.add_argument("backup", help="the backup file (its .manifest.json must be beside it)")
+    p.add_argument("dest", help="directory to restore into; must not exist")
 
     add("demo", cmd_demo, "WRITES: seed a demonstration store")
     return parser
@@ -2336,8 +2474,13 @@ def main(argv: Sequence[str] | None = None) -> int:
     configure_output()
     parser = build_parser()
     args = parser.parse_args(argv)
+    from .observability.logs import configure as configure_logs
+
+    configure_logs(args.log_format, args.log_level)
     if args.command == "init":  # creates its own layout; opens no --db
         return cmd_init(args)
+    if args.command == "restore":  # writes a new directory; opens no --db
+        return cmd_restore(None, args)  # type: ignore[arg-type]
 
     # Opening a store creates it, so a typo in --db would otherwise produce an
     # empty store and a confident report of nothing wrong. For an inspection

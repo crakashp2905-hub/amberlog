@@ -181,10 +181,10 @@ Default rules:
 
 ---
 
-### 0.12.0 — the background memory manager, source notices, origin-bound authority
+### 0.12.0 — the background memory manager, source notices, origin-bound authority, objectives
 
-Additive: five event types, no projection change. A 0.11.0 log replays
-unchanged, and a 0.11.0 reader skips all five.
+Additive: six event types, no projection change. A 0.11.0 log replays
+unchanged, and a 0.11.0 reader skips all six.
 
 - **`ManagerLease`**, payload `{holder, expires_ms}`. Taken and renewed inside
   a write transaction, so at most one manager maintains a store at a time.
@@ -204,6 +204,10 @@ unchanged, and a 0.11.0 reader skips all five.
   revoked}`. A short-lived grant for one exact action: `binding` digests the
   tool, agent, tenant, target, parameters and evidence versions. Consumed by
   its first allowed use.
+- **`ObjectiveChanged`**, payload `{digest, status, proposer, evaluation,
+  reason, objective}`. A `MemoryObjectiveV2` proposed, adopted (by a
+  reviewer who is not the proposer, with no registered metric worse than its
+  baseline) or rejected. Rules over metadata only, never content.
 - `ActionGated` gains `grant_id` and `binding` (null when absent).
 - `context.federation` on an import gains `authority` `{kind, trust,
   reasons, origins}`: the origin's verdict, applied as a floor at the

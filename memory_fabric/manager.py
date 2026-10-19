@@ -46,6 +46,7 @@ from __future__ import annotations
 __stability__ = "beta"
 
 import json
+import logging
 import os
 import threading
 import time
@@ -165,6 +166,17 @@ class MemoryManager:
                 st.failures += 1
                 st.skip_until_cycle = self.cycle + min(MAX_BACKOFF, 2 ** st.failures)
                 report[task] = {"error": f"{type(exc).__name__}: {str(exc)[:200]}"}
+                logging.getLogger(__name__).warning(
+                    "maintenance task failed", exc_info=exc,
+                    extra={"fields": {"event": "maintenance_task_failed", "task": task,
+                                      "store_id": self.fabric.store_id,
+                                      "failures": st.failures}})
+        logging.getLogger(__name__).info(
+            "maintenance cycle", extra={"fields": {
+                "event": "maintenance_ran", "store_id": self.fabric.store_id,
+                "since_seq": since, "until_seq": until,
+                "errors": sorted(t for t, r in report.items()
+                                 if isinstance(r, dict) and "error" in r)}})
         self.fabric._emit(ev.maintenance_ran(ts=self.fabric.now(), holder=self.holder,
                                              since_seq=since, until_seq=until, tasks=report))
         return ManagerReport(leader=True, tasks=report)

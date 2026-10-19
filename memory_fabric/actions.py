@@ -92,6 +92,7 @@ CERTIFICATE_REQUIRED = "certificate_required"
 HUMAN_APPROVAL_REQUIRED = "human_approval_required"
 APPROVAL_INVALID = "approval_invalid"
 CREDENTIAL_INVALID = "credential_invalid"
+PERMISSION_DENIED = "execute_permission_missing"
 RETRY_REQUIRED = "retry_required"
 AUTHORITY_INSUFFICIENT = "authority_insufficient"
 INSTRUCTION_EVIDENCE = "instruction_is_not_evidence"
@@ -262,6 +263,9 @@ class ActionGate:
             except Exception:
                 return self._decide(tool, agent_id, (CREDENTIAL_INVALID,), None, None, tenant_id=tenant_id)
             agent_id, tenant_id = principal.agent_id, principal.tenant_id
+            if hasattr(principal, "can") and not principal.can("execute"):
+                return self._decide(tool, agent_id, (PERMISSION_DENIED,), None, None,
+                                    tenant_id=tenant_id)
 
         rule = self.policy.tools.get(tool)
         if rule is None:

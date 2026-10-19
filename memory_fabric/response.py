@@ -218,7 +218,24 @@ def verify_recovery(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
         verdict = "contained, actions need review"
     else:
         verdict = "contained"
-    return {"memory_id": memory_id, "status": verdict, "unresolved": unresolved,
+    # The named recovery state (roadmap P1). `revalidated`: withdrawn once and
+    # since reinstated by review, so containment is no longer the goal.
+    # `pending_reconciliation`: only peers are outstanding, and the manager
+    # retries them every cycle. `recovery_unverified`: something local is
+    # unresolved, or an action used it and nobody can verify its effect.
+    withdrawn_once = any(e.payload.get("memory_id") == memory_id
+                         and str(e.payload.get("to")) in ("quarantined", "deprecated", "contested")
+                         for e in fabric.log.read_types([EventType.LIFECYCLE_CHANGED]))
+    if memory.lifecycle_state in EXPOSABLE_STATES and withdrawn_once:
+        state = "revalidated"
+    elif pending and len(unresolved) == 1:
+        state = "pending_reconciliation"
+    elif unresolved or allowed_actions:
+        state = "recovery_unverified"
+    else:
+        state = "quarantined"
+    return {"memory_id": memory_id, "status": verdict, "recovery_state": state,
+            "unresolved": unresolved,
             "derived": [c.id for c in children], "stores": peers,
             "influence": used, "actions_to_review": allowed_actions}
 

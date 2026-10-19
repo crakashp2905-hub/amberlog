@@ -49,6 +49,7 @@ class EventType:
     SOURCE_DISCREDITED = "SourceDiscredited"
     AUTHORITY_ELEVATED = "AuthorityElevated"
     GRANT_ISSUED = "GrantIssued"
+    OBJECTIVE_CHANGED = "ObjectiveChanged"
 
 
 @dataclass(frozen=True)
@@ -798,4 +799,17 @@ def grant_issued(ts: int, grant_id: str, tool: str, agent_id: str, binding: str,
     return Event(type=EventType.GRANT_ISSUED, ts=ts, agent_id=issuer,
                  payload={"grant_id": grant_id, "tool": tool, "agent": agent_id,
                           "binding": binding, "expires_ms": expires_ms, "revoked": revoked})
+
+
+def objective_changed(ts: int, actor: str, digest: str, status: str, proposer: str,
+                      evaluation: Mapping[str, float], reason: str,
+                      objective: Mapping[str, Any]) -> Event:
+    """A memory objective was proposed, adopted or rejected (0.12.0).
+
+    The objective is rules over metadata, never memory content.
+    """
+    return Event(type=EventType.OBJECTIVE_CHANGED, ts=ts, agent_id=actor,
+                 payload={"digest": digest, "status": status, "proposer": proposer,
+                          "evaluation": dict(evaluation), "reason": reason,
+                          "objective": dict(objective)})
 

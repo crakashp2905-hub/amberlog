@@ -1,0 +1,117 @@
+{
+  "commit": "ca441a2",
+  "machine": "Windows-11-10.0.26200-SP0",
+  "python": "3.13.5",
+  "config": {
+    "rates": "10,25,40,55,70,100",
+    "seconds": 10.0,
+    "workers": 16,
+    "seed": 7,
+    "quick": false
+  },
+  "rows": [
+    {
+      "offered_per_s": 10.0,
+      "arrivals": 112,
+      "completed": 112,
+      "achieved_per_s": 10.8,
+      "wall_s": 10.39,
+      "p50_ms": 10.1,
+      "p95_ms": 26.6,
+      "p99_ms": 34.1,
+      "mean_ms": 12.1,
+      "by_op_p99_ms": {
+        "remember": 20.0,
+        "retrieve": 34.1,
+        "action": 37.0
+      },
+      "errors": {}
+    },
+    {
+      "offered_per_s": 25.0,
+      "arrivals": 280,
+      "completed": 280,
+      "achieved_per_s": 27.8,
+      "wall_s": 10.08,
+      "p50_ms": 20.6,
+      "p95_ms": 89.9,
+      "p99_ms": 121.6,
+      "mean_ms": 28.3,
+      "by_op_p99_ms": {
+        "remember": 140.2,
+        "retrieve": 113.1,
+        "action": 121.6
+      },
+      "errors": {}
+    },
+    {
+      "offered_per_s": 40.0,
+      "arrivals": 419,
+      "completed": 419,
+      "achieved_per_s": 41.8,
+      "wall_s": 10.02,
+      "p50_ms": 11.6,
+      "p95_ms": 54.6,
+      "p99_ms": 212.7,
+      "mean_ms": 22.2,
+      "by_op_p99_ms": {
+        "remember": 181.5,
+        "retrieve": 206.0,
+        "action": 328.4
+      },
+      "errors": {}
+    },
+    {
+      "offered_per_s": 55.0,
+      "arrivals": 580,
+      "completed": 580,
+      "achieved_per_s": 57.9,
+      "wall_s": 10.01,
+      "p50_ms": 12.9,
+      "p95_ms": 32.6,
+      "p99_ms": 46.8,
+      "mean_ms": 15.8,
+      "by_op_p99_ms": {
+        "remember": 55.9,
+        "retrieve": 46.8,
+        "action": 39.8
+      },
+      "errors": {}
+    },
+    {
+      "offered_per_s": 70.0,
+      "arrivals": 761,
+      "completed": 761,
+      "achieved_per_s": 75.9,
+      "wall_s": 10.03,
+      "p50_ms": 17.5,
+      "p95_ms": 48.7,
+      "p99_ms": 62.9,
+      "mean_ms": 21.7,
+      "by_op_p99_ms": {
+        "remember": 60.8,
+        "retrieve": 64.0,
+        "action": 61.2
+      },
+      "errors": {}
+    },
+    {
+      "offered_per_s": 100.0,
+      "arrivals": 1064,
+      "completed": 1064,
+      "achieved_per_s": 100.4,
+      "wall_s": 10.6,
+      "p50_ms": 310.1,
+      "p95_ms": 649.7,
+      "p99_ms": 786.9,
+      "mean_ms": 311.6,
+      "by_op_p99_ms": {
+        "remember": 785.2,
+        "retrieve": 786.9,
+        "action": 746.0
+      },
+      "errors": {}
+    }
+  ],
+  "highest_sustained_per_s": 100.0
+}

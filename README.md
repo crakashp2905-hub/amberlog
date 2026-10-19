@@ -46,7 +46,7 @@ and erasure, and anyone who has watched one bad memory spread.
 | 🔌 | **Works with any MCP client**, alongside the Python SDK and a Claude API adapter. | [From an MCP client](#from-an-mcp-client) |
 | ⚡ | **Cheap.** **+0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store. | [Phase A cost gate](research/results/phase-a-real-agent-benchmark.md) |
 
-**1679 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)), 17 deterministic multi-store fault scenarios and 14 integrity
+**1734 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)), 17 deterministic multi-store fault scenarios and 14 integrity
 invariants ([matrix](docs/INVARIANTS.md)), all run in CI with nothing
 installed. What was run and what it showed: [docs/VALIDATION.md](docs/VALIDATION.md).
 
@@ -316,8 +316,12 @@ Open items:
 
 - The Claude adapter has not been run against the live API, and no frontier model has
   been tested (X-API). The container smoke test needs Docker (X-DKR).
-- Research running after the RC: the memory objective (M1: supported in the prompt,
-  harmful as compiled filters) and reflective rulebooks (M2, running).
+- Research after the RC: the memory objective (M1: supported in the prompt,
+  harmful as compiled filters; M1b, the six-arm objective-quality study, running),
+  reflective rulebooks (M2a not supported, M2b supported) and the cross-store
+  hostile-source notice (T2b: supported, 0.732 → 0.949).
+- Independent review has not happened. Every item of the hardening lists, with
+  its evidence and what stays open: [docs/HARDENING_STATUS.md](docs/HARDENING_STATUS.md).
 - Not yet published to PyPI, pending a name.
 - **Concurrency:** one store serves about 100–135 operations a second whatever the shape, with p95 under 150 ms up to 10 agent processes or 10 agents behind one `agent-api` ([P12b](research/results/p12b-catch-up.md)). Past that, use one `agent-api` process rather than a store handle per agent.
 
@@ -328,7 +332,10 @@ See [ROADMAP.md](ROADMAP.md) for milestones, gates and kill criteria, and
 
 | Topic | Document |
 |---|---|
-| Running it for real | [DEPLOYMENT.md](DEPLOYMENT.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) |
+| Ten minutes, from install to a verified correction | [docs/QUICKSTART.md](docs/QUICKSTART.md) |
+| Supported integrations | [docs/INTEGRATIONS.md](docs/INTEGRATIONS.md) |
+| Running it for real | [DEPLOYMENT.md](DEPLOYMENT.md), [docs/OPERATIONS.md](docs/OPERATIONS.md), [docs/RUNBOOKS.md](docs/RUNBOOKS.md) |
+| Hardening status, item by item | [docs/HARDENING_STATUS.md](docs/HARDENING_STATUS.md), [docs/LIMITATIONS.md](docs/LIMITATIONS.md) |
 | Something is wrong | [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) |
 | Upgrading or moving in | [docs/MIGRATION.md](docs/MIGRATION.md) |
 | What is stable, what is tested, how far it scales | [STABILITY.md](STABILITY.md) |

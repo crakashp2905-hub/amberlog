@@ -248,11 +248,15 @@ class MemoryFabric:
         recognise_copies: bool = True,
         rerank: bool = False,
         conceal_cross_tenant: bool = False,
+        limits: "Any" = None,
     ) -> None:
         # Off by default to keep the documented reason code. On, a request
         # from another tenant is refused exactly as a missing id is, so the
         # refusal does not confirm that the id exists anywhere (plan Task 11).
         self.conceal_cross_tenant = conceal_cross_tenant
+        from .limits import Limits, Meter
+
+        self.limits = Meter(limits or Limits())
         # Default on, because the alternative is measured to be wrong rather
         # than merely unmeasured: a withdrawn document re-ingested under its own
         # id was **100% of the residual** in P3, counted as independent support
@@ -1767,6 +1771,10 @@ class MemoryFabric:
         #
         # Scoped to one episode on purpose. The same claim recorded in two
         # different episodes is two observations, and that *is* more evidence.
+        fed = (context or {}).get("federation") if isinstance(context, Mapping) else None
+        self.limits.check_write(agent_id, content,
+                                str(fed.get("store")) if isinstance(fed, Mapping) else None,
+                                self.now())
         if episode_id:
             key = (agent_id, episode_id, _digest(content))
             existing = self.state.written.get(key)
@@ -2170,6 +2178,10 @@ class MemoryFabric:
             eligible = {m for m in eligible
                         if objective.admits(self.state.memories[m].context)}
         hits = self._search(query, pool_size, eligible, min_relevance)
+        if objective is not None and hasattr(objective, "rank"):
+            # V2: evidence-aware ranking within what is eligible. It can only
+            # re-order or drop, never add (`objective_v2.py`).
+            hits = objective.rank(self, hits)
         if self.rerank:
             # After fusion and before grouping. Reranking a *fused* pool is
             # the claim under test -- that a reranker makes fusion safe -- so

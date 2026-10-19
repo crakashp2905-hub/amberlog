@@ -65,7 +65,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.txn`
 - `memory_fabric.vectors`
 
-## Beta (27)
+## Beta (29)
 
 - `memory_fabric.actions`
 - `memory_fabric.adapters.claude`
@@ -84,8 +84,10 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.integrations.langchain`
 - `memory_fabric.integrations.tools`
 - `memory_fabric.lifecycle`
+- `memory_fabric.limits`
 - `memory_fabric.manager`
 - `memory_fabric.migrate`
+- `memory_fabric.observability.logs`
 - `memory_fabric.observability.server`
 - `memory_fabric.posture`
 - `memory_fabric.reach`
@@ -95,13 +97,14 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.review`
 - `memory_fabric.status`
 
-## Experimental (8)
+## Experimental (9)
 
 - `memory_fabric.adapters.systemone`
 - `memory_fabric.hindsight`
 - `memory_fabric.independence`
 - `memory_fabric.mental_models`
 - `memory_fabric.objective`
+- `memory_fabric.objective_v2`
 - `memory_fabric.receipts`
 - `memory_fabric.rulebook`
 - `memory_fabric.trust`

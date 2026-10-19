@@ -49,6 +49,12 @@ from typing import Any, Iterable, Mapping, Sequence
 from .enforcement import AccessDecision, RiskLevel
 from .fabric import MemoryFabric, TenantView
 from .identity import (
+    PERM_ADMINISTER,
+    PERM_CORRECT,
+    PERM_DELETE,
+    PERM_EXPORT,
+    PERM_READ,
+    PERM_WRITE,
     ROLE_AGENT,
     ROLE_OPERATOR,
     Credential,
@@ -89,8 +95,10 @@ class Session:
     def tenant_id(self) -> str:
         return self.credential.tenant_id
 
-    def _view(self) -> TenantView:
-        return TenantView(self.service._fabric, self.principal(), verified=True)
+    def _view(self, permission: str = PERM_READ) -> TenantView:
+        principal = self.principal()
+        principal.require_permission(permission)
+        return TenantView(self.service._fabric, principal, verified=True)
 
     # --- agent operations ------------------------------------------------
 
@@ -107,10 +115,10 @@ class Session:
         return self._remember(content, **kwargs)
 
     def _remember(self, content: str, **kwargs: Any) -> str:
-        return self._view().remember(content, **kwargs)
+        return self._view(PERM_WRITE).remember(content, **kwargs)
 
     def derive(self, content: str, parents: Sequence[str], **kwargs: Any) -> str:
-        return self._view().derive(content, parents, **kwargs)
+        return self._view(PERM_WRITE).derive(content, parents, **kwargs)
 
     def retrieve(self, query: str, **kwargs: Any):
         return self._view().retrieve(query, **kwargs)
@@ -141,13 +149,14 @@ class Session:
         service does not offer a convenience that would tempt a caller to pass
         their own id.
         """
-        self.principal()
+        self.principal().require_permission(PERM_WRITE)
         self.service._fabric.record_outcome(
             episode_id, outcome=outcome, verifier_id=verifier_id
         )
 
     def start_episode(self, task_id: str, context: Mapping[str, Any] | None = None):
         principal = self.principal()
+        principal.require_permission(PERM_WRITE)
         return self.service._fabric.start_episode(
             principal.agent_id, task_id=task_id, context=dict(context or {})
         )
@@ -166,7 +175,7 @@ class Session:
         )
 
     def release(self, memory_id: str, reason: str = "released"):
-        principal = self._require_operator()
+        principal = self._require_operator(PERM_CORRECT)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.release(
             memory_id, actor=principal.agent_id, reason=reason
@@ -187,12 +196,12 @@ class Session:
         still scoped to the session's tenant, so "may see withdrawn memories"
         never becomes "may see every tenant's memories".
         """
-        principal = self._require_operator()
+        principal = self._require_operator(PERM_ADMINISTER)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.get(memory_id)
 
     def explain(self, memory_id: str):
-        principal = self._require_operator()
+        principal = self._require_operator(PERM_ADMINISTER)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.explain(memory_id)
 
@@ -214,7 +223,7 @@ class Session:
         )
 
     def erase_content(self, memory_id: str, reason: str) -> bool:
-        principal = self._require_operator()
+        principal = self._require_operator(PERM_DELETE)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.erase_content(
             memory_id, reason=reason, actor=principal.agent_id
@@ -230,7 +239,7 @@ class Session:
         from .model import granted
 
         principal = self.service._verify(self.credential)
-        if principal.may(ROLE_OPERATOR):
+        if principal.may(ROLE_OPERATOR) and principal.can(PERM_CORRECT):
             return principal
         memory = self.service._fabric.state.memories.get(memory_id)
         if memory is not None and granted(self.service._fabric.state, principal.tenant_id,
@@ -239,10 +248,33 @@ class Session:
         principal.require(ROLE_OPERATOR)  # raises, naming the role it lacks
         return principal
 
-    def _require_operator(self) -> Principal:
+    def _require_operator(self, permission: str = PERM_ADMINISTER) -> Principal:
         principal = self.principal()
         principal.require(ROLE_OPERATOR)
+        principal.require_permission(permission)
         return principal
+
+    def export_audit(self) -> list[dict[str, Any]]:
+        """The content-free audit trail of this tenant's memories: ids, types, actors, times.
+
+        Needs `export` (operators and auditors). Never content.
+        """
+        principal = self.principal()
+        principal.require_permission(PERM_EXPORT)
+        fabric = self.service._fabric
+        mine = {m for m, mem in fabric.state.memories.items()
+                if mem.tenant_id == principal.tenant_id}
+        out = []
+        for event in fabric.log.read():
+            payload = event.payload if isinstance(event.payload, Mapping) else {}
+            nested = payload.get("memory")
+            memory_id = payload.get("memory_id") or (
+                nested.get("id") if isinstance(nested, Mapping) else None)
+            if memory_id in mine:
+                out.append({"seq": event.seq, "type": event.type.value
+                            if hasattr(event.type, "value") else str(event.type),
+                            "actor": event.agent_id, "ts": event.ts, "memory_id": memory_id})
+        return out
 
 
 class MemoryService:

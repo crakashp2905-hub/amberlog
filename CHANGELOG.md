@@ -5,6 +5,58 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: permissions, operations and release tooling
+
+- **Seven permissions** (`identity.PERMISSIONS`): read, write, delete,
+  correct, export, administer, execute. Roles are bundles: agent = read,
+  write, execute; operator = everything but **execute** (separation of
+  duties); auditor = read, export. `perm:<name>` grants one directly. Every
+  `Session` operation checks its permission; the action gate refuses a
+  session without `execute`. New `Session.export_audit()` (content-free).
+- **Backup with custody**: `backup --with-keys --include PATH` copies keys and
+  config beside the snapshot and writes a manifest of hashes, the event count
+  and the chain head. **`restore`** refuses a backup that does not match its
+  manifest, never overwrites, and checks the replayed chain head.
+- **Structured logs**: `--log-format json` / `MEMORY_FABRIC_LOG_FORMAT=json`;
+  the manager logs each cycle and each task failure with ids and codes.
+- **Quickstart and reference agent**: `docs/QUICKSTART.md`,
+  `examples/quickstart.py` and `examples/reference_agent.py`, each run by a
+  test.
+- **Release tooling**: `tools/release_bundle.py` (SHA, CycloneDX SBOM,
+  secret scan, adversarial gate, test counts, wheel hash) and
+  `tools/fresh_machine.py` (install in a fresh venv, use, uninstall, check
+  nothing is left), each a CI job.
+- **Open-loop load** (`experiments/p12_openloop.py`): latency from the
+  scheduled arrival, so queueing counts.
+- Docs: `docs/INTEGRATIONS.md`, a supported-version policy (VERSIONING.md),
+  threats T9–T12 (SECURITY.md), RUNBOOKS §8 (restore), and
+  `docs/HARDENING_STATUS.md` mapping every item of the owner's three lists.
+- T2b, the cross-store hostile-source notice: **supported** on held-out
+  seeds (0.732 → 0.949 safe success).
+
+### Added: MemoryObjectiveV2, store limits, recovery states, the adversarial gate
+
+- **`objective_v2.py`** (experimental): goal, required facts, preferred
+  evidence, excluded context, safety constraints, scope, `as_of`, freshness,
+  uncertainty policy and decision impact. Eligibility (security ∧ lifecycle ∧
+  hard rules) is separate from ranking (relevance × authority × kind ×
+  freshness × independence × soft preferences). An **unreviewed** compiled
+  exclusion never removes safety evidence; a compiled V1 objective converts
+  to *uncertain* rules, which never filter. Applying an objective has no
+  write path. Changes are proposed and adopted through `ObjectiveLog`, by a
+  different reviewer, and refused if any registered metric is worse.
+- **`limits.py`**: bounded content (1 MiB library, 256 KiB servers),
+  per-agent write quotas and per-peer federation budgets, on in servers;
+  the agent API answers 429 / 413.
+- **Recovery states**: `verify_recovery` reports `quarantined`,
+  `pending_reconciliation`, `recovery_unverified` or `revalidated`.
+- **`tools/adversarial_gate.py`** and the CI job `adversarial-gate`: fourteen
+  attack families, each mapped to the tests holding its invariant; any
+  failure, error or empty family fails the gate.
+- Metadata-leakage tests (`tests/test_metadata_leakage.py`): with
+  `conceal_cross_tenant`, no tenant channel distinguishes a world holding
+  another tenant's matching memory from one without it.
+
 ### Added: origin-bound authority, exact-action grants, the influence graph
 
 - **`authority.py`**: every memory's trust (`untrusted` < `unverified` <

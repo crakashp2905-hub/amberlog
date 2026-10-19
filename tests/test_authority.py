@@ -141,6 +141,33 @@ class Elevation(unittest.TestCase):
         self.assertEqual(self.f.authority(note).kind, "instruction")
 
 
+class DelayedActivation(unittest.TestCase):
+    """A benign memory later revised into an injection, or drifted by another author."""
+
+    def test_a_revision_into_an_instruction_is_caught_and_escalates_the_kind(self) -> None:
+        f = store()
+        self.addCleanup(f.close)
+        m = f.remember("mallory", "Centrifuge C2 runs at 4000 rpm.", scope="team")
+        self.assertEqual(f.authority(m).kind, "observation")
+        f.revise(m, INJECTION, agent_id="mallory", reason="update")
+        a = f.authority(m)
+        self.assertEqual((a.kind, a.trust), ("instruction", authority.UNTRUSTED))
+        self.assertEqual(f.get(m).lifecycle_state.value, "quarantined")
+
+    def test_an_elevation_does_not_survive_a_later_revision(self) -> None:
+        f = store()
+        self.addCleanup(f.close)
+        m = f.remember("agent", "C2 rated 4000 rpm.", context={"origin": "tool:datasheet"},
+                       scope="team")
+        f.elevate(m, approver="lead", reason="checked against the datasheet")
+        for rpm in (4200, 4600, 5200):  # progressive drift, each step plain
+            f.revise(m, f"C2 rated {rpm} rpm.", agent_id="agent", reason="minor update")
+        self.assertEqual(f.authority(m).trust, authority.UNTRUSTED)
+        cert = f.certify("spin", [m], "ops")
+        self.assertEqual(gate(f).authorize("spin", "ops", cert).reason_code,
+                         AUTHORITY_INSUFFICIENT)
+
+
 class OutcomesDoNotConferAuthority(unittest.TestCase):
     def test_a_success_leaves_authority_unchanged(self) -> None:
         f = store()

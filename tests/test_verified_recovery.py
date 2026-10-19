@@ -59,6 +59,7 @@ class FlagshipIncident(unittest.TestCase):
         self.assertEqual(first["status"], "unresolved")
         self.assertTrue(any("not confirmed" in u for u in first["unresolved"]), first)
         self.assertIn(self.summary, first["derived"])
+        self.assertEqual(first["recovery_state"], "pending_reconciliation", first)
         self.transport.offline = set()
         deadline = time.time() + 20  # the failed delivery retries after its backoff
         while time.time() < deadline and self.store.outbox.pending():
@@ -67,9 +68,17 @@ class FlagshipIncident(unittest.TestCase):
         second = verify_recovery(self.store, self.poison)
         self.assertEqual(second["status"], "contained, actions need review", second)
         self.assertEqual(len(second["actions_to_review"]), 1, "an external action is never 'resolved'")
+        self.assertEqual(second["recovery_state"], "recovery_unverified")
         self.assertNotEqual(self.peer.get(self.copy).lifecycle_state.value, "active")
         self.assertEqual(self.store.get(self.unrelated).lifecycle_state.value, "active",
                          "unaffected knowledge is preserved")
+
+    def test_a_memory_reinstated_by_review_is_revalidated(self) -> None:
+        self.store.quarantine(self.unrelated, reason="suspected", actor="ir-lead")
+        self.assertEqual(verify_recovery(self.store, self.unrelated)["recovery_state"], "quarantined")
+        self.store.release(self.unrelated, actor="reviewer")
+        self.store.validate(self.unrelated, actor="reviewer")
+        self.assertEqual(verify_recovery(self.store, self.unrelated)["recovery_state"], "revalidated")
 
     def test_without_containment_it_says_so(self) -> None:
         result = verify_recovery(self.store, self.poison)

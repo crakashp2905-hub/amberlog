@@ -259,6 +259,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
+      # The image seals content with AES-GCM (production profile), so the
+      # driver on the host needs the same library to read those stores.
+      - run: python -m pip install "cryptography>=42"
       - run: python -m experiments.multihost --mode prepare
       - run: HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose -f deploy/multihost/docker-compose.yml up -d --build
       - run: python -m experiments.multihost --mode compose --out multihost-compose.json

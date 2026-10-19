@@ -179,7 +179,21 @@ def build_context(
     memories: Iterable[Memory],
     query: str = "",
 ) -> MemoryContext:
-    """Assemble the prompt-side view of a set of retrieved memories."""
+    """Assemble the prompt-side view of a set of retrieved memories.
+
+    Memories that give different values for the same claim, by different
+    authors, are marked as contradicting each other (`conflicts.py`), the same
+    way an open hypothesis set is. On by default since 0.12.0, the owner's
+    decision after G4b (acting on an undetected poison 63% -> 55%).
+    """
+    from ..conflicts import find_conflicts
+
+    memories = list(memories)
+    disputed: dict[str, set[str]] = {}
+    for group in find_conflicts(memories):
+        ids = {m.id for m in group}
+        for m in group:
+            disputed.setdefault(m.id, set()).update(ids - {m.id})
     blocks: list[MemoryBlock] = []
     for memory in memories:
         hset = (
@@ -187,7 +201,8 @@ def build_context(
             if memory.hypothesis_set
             else None
         )
-        contested = sorted(hset.memory_ids - {memory.id}) if hset else []
+        contested = sorted((set(hset.memory_ids) if hset else set()) - {memory.id}
+                           | disputed.get(memory.id, set()))
         blocks.append(
             MemoryBlock(
                 memory_id=memory.id,

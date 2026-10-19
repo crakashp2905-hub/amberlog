@@ -5,6 +5,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Changed: two poisoning defences on by default (owner's decision, 2026-10-19)
+
+- **The directive screen runs at ingest and at share time**
+  (`governance/directive.py`). It flags paraphrased injection by what the
+  text does: addressing the answerer, or voiding other records. On a held-out
+  set it caught 10/12 paraphrased injections and flagged 0/16 benign hard
+  negatives; the pattern screen caught 0/12. A flagged memory is quarantined
+  for review (`review <id> --approve --override-screen` releases a false
+  alarm). Turn it off with `Firewall(directive_screen=False)`.
+- **Contradictions are shown, not ranked away.** Memories that give different
+  values for one claim, by different authors, are marked as contradicting
+  each other in the agent context (`build_context`) and carry a `disputed`
+  warning through the SDK, MCP and LangChain recall (G4b: acting on an
+  undetected poison 63% → 55%).
+- **Cross-store hostile-source notice** (`SourceNotice`, `/federation/notice`,
+  the manager's `sources` task): a source caught by an ingest screen is
+  withheld at the stores holding its memories.
+
 ### Added: the background memory manager (schema 0.12.0)
 
 - **`memory_fabric/manager.py`: the store maintains itself.**

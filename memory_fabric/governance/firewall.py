@@ -178,10 +178,17 @@ class Firewall:
         rules: Sequence[Rule] | None = None,
         detector: SensitiveDataDetector | None = None,
         injection: InjectionDetector | None = None,
+        directive_screen: bool = True,
     ) -> None:
         self.rules = tuple(rules) if rules is not None else DEFAULT_RULES
         self.detector = detector or SensitiveDataDetector()
         self.injection = injection or InjectionDetector()
+        # Paraphrased injection, detected by what it does rather than its
+        # wording (`directive.py`): 10/12 held-out paraphrases, 0/16 benign hard
+        # negatives, where the pattern screen caught 0/12. On by default since
+        # 0.12.0, the owner's decision. A false alarm costs one review
+        # (`review --approve --override-screen`).
+        self.directive_screen = directive_screen
 
     def evaluate(self, request: FirewallRequest) -> FirewallRuling:
         decisions: list[FirewallDecision] = [FirewallDecision.ALLOW]
@@ -207,9 +214,16 @@ class Firewall:
         if injected:
             decisions.append(FirewallDecision.QUARANTINE)
             reasons.append(f"prompt injection detected: {summarise(injected)}")
+        directive = self._directive(request.memory.content)
+        if directive:
+            decisions.append(FirewallDecision.QUARANTINE)
+            reasons.append(f"prompt injection detected (directive): {directive}")
 
         governing = max(decisions, key=_SEVERITY.index)
         return FirewallRuling(decision=governing, reasons=reasons)
+
+    def _directive(self, content: str) -> str:
+        return _directive_summary(content) if self.directive_screen else ""
 
     def screen_ingest(self, content: str) -> FirewallRuling:
         """Cheaper check for the write path: content only, no scope decision."""
@@ -220,6 +234,9 @@ class Firewall:
             reasons.append(f"sensitive data detected on ingest: {summarise(findings)}")
         if any(f.severity == "high" for f in injected):
             reasons.append(f"prompt injection detected on ingest: {summarise(injected)}")
+        directive = self._directive(content)
+        if directive:
+            reasons.append(f"prompt injection detected on ingest (directive): {directive}")
         if reasons:
             return FirewallRuling(FirewallDecision.QUARANTINE, reasons)
         if findings:
@@ -229,6 +246,13 @@ class Firewall:
         if reasons:
             return FirewallRuling(FirewallDecision.ALLOW_WITH_WARNING, reasons)
         return FirewallRuling(FirewallDecision.ALLOW, [])
+
+
+def _directive_summary(content: str) -> str:
+    from .directive import assess
+
+    result = assess(content)
+    return "; ".join(result.signals[:2]) if result.flagged else ""
 
 
 def strictest(decisions: Iterable[FirewallDecision]) -> FirewallDecision:

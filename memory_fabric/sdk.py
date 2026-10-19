@@ -145,6 +145,17 @@ class AgentClient:
             include_contested=include_contested,
             tenant_id=self._tenant_id,
         )
+        from .conflicts import find_conflicts
+
+        # A memory that gives a different value for the same claim as another
+        # returned memory, by a different author, carries a warning naming it
+        # (default since 0.12.0; G4b). The agent sees the disagreement instead
+        # of whichever one ranked first.
+        disputed: dict[str, set[str]] = {}
+        for group in find_conflicts(list(hits.exposed)):
+            ids = {m.id for m in group}
+            for m in group:
+                disputed.setdefault(m.id, set()).update(ids - {m.id})
         out: list[UsableMemory] = []
         for memory in hits.exposed:
             read = self._fabric.use(
@@ -156,7 +167,14 @@ class AgentClient:
                 tenant_id=self._tenant_id,
             )
             if read.usable:
-                out.append(self._wrap(read))
+                usable = self._wrap(read)
+                if memory.id in disputed:
+                    from dataclasses import replace
+
+                    usable = replace(usable, warnings=usable.warnings + (
+                        "disputed: gives a different value for the same claim as "
+                        + ", ".join(sorted(disputed[memory.id])),))
+                out.append(usable)
         return out
 
     def fetch(

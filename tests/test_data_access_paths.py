@@ -58,6 +58,7 @@ ENFORCED = {
 }
 
 METADATA = {
+    "notice_recipients": "store ids holding an author's shared memories; no content",
     "lifecycle_of": "one memory's state, and no content — the safe way to ask",
     "relations_of": (
         "the memories one memory stands in a typed relation to, and no "
@@ -128,6 +129,8 @@ MUTATION = {
     "sweep_retention": "apply the retention policy",
     "request_retraction": "withdraw locally and owe every recipient, atomically",
     "supersede_copies": "owe holders of an older version's copy a retraction of that version",
+    "discredit_source": "record that a local source was caught being hostile; the notice for peers",
+    "receive_notice": "record a peer's signed hostile-source notice (ids only)",
     "receive_retraction": "apply one arriving from another store",
     "erase_content": "destroy a content key. Irreversible",
     "rebuild": "replay the projection from the log",

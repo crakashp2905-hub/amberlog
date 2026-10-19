@@ -250,6 +250,7 @@ class MemoryFabric:
         conceal_cross_tenant: bool = False,
         limits: "Any" = None,
         withhold_hostile_sources: bool = True,
+        hold_suspicious: bool = True,
     ) -> None:
         # Off by default to keep the documented reason code. On, a request
         # from another tenant is refused exactly as a missing id is, so the
@@ -264,6 +265,10 @@ class MemoryFabric:
         # the hostile signal: T2 measured that withholding on any withdrawal
         # destroys honest authors' notes.
         self.withhold_hostile_sources = withhold_hostile_sources
+        # On by default: a write that contradicts what the store knows is held
+        # as a candidate even where clean writes activate at once (V1:
+        # detection 1.00 on three poison families, 0 of 450 honest writes held).
+        self.hold_suspicious = hold_suspicious
         self._hostile_cache: tuple[int, frozenset[str]] = (-1, frozenset())
         # Default on, because the alternative is measured to be wrong rather
         # than merely unmeasured: a withdrawn document re-ingested under its own
@@ -478,6 +483,7 @@ class MemoryFabric:
 
     # --- durable retraction protocol -------------------------------------
 
+    @_fresh
     def request_retraction(
         self,
         memory_id: str,
@@ -531,6 +537,14 @@ class MemoryFabric:
             )
             self.outbox.enqueue(retraction, recipients, _now_ms())
         return retraction
+
+    def _suspicious(self, agent_id: str, content: str, context: Any, tenant_id: str) -> bool:
+        from .validation import assess_write
+
+        try:
+            return assess_write(self, agent_id, content, context, tenant_id).suspicious
+        except Exception:  # noqa: BLE001 - validation never blocks a write
+            return False
 
     def hostile_authors(self) -> frozenset[str]:
         """Authors caught injecting, here or by a peer's authenticated notice. Cached per log head."""
@@ -608,6 +622,7 @@ class MemoryFabric:
                             signal=signal, reason_code=reason_code,
                             issued_at=iso_timestamp(self.now()))
 
+    @_fresh
     def notice_recipients(self, author: str) -> list[str]:
         """Stores holding a memory this author wrote here and shared."""
         out: set[str] = set()
@@ -696,6 +711,7 @@ class MemoryFabric:
                 out.append(retraction)
         return out
 
+    @_fresh
     def record_share(
         self,
         memory_id: str,
@@ -727,10 +743,12 @@ class MemoryFabric:
             )
         )
 
+    @_fresh
     def shared_with(self, memory_id: str) -> dict[str, str]:
         """Which stores hold a copy of this memory, and what they call it."""
         return dict(self.state.shared_to.get(memory_id, {}))
 
+    @_fresh
     def receive_retraction(
         self, retraction: Retraction, sender_authorised: bool = True
     ) -> Acknowledgement:
@@ -958,6 +976,7 @@ class MemoryFabric:
             count += self.outbox.enqueue(onward, recipients, _now_ms())
         return count
 
+    @_fresh
     def erase_content(
         self, memory_id: str, reason: str, actor: str = "operator"
     ) -> bool:
@@ -997,6 +1016,7 @@ class MemoryFabric:
         self.copy_index.remove(memory_id)
         return had_content
 
+    @_fresh
     def erasure_scope(self, memory_id: str) -> dict[str, Any]:
         """What an erasure reached, and what it provably did not.
 
@@ -1072,9 +1092,11 @@ class MemoryFabric:
             "provider_can_destroy": self.vault.supports_destroy,
         }
 
+    @_fresh
     def erasure_status(self, memory_id: str):
         return self.vault.status(memory_id)
 
+    @_fresh
     def retractions_since(self, sequence: int) -> list[Retraction]:
         """Every retraction this store has issued above `sequence`.
 
@@ -1106,6 +1128,7 @@ class MemoryFabric:
         out.sort(key=lambda r: r.origin_sequence)
         return out
 
+    @_fresh
     def integrity_snapshot(self) -> dict[str, Any]:
         """The integrity state a backup must not silently omit.
 
@@ -1751,6 +1774,7 @@ class MemoryFabric:
             )
         )
 
+    @_fresh
     def end_episode(self, episode_id: str) -> Episode:
         episode = self.state.episodes.get(episode_id)
         if episode is None:
@@ -1854,6 +1878,13 @@ class MemoryFabric:
             # stays visible to an operator, which is the honest state for "this
             # arrived again and the reason it was withdrawn has not changed".
             lifecycle = LifecycleState.CONTESTED
+        elif activate and self.hold_suspicious and self._suspicious(
+                agent_id, content, context, tenant_id):
+            # Checked against what the store already knows (`validation.py`):
+            # a corrected value stated again, a value far out of range, or a
+            # contradiction of an established fact. Held for review instead of
+            # going live; nothing is refused.
+            lifecycle = LifecycleState.CANDIDATE
         elif activate:
             lifecycle = LifecycleState.ACTIVE
         else:
@@ -2294,6 +2325,7 @@ class MemoryFabric:
         self._emit(*emitted)
         return result
 
+    @_fresh
     def reconstruct(
         self,
         agent_id: str,
@@ -2601,6 +2633,7 @@ class MemoryFabric:
         out.sort(key=lambda row: (-row[1], row[0]))
         return out[:limit]
 
+    @_fresh
     def relate(
         self,
         subject_memory_id: str,
@@ -2633,6 +2666,7 @@ class MemoryFabric:
             object_memory_id=object_memory_id,
         ))
 
+    @_fresh
     def relations_of(self, memory_id: str, kind: str | RelationKind
                      ) -> list[str]:
         """Objects this memory stands in `kind` to. Content-free."""
@@ -2696,6 +2730,7 @@ class MemoryFabric:
             and visible_to(memory, agent_id, self.state)
         }
 
+    @_fresh
     def cite(self, agent_id: str, episode_id: str, memory_id: str, step: int = 0) -> None:
         """Record that the agent says it used a memory. Diagnostic only: it is
         self-reported, so it never feeds value estimation."""
@@ -2972,6 +3007,7 @@ class MemoryFabric:
                 frontier.append(other)
         return out
 
+    @_fresh
     def release(self, memory_id: str, actor: str, reason: str = "reviewed and released") -> Memory:
         """Bring a quarantined memory back to candidate after human review."""
         memory = self._require(memory_id)
@@ -2980,6 +3016,7 @@ class MemoryFabric:
         self._emit(self._transition(memory_id, LifecycleState.CANDIDATE, reason, actor))
         return self.state.memories[memory_id]
 
+    @_fresh
     def forget(self, memory_id: str, reason: str, actor: str = "operator") -> Memory:
         """Deprecate. Deletion is the retention policy's decision, not the
         caller's, so that a single call can never destroy an audit trail."""
@@ -2987,6 +3024,7 @@ class MemoryFabric:
         self._unindex(memory_id)
         return self.state.memories[memory_id]
 
+    @_fresh
     def challenge(
         self,
         memory_ids: Sequence[str],
@@ -3031,6 +3069,7 @@ class MemoryFabric:
         self._emit(*emitted)
         return set_id
 
+    @_fresh
     def resolve(
         self,
         hypothesis_set: str,
@@ -3078,6 +3117,7 @@ class MemoryFabric:
 
     # --- sharing ---------------------------------------------------------
 
+    @_fresh
     def firewall_check(
         self,
         memory_id: str,
@@ -3211,6 +3251,7 @@ class MemoryFabric:
         self._collection_event(name, "revoke", actor, tenant_id, agent_id=agent_id,
                                permissions=sorted(set(permissions)))
 
+    @_fresh
     def collections(self, tenant_id: str | None = None) -> dict[str, Any]:
         """Name -> members and grants, for one tenant or all (`tenant/name` keys)."""
         out = {}
@@ -3293,6 +3334,7 @@ class MemoryFabric:
     def tenant_of(self, memory_id: str) -> str:
         return self._require(memory_id).tenant_id
 
+    @_fresh
     def tenants(self) -> dict[str, int]:
         """Which tenants this store holds, and how many memories each has.
 
@@ -3430,14 +3472,17 @@ class MemoryFabric:
         return CertificateVerifier(self, mode=mode).verify(
             certificate, agent_id=agent_id, tenant_id=tenant_id, risk=risk)
 
+    @_fresh
     def history(self, memory_id: str) -> list[Memory]:
         self._require(memory_id)
         return list(self.state.history.get(memory_id, ())) + [self.state.memories[memory_id]]
 
+    @_fresh
     def lineage(self, memory_id: str) -> LineageView:
         self._require(memory_id)
         return self.lineage_graph.view(memory_id)
 
+    @_fresh
     def audit_trail(self, memory_id: str) -> list[ev.Event]:
         """Every event that mentions this memory, in log order."""
         self._require(memory_id)
@@ -3456,11 +3501,13 @@ class MemoryFabric:
                 out.append(event)
         return out
 
+    @_fresh
     def explain(self, memory_id: str) -> "Explanation":
         from .explain import explain_memory
 
         return explain_memory(self, memory_id)
 
+    @_fresh
     def health(self) -> HealthReport:
         by_state: dict[str, int] = {}
         by_scope: dict[str, int] = {}
@@ -3497,6 +3544,7 @@ class MemoryFabric:
             events=len(self.log),
         )
 
+    @_fresh
     def sweep_retention(self, apply: bool = False, actor: str = "retention",
                         actions: Iterable[str] | None = None) -> list[RetentionDecision]:
         """The retention policy's decisions; with `apply`, carry them out.

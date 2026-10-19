@@ -8,7 +8,9 @@ relying on it for something that matters. Anything fixed since is in the
 
 | limitation | what to do |
 |---|---|
-| **A plain false claim from a source that has never misbehaved looks like a true one** until something contradicts it. | Disagreements are flagged by default; review them (`maintain --status`, `attention`). Use validation for memories that matter. |
+| **A plausible false claim about something the store has never seen, from a source with a clean record, looks like a true one.** Claims that restate a corrected value, are far out of range, or contradict an established fact *are* caught and held for review; a claim from a new source is marked provisional. | `memory-fabric suspicious` lists held claims. Require independent sources for consequential actions (`ToolRule(min_independent_sources=2)`). |
+| **Claim checks read numbers and identifiers.** A free-text claim with no equipment id or value ("the east wing is safe") is not checked. | Review free-text memories that matter before validating them. |
+| **A compromised established account can change its own facts** without being flagged: it reads as an honest update. | Revoke the credential (RUNBOOKS §1); `incident` shows what it wrote. |
 | **The injection screens are text screens.** They catch common injection patterns and instructions addressed to the reader, not every paraphrase. | Treat them as a filter, not a guarantee. Review imports from untrusted sources (`review`). Untrusted content still cannot authorise an action at the gate. |
 | **A source caught injecting is withheld everywhere its memories went**, which can also hide a correct note it wrote. Only an injection finding triggers it, never an ordinary correction. | `MemoryFabric(withhold_hostile_sources=False)` to turn it off; review the source's other memories with `incident`. |
 | **An offline peer serves withdrawn knowledge until it reconnects.** | Watch `doctor` and `maintain --status`: pending deliveries are reported, never hidden, and retried every cycle. |
@@ -33,6 +35,9 @@ relying on it for something that matters. Anything fixed since is in the
 
 - **Tested on one machine** for every performance figure, on Linux, macOS
   and Windows in CI for correctness.
-- **Small local models** for the model-in-the-loop checks; no frontier
-  model has been evaluated.
+- **Small local models** for the model-in-the-loop checks so far. The same
+  checks run on Claude (`.github/workflows/frontier-eval.yml`) once an
+  `ANTHROPIC_API_KEY` repository secret is set; they have not run yet.
+- **Several physical machines** have not been measured; separate processes
+  and separate containers have.
 - **Not on PyPI** yet, pending a final name.

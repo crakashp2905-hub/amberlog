@@ -72,6 +72,11 @@ class Peer:
     endpoint: str
     key: bytes
     key_id: str = "k1"
+    accepted: Mapping[str, bytes] = field(default_factory=dict)
+    """Earlier keys still accepted from this peer, by key id: the overlap
+    window of a rotation (RUNBOOKS.md §3). This store always *signs* with
+    `key`; it *verifies* with whichever key the signature names, if that key
+    is `key` or in here. Remove an old key to end its window."""
 
 
 class PeerRegistry:
@@ -92,15 +97,56 @@ class PeerRegistry:
     def get(self, store_id: str) -> Peer | None:
         return self._peers.get(store_id)
 
-    def key_for(self, store_id: str) -> bytes | None:
+    def key_for(self, store_id: str, key_id: str | None = None) -> bytes | None:
+        """The key to verify a message from this peer, by the key id it was signed with.
+
+        None for an unknown peer, or a key id that is neither current nor in
+        the overlap window: a retired key is refused, not tried.
+        """
         peer = self._peers.get(store_id)
-        return peer.key if peer else None
+        if peer is None:
+            return None
+        if key_id is None or key_id == peer.key_id:
+            return peer.key
+        return peer.accepted.get(key_id)
 
     def __contains__(self, store_id: object) -> bool:
         return store_id in self._peers
 
     def __len__(self) -> int:
         return len(self._peers)
+
+
+def _canonical(body: Mapping[str, Any]) -> bytes:
+    return json.dumps(body, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+
+
+def sign_body(body: Mapping[str, Any], key: bytes, key_id: str) -> dict[str, str]:
+    """HMAC-SHA256 over the canonical JSON of a message body."""
+    import hashlib
+    import hmac
+
+    return {"alg": "hmac-sha256", "key_id": key_id,
+            "value": hmac.new(key, _canonical(body), hashlib.sha256).hexdigest()}
+
+
+def verify_body(body: Mapping[str, Any], signature: Mapping[str, Any], key: bytes) -> bool:
+    import hashlib
+    import hmac
+
+    if signature.get("alg") != "hmac-sha256":
+        return False
+    expected = hmac.new(key, _canonical(body), hashlib.sha256).hexdigest()
+    return hmac.compare_digest(expected, str(signature.get("value", "")))
+
+
+def peer_agent(origin_store_id: str) -> str:
+    """The agent a networked import is recorded under at the recipient.
+
+    Fixed, never chosen by the sender: a remote peer naming a local agent id
+    ("lead") would file its memory as that agent's.
+    """
+    return f"peer:{origin_store_id}"
 
 
 class Transport(Protocol):
@@ -140,11 +186,8 @@ class InProcessTransport:
         store = self.stores.get(recipient_store_id)
         if store is None:
             raise TransportError(f"no route to {recipient_store_id}", permanent=True)
-        authorised = (
-            retraction.origin_store_id in self.registry
-            if len(self.registry)
-            else True
-        )
+        sender = retraction.forwarded_by or retraction.origin_store_id
+        authorised = sender in self.registry if len(self.registry) else True
         return store.receive_retraction(retraction, sender_authorised=authorised)
 
     def send_notice(self, recipient_store_id: str, notice: Any) -> bool:
@@ -156,6 +199,22 @@ class InProcessTransport:
         authorised = notice.origin_store_id in self.registry if len(self.registry) else True
         return bool(store.receive_notice(notice, sender_authorised=authorised))
 
+    def send_offer(self, recipient_store_id: str, prepared: Any, recipient_agent: str
+                   ) -> dict[str, Any]:
+        """Offer over the in-process route, with the network's rules: a candidate, as `peer:`."""
+        from .federation import accept_offer
+
+        if recipient_store_id in self.offline:
+            raise TransportError(f"{recipient_store_id} is offline")
+        store = self.stores.get(recipient_store_id)
+        if store is None:
+            raise TransportError(f"no route to {recipient_store_id}", permanent=True)
+        if len(self.registry) and prepared.origin_store_id not in self.registry:
+            raise TransportError("not authorised", permanent=True)
+        result = accept_offer(store, prepared, peer_agent(prepared.origin_store_id))
+        return {"accepted": result.accepted, "decision": result.decision.value,
+                "reasons": result.reasons, "imported_memory_id": result.imported_memory_id}
+
 
 class HttpTransport:
     """The real transport: authenticated HTTP POST, stdlib only."""
@@ -166,6 +225,26 @@ class HttpTransport:
         self.registry = registry
         self.origin_store_id = origin_store_id
         self.timeout = timeout
+
+    def send_offer(self, recipient_store_id: str, prepared: Any, recipient_agent: str
+                   ) -> dict[str, Any]:
+        """POST a signed offer to a peer's `/federation/offer`; return its decision."""
+        peer = self.registry.get(recipient_store_id)
+        if peer is None:
+            raise TransportError(f"no peer configured for {recipient_store_id}", permanent=True)
+        offer = prepared.to_json()
+        body = json.dumps({"offer": offer, "signature": sign_body(offer, peer.key, peer.key_id)},
+                          default=str).encode("utf-8")
+        request = urllib.request.Request(peer.endpoint.rstrip("/") + "/federation/offer",
+                                         data=body, headers={"Content-Type": "application/json"},
+                                         method="POST")
+        try:
+            with urllib.request.urlopen(request, timeout=self.timeout) as response:
+                return dict(json.load(response))
+        except urllib.error.HTTPError as exc:
+            raise TransportError(f"offer refused: {exc.code}", permanent=exc.code < 500) from exc
+        except (urllib.error.URLError, OSError) as exc:
+            raise TransportError(f"cannot reach {recipient_store_id}: {exc}") from exc
 
     def send_notice(self, recipient_store_id: str, notice: Any) -> bool:
         """POST a signed source notice to a peer's `/federation/notice`."""
@@ -311,6 +390,8 @@ def build_federation_server(
                 self._retraction()
             elif self.path == "/federation/notice":
                 self._notice()
+            elif self.path == "/federation/offer":
+                self._offer()
             elif self.path == "/federation/reconcile":
                 self._reconcile()
             else:
@@ -346,8 +427,17 @@ def build_federation_server(
             # Authenticate, then authorise, before anything is applied. Not
             # before parsing — see this function's docstring for why that is
             # impossible when the key is named by the claimed origin.
-            key = registry.key_for(retraction.origin_store_id)
             signature = body.get("signature") or {}
+            # The key of the store that *sent* this: the forwarder for a
+            # forwarded retraction, the origin otherwise. Verifying a forwarded
+            # one with the origin's key refused every second hop over HTTP
+            # (experiments/multihost.py); the in-process transport, which
+            # checks no signatures, never showed it. `forwarded_by` is inside
+            # the signed payload, so a forwarder cannot claim another name.
+            sender = retraction.forwarded_by or retraction.origin_store_id
+            key = registry.key_for(sender,
+                                   signature.get("key_id") if isinstance(signature, Mapping)
+                                   else None)
             if key is None or not retraction.verify(signature, key):
                 # Still recorded locally: a refused retraction is an audit
                 # event worth having. But the acknowledgement is *not* the
@@ -383,7 +473,9 @@ def build_federation_server(
             except ProtocolError as exc:
                 self._reply(HTTPStatus.BAD_REQUEST, {"rejection_code": exc.code.value})
                 return
-            key = registry.key_for(notice.origin_store_id)
+            sig = body.get("signature") or {}
+            key = registry.key_for(notice.origin_store_id,
+                                   sig.get("key_id") if isinstance(sig, Mapping) else None)
             if key is None or not notice.verify(body.get("signature") or {}, key):
                 with _store_lock(fabric):
                     fabric.receive_notice(notice, sender_authorised=False)
@@ -393,6 +485,34 @@ def build_federation_server(
             with _store_lock(fabric):
                 fabric.receive_notice(notice, sender_authorised=True)
             self._reply(HTTPStatus.OK, {"accepted": True})
+
+        def _offer(self) -> None:
+            """Import a peer's signed offer as a candidate, recorded as `peer:<store>`."""
+            from .federation import PreparedOffer, accept_offer
+
+            try:
+                body = self._read_body()
+                raw = body.get("offer") or {}
+                prepared = PreparedOffer.from_json(raw)
+            except (ProtocolError, KeyError, TypeError, ValueError):
+                self._reply(HTTPStatus.BAD_REQUEST,
+                            {"rejection_code": RejectionCode.MALFORMED.value})
+                return
+            signature = body.get("signature") or {}
+            key = registry.key_for(prepared.origin_store_id,
+                                   signature.get("key_id") if isinstance(signature, Mapping)
+                                   else None)
+            if key is None or not isinstance(signature, Mapping) or not verify_body(
+                    raw, signature, key):
+                self._reply(HTTPStatus.UNAUTHORIZED,
+                            {"rejection_code": RejectionCode.UNAUTHORIZED.value})
+                return
+            with _store_lock(fabric):
+                result = accept_offer(fabric, prepared, peer_agent(prepared.origin_store_id))
+            self._reply(HTTPStatus.OK, {"accepted": result.accepted,
+                                        "decision": result.decision.value,
+                                        "reasons": result.reasons,
+                                        "imported_memory_id": result.imported_memory_id})
 
         def _reconcile(self) -> None:
             """A recipient asks: what have I missed from you since my cursor?

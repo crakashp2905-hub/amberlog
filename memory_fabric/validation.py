@@ -69,14 +69,6 @@ def _number(values: frozenset[str]) -> float | None:
     return nums[0] if len(nums) == 1 else None
 
 
-def _had_track_record(memories: list, who: str, before: int, exclude: str | None = None) -> bool:
-    """Whether `who` has another usable memory written before `before`."""
-    from .model import EXPOSABLE_STATES
-
-    return any(author(m) == who and m.id != exclude and m.created_at < before
-               and m.lifecycle_state in EXPOSABLE_STATES for m in memories)
-
-
 def _same_claim(a: tuple, b: tuple) -> bool:
     """Same identifiers and at least two shared content words (or all, if fewer)."""
     ids_a, words_a, _ = a
@@ -96,40 +88,158 @@ def _same_parameter(a: tuple, b: tuple) -> bool:
 
 def assess(fabric: "MemoryFabric", memory_id: str) -> Assessment:
     """Check one memory's claim against the store. Reads only; never changes state."""
+    return _assess(fabric, fabric.state.memories[memory_id], with_authority=True)
+
+
+def assess_write(fabric: "MemoryFabric", agent_id: str, content: str,
+                 context: Any = None, tenant_id: str | None = None) -> Assessment:
+    """Assess a write before it is stored: what the ingest hold uses (`hold_suspicious`)."""
+    from types import SimpleNamespace
+
+    from .model import DEFAULT_TENANT
+
+    pending = SimpleNamespace(
+        id="", content=content, context=dict(context or {}),
+        tenant_id=tenant_id or DEFAULT_TENANT, created_at=fabric.now() + 1,
+        provenance=SimpleNamespace(created_by=agent_id))
+    return _assess(fabric, pending, with_authority=False)
+
+
+class _ClaimIndex:
+    """Parsed claims, cached per memory version and indexed by identifier, word and author.
+
+    Validation runs on every auto-activating write, and parsing every memory
+    each time made a write cost 44 ms at 5,000 memories. The refresh below
+    is one version comparison per memory; only new or revised memories are
+    parsed, and each check reads only the memories that share an identifier,
+    a parameter word or an author.
+    """
+
+    def __init__(self) -> None:
+        self.seen: dict[str, tuple[int, tuple, str, str]] = {}
+        self.by_ident: dict[str, set[str]] = {}
+        self.by_word: dict[str, set[str]] = {}
+        self.by_author: dict[tuple[str, str], set[str]] = {}
+        self.seq: int | None = None
+
+    def _drop(self, mid: str) -> None:
+        _, (ids, words, _), who, tenant = self.seen.pop(mid)
+        for key, table in [(i, self.by_ident) for i in ids] + [(w, self.by_word) for w in words]:
+            table.get(key, set()).discard(mid)
+        self.by_author.get((tenant, who), set()).discard(mid)
+
+    def _index_one(self, fabric: "MemoryFabric", mid: str) -> None:
+        m = fabric.state.memories.get(mid)
+        if mid in self.seen:
+            self._drop(mid)
+        if m is None:
+            return
+        parsed = claim(m.content)
+        who = author(m)
+        self.seen[mid] = (m.version, parsed, who, m.tenant_id)
+        for ident in parsed[0]:
+            self.by_ident.setdefault(ident, set()).add(mid)
+        for word in parsed[1]:
+            self.by_word.setdefault(word, set()).add(mid)
+        self.by_author.setdefault((m.tenant_id, who), set()).add(mid)
+
+    def refresh(self, fabric: "MemoryFabric") -> None:
+        """Bring the index up to the log head: a full build once, then only what changed.
+
+        After the first build it reads just the events since the last refresh
+        and re-indexes the memories they created, revised or erased. A
+        per-write scan of every memory made seeding 20,000 memories quadratic.
+        """
+        from .events import EventType
+
+        head = fabric._seen_seq
+        if self.seq is None:
+            for mid in fabric.state.memories:
+                self._index_one(fabric, mid)
+            self.seq = head
+            return
+        if head == self.seq:
+            return
+        changed: set[str] = set()
+        for event in fabric.log.read(since_seq=self.seq):
+            if event.type in (EventType.MEMORY_CREATED, EventType.MEMORY_VERSIONED):
+                body = event.payload.get("memory")
+                if isinstance(body, dict) and body.get("id"):
+                    changed.add(str(body["id"]))
+            elif event.type == EventType.CONTENT_ERASED and event.payload.get("memory_id"):
+                changed.add(str(event.payload["memory_id"]))
+        for mid in changed:
+            self._index_one(fabric, mid)
+        self.seq = head
+
+    def claim_of(self, mid: str) -> tuple:
+        return self.seen[mid][1]
+
+
+def _index(fabric: "MemoryFabric") -> _ClaimIndex:
+    index = getattr(fabric, "_claim_index", None)
+    if index is None:
+        index = _ClaimIndex()
+        fabric._claim_index = index  # type: ignore[attr-defined]
+    index.refresh(fabric)
+    return index
+
+
+def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assessment:
     from . import authority
     from .model import EXPOSABLE_STATES, WITHDRAWN_STATES
 
-    memory = fabric.state.memories[memory_id]
+    memory_id = memory.id
     mine = claim(memory.content)
-    ids, _, values = mine
+    ids, words, values = mine
     signals: dict[str, str] = {}
     if not ids or not values:
         return Assessment(memory_id, "unremarkable", {})
     me = author(memory)
+    tenant = memory.tenant_id
+    index = _index(fabric)
+    memories = fabric.state.memories
 
-    others = [m for m in fabric.state.memories.values()
-              if m.id != memory_id and m.tenant_id == memory.tenant_id]
+    def track_record(who: str, before: int, exclude: str | None = None) -> bool:
+        return any(m != exclude and m != memory_id and memories[m].created_at < before
+                   and memories[m].lifecycle_state in EXPOSABLE_STATES
+                   for m in index.by_author.get((tenant, who), ()))
+
+    same_claim = set().union(*(index.by_ident.get(i, set()) for i in ids)) - {memory_id}
+    for oid in same_claim:
+        other = memories[oid]
+        theirs = index.claim_of(oid)
+        if other.tenant_id != tenant or not _same_claim(mine, theirs):
+            continue
+        if other.lifecycle_state in WITHDRAWN_STATES and theirs[2] == values:
+            signals.setdefault("reasserts_corrected", oid)
+        elif other.lifecycle_state in EXPOSABLE_STATES and theirs[2] and theirs[2] != values:
+            # Established means older *and* by an author with a track record
+            # (another usable memory) by now. Without the second condition an
+            # earlier poison counted as established, and an honest author
+            # correcting it was flagged (V1 dev: 8 of 30 honest updates).
+            if (author(other) != me and other.created_at <= memory.created_at
+                    and track_record(author(other), memory.created_at, exclude=oid)):
+                signals.setdefault("contradicts_established", oid)
+        elif (other.lifecycle_state in EXPOSABLE_STATES and theirs[2] == values
+              and (not memory_id or fabric.source_root(oid) != fabric.source_root(memory_id))
+              and author(other) != me):
+            signals.setdefault("corroborated", oid)
+
+    # Same kind of parameter on other equipment: share two content words.
+    counts: dict[str, int] = {}
+    for w in words:
+        for oid in index.by_word.get(w, ()):
+            counts[oid] = counts.get(oid, 0) + 1
     peers_values: list[float] = []
-    for other in others:
-        theirs = claim(other.content)
-        if _same_claim(mine, theirs):
-            if other.lifecycle_state in WITHDRAWN_STATES and theirs[2] == values:
-                signals.setdefault("reasserts_corrected", other.id)
-            elif other.lifecycle_state in EXPOSABLE_STATES and theirs[2] and theirs[2] != values:
-                # Established means older *and* written by an author with a
-                # track record (another usable memory) by now. Without the second condition an
-                # earlier poison counted as established, and an honest author
-                # correcting it was flagged (V1 dev: 8 of 30 honest updates).
-                if (author(other) != me and other.created_at <= memory.created_at
-                        and _had_track_record(others, author(other), memory.created_at,
-                                              exclude=other.id)):
-                    signals.setdefault("contradicts_established", other.id)
-            elif (other.lifecycle_state in EXPOSABLE_STATES and theirs[2] == values
-                  and fabric.source_root(other.id) != fabric.source_root(memory_id)
-                  and author(other) != me):
-                signals.setdefault("corroborated", other.id)
-        elif other.lifecycle_state in EXPOSABLE_STATES and _same_parameter(mine, theirs):
-            n = _number(theirs[2])
+    for oid, shared in counts.items():
+        if shared < 2 or oid == memory_id or oid in same_claim:
+            continue
+        other = memories[oid]
+        if other.tenant_id != tenant or other.lifecycle_state not in EXPOSABLE_STATES:
+            continue
+        if _same_parameter(mine, index.claim_of(oid)):
+            n = _number(index.claim_of(oid)[2])
             if n is not None:
                 peers_values.append(n)
 
@@ -146,12 +256,10 @@ def assess(fabric: "MemoryFabric", memory_id: str) -> Assessment:
             signals["outlier"] = (f"{value:g} against a median of {median:g} over "
                                   f"{len(peers_values)} comparable claims (z={z:.1f})")
 
-    track = [m for m in others if author(m) == me and m.created_at < memory.created_at
-             and m.lifecycle_state in EXPOSABLE_STATES]
-    if not track:
+    if not track_record(me, memory.created_at):
         signals["new_source"] = me
     try:
-        if authority.of(fabric, memory_id).trust == authority.UNTRUSTED:
+        if with_authority and authority.of(fabric, memory_id).trust == authority.UNTRUSTED:
             signals["untrusted_origin"] = ",".join(authority.of(fabric, memory_id).reasons)
     except Exception:  # noqa: BLE001 - assessment never blocks on authority
         pass

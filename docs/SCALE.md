@@ -47,9 +47,16 @@ origin, every store's dispatcher drained until quiet):
 - **Breadth is not limited.** A star of 100 and a mesh of 100 both converge.
 - **Cycles terminate**: a store already on a memory's provenance chain is not
   offered it again.
-- Measured in one process. Over HTTP, each hop adds a network round trip,
-  and an offline peer stays `pending_reconciliation` until it returns
-  (`verify_recovery`). Multi-machine numbers have not been measured.
+- **Across separate servers over HTTP:** three `memory-fabric federate`
+  servers, each its own process and store, with 50 ms added to every hop. A
+  memory shared A -> B -> C by signed offers, then corrected at A, was
+  withdrawn at C in **1.3 to 1.9 seconds**, carried by the servers' own
+  background managers. With C stopped during the correction, C kept its
+  copy while down and was withdrawn **about 1 second** after it restarted.
+  CI repeats this on Linux, macOS and Windows, and with each store in its
+  own container and network stack.
+- Several *physical* machines have not been measured. The protocol does not
+  depend on it: everything between stores is signed HTTP.
 
 ## Carrying a session's context into future sessions
 

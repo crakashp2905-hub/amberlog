@@ -5,6 +5,59 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: federation across machines; two protocol bugs fixed
+
+- **Sharing over the network.** `offer_remote` and `/federation/offer`:
+  a signed offer, with the sender's firewall and chain checks there and the
+  recipient's firewall and import here. A networked import is always a
+  **candidate**, recorded as `peer:<sending store>`, and idempotent. `offer`
+  is now `prepare_offer` + `accept_offer`, shared by both paths.
+- **CLI:** `memory-fabric federate` serves the federation endpoints and runs
+  the manager; `memory-fabric offer <id> --to <store>` shares; a global
+  `--share-policy {value,reviewed}` (default `value`, unchanged) lets a
+  validated memory leave a store that has no outcome evidence yet.
+- **Fixed: forwarded retractions were refused over HTTP.** A recipient
+  verified a forwarded retraction with the key it shares with the *origin*,
+  not the forwarder, so every second hop failed with 401. The in-process
+  transport checks no signatures and hid it. Found by
+  `experiments/multihost.py`; regression test `tests/test_multihop_http.py`.
+- **Fixed: a server process applied retractions against a stale view.**
+  `receive_retraction` and 26 other public entry points did not catch up on
+  other processes' writes first, so a share recorded by another process was
+  invisible and the retraction was not forwarded. They now do.
+- **Multi-host harness** (`experiments/multihost.py`) and CI jobs
+  `multihost` (separate server processes, 50 ms a hop, three OSes) and
+  `multihost-compose` (separate containers): correction reached the third
+  store in 1.3–1.9 s; with it down, it converged ~1 s after restart.
+- **Model injection screen** (`governance/model_screen.py`, opt-in): on
+  the third-party test split, 20/60 → 46/60 (qwen2.5:3b) or 54/60
+  (gemma3:4b) caught, with 6/56 or 3/56 benign texts flagged for review.
+- **Frontier models:** `adapters.claude_chat.ClaudeChat` gives every
+  model-based evaluation the same interface on Claude, recording model,
+  prompt hash and tokens; `.github/workflows/frontier-eval.yml` runs the
+  attack checks on Claude once an `ANTHROPIC_API_KEY` secret is set.
+
+### Added: claim checks against the store's own knowledge; key rotation overlap
+
+- **`validation.py`**: a claim is checked against what the store knows. A
+  value that was corrected away and is stated again, a value far outside
+  every comparable one (robust z > 3.5 *and* beyond 2x the largest or half
+  the smallest), or a contradiction of a fact established by an author with
+  a track record makes it **suspicious**; a first claim from an unknown
+  author is **provisional**; independent agreement **corroborates**.
+  Measured on held-out seeds: all three detectable families caught (1.000),
+  0 of 450 honest writes flagged, plausible claims from new sources held
+  provisional. Indexed per memory version, about 0.1 ms per write.
+- **Defaults:** a suspicious write is held as a candidate
+  (`hold_suspicious=True`), the action gate refuses suspicious evidence
+  (`ToolRule.refuse_suspicious=True`, code `evidence_suspicious`), and
+  recall marks it `implausible`. New command: `memory-fabric suspicious`.
+- **Federation key rotation with an overlap window**: `Peer.accepted` and
+  `previous_keys` in the peers file. The recipient verifies with the key the
+  signature names, if current or still accepted; a retired key is refused.
+  Drilled over HTTP in four phases (`tests/test_key_rotation_drill.py`);
+  RUNBOOKS §3 rewritten.
+
 ### Product documentation and consumability
 
 - **README rewritten for users**: what it is and why, what you get with the

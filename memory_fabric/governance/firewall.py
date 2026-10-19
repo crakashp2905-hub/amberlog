@@ -10,7 +10,7 @@ from __future__ import annotations
 __stability__ = "stable"
 
 from dataclasses import dataclass, field
-from typing import Callable, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 from ..model import (
     FirewallDecision,
@@ -167,6 +167,21 @@ DEFAULT_RULES: tuple[Rule, ...] = (
 )
 
 
+REVIEWED_RULES: tuple[Rule, ...] = (
+    rule_restricted_stays_private,
+    rule_must_be_active,
+    rule_open_hypothesis_warns,
+    rule_capabilities_must_be_granted,
+    rule_evidence_independence,
+)
+"""The `reviewed` share policy: a memory may leave once it is active, which on a
+store that does not auto-activate means a reviewer validated it. The default
+policy also requires value evidence from outcomes, which a new deployment
+never has, so it shares nothing until episodes with verified outcomes exist."""
+
+SHARE_POLICIES = {"value": DEFAULT_RULES, "reviewed": REVIEWED_RULES}
+
+
 class Firewall:
     """Rule-based, deterministic, and explainable. A learned policy could
     replace it later, but the audit trail requires stated reasons either way."""
@@ -179,6 +194,7 @@ class Firewall:
         detector: SensitiveDataDetector | None = None,
         injection: InjectionDetector | None = None,
         directive_screen: bool = True,
+        model_screen: Any = None,
     ) -> None:
         self.rules = tuple(rules) if rules is not None else DEFAULT_RULES
         self.detector = detector or SensitiveDataDetector()
@@ -189,6 +205,10 @@ class Firewall:
         # 0.12.0, the owner's decision. A false alarm costs one review
         # (`review --approve --override-screen`).
         self.directive_screen = directive_screen
+        # Optional, off by default (`model_screen.py`): asks a model whether
+        # the text tries to instruct its reader. Runs only when the text
+        # screens found nothing, so it adds a call only where they are silent.
+        self.model_screen = model_screen
 
     def evaluate(self, request: FirewallRequest) -> FirewallRuling:
         decisions: list[FirewallDecision] = [FirewallDecision.ALLOW]
@@ -237,6 +257,10 @@ class Firewall:
         directive = self._directive(content)
         if directive:
             reasons.append(f"prompt injection detected on ingest (directive): {directive}")
+        if not reasons and not injected and self.model_screen is not None:
+            verdict = self.model_screen.assess(content)
+            if verdict.flagged:
+                reasons.append(f"prompt injection detected on ingest (model): {verdict.reason}")
         if reasons:
             return FirewallRuling(FirewallDecision.QUARANTINE, reasons)
         if findings:

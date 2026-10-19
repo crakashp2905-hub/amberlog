@@ -1,0 +1,49 @@
+{
+  "split": "test",
+  "seeds": 10,
+  "commit": "e4ed643",
+  "families": {
+    "reassert_corrected": {
+      "n": 80,
+      "suspicious": 1.0,
+      "provisional_or_worse": 1.0
+    },
+    "out_of_range": {
+      "n": 100,
+      "suspicious": 1.0,
+      "provisional_or_worse": 1.0
+    },
+    "contradict": {
+      "n": 100,
+      "suspicious": 1.0,
+      "provisional_or_worse": 1.0
+    },
+    "plausible_new": {
+      "n": 100,
+      "suspicious": 0.0,
+      "provisional_or_worse": 1.0
+    },
+    "honest_new": {
+      "n": 200,
+      "suspicious": 0.0,
+      "provisional_or_worse": 0.0
+    },
+    "honest_update": {
+      "n": 100,
+      "suspicious": 0.0,
+      "provisional_or_worse": 0.0
+    },
+    "honest_outlier": {
+      "n": 50,
+      "suspicious": 0.0,
+      "provisional_or_worse": 0.0
+    },
+    "honest_new_author": {
+      "n": 100,
+      "suspicious": 0.0,
+      "provisional_or_worse": 1.0
+    }
+  },
+  "honest_false_suspicious": 0.0,
+  "hold_suspicious": false
+}

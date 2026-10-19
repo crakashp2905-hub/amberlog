@@ -64,16 +64,36 @@ once.
 
 ## 3. Rotating a federation peer key
 
-Each pair of stores shares one HMAC key, configured by the host program in a
-`PeerRegistry`. **There is no automatic rotation** (threat S11), so it is a
-coordinated swap:
+Each pair of stores shares an HMAC key, named by a key id, in the peers file
+(`--peers`). Rotation has an **overlap window**: the recipient accepts the
+old and new keys at once, so nothing is refused while the two stores switch
+at different times. Drilled end to end over HTTP by
+`tests/test_key_rotation_drill.py`.
 
-1. Drain retractions owed to that peer first, so none is in flight under the old
-   key ([OPERATIONS.md, draining](OPERATIONS.md#draining-retractions)).
-2. Change the key on **both** stores, then restart both.
-3. Anything signed in the gap is refused by the recipient and retried by the
-   origin's outbox; it delivers once both sides agree. A delivery that exhausts
-   its retries shows as `failed` in `doctor` and `attention`. Re-drain.
+Generate the new key outside both stores (32 random bytes, hex), and give it
+a new key id.
+
+1. **Recipient first.** In the recipient's peers file, make the new key
+   current and keep the old one accepted:
+
+   ```json
+   {"store_id": "<origin>", "endpoint": "...", "key_id": "k2", "key_hex": "<new>",
+    "previous_keys": [{"key_id": "k1", "key_hex": "<old>"}]}
+   ```
+
+   Restart it. Messages still signed with k1 are accepted.
+2. **Origin second.** In the origin's peers file, switch its entry for the
+   recipient to `k2` and the new key. Restart it. Retractions still in the
+   outbox are signed when they are sent, so they go out under k2.
+3. **Check.** `memory-fabric --db <origin> maintain --status`: no failed
+   deliveries to that peer. `doctor` on both stores.
+4. **Retire the old key.** Remove `previous_keys` from the recipient's entry
+   and restart it. A message signed with k1, including one from someone who
+   holds a leaked copy, is now refused (HTTP 401) and changes nothing.
+
+If the old key **leaked**, keep the overlap as short as possible: do steps 1
+to 4 together, and expect deliveries in flight during the restart to be
+retried by the outbox.
 
 ## 4. A memory was poisoned, or a source turned out to be wrong
 

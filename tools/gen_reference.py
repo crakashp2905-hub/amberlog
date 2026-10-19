@@ -52,6 +52,9 @@ API: list[tuple[str, str, list[str]]] = [
     ("Correction and recovery", "memory_fabric.influence:impact", []),
     ("Correction and recovery", "memory_fabric.influence:paraphrases", []),
     ("Trust", "memory_fabric.authority:of", []),
+    ("Trust", "memory_fabric.validation:assess", []),
+    ("Trust", "memory_fabric.validation:assess_write", []),
+    ("Trust", "memory_fabric.validation:review_queue", []),
     ("Objectives", "memory_fabric.objective_v2:MemoryObjectiveV2",
      ["eligibility", "explain", "omissions", "reviewed"]),
     ("Objectives", "memory_fabric.objective_v2:ObjectiveLog", ["propose", "adopt"]),
@@ -59,6 +62,7 @@ API: list[tuple[str, str, list[str]]] = [
     ("Sessions", "memory_fabric.compaction:summary_for", []),
     ("Sessions", "memory_fabric.adapters.transcripts:ingest_transcript", []),
     ("Federation", "memory_fabric.federation:offer", []),
+    ("Federation", "memory_fabric.federation:offer_remote", []),
     ("Background maintenance", "memory_fabric.manager:MemoryManager", ["run_once", "start", "stop"]),
     ("Limits", "memory_fabric.limits:Limits", []),
 ]

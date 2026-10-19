@@ -53,9 +53,11 @@ class Clock:
         return self.t
 
 
-def run_seed(seed: int) -> list[dict[str, Any]]:
+def run_seed(seed: int, hold: bool = False) -> list[dict[str, Any]]:
+    """`hold=False` is the registered configuration (every write goes live);
+    `hold=True` is the shipped default, where a suspicious write is held."""
     rng = random.Random(seed)
-    f = MemoryFabric(":memory:", auto_activate=True, clock=Clock())
+    f = MemoryFabric(":memory:", auto_activate=True, clock=Clock(), hold_suspicious=hold)
     authors = [f"tech-{i}" for i in range(8)]
     facts = []
     used: set[str] = set()
@@ -134,8 +136,10 @@ def run_seed(seed: int) -> list[dict[str, Any]]:
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--split", choices=sorted(SPLITS), default="dev")
+    parser.add_argument("--hold", action="store_true",
+                        help="the shipped default: hold suspicious writes as candidates")
     args = parser.parse_args()
-    rows = [r for seed in SPLITS[args.split] for r in run_seed(seed)]
+    rows = [r for seed in SPLITS[args.split] for r in run_seed(seed, hold=args.hold)]
     table = {}
     for family in POISONS + HONEST:
         sel = [r for r in rows if r["family"] == family]
@@ -148,7 +152,9 @@ def main() -> int:
                                        text=True, cwd=ROOT).stdout.strip(),
               "families": table,
               "honest_false_suspicious": round(sum(r["suspicious"] for r in honest) / len(honest), 3)}
-    (ROOT / "research" / "results" / f"v1-claim-validation-{args.split}.json").write_text(
+    result["hold_suspicious"] = args.hold
+    suffix = "-shipped" if args.hold else ""
+    (ROOT / "research" / "results" / f"v1-claim-validation-{args.split}{suffix}.json").write_text(
         json.dumps(result, indent=2), encoding="utf-8")
     print(json.dumps(result, indent=2))
     return 0

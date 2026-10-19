@@ -9,6 +9,7 @@ Global options go **before** the command: `memory-fabric --db store.db --json ov
 - `--db`: path to the store (default: memory.db)
 - `--estimator`: value estimator for display: naive_usage (default) or ips
 - `--json`: emit JSON instead of tables
+- `--share-policy`: when a memory may leave this store: value (needs value evidence from verified outcomes; the default) or reviewed (once validated and active). Restricted memories never leave either way (default: $MEMORY_FABRIC_SHARE_POLICY or value)
 - `--log-format`: diagnostic log format on stderr; json is one object per line (default: $MEMORY_FABRIC_LOG_FORMAT or text)
 - `--log-level`: diagnostic log level (default: $MEMORY_FABRIC_LOG_LEVEL or WARNING)
 - `--keys`: directory holding this store's content keys, when they are kept outside the database (default: $MEMORY_FABRIC_KEYS). Without it a store whose keys are external cannot be opened at all — which is the correct refusal, not a bug. `migrate-keys` moves an existing store's keys out.
@@ -136,6 +137,20 @@ What an erasure of one memory reached, kept, and could not reach
 
 - `id`: the memory whose erasure you are scoping
 
+### `federate`
+
+WRITES: receive signed retractions and notices from peers over HTTP, and deliver this store's to them (the background manager)
+
+- `--peers`: JSON peer list: who this store talks to (or $MEMORY_FABRIC_PEERS)
+- `--host`: address to bind (default loopback)
+- `--port`: TCP port to listen on
+- `--behind-tls`: allow a non-loopback bind because TLS terminates in front
+- `--allow-plain-http`: allow a non-loopback bind over plain HTTP on a private network; messages are signed, not encrypted
+- `--no-maintain`: receive only; do not deliver this store's retractions
+- `--maintain-interval`: seconds between background maintenance cycles
+- `--checkpoint-dir`: write integrity checkpoints here, off the store's disk (or $MEMORY_FABRIC_CHECKPOINT_DIR)
+- `--retention-delete`: let the manager apply retention deletions (terminal); off by default
+
 ### `forget`
 
 WRITES: deprecate a memory
@@ -237,6 +252,15 @@ WRITES: move content keys out of the database into a directory, verified by repl
 
 - `directory`: where the keys will live from now on
 
+### `offer`
+
+WRITES: offer one memory to a peer store over HTTP. It lands there as a candidate, recorded as from this store; a correction here follows it
+
+- `id`: the memory to offer
+- `--to`: the peer's store id, as in the peers file
+- `--peers`: JSON peer list (or $MEMORY_FABRIC_PEERS)
+- `--actor`: who is sharing it; recorded here
+
 ### `overview`
 
 Store health and what it can and cannot tell you
@@ -332,6 +356,12 @@ WRITES: widen who may read a memory (private -> team -> federated), through the 
 Why the system remembers one memory
 
 - `id`: the memory id
+
+### `suspicious`
+
+Memories whose claim contradicts what the store knows: a corrected value restated, a value far out of range, or a contradiction of an established fact
+
+- `--limit`: show at most this many
 
 ### `tenants`
 

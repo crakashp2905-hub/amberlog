@@ -227,6 +227,51 @@ jobs:
           name: release-evidence
           path: release-evidence
 
+  multihost:
+    # Separate store server processes, real HTTP between them through a
+    # latency proxy (50 ms a hop): share A -> B -> C by signed offers, correct
+    # at A, and the correction must reach C; then again with C down during
+    # the correction, converging after it restarts (experiments/multihost.py).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m experiments.multihost --latency-ms 50 --out multihost.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: multihost-${{ matrix.os }}
+          path: multihost.json
+
+  multihost-compose:
+    # The same scenario with each store in its own container and network
+    # stack, federating over the Docker network by service name. One
+    # physical machine, several network hosts.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m experiments.multihost --mode prepare
+      - run: HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose -f deploy/multihost/docker-compose.yml up -d --build
+      - run: python -m experiments.multihost --mode compose --out multihost-compose.json
+      - if: failure()
+        run: docker compose -f deploy/multihost/docker-compose.yml logs
+      - if: always()
+        run: docker compose -f deploy/multihost/docker-compose.yml down
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: multihost-compose
+          path: multihost-compose.json
+
   adversarial-gate:
     # Every attack family's invariants, by name (tools/adversarial_gate.py).
     # A family that fails, errors or loses all its tests fails the gate, and

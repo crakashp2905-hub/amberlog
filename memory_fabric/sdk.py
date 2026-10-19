@@ -168,12 +168,20 @@ class AgentClient:
             )
             if read.usable:
                 usable = self._wrap(read)
-                if memory.id in disputed:
-                    from dataclasses import replace
+                from dataclasses import replace
 
+                if memory.id in disputed:
                     usable = replace(usable, warnings=usable.warnings + (
                         "disputed: gives a different value for the same claim as "
                         + ", ".join(sorted(disputed[memory.id])),))
+                from . import validation
+
+                judged = validation.assess(self._fabric, memory.id)
+                if judged.suspicious:
+                    usable = replace(usable, warnings=usable.warnings + (
+                        "implausible: " + "; ".join(
+                            f"{k} ({v})" for k, v in judged.signals.items()
+                            if k in validation.SUSPICIOUS),))
                 out.append(usable)
         return out
 

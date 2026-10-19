@@ -168,8 +168,9 @@ print(hq.get(copy).lifecycle_state.value)                   # quarantined
 plant.close(); hq.close()
 ```
 
-Over a network, `memory-fabric serve --peers peers.json` does the same with
-signed retractions ([REFERENCE_DEPLOYMENT.md](REFERENCE_DEPLOYMENT.md)).
+Across machines, each store runs `memory-fabric federate --peers peers.json`,
+and `memory-fabric offer <id> --to <store-id>` shares over signed HTTP
+([REFERENCE_DEPLOYMENT.md](REFERENCE_DEPLOYMENT.md#5-across-machines-from-the-command-line)).
 
 ## 8. Keep tenants physically apart
 

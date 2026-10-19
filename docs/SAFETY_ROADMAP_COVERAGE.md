@@ -20,7 +20,7 @@ Roadmap", 2026-10-19), item by item.
 | D | **Collusion-resistant corroboration** | **partial, experimental** | `independence.py` (S2): false corroboration 0.83 → 0.28, at 0.02 → 0.25 blocked independent evidence. Kept opt-in, as the roadmap advises |
 | E | **Decision-specific trust** | **done (policy)**, **partial (learned)** | Action gating with per-tool evidence rules, independent-source minimums and human approval (`actions.py`); recipient trust per (source, context) (S4, supported on the bar, opt-in) |
 | F | **Verified recovery coordinator** | **done** | `response.py`: detect, assess, contain, record, and `verify_recovery` (containment checked from state; offline peers *unresolved*; external actions never called resolved). The flagship incident is a test (`tests/test_verified_recovery.py`); `incident --verify` |
-| G | **Privacy-preserving federation** | **partial** | Peer authentication (HMAC), scopes, replay protection (deduplication), cycle refusal (F12), minimal acknowledgements (F13), receipts that bind at audit (S5), the signed hostile-source notice. **Gap:** key rotation and re-enrolment are not drilled; there is no protection against a privileged database holder |
+| G | **Privacy-preserving federation** | **partial** | Peer authentication (HMAC), scopes, replay protection (deduplication), cycle refusal (F12), minimal acknowledgements (F13), receipts that bind at audit (S5), the signed hostile-source notice. Key rotation drilled with an overlap window. **Gap:** there is no protection against a privileged database holder |
 | H | **Safe adaptation without silent weakening** | **done** | Every adaptive or research mechanism is opt-in and experimental (STABILITY.md, enforced by `test_stability.py`); hard controls are not learned; the gated rulebook (M2) adopts only on held-out verified evidence, and its rules can only narrow retrieval |
 
 ## Memory poisoning: prevention and detection
@@ -52,7 +52,7 @@ document does not claim otherwise.
 | 3 | Offline propagation window | **by design, reported**: `verify_recovery` marks it unresolved; the manager retries delivery |
 | 4 | Storage-administrator threat | **mitigated only with off-host checkpoints** (`--checkpoint-dir`) |
 | 5 | Logical tenancy | **open, documented** ([LIMITATIONS.md](LIMITATIONS.md)) |
-| 6 | Federation key rotation | **open**: not drilled |
+| 6 | Federation key rotation | **done**: overlap window (`Peer.accepted`, `previous_keys`), drilled over HTTP in four phases including a refused leaked old key (`tests/test_key_rotation_drill.py`, RUNBOOKS §3) |
 | 7 | Audit integrity and privacy | hash chain plus external checkpoints; content-free audit export (P6) |
 | 8 | Resource exhaustion | agent-api rate limits, bounded body sizes, bounded connect (0.11.0); no load-shedding beyond these |
 | 9 | Action races | **closed for `execute`** (S6), including lease expiry, retry and cross-process on Postgres |

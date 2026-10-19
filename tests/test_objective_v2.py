@@ -16,7 +16,9 @@ def site(value: str) -> Rule:
 
 class Fixture(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(":memory:", auto_activate=True)
+        # The vendor note contradicts an established fact, so the default
+        # ingest hold would keep it a candidate; these tests rank it.
+        self.f = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False)
         self.addCleanup(self.f.close)
         r = self.f.remember
         self.north = r("tech", "Pump P1 purge time at North is 30 s.", context={"site": "north"},

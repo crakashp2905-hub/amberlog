@@ -65,10 +65,11 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.txn`
 - `memory_fabric.vectors`
 
-## Beta (31)
+## Beta (33)
 
 - `memory_fabric.actions`
 - `memory_fabric.adapters.claude`
+- `memory_fabric.adapters.claude_chat`
 - `memory_fabric.adapters.ollama`
 - `memory_fabric.agent_api`
 - `memory_fabric.auditor`
@@ -98,11 +99,13 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.review`
 - `memory_fabric.status`
 - `memory_fabric.tenancy`
+- `memory_fabric.validation`
 
-## Experimental (9)
+## Experimental (10)
 
 - `memory_fabric.adapters.systemone`
 - `memory_fabric.compaction`
+- `memory_fabric.governance.model_screen`
 - `memory_fabric.independence`
 - `memory_fabric.mental_models`
 - `memory_fabric.objective`

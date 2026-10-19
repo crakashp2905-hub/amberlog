@@ -835,6 +835,89 @@ def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_federate(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Receive signed retractions and notices from peers, and deliver this store's to them.
+
+    The federation endpoints (`/federation/retraction`, `/notice`,
+    `/reconcile`) on their own port, apart from the read-only dashboard, plus
+    the background manager for outbound delivery. Every message is
+    HMAC-signed with the key in the peers file and replay-checked; a peer not
+    in the file is refused. Messages carry ids, reasons and store ids, never
+    memory content, but a bind beyond loopback still needs `--behind-tls` or
+    an explicit `--allow-plain-http` for a private network.
+    """
+    _server_limits(fabric)
+    from .manager import load_peers
+    from .transport import build_federation_server
+
+    peers_path = args.peers or os.environ.get(ENV_PEERS)
+    if not peers_path:
+        print(f"{C.RED}federate needs --peers (or ${ENV_PEERS}): the stores it may talk to"
+              f"{C.RESET}", file=sys.stderr)
+        return 2
+    loopback = args.host in ("127.0.0.1", "localhost", "::1")
+    if not loopback and not (args.behind_tls or args.allow_plain_http):
+        print(f"{C.RED}refusing to bind {args.host} over plain HTTP: pass --behind-tls when "
+              f"TLS terminates in front, or --allow-plain-http on a private network{C.RESET}",
+              file=sys.stderr)
+        return 5
+    registry = load_peers(peers_path)
+    try:
+        server = build_federation_server(fabric, registry, args.host, args.port)
+    except OSError as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 5
+    host, port = server.server_address[:2]
+    if isinstance(host, bytes):
+        host = host.decode()
+    print(f"Memory Fabric federation on http://{host}:{port}/federation/  "
+          f"(store {fabric.store_id}, {len(registry)} peer(s))", flush=True)
+    manager = None
+    try:
+        args.peers = peers_path
+        manager = _start_manager(fabric, args)
+        server.serve_forever()
+    except KeyboardInterrupt:
+        print()
+        print("stopped")
+    finally:
+        if manager is not None:
+            manager.stop()
+        server.server_close()
+    return 0
+
+
+def cmd_offer(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Offer one memory to a peer store over HTTP; it lands there as a candidate."""
+    from .federation import offer_remote
+    from .manager import load_peers
+    from .transport import HttpTransport, TransportError
+
+    peers_path = args.peers or os.environ.get(ENV_PEERS)
+    if not peers_path:
+        print(f"{C.RED}offer needs --peers (or ${ENV_PEERS}){C.RESET}", file=sys.stderr)
+        return 2
+    registry = load_peers(peers_path)
+    if args.to not in registry:
+        print(f"{C.RED}{args.to} is not in the peers file{C.RESET}", file=sys.stderr)
+        return 2
+    try:
+        result = offer_remote(fabric, args.id, HttpTransport(registry, fabric.store_id),
+                              args.to, recipient_agent=args.actor)
+    except TransportError as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 5
+    if args.json:
+        print(json.dumps({"accepted": result.accepted, "decision": result.decision.value,
+                          "reasons": result.reasons,
+                          "imported_memory_id": result.imported_memory_id}, indent=2))
+    elif result.accepted:
+        print(f"{C.GREEN}accepted{C.RESET} by {args.to} as candidate {result.imported_memory_id}")
+    else:
+        print(f"{C.YELLOW}refused{C.RESET}: " + "; ".join(result.reasons))
+    return 0 if result.accepted else 1
+
+
 def cmd_agent_api_issue(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Mint a signed, expiring credential for one agent in the agents file."""
     from .agent_api import ConfigurationError, encode_credential
@@ -1116,6 +1199,32 @@ def cmd_correct(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     print(f"\n{C.DIM}Apply: memory-fabric --db {_shown(args.db)} correct {args.id} --apply "
           f"--reason WHY --actor YOU{C.RESET}")
     return 0
+
+
+def cmd_suspicious(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """List memories that failed claim validation (`validation.py`). Read-only."""
+    from .validation import SUSPICIOUS, review_queue, summary
+
+    queue = review_queue(fabric)[: args.limit]
+    if args.json:
+        print(json.dumps([summary(a) for a in queue], indent=2))
+        return 1 if queue else 0
+    if not queue:
+        print("No memory contradicts what the store knows.")
+        return 0
+    for a in queue:
+        memory = fabric.get(a.memory_id)
+        print(f"{C.YELLOW}{a.memory_id}{C.RESET}  {memory.lifecycle_state.value}  "
+              f"by {memory.provenance.created_by}")
+        print(f"  {memory.content[:160]}")
+        for signal, evidence in a.signals.items():
+            if signal in SUSPICIOUS:
+                print(f"  {C.DIM}{signal}: {evidence}{C.RESET}")
+    print()
+    print(f"{len(queue)} to review. Approve one that is right with "
+          f"`review <id> --approve --reason ...`; withdraw one that is wrong with "
+          f"`correct <id> --apply --actor <you> --reason ...`.")
+    return 1
 
 
 def cmd_review(fabric: MemoryFabric, args: argparse.Namespace) -> int:
@@ -2065,6 +2174,12 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--json", action="store_true", help="emit JSON instead of tables")
     parser.add_argument(
+        "--share-policy", choices=("value", "reviewed"),
+        default=os.environ.get("MEMORY_FABRIC_SHARE_POLICY") or "value",
+        help="when a memory may leave this store: value (needs value evidence from verified "
+        "outcomes; the default) or reviewed (once validated and active). Restricted memories "
+        "never leave either way (default: $MEMORY_FABRIC_SHARE_POLICY or value)")
+    parser.add_argument(
         "--log-format", choices=("text", "json"),
         default=os.environ.get("MEMORY_FABRIC_LOG_FORMAT") or "text",
         help="diagnostic log format on stderr; json is one object per line "
@@ -2291,6 +2406,32 @@ def build_parser() -> argparse.ArgumentParser:
                    help=f"write integrity checkpoints here, off the store's disk (or ${ENV_CHECKPOINT_DIR})")
     p.add_argument("--retention-delete", action="store_true",
                    help="let the manager apply retention deletions (terminal); off by default")
+    p = add("offer", cmd_offer,
+            "WRITES: offer one memory to a peer store over HTTP. It lands there as a "
+            "candidate, recorded as from this store; a correction here follows it")
+    p.add_argument("id", help="the memory to offer")
+    p.add_argument("--to", required=True, help="the peer's store id, as in the peers file")
+    p.add_argument("--peers", help=f"JSON peer list (or ${ENV_PEERS})")
+    p.add_argument("--actor", default="operator", help="who is sharing it; recorded here")
+
+    p = add("federate", cmd_federate,
+            "WRITES: receive signed retractions and notices from peers over HTTP, and "
+            "deliver this store's to them (the background manager)")
+    p.add_argument("--peers", help=f"JSON peer list: who this store talks to (or ${ENV_PEERS})")
+    p.add_argument("--host", default="127.0.0.1")
+    p.add_argument("--port", type=int, default=8767)
+    p.add_argument("--behind-tls", action="store_true",
+                   help="allow a non-loopback bind because TLS terminates in front")
+    p.add_argument("--allow-plain-http", action="store_true",
+                   help="allow a non-loopback bind over plain HTTP on a private network; "
+                   "messages are signed, not encrypted")
+    p.add_argument("--no-maintain", action="store_true",
+                   help="receive only; do not deliver this store's retractions")
+    p.add_argument("--maintain-interval", type=float, default=60.0, metavar="SECONDS")
+    p.add_argument("--checkpoint-dir",
+                   help=f"write integrity checkpoints here, off the store's disk (or ${ENV_CHECKPOINT_DIR})")
+    p.add_argument("--retention-delete", action="store_true",
+                   help="let the manager apply retention deletions (terminal); off by default")
     p = add("agent-api-issue", cmd_agent_api_issue,
             "Print a signed, expiring credential for one agent")
     p.add_argument("--agents-file", required=True)
@@ -2363,6 +2504,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--actor", help="who is correcting this; required with --apply")
     p.add_argument("--basis", default="contradicted",
                    choices=["contradicted", "sensitive_data", "contrastive_harm"])
+
+    p = add("suspicious", cmd_suspicious,
+            "Memories whose claim contradicts what the store knows: a corrected value "
+            "restated, a value far out of range, or a contradiction of an established fact")
+    p.add_argument("--limit", type=int, default=50)
 
     p = add("review", cmd_review,
             "The review queue. With an id and a decision, WRITES it: approve (usable by "
@@ -2560,8 +2706,11 @@ def main(argv: Sequence[str] | None = None) -> int:
         key_provider = DirectoryKeyProvider(args.keys)
 
     try:
+        from .governance.firewall import SHARE_POLICIES, Firewall
+
         fabric = MemoryFabric(
-            args.db, estimator=args.estimator, key_provider=key_provider
+            args.db, estimator=args.estimator, key_provider=key_provider,
+            firewall=Firewall(rules=SHARE_POLICIES[args.share_policy]),
         )
     except KeyUnavailable as exc:
         # Distinguished from any other open failure, because the remedy is

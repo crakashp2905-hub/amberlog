@@ -114,6 +114,7 @@ order. `tests/test_troubleshooting.py` fails if a code is missing here.
 | `evidence_version_moved`, `dependency_version_moved` | the evidence was revised after certification | re-read it and certify the new version |
 | `insufficient_independent_support` | fewer independent sources than the rule needs | add independent evidence |
 | `authority_insufficient` | a piece of evidence came from a tool, a web page, an import, or descends from something withdrawn | review it and `fabric.elevate(...)` as someone other than its author, or lower `ToolRule.min_authority` deliberately |
+| `evidence_suspicious` | a piece of evidence contradicts what the store knows: it restates a corrected value, is far out of range, or contradicts an established fact (`validation.assess` gives the signals) | check the claim; validate it if it is right, or withdraw it. `ToolRule(refuse_suspicious=False)` turns the check off |
 | `instruction_is_not_evidence` | a piece of evidence is an instruction | use the observation it is about, not the instruction |
 | `human_approval_required`, `approval_invalid` | the tool needs a human approval bound to this certificate (and action) | have an approver approve this exact action |
 | `grant_required` | the tool needs a short-lived grant | `gate.issue_grant(...)` from the host |

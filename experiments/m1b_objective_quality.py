@@ -323,7 +323,7 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     from experiments.g4_labnet import Cache
-    from memory_fabric.adapters.ollama import OllamaClient
+    from memory_fabric.adapters.claude_chat import make_client
 
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--split", choices=sorted(SPLITS), default="dev")
@@ -331,7 +331,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--cache")
     parser.add_argument("--out")
     args = parser.parse_args(argv)
-    client, cache = OllamaClient(), Cache(args.cache)
+    client, cache = make_client(args.model), Cache(args.cache)
     started = time.perf_counter()
     rows: list[dict[str, Any]] = []
     for seed in SPLITS[args.split]:

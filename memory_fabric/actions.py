@@ -96,6 +96,7 @@ PERMISSION_DENIED = "execute_permission_missing"
 RETRY_REQUIRED = "retry_required"
 AUTHORITY_INSUFFICIENT = "authority_insufficient"
 INSTRUCTION_EVIDENCE = "instruction_is_not_evidence"
+EVIDENCE_SUSPICIOUS = "evidence_suspicious"
 GRANT_REQUIRED = "grant_required"
 GRANT_UNKNOWN = "grant_unknown"
 GRANT_EXPIRED = "grant_expired"
@@ -132,6 +133,10 @@ class ToolRule:
     approver elevated it. `untrusted` turns the check off."""
     requires_grant: bool = False
     """Require a short-lived grant bound to this exact action (`issue_grant`)."""
+    refuse_suspicious: bool = True
+    """Refuse evidence whose claim contradicts what the store knows
+    (`validation.assess`: a corrected value restated, a value far out of
+    range, or a contradiction of an established fact)."""
 
 
 @dataclass(frozen=True)
@@ -333,9 +338,7 @@ class ActionGate:
     def _authority(self, certificate: EvidenceCertificate, rule: ToolRule) -> str | None:
         from . import authority
 
-        if rule.min_authority == authority.UNTRUSTED:
-            return None
-        for item in certificate.evidence:
+        for item in certificate.evidence if rule.min_authority != authority.UNTRUSTED else ():
             try:
                 found = authority.of(self.fabric, item.memory_id)
             except Exception:
@@ -344,6 +347,15 @@ class ActionGate:
                 return INSTRUCTION_EVIDENCE
             if not found.at_least(rule.min_authority):
                 return AUTHORITY_INSUFFICIENT
+        if rule.refuse_suspicious:
+            from .validation import assess
+
+            for item in certificate.evidence:
+                try:
+                    if assess(self.fabric, item.memory_id).suspicious:
+                        return EVIDENCE_SUSPICIOUS
+                except KeyError:
+                    return STATE_UNAVAILABLE
         return None
 
     def issue_grant(self, tool: str, agent_id: str, issuer: str, *,

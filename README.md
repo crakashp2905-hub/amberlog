@@ -39,7 +39,7 @@ Memory Fabric is a memory layer built around those questions.
 | **Provenance and authority** | Every memory records its source, its author and how it was made. Trust is bound to the origin and carried through summaries, tool copies and other stores, so an injected note stays untrusted however many times it is rewritten. |
 | **Correction that travels** | Withdraw a memory and it is withdrawn in every store it reached, including stores that received it second-hand. Conclusions built on it are re-checked; ones with independent support survive. |
 | **Safe actions** | A protected tool runs only with a short-lived grant for that exact action, on evidence that is re-verified in the same transaction as the side effect. Expired grants, replays, changed targets and withdrawn evidence are refused. |
-| **Poisoning defences** | Injection and secret screens at write time, disagreements shown rather than ranked away, and a source caught injecting is withheld everywhere its memories travelled. |
+| **Poisoning defences** | Every claim is checked against what the store already knows: a corrected value stated again, a value far out of range, or a contradiction of an established fact is held for review and cannot be acted on. Injection and secret screens run at write time, disagreements are shown rather than ranked away, and a source caught injecting is withheld everywhere its memories travelled. |
 | **Audit and erasure** | An append-only, hash-chained event log is the source of truth. Erasure destroys content and keeps the audit trail. |
 | **Multi-tenant** | Tenant scope bound to the credential, seven separate permissions, or a physically separate store per tenant. |
 | **Session handoff** | A short, governed summary of what a session established, for the sessions that follow. A later correction reaches it like any other memory. |
@@ -211,7 +211,7 @@ python tools/check.py           # regenerate docs, lint, type-check, doc tests, 
 python tools/check.py --full    # and the full suite, which needs no dependencies
 ```
 
-**1756 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
+**1775 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
 a multi-store fault matrix and an adversarial release gate run
 in CI on Linux, macOS and Windows. Read [AGENTS.md](AGENTS.md), the rules for
 everyone who changes this repository, humans and AI agents alike, and

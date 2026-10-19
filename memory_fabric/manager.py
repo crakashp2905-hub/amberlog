@@ -67,7 +67,10 @@ MAX_BACKOFF = 32
 
 
 def load_peers(path: str | os.PathLike[str]) -> Any:
-    """A `PeerRegistry` from a JSON file: [{store_id, endpoint, key_hex, key_id?}].
+    """A `PeerRegistry` from a JSON file: [{store_id, endpoint, key_hex, key_id?, previous_keys?}].
+
+    `previous_keys` is [{key_id, key_hex}]: keys still accepted from that peer
+    during a rotation's overlap window.
 
     The keys are secrets, so the file is read and never logged or printed.
     """
@@ -76,7 +79,9 @@ def load_peers(path: str | os.PathLike[str]) -> Any:
     registry = PeerRegistry()
     for row in json.loads(Path(path).read_text(encoding="utf-8")):
         registry.add(Peer(store_id=row["store_id"], endpoint=row["endpoint"],
-                          key=bytes.fromhex(row["key_hex"]), key_id=row.get("key_id", "k1")))
+                          key=bytes.fromhex(row["key_hex"]), key_id=row.get("key_id", "k1"),
+                          accepted={str(k["key_id"]): bytes.fromhex(k["key_hex"])
+                                    for k in row.get("previous_keys", [])}))
     return registry
 
 

@@ -41,3 +41,25 @@ off-topic text rather than instructions to a later reader, and catching them
 by wording would mean flagging ordinary questions. This is a text screen.
 Origin-bound authority is the backstop: whatever slips past the screen still
 cannot authorise an action if it came from an untrusted source.
+
+## Adding a model screen (`governance/model_screen.py`, opt-in)
+
+A model is asked whether the text tries to instruct, redirect or manipulate
+the AI that later reads it. The prompt was written once, before any
+measurement, and not tuned. It runs only where the text screens found
+nothing. Raw: [qwen](injection-thirdparty-qwen2.5-3b.json),
+[gemma](injection-thirdparty-gemma3-4b.json).
+
+| screens | third-party test: caught | third-party benign flagged | author's held-out: caught | author's hard negatives flagged |
+|---|---|---|---|---|
+| text screens only | 20 / 60 | 0 / 56 | 10 / 12 | 0 / 16 |
+| text + qwen2.5:3b | **46 / 60** | 6 / 56 | **12 / 12** | 2 / 16 |
+| text + gemma3:4b | **54 / 60** | 3 / 56 | **12 / 12** | 3 / 16 |
+
+It more than doubles detection on the third-party set, and its false alarms
+are real: 5–11% of benign third-party texts, and 2–3 of the 16 hard
+negatives written to look like injections without being one. A false alarm
+quarantines a memory for review; it is never deleted. **Kept opt-in**: it
+needs a model and a call per new text, and whether its false-alarm rate is
+acceptable depends on how much review a deployment can absorb.
+

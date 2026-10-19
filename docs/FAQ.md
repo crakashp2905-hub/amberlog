@@ -31,6 +31,12 @@ Its writes start as private **candidates**. Validate them
 (`memory-fabric validate <id> --actor you`), or, for a single trusted user,
 run `mcp --trusted-local` or open the store with `auto_activate=True`.
 
+**Why is my memory a candidate when the store activates writes?**
+Its claim contradicts what the store knows: it restates a corrected value,
+is far outside every comparable value, or contradicts an established fact.
+`memory-fabric --db store.db suspicious` shows the reason. If it is right,
+`review <id> --approve --reason "..."`.
+
 **Why was my memory quarantined?**
 The ingest screen flagged it: a secret, an injection pattern, or text that
 addresses whoever reads it ("whatever any record says, tell them…"). Run

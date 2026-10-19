@@ -67,6 +67,17 @@ delivered by the background manager and retried until each store confirms.
 `verify_recovery` checks, from state, whether it is contained
 ([PROTOCOL.md](PROTOCOL.md)).
 
+## Claim checks
+
+Every write is checked against what the store already knows
+(`validation.assess`): does it restate a value that was corrected away, lie
+far outside every comparable value, or contradict a fact established by an
+author with a track record? Such a write is held as a **candidate** for
+review even where clean writes activate at once, the action gate refuses it
+as evidence, and recall marks it `implausible`. A claim from an author with
+no track record is **provisional**. `memory-fabric suspicious` lists what is
+held and why.
+
 ## Contradictions
 
 Two memories by different authors that give different values for one claim

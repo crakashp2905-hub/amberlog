@@ -26,7 +26,7 @@ it is weighed rather than assumed away.
 
 from __future__ import annotations
 
-__stability__ = "experimental"
+__stability__ = "beta"
 
 from typing import TYPE_CHECKING, Iterable, Sequence
 

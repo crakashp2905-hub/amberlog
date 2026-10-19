@@ -59,6 +59,7 @@ ENFORCED = {
 
 METADATA = {
     "authority": "origin-bound trust, kind and source ids of a memory; no content",
+    "hostile_authors": "author ids caught injecting, here or by a peer's notice; no content",
     "notice_recipients": "store ids holding an author's shared memories; no content",
     "lifecycle_of": "one memory's state, and no content — the safe way to ask",
     "relations_of": (

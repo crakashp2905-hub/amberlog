@@ -1,0 +1,46 @@
+name: model-attacks
+
+# Model-in-the-loop attacks, weekly and on demand: G4b (poison ranking with
+# contradiction surfacing) and T2b (cross-store hostile-source notice) on
+# their dev seeds, against a small local model served by Ollama on the
+# runner. tools/model_attack_check.py fails the run on an invariant
+# regression. Too slow for every push, which the model-free
+# `adversarial-gate` job covers.
+
+on:
+  schedule:
+    - cron: "0 3 * * 1"
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Ollama model"
+        default: "qwen2.5:1.5b"
+
+jobs:
+  attacks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    env:
+      MODEL: ${{ github.event.inputs.model || 'qwen2.5:1.5b' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (ollama serve > ollama.log 2>&1 &)
+          for i in $(seq 1 30); do curl -s localhost:11434/api/tags && break; sleep 2; done
+          ollama pull "$MODEL"
+      - run: python -m experiments.g4b_conflicts --split dev --model "$MODEL" --out g4b.json
+      - run: python -m experiments.t2b_notice --split dev --model "$MODEL" --out t2b.json
+      - run: python tools/model_attack_check.py g4b.json t2b.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: model-attacks
+          path: |
+            g4b.json
+            t2b.json
+            ollama.log

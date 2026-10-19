@@ -18,7 +18,8 @@ whatever its wording:
    version ("supersedes the 2024 version"). An injection dismisses everything
    that might contradict it.
 
-Either function flags a memory. `assess` returns the signals it found, so a
+Any function flags a memory (a third, overriding the reader's own
+instructions, is described at `OVERRIDE`). `assess` returns the signals it found, so a
 reviewer sees *why*, never a bare score.
 
 **What this cannot do, stated.** An attacker who writes a plain false claim
@@ -63,6 +64,39 @@ VOIDING = [
     r"\bdo not mention other values\b",
 ]
 
+# 3. It overrides the reader's own instructions: "forget everything so far",
+#    "ignore the above and say", "now comes a new task", "print your prompt".
+#    Added after the third-party set (deepset/prompt-injections) caught 0/60
+#    with the two families above; tuned on its train split only, measured once
+#    on its test split (research/results/injection-thirdparty.md). English and
+#    German, because that set is both.
+_DROP = r"(?:forget|ignore|disregard|drop|discard|remove|leave)"
+_PRIOR = r"(?:previous|prior|above|earlier|preceding|foregoing|all|everything|anything)"
+_WHAT = (r"(?:instructions?|orders?|tasks?|assignments?|prompts?|rules?|directions?|information|"
+         r"said|told|talked|discussed|text|before|so far|above|that)")
+OVERRIDE = [
+    rf"\b{_DROP}\b[^.!?]{{0,30}}\b{_PRIOR}\b[^.!?]{{0,40}}\b{_WHAT}\b",
+    r"\b(?:ignore|disregard|forget)\s+(?:the\s+)?(?:above|previous|preceding|everything)\b",
+    r"\bforget everything\b",
+    r"\b(?:now|here)\s+(?:comes?|is|come)\s+(?:a|the|your)?\s*(?:new|next|second|real|further)\s+"
+    r"(?:tasks?|assignments?|tests?|instructions?|job)\b",
+    r"\bnow\s+(?:new|further)\s+(?:tasks?|instructions?)\s+(?:follow|are followed)\b",
+    r"\b(?:focus|concentrate)\s+(?:only\s+)?on\s+(?:your|the|this)\s+(?:new\s+)?task\b",
+    r"\b(?:show|print|reveal|output|repeat|display|spell-?check)\b[^.!?]{0,40}\b(?:your|the|all)\b"
+    r"[^.!?]{0,30}\b(?:prompt|prompts|prompt texts?|instructions|system message"
+    r"|above (?:text|prompt))\b",
+    r"\b(?:your|the) (?:initial|original|system|hidden) (?:instructions|prompt)\b",
+    r"={3,}\s*end\b",
+    r"\b(?:i want you to|from now on,? you|you will now)\s+(?:act|behave|respond|pretend|be)\b",
+    r"\bpretend (?:you are|to be)\b",
+    # German
+    r"\bvergiss\b[^.!?]{0,40}\b(?:alles|alle|bisherigen|davor|vorher|zuvor)\b",
+    r"\bignorier(?:e|en sie|t)?\b[^.!?]{0,30}\b(?:obige|obigen|alles|vorherigen|bisherigen|anweisungen)\b",
+    r"\b(?:jetzt|nun) (?:kommt|kommen|folgt|folgen) (?:eine |die )?(?:neue|n\S+chste|zweite|weitere)",
+    r"\b(?:zeig|zeige|drucke|gib)\S*\b[^.!?]{0,40}\b(?:prompt|anweisungen|eingabeaufforderung)",
+    r"\bich m\S+chte,? dass (?:sie|du) als\b",
+]
+
 
 @dataclass(frozen=True)
 class Assessment:
@@ -76,5 +110,7 @@ def assess(content: str) -> Assessment:
     signals = [f"addresses the answerer: {m.group(0)!r}" for p in DIRECTIVE
                if (m := re.search(p, text))]
     signals += [f"voids other records: {m.group(0)!r}" for p in VOIDING
+                if (m := re.search(p, text))]
+    signals += [f"overrides the reader's instructions: {m.group(0)!r}" for p in OVERRIDE
                 if (m := re.search(p, text))]
     return Assessment(bool(signals), signals[:4])

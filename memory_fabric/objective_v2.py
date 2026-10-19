@@ -105,6 +105,11 @@ class MemoryObjectiveV2:
     surfaces conflicts rather than resolving them."""
     compiled_by: str | None = None
     reviewed_by: str | None = None
+    include_history: bool = False
+    """Show memories whose validity has ended. Off: a session asks what is
+    true now unless it says otherwise. M1b's dev pilot found a 3B model picks
+    an expired memory over the current one even when it is marked "validity
+    ended", once a hard filter has made room for it in the top k."""
 
     def __post_init__(self) -> None:
         if self.uncertainty_policy not in UNCERTAINTY_POLICIES:
@@ -181,7 +186,11 @@ class MemoryObjectiveV2:
 
         seen: dict[str, int] = {}
         scored = []
+        when = self.as_of if self.as_of is not None else fabric.now()
         for memory_id, relevance in hits:
+            valid_to = fabric.state.memories[memory_id].valid_to
+            if not self.include_history and valid_to is not None and when >= valid_to:
+                continue
             if self.decision_impact == "high" and not authority.of(
                     fabric, memory_id).at_least(authority.UNVERIFIED):
                 continue
@@ -218,7 +227,8 @@ class MemoryObjectiveV2:
                 "as_of": self.as_of, "freshness_ms": self.freshness_ms,
                 "uncertainty_policy": self.uncertainty_policy,
                 "decision_impact": self.decision_impact,
-                "compiled_by": self.compiled_by, "reviewed_by": self.reviewed_by}
+                "compiled_by": self.compiled_by, "reviewed_by": self.reviewed_by,
+                "include_history": self.include_history}
 
     @classmethod
     def from_json(cls, d: Mapping[str, Any]) -> "MemoryObjectiveV2":
@@ -232,7 +242,8 @@ class MemoryObjectiveV2:
                    as_of=d.get("as_of"), freshness_ms=d.get("freshness_ms"),
                    uncertainty_policy=str(d.get("uncertainty_policy", "surface")),
                    decision_impact=str(d.get("decision_impact", "low")),
-                   compiled_by=d.get("compiled_by"), reviewed_by=d.get("reviewed_by"))
+                   compiled_by=d.get("compiled_by"), reviewed_by=d.get("reviewed_by"),
+                   include_history=bool(d.get("include_history", False)))
 
     def digest(self) -> str:
         return hashlib.sha256(json.dumps(self.to_json(), sort_keys=True,

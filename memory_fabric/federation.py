@@ -145,6 +145,21 @@ def offer(
             reasons=["recipient refused: it is already on this memory's provenance "
                      "chain (an echo of a memory it holds)"],
         )
+    # A copy must not travel further than its retraction can follow. Forwarded
+    # retractions stop at MAX_HOPS (recorded as `hop_limit`), so before this
+    # check a 20-store chain left the last two copies live after a correction
+    # at the origin (experiments/fed_scale.py). The import that would sit
+    # beyond the limit is refused instead.
+    from .protocol import MAX_HOPS
+
+    if len(chain) >= MAX_HOPS:
+        return OfferResult(
+            source_memory_id=memory_id,
+            accepted=False,
+            decision=FirewallDecision.DENY,
+            reasons=[f"sender refused: this memory is {len(chain)} hops from its origin; "
+                     f"a retraction reaches at most {MAX_HOPS}"],
+        )
 
     inbound = _inbound_check(target, memory, granted_capabilities)
     if not inbound.permits_sharing:

@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: reach limits, tenant routing, hostile-source withholding by default
+
+- **A copy no longer travels further than its retraction can follow.**
+  `experiments/fed_scale.py` found that in a 20-store chain a correction at
+  the origin stopped at `MAX_HOPS` (16) and left the last two copies live.
+  `offer` now refuses an import beyond the hop limit. Chains to 17 stores,
+  stars to 100 and meshes to 100 (with cycles) all converge
+  (`tests/test_federation_reach.py`).
+- **Retrieval withholds sources caught injecting, by default** (owner's
+  decision; T2b supported). `withhold_hostile_sources=False` opts out.
+  `hindsight` moves to beta.
+- **`tenancy.TenantRouter`**: one store file and key directory per tenant.
+- **Directive detector `OVERRIDE` family** (English and German): on the
+  third-party deepset/prompt-injections test split, 0/60 → 20/60 caught,
+  0/56 benign flagged.
+- **`influence.paraphrases`**: unlinked restatements of a claim, reported
+  as `possible_paraphrases` in `impact()`.
+- **Scheduled model-in-the-loop attacks** (`model-attacks.yml`, weekly).
+
 ### Added: permissions, operations and release tooling
 
 - **Seven permissions** (`identity.PERMISSIONS`): read, write, delete,

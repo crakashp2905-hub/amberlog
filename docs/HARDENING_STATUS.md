@@ -49,13 +49,13 @@ exposure.
 - External checkpoint: `--checkpoint-dir` (the manager's `checkpoint` task).
 - Correlated or paraphrased evidence: copy recognition and source-root grouping (on); `independence.py` (S2, opt-in, it costs independent evidence). **Partial**: no semantic paraphrase detection without lineage.
 
-### A5 (P1). Tenant isolation and credentials: **partial**
+### A5 (P1). Tenant isolation and credentials: **done**
 
 - Short-lived scoped credentials, rotation, revocation: done (`identity.py`; RUNBOOKS §1–3).
 - Rate limits, write quotas, bounded payloads, federation budgets: done (`limits.py`, agent-API limits; `tests/test_limits.py`).
 - Independently protected audit checkpoints: done (`--checkpoint-dir`, signed checkpoints).
 - Metadata-leakage tests: done (`tests/test_metadata_leakage.py`, with `conceal_cross_tenant`).
-- **Physically isolated stores and keys: partial.** Tenancy inside one store is an authorisation boundary ([LIMITATIONS.md](LIMITATIONS.md)). Physical isolation is one store and one key directory per tenant, which works today, but no router ships to put tenants on separate stores.
+- **Physically isolated stores and keys: done.** `tenancy.TenantRouter` gives each tenant its own store file and key directory; tenant ids cannot name a path (`tests/test_tenancy.py`). Tenancy *inside* one store remains an authorisation boundary only.
 
 ### A6 (P1). Continuous adversarial release gate: **done**, one item partial
 
@@ -98,7 +98,7 @@ gemma3:4b), not on every push.
 | 2 | Threat model | **done** | SECURITY.md T1–T12 |
 | 2 | Origin-bound authority | **done** | A1 |
 | 2 | Separate permissions | **done** | `identity.PERMISSIONS`: read, write, delete, correct, export, administer, execute; the operator has no execute (`tests/test_permissions.py`) |
-| 2 | Tenant isolation, including inference | **partial** | A5; inference channels tested in `test_metadata_leakage.py` |
+| 2 | Tenant isolation, including inference | **done** | A5: `TenantRouter`; inference channels tested in `test_metadata_leakage.py` |
 | 2 | Credentials and keys | **done** | A5; key rotation runbooks |
 | 2 | Resource limits | **done** | `limits.py` |
 | 2 | Audit tamper, rollback, deletion, replay tests | **done** | `test_integrity_chain.py`, `test_chains.py`, rollback drill, `test_erasure.py`, grant replay |
@@ -122,8 +122,8 @@ gemma3:4b), not on every push.
 ## Still open, and why
 
 1. **Independent review.** Needs a third party.
-2. **Physical tenant isolation as a shipped router** (A5). Separate stores per tenant work; nothing routes to them.
-3. **Semantic paraphrase links** in the influence graph and corroboration (A2, A4).
-4. **Model-in-the-loop attacks on every push** (A6). They run as research on two model families instead.
+2. ~~Physical tenant isolation~~: **done**: `tenancy.TenantRouter`, one store file and one key directory per tenant (`tests/test_tenancy.py`).
+3. ~~Paraphrase links~~: **done, unvalidated**: `influence.paraphrases` and `possible_paraphrases` in `impact()`; 1.000 / 1.000 on its own fixture after one tuning, no held-out set ([result](../research/results/paraphrase-links.md)).
+4. ~~Model-in-the-loop attacks~~: **scheduled**: `.github/workflows/model-attacks.yml` runs G4b and T2b weekly against a small Ollama model on the runner and fails on an invariant regression (`tools/model_attack_check.py`). Not on every push: one run takes hours. It has not run on GitHub yet.
 5. **M1b held-out result** (B6): the dev pilot is running.
-6. **A third-party injection dataset** for the directive detector needs a download, which needs the owner's permission.
+6. ~~A third-party injection dataset~~: **done**: deepset/prompt-injections, 0/60 → 20/60 caught on its test split with 0/56 benign flagged ([result](../research/results/injection-thirdparty.md)).

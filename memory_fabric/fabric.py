@@ -249,6 +249,7 @@ class MemoryFabric:
         rerank: bool = False,
         conceal_cross_tenant: bool = False,
         limits: "Any" = None,
+        withhold_hostile_sources: bool = True,
     ) -> None:
         # Off by default to keep the documented reason code. On, a request
         # from another tenant is refused exactly as a missing id is, so the
@@ -257,6 +258,13 @@ class MemoryFabric:
         from .limits import Limits, Meter
 
         self.limits = Meter(limits or Limits())
+        # On by default (T2b, supported: safe success 0.732 -> 0.949, honest
+        # sources unharmed). Withholds memories whose author an ingest screen
+        # caught injecting, here or at a peer that sent a signed notice. Only
+        # the hostile signal: T2 measured that withholding on any withdrawal
+        # destroys honest authors' notes.
+        self.withhold_hostile_sources = withhold_hostile_sources
+        self._hostile_cache: tuple[int, frozenset[str]] = (-1, frozenset())
         # Default on, because the alternative is measured to be wrong rather
         # than merely unmeasured: a withdrawn document re-ingested under its own
         # id was **100% of the residual** in P3, counted as independent support
@@ -523,6 +531,26 @@ class MemoryFabric:
             )
             self.outbox.enqueue(retraction, recipients, _now_ms())
         return retraction
+
+    def hostile_authors(self) -> frozenset[str]:
+        """Authors caught injecting, here or by a peer's authenticated notice. Cached per log head."""
+        from . import hindsight
+
+        head = self._seen_seq
+        if self._hostile_cache[0] != head:
+            self._hostile_cache = (head, frozenset(
+                hindsight.discredited_authors(self, hindsight.HOSTILE, federated=True)))
+        return self._hostile_cache[1]
+
+    def _without_hostile_sources(self, eligible: set[str]) -> set[str]:
+        if not self.withhold_hostile_sources:
+            return eligible
+        bad = self.hostile_authors()
+        if not bad:
+            return eligible
+        from .hindsight import author
+
+        return {m for m in eligible if author(self.state.memories[m]) not in bad}
 
     def authority(self, memory_id: str) -> "Any":
         """Origin-bound authority of a memory (`authority.py`)."""
@@ -2171,6 +2199,7 @@ class MemoryFabric:
         # before ranking cannot be ranked, scored, logged or leaked by a bug
         # in a policy.
         eligible = self._applicable_at(eligible, as_of, until)
+        eligible = self._without_hostile_sources(eligible)
         if objective is not None:
             # The session's own statement of relevance, at the same chokepoint
             # as tenancy and lifecycle, for the same reason: an excluded memory

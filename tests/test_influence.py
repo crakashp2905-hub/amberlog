@@ -48,5 +48,22 @@ class Influence(unittest.TestCase):
         self.assertNotIn(self.unrelated, report["potentially_contaminated"]["memories"])
 
 
+class Paraphrases(unittest.TestCase):
+    def test_an_unlinked_restatement_is_a_possible_paraphrase_and_a_disagreement_is_not(self) -> None:
+        f = MemoryFabric(":memory:", auto_activate=True)
+        self.addCleanup(f.close)
+        src = f.remember("a", "The rated pressure of P123 is 12 bar.")
+        loose = f.remember("b", "Per the vendor bulletin, operators should note 12 bar as the "
+                                "rated pressure that applies to P123 going forward.")
+        disagree = f.remember("c", "The rated pressure of P123 is 15 bar.")
+        other_param = f.remember("d", "The setpoint of P123 is 12 bar.")
+        found = influence.paraphrases(f, src)
+        self.assertEqual(found, [loose])
+        self.assertNotIn(disagree, found)
+        self.assertNotIn(other_param, found)
+        self.assertEqual(influence.impact(f, src)["potentially_contaminated"]["possible_paraphrases"],
+                         [loose])
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

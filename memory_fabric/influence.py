@@ -36,6 +36,8 @@ if TYPE_CHECKING:  # pragma: no cover
 
 EDGE_TYPES = ("derived_from", "summarized_from", "copied_from", "imported_from",
               "exposed_to", "relied_on", "authorized", "invalidated_by")
+POSSIBLE_EDGE_TYPES = ("paraphrase_of",)
+"""Inferred, not recorded: reported apart from the edges above (`paraphrases`)."""
 
 
 @dataclass(frozen=True)
@@ -104,6 +106,35 @@ def downstream(fabric: "MemoryFabric", memory_id: str,
     return out
 
 
+def paraphrases(fabric: "MemoryFabric", memory_id: str) -> list[str]:
+    """Memories that restate this one's claim with no recorded link: possible laundering.
+
+    Same identifiers, same values, and at least two shared content words, by
+    `conflicts.claim`. A memory that disagrees (same identifiers, another
+    value) is a contradiction, not a paraphrase, and is never linked. Already
+    linked memories (lineage, copies) are excluded. Measured in
+    `research/results/paraphrase-links.md`; these are leads for review, not
+    proof of descent.
+    """
+    from .conflicts import claim
+
+    ids, words, values = claim(fabric.state.memories[memory_id].content)
+    if not ids or not values:
+        return []
+    linked = {memory_id} | downstream(fabric, memory_id)
+    out = []
+    for other in fabric.state.memories.values():
+        if other.id in linked:
+            continue
+        o_ids, o_words, o_values = claim(other.content)
+        # Two shared content words, not one: with one, a note about another
+        # parameter of the same equipment matched on the unit alone ("bar"),
+        # the fixture's only false positives (paraphrase-links.md).
+        if o_ids == ids and o_values == values and len(o_words & words) >= min(2, len(words)):
+            out.append(other.id)
+    return sorted(out)
+
+
 def impact(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
     """Potentially contaminated, actually retrieved and confirmed use, kept apart."""
     graph = edges(fabric)
@@ -118,7 +149,8 @@ def impact(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
     return {
         "memory_id": memory_id,
         "potentially_contaminated": {"memories": sorted(reach - {memory_id}),
-                                     "agents": agents},
+                                     "agents": agents,
+                                     "possible_paraphrases": paraphrases(fabric, memory_id)},
         "actually_retrieved": [{"memory": m, "by": t} for m, t in exposed],
         "confirmed_use": {"relied_on": [{"episode": ep, "memory": m} for ep, m in cited],
                           "authorized": [{"memory": m, "action": a} for m, a in actions]},

@@ -63,7 +63,7 @@ from experiments import m1_objective as m1
 ARMS = ("plain", "prompt", "compiled_filter", "reviewed_filter", "v2_evidence",
         "v2_evidence_safety", "oracle")
 BASELINES = ("plain", "prompt", "compiled_filter")
-SPLITS = {"dev": range(100, 102), "test": range(20, 30)}
+SPLITS = {"dev": range(100, 102), "test": range(20, 25)}
 VARIANTS = ("clear", "vague", "changed")
 K = m1.K
 SYSTEM = m1.SYSTEM

@@ -1,0 +1,58 @@
+{
+  "dataset": "deepset/prompt-injections",
+  "commit": "d1dbc0a",
+  "splits": {
+    "test": {
+      "directive": {
+        "recall": 0.333,
+        "caught": 20,
+        "injections": 60,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 56
+      },
+      "pattern": {
+        "recall": 0.0,
+        "caught": 0,
+        "injections": 60,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 56
+      },
+      "either": {
+        "recall": 0.333,
+        "caught": 20,
+        "injections": 60,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 56
+      }
+    },
+    "train": {
+      "directive": {
+        "recall": 0.369,
+        "caught": 75,
+        "injections": 203,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 343
+      },
+      "pattern": {
+        "recall": 0.02,
+        "caught": 4,
+        "injections": 203,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 343
+      },
+      "either": {
+        "recall": 0.369,
+        "caught": 75,
+        "injections": 203,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 343
+      }
+    }
+  }
+}

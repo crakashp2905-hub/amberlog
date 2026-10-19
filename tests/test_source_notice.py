@@ -59,6 +59,18 @@ class InProcess(Fixture):
                                    signals=hindsight.HOSTILE)
         self.assertEqual(shown, [self.peer.get(self.honest_copy).content])
 
+    def test_retrieval_withholds_the_hostile_source_by_default(self) -> None:
+        transport = InProcessTransport({self.peer.store_id: self.peer})
+        query = "protocol P7 site North centrifuge rpm"
+        before = {m.id for m in self.peer.retrieve("x", query, k=5).exposed}
+        self.assertIn(self.copy, before)
+        MemoryManager(self.origin, holder="m", transport=transport).run_once()
+        after = {m.id for m in self.peer.retrieve("x", query, k=5).exposed}
+        self.assertNotIn(self.copy, after, "mallory's import is withheld")
+        self.assertIn(self.honest_copy, after, "the technician's is not")
+        self.peer.withhold_hostile_sources = False
+        self.assertIn(self.copy, {m.id for m in self.peer.retrieve("x", query, k=5).exposed})
+
     def test_a_notice_is_idempotent(self) -> None:
         notice = self.origin.discredit_source("mallory", actor="op")
         self.assertTrue(self.peer.receive_notice(notice))

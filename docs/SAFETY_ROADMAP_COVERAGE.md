@@ -28,7 +28,7 @@ Roadmap", 2026-10-19), item by item.
 | layer | mechanism | measured |
 |---|---|---|
 | Admission | pattern injection screen + secret screen | matched injection caught; **0/12** held-out paraphrases |
-| Admission | **directive detector** (new): flags *what an injection does*, not its wording | **10/12** held-out paraphrases, **0/16** benign hard negatives ([injection-heldout](../research/results/injection-heldout.md)); **on by default** at ingest and share since 0.12.0 |
+| Admission | **directive detector** (new): flags *what an injection does*, not its wording | **10/12** held-out paraphrases, **0/16** benign hard negatives ([injection-heldout](../research/results/injection-heldout.md)); **on by default** at ingest and share since 0.12.0. Third-party set (deepset, test): **20/60, 0/56 benign** after an override family; 0/60 before ([third-party](../research/results/injection-thirdparty.md)) |
 | Admission | review queue: imports land as candidates | by design |
 | Retrieval | **contradiction surfacing** (`conflicts.py`) | acting on an undetected poison 63% → 51–55%, held-out (G4b); **on by default** in context and recall since 0.12.0 |
 | Retrieval | source-root grouping, copy recognition | copies do not count as corroboration |

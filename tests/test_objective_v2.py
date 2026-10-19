@@ -82,10 +82,12 @@ class EvidenceAware(Fixture):
                                  decision_impact="high")
         self.assertNotIn(self.vendor, self.shown(high))
 
-    def test_expired_validity_ranks_last(self) -> None:
+    def test_expired_validity_is_hidden_unless_history_is_asked_for(self) -> None:
         old = self.f.remember("tech", "Pump P1 purge time at North was 20 s.",
                               context={"site": "north"}, scope="team", valid_to=1)
-        shown = self.shown(MemoryObjectiveV2("purge", scope=((site("north"),),)))
+        self.assertNotIn(old, self.shown(MemoryObjectiveV2("purge", scope=((site("north"),),))))
+        shown = self.shown(MemoryObjectiveV2("purge", scope=((site("north"),),),
+                                             include_history=True))
         self.assertEqual(shown[-1], old)
 
     def test_required_fact_omission_is_reported(self) -> None:

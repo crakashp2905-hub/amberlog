@@ -161,8 +161,19 @@ operations. From [P12b](research/results/p12b-catch-up.md):
   process.
 - **Postgres has the tighter tail** with a handle per process, at a higher
   median. Choose it for writers on several machines, not for speed.
-- Load with think time between operations was not measured. Nothing here is
-  extrapolated to it.
+- **Open-loop** ([p12-openloop.json](research/results/p12-openloop.json),
+  `experiments/p12_openloop.py`): arrivals on a Poisson schedule that does
+  not wait for completions, latency from the scheduled arrival, one store,
+  threads under the store lock, the P12 mix. Same machine, nothing else
+  running:
+
+  | offered ops/s | 10 | 40 | 70 | 100 | **130** | 160 |
+  |---|---|---|---|---|---|---|
+  | p50 ms | 10 | 9 | 9 | 12 | **19** | 472 |
+  | p99 ms | 20 | 27 | 33 | 38 | **91** | 1,984 |
+
+  **Sustained to 130 ops/s; saturated at 160.** That is the limit to plan
+  against: agents × memory operations per agent per second ≤ ~130 per store.
 
 ## 4. Upgrades
 

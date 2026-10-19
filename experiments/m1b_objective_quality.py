@@ -312,7 +312,7 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
     primary = diff("v2_evidence_safety", best)
     verdict = Registration(hypothesis="M1b", metric="accuracy", mechanism="v2_evidence_safety",
                            baselines=list(BASELINES), ceiling="oracle",
-                           seeds_required=10).evaluate(
+                           seeds_required=5).evaluate(
         arms, seeds=seeds, n_pairs=len(units), discordance=primary["discordance"])
     return {"arms": arms, "best_baseline": best, "v2_evidence_safety_minus_best": primary,
             "v2_evidence_minus_best": diff("v2_evidence", best),

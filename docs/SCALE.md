@@ -14,12 +14,12 @@ retrieval is a write (exposures are logged) ([P12b](../research/results/p12b-cat
 | a store handle per agent process, Postgres | 10 processes |
 | agents behind one `agent-api` process | 10 agents; flat at ~130 ops/s beyond |
 
-Back-to-back is the worst case. A real agent spends seconds on a model call
-between memory operations. **Extrapolation, not measured:** at one memory
-operation per agent every 5 seconds, ~120 ops/s serves about 600 agents on
-one store; at one per second, about 120. The open-loop measurement
-(`experiments/p12_openloop.py`), whose arrivals do not wait on completions,
-is what turns this into a measured limit (DEPLOYMENT.md §3).
+Back-to-back is the worst case. Measured **open-loop**, with arrivals that
+do not wait on completions, one store sustains **130 operations a second**
+(p99 91 ms) and saturates at 160 (p99 2.0 s) (DEPLOYMENT.md §3). The agent
+count follows from how often each agent touches memory, which this does not
+measure: at one operation per agent every 5 seconds, 130 ops/s is about 650
+agents; at one a second, about 130.
 
 **Beyond one store's write rate, add stores, not agents per store.** Each
 team or tenant gets its own store (`tenancy.TenantRouter` for tenants), and

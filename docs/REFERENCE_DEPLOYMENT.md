@@ -182,7 +182,7 @@ list of unsupported modes.
 | Recipient reports `superseded` | The retraction's `origin_sequence` is below the recipient's cursor for that origin: a delayed older correction, correctly not applied. |
 | `PolicyViolation: ... has been content-erased` | Erasure is terminal for a memory's content. Record new information as a new memory. |
 | A memory is `contested` and you expected `active` | Support was recomputed after a premise was withdrawn. `operator.support(id).reason` says which premise and why. |
-| `NotUsable: ... withdrawn_on_weak_evidence` | It was withdrawn on co-occurrence with a failure or with no stated basis. Phase A measured that policy destroying more correct memory than wrong; consider releasing it. |
+| `NotUsable: ... withdrawn_on_weak_evidence` | It was withdrawn on co-occurrence with a failure or with no stated basis. That policy removes more correct memory than wrong; consider releasing it. |
 
 ## 7. What this deployment is not
 
@@ -194,7 +194,7 @@ Stated here because a working demo invites the wrong conclusion. From
 - **No TLS.** Use a reverse proxy or a private network.
 - **No encryption at rest** for the database as a whole. Content is sealed per memory and a single memory's key can be destroyed, but the keys sit beside the ciphertext.
 - **No transitive re-sharing.** An importer may not re-share onward, so an origin always knows its recipients. Lifting that is what would force a peer-to-peer substrate, and it is deliberately out of scope.
-- **Value-ranked exposure is not recommended.** Three live attempts lost to cheap baselines, and the ranking has a [known defect](../research/decisions/2026-10-10-value-ranking-ignores-uncertainty.md).
+- **Value-ranked exposure is not recommended.** It did not beat simple relevance ranking with live agents, and it does not yet account for the uncertainty in each estimate.
 
 On the readiness ladder in the product roadmap this is **step 5 of 7** — a
 fault-tested reference system. Step 6 needs agent and tenant identity, TLS and

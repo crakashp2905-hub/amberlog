@@ -51,7 +51,7 @@ CI (`experiments/rollback_drill.py`).
 
 A long fenced action or another writer holds the write lock. Writers wait up
 to the busy timeout (5 s). Under continuous fenced actions a writer can wait
-about 2 s (S6). Run one `agent-api` process instead of a store handle per
+about 2 s. Run one `agent-api` process instead of a store handle per
 agent ([STABILITY.md](../STABILITY.md#capacity-as-measured)).
 [OPERATIONS.md](OPERATIONS.md#the-database-is-locked) has the details.
 
@@ -93,8 +93,83 @@ by validating the right one and withdrawing the other, with a reason.
 - `--agent` is required. The store path in the configuration is relative to
   the client's working directory, so prefer an absolute path.
 
+## "The action gate refused" (reason codes)
+
+`ActionDecision.reason_code` names the first check that failed, in this
+order. `tests/test_troubleshooting.py` fails if a code is missing here.
+
+| code | what failed | what to do |
+|---|---|---|
+| `credential_invalid` | the session's credential is expired, revoked or forged | issue a new credential |
+| `execute_permission_missing` | the principal has no `execute` permission (operators do not) | act as an agent, or grant `perm:execute` |
+| `unknown_tool` | the tool is not in the policy | add a `ToolRule` |
+| `tool_not_granted` | the agent is not granted this tool | add it to `ActionPolicy.grants` |
+| `unprotected_tool` | allowed: the tool needs no evidence | nothing |
+| `certificate_required` | a protected tool was called without a certificate | `fabric.certify(...)` the evidence first |
+| `malformed_certificate`, `unknown_certificate_version`, `certificate_too_large`, `unknown_required_check` | the certificate cannot be read | rebuild it with this version's `certify` |
+| `wrong_store`, `wrong_agent`, `wrong_tenant` | the certificate was issued elsewhere or for someone else | certify in this store, as this agent |
+| `certificate_expired`, `policy_changed` | the certificate is stale | certify again |
+| `no_supporting_evidence`, `evidence_not_found`, `evidence_not_usable` | there is no usable evidence | check the memories exist and are active |
+| `evidence_withdrawn`, `dependency_withdrawn`, `dependency_not_found` | evidence, or something it rests on, was withdrawn | **working as intended**: the premise is gone |
+| `evidence_version_moved`, `dependency_version_moved` | the evidence was revised after certification | re-read it and certify the new version |
+| `insufficient_independent_support` | fewer independent sources than the rule needs | add independent evidence |
+| `authority_insufficient` | a piece of evidence came from a tool, a web page, an import, or descends from something withdrawn | review it and `fabric.elevate(...)` as someone other than its author, or lower `ToolRule.min_authority` deliberately |
+| `instruction_is_not_evidence` | a piece of evidence is an instruction | use the observation it is about, not the instruction |
+| `human_approval_required`, `approval_invalid` | the tool needs a human approval bound to this certificate (and action) | have an approver approve this exact action |
+| `grant_required` | the tool needs a short-lived grant | `gate.issue_grant(...)` from the host |
+| `grant_unknown`, `grant_revoked`, `grant_expired` | the grant does not exist, was revoked, or its time ran out (≤ 300 s) | issue a new grant |
+| `grant_binding_mismatch` | target, parameters, evidence or agent differ from what was granted | issue a grant for this action |
+| `grant_replayed` | the grant was already used | grants are single-use: issue another |
+| `state_unavailable` | the store could not be read, or the audit write failed | fix the store; a protected action fails closed |
+| `retry_required` | the last attempt with this key timed out or failed with unknown effect | check the tool's side effect, then `execute(..., retry=True)` |
+
+`execute` outcomes: `executed`, `failed` (the tool raised), `timed_out` (it
+overran its lease; see `actions.unfenced_changes`), `already_executed` (this
+key ran before) and `refused` (see the decision's code).
+
+## "LimitExceeded" / HTTP 429 or 413
+
+| code | limit | what to do |
+|---|---|---|
+| `payload_too_large` | content over 1 MiB (library) or 256 KiB (servers) | split it |
+| `write_quota_exhausted` | an agent wrote more than its quota in the window (servers: 600 a minute) | usually a loop; otherwise raise `Limits.writes_per_window` |
+| `federation_budget_exhausted` | one peer imported more than its budget (servers: 300 a minute) | wait, or raise `Limits.imports_per_window` for a trusted peer |
+
+## "Permission denied: lacks the 'x' permission"
+
+The session's roles do not include that permission. Agents have read,
+write and execute; operators everything except execute; auditors read and
+export ([CONCEPTS.md](CONCEPTS.md)). Grant one directly with the role
+`perm:<name>`.
+
+## "Offer refused: this memory is N hops from its origin"
+
+A copy may not travel further than a retraction can follow (16 hops).
+Share from a store nearer the origin.
+
+## "CompactionRefused"
+
+`compact_session` would have lost something, and wrote nothing:
+
+- *drops values the session recorded*: a custom summariser left a number out;
+- *resolves a dispute instead of keeping it*: it picked one side;
+- *no usable memories*: everything the session wrote is withdrawn or still a candidate.
+
+## "restore" exits 2, 4 or 5
+
+- **2**: no `.manifest.json` beside the backup. Take backups with this version.
+- **4**: the destination exists. Restore into a new directory.
+- **5**: the files do not match the manifest, or the replayed log's event
+  count or chain head differs. **Do not use this backup.**
+
+## "My memory was quarantined on write"
+
+An ingest screen flagged it. `memory-fabric --db store.db review <id>`
+shows the screen and its signals. For a false alarm:
+`review <id> --approve --override-screen --reason "<why>"`.
+
 ## Still stuck
 
 `memory-fabric --db <store> overview` and `doctor --json` are what to attach
-to a report. Neither contains memory content. Security problems go through
-GitHub's private **Report a vulnerability** page ([SECURITY.md](../SECURITY.md)).
+to a report. Neither contains memory content. Security problems go to the maintainer by
+email, privately ([SECURITY.md](../SECURITY.md#reporting)).

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "memory-fabric"
 version = "0.12.0"
-description = "Governed agent memory: valued by effect on outcomes, not similarity to the query."
+description = "Memory for AI agents that you can audit, correct and trust: provenance, cross-store retraction, and evidence-gated actions."
 readme = "README.md"
 requires-python = ">=3.11"
 # PEP 639: an SPDX expression and the file, so `License:` is a short
@@ -14,7 +14,8 @@ license = "LicenseRef-Proprietary"
 license-files = ["LICENSE"]
 authors = [{ name = "C R Akash Preetham", email = "crakashp2905@gmail.com" }]
 maintainers = [{ name = "C R Akash Preetham", email = "crakashp2905@gmail.com" }]
-keywords = ["agent-memory", "llm", "provenance", "governance", "federation"]
+keywords = ["agent-memory", "llm", "mcp", "provenance", "audit", "governance", "federation",
+            "retraction", "ai-safety", "prompt-injection"]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
@@ -22,6 +23,10 @@ classifiers = [
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Database",
+    "Topic :: Security",
+    "Operating System :: OS Independent",
+    "Typing :: Typed",
 ]
 
 # The core has no runtime dependencies, and that is a design commitment rather
@@ -43,6 +48,10 @@ memory-fabric = "memory_fabric.cli:main"
 
 [project.urls]
 Repository = "https://github.com/crakashp2905-hub/memory-fabric"
+Documentation = "https://github.com/crakashp2905-hub/memory-fabric/blob/main/docs/README.md"
+Changelog = "https://github.com/crakashp2905-hub/memory-fabric/blob/main/CHANGELOG.md"
+Issues = "https://github.com/crakashp2905-hub/memory-fabric/issues"
+Security = "https://github.com/crakashp2905-hub/memory-fabric/blob/main/SECURITY.md"
 
 [tool.setuptools.packages.find]
 include = ["memory_fabric*"]

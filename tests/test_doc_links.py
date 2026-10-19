@@ -13,7 +13,7 @@ LINK = re.compile(r"\[[^\]]*\]\(([^)\s]+)(?:\s+\"[^\"]*\")?\)")
 
 
 def tracked_markdown() -> list[Path]:
-    out = subprocess.run(["git", "ls-files", "*.md"], capture_output=True, text=True, cwd=ROOT)
+    out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard", "*.md"], capture_output=True, text=True, cwd=ROOT)
     return [ROOT / p for p in out.stdout.split() if p]
 
 

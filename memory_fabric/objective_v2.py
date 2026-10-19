@@ -288,7 +288,7 @@ class ObjectiveLog:
 
     def adopt(self, digest: str, reviewer: str, baseline: Mapping[str, float],
               higher_is_better: Sequence[str] = ("accuracy",)) -> MemoryObjectiveV2:
-        """Adopt a proposal: a different reviewer, and no registered metric got worse."""
+        """Adopt a proposal: a different reviewer, and no tracked metric got worse."""
         from . import events as ev
 
         proposal = next((e.payload for e in reversed(self.events())

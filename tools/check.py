@@ -19,12 +19,16 @@ PY = sys.executable
 
 STEPS = [
     ("regenerate STABILITY.md", [PY, "tools/gen_stability.py"]),
+    ("regenerate API and CLI references", [PY, "tools/gen_reference.py"]),
     ("regenerate cited test counts", [PY, "tools/count_tests.py", "--write"]),
     ("ruff", [PY, "-m", "ruff", "check"]),
     ("mypy", [PY, "-m", "mypy"]),
     ("secret scan", [PY, "tools/scan_secrets.py"]),
     ("document tests", [PY, "-m", "unittest", "tests.test_stability", "tests.test_suite_hygiene",
-                        "tests.test_doc_links", "tests.test_data_access_paths"]),
+                        "tests.test_doc_links", "tests.test_doc_index", "tests.test_doc_examples",
+                        "tests.test_reference_docs", "tests.test_troubleshooting",
+                        "tests.test_examples_run", "tests.test_user_docs_no_research",
+                        "tests.test_data_access_paths"]),
     ("adversarial gate", [PY, "tools/adversarial_gate.py"]),
 ]
 

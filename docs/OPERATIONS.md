@@ -231,7 +231,7 @@ the log is the one thing this design forbids.
 Said plainly rather than left for an incident to discover.
 
 - **No concurrency beyond serialised single-writer.** Measured, not assumed: 4 processes × 20 appends land all 80 with a gapless sequence and a verifying chain.
-- **No multi-host story.** P9 declined distribution on measurement — 25× the memories cost 1.7× the latency.
+- **No multi-host story.** Distribution was declined on measurement — 25× the memories cost 1.7× the latency.
 - **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those — `erasure_scope` reports them as unknown rather than pretending otherwise, which is the most a store can honestly do.
 - **No alerting.** `doctor` and `attention` exit non-zero; wiring that to a pager is yours.
 - **Revocation durability depends on which surface you use.** A `MemoryService` writes revocations to the database; a bare `PrincipalRegistry` keeps them in memory. `service.revocations_are_durable` answers it rather than leaving it to be inferred.

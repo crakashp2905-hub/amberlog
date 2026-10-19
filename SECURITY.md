@@ -16,10 +16,10 @@ Memory content, value estimates, lineage, agent capability profiles, outcome rec
 | T5 | **Persistence after rollback**: descendants of a poisoned memory survive | TMS retraction: quarantine propagates `contested` to all descendants | **P1 done** (the P1 gate) |
 | T6 | **Sensitive-data leakage**: secrets or PII enter memory and get shared | Sensitive-data detector on ingest and on share; `security_class`; restricted memories never leave private scope | **P1 done** (detector is coarse; see `governance/sensitive.py`) |
 | T7 | **Directory leakage**: capability profiles reveal what an agent knows about whom | Access control on directory entries; aggregate profiles only | P6 |
-| T8 | **Distributed failures**: partitions, stale metadata, replayed or forged messages, Byzantine nodes | Signed events; versioned memories; merge by lineage + evidence, never by majority vote alone | P9 |
+| T8 | **Distributed failures**: partitions, stale metadata, replayed or forged messages, Byzantine nodes | Signed events; versioned memories; merge by lineage + evidence, never by majority vote alone; signed retractions, refusal of echoes, a 16-hop limit no copy can outrun | **done** for retraction and replay; Byzantine peers out of scope |
 | T9 | **Authority laundering**: an injected or untrusted note gains authority by being summarised, copied by a tool, or shared to another store | `authority.py`: trust and kind bound at first write and inherited through lineage, copies and federation (the origin's verdict travels as a floor); sources kept apart from transformers; elevation only by a different approver, per version, never past a hard reason; outcomes never confer authority. The action gate refuses evidence below `unverified` and any instruction | **0.12.0**, `tests/test_authority.py` |
-| T10 | **Stale authorisation and replay**: an action runs on evidence, a grant or an approval that no longer holds, or a request is replayed or altered | Evidence re-verified inside the fence (S6); grants ≤ 300 s, bound to tool, agent, tenant, target, parameters and evidence versions, consumed once; approvals can carry the same binding; credentials re-verified per call | **0.12.0**, `tests/test_authority.py::ExactActionGrants` |
-| T11 | **Resource exhaustion**: a loop, a client or a peer floods the store | Store limits (`limits.py`): bounded content, per-agent write quota, per-peer federation budget, on in servers; HTTP body limits and rate limits (agent API); bounded connect | **0.12.0**, `tests/test_limits.py`; capacity measured open-loop (P12-open) |
+| T10 | **Stale authorisation and replay**: an action runs on evidence, a grant or an approval that no longer holds, or a request is replayed or altered | Evidence re-verified inside the action fence; grants ≤ 300 s, bound to tool, agent, tenant, target, parameters and evidence versions, consumed once; approvals can carry the same binding; credentials re-verified per call | **0.12.0**, `tests/test_authority.py::ExactActionGrants` |
+| T11 | **Resource exhaustion**: a loop, a client or a peer floods the store | Store limits (`limits.py`): bounded content, per-agent write quota, per-peer federation budget, on in servers; HTTP body limits and rate limits (agent API); bounded connect | **0.12.0**, `tests/test_limits.py`; capacity measured open-loop (DEPLOYMENT.md §3) |
 | T12 | **Privilege concentration**: one credential can both change memory and act on it | Seven permissions (read, write, delete, correct, export, administer, execute); the operator role has no `execute`; an auditor reads and exports only | **0.12.0**, `tests/test_permissions.py` |
 
 ## Observability surfaces (P2)
@@ -93,7 +93,7 @@ Crossing a store boundary is also governed by the original controls:
 | Provenance crosses | The import records the origin agent, memory id and store, so a federated store can still answer "why do we believe this?" and a retraction can follow a memory to where it travelled. |
 | Metadata before content | `describe()` returns what a recipient needs to decide without the body, so an offer that will be refused never transfers the content. |
 
-**Known gap:** the default firewall's value rule gates federation on value measured in the **sender's** context. H3's premise — confirmed by its result — is that value does not cross a context boundary, so passing the sender's gate says little about whether a memory helps the recipient. The rule is a reasonable floor (it blocks memories with no evidence anywhere) but it is not the right question, and on a store without a contrastive estimator it refuses everything.
+**Known gap:** the default firewall's value rule gates federation on value measured in the **sender's** context. Value measured in one context says little about another, so passing the sender's gate says little about whether a memory helps the recipient. The rule is a reasonable floor (it blocks memories with no evidence anywhere) but it is not the right question, and on a store without a contrastive estimator it refuses everything.
 
 ## Content governance (Phase 6)
 
@@ -161,7 +161,7 @@ before parsing. Both sentences predated the mechanism they named.
 - **Tenancy is an authorisation boundary, not a physical one.** Memories carry a `tenant_id` that the exposure path and the enforcement layer refuse to cross, which holds against a bug in a ranking policy, an index query or a federation import. It holds against nothing that can read the file: one SQLite database holding several tenants is one blast radius. Where isolation has to survive a compromised process, run one store per tenant — `memory-fabric tenants` and `doctor` both say which arrangement a store is actually in.
 - **A tenant id is local to a store.** Nothing in the federation protocol makes `tn_acme` at one store the same customer as `tn_acme` at another, so `offer` takes the recipient's tenant explicitly. Letting a matching string decide would turn a naming coincidence into a cross-customer disclosure.
 - **No encryption at rest for the database as a whole**, as above.
-- **Contradictions are flagged, not resolved.** `conflicts.py` finds memories giving different values for one claim, by different authors, and marks them in the agent's context and in recall (G4b: acting on an undetected poison 63% → 55%). Resolving one is still a person's decision (`challenge()`, review).
+- **Contradictions are flagged, not resolved.** `conflicts.py` finds memories giving different values for one claim, by different authors, and marks them in the agent's context and in recall (which measurably reduces acting on an undetected poison). Resolving one is still a person's decision (`challenge()`, review).
 - **Freshness across processes was not guaranteed until 2026-10-16.** A running fabric folded only its own writes, so a quarantine issued from the CLI did not reach an already-running MCP server, app or dashboard until restart. Every serving, enforcing and writing entry point now catches up on the log first (`MemoryFabric.refresh`, `tests/test_cross_process_freshness.py`). A deployment running a version before that should restart long-lived processes after any retraction.
 
 ## Principles
@@ -170,4 +170,17 @@ before parsing. Both sentences predated the mechanism they named.
 - There is a kill switch: quarantine by predicate (for example "everything from agent X after time t"), which propagates through lineage.
 
 ## Reporting
-This is a research prototype with no production deployments. Report a vulnerability privately through the repository's **Security → Report a vulnerability** page on GitHub, not in a public issue. The maintainer is listed in `pyproject.toml`.
+Report a vulnerability **privately, by email to the maintainer** listed in
+`pyproject.toml`, never in an issue or a pull request. Include the version
+(`memory-fabric --version` or `__version__`), what you did, what happened,
+and whether memory content was exposed. Do not include real credentials or
+customer data.
+
+- Acknowledged within **5 working days**.
+- Supported versions and the fix policy: [VERSIONING.md](VERSIONING.md#supported-versions).
+- A fix lands on the latest minor first, and is described in the CHANGELOG
+  once released.
+
+The repository is private, so GitHub's private vulnerability reporting is not
+available; email is the channel. This is alpha software with no independent
+review ([docs/INDEPENDENT_EVALUATION.md](docs/INDEPENDENT_EVALUATION.md)).

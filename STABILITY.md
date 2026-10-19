@@ -10,9 +10,9 @@ the code disagree.
 |---|---|---|
 | **stable** | Public functions, classes and CLI commands keep their names and meaning within a minor series. Removals are deprecated for one minor version first and noted in the CHANGELOG. **Events written by any released version replay on every later version** ([VERSIONING.md](VERSIONING.md)). | Internals, private names (`_x`), wording of messages |
 | **beta** | Used in production paths and tested, but new. Names may change in a minor version, always with a CHANGELOG entry. Events they write are covered by the replay guarantee like any other. | Signatures, defaults, output shapes |
-| **experimental** | Research mechanisms. **All opt-in**: nothing in the default path calls them. Each links to its registered result in [research/SCORECARD.md](research/SCORECARD.md), including the failures. | Anything, or removal |
+| **experimental** | New mechanisms. **All opt-in**: nothing in the default path calls them unless you turn it on. | Anything, or removal |
 
-Promotion needs a registered result that supports changing default behaviour,
+Promotion needs evidence that the change in default behaviour helps,
 and the owner's decision (AGENTS.md principle 9).
 
 ## Stable (47)
@@ -130,7 +130,7 @@ Anything else is untested, not unsupported.
 
 ## Capacity, as measured
 
-From [DEPLOYMENT.md §3](DEPLOYMENT.md), measured on one machine (P12b):
+From [DEPLOYMENT.md §3](DEPLOYMENT.md), measured on one machine:
 
 - **About 100–135 operations a second per store**, whatever the shape.
 - **p95 under 150 ms** up to about 10 agent processes per store, or 10 agents
@@ -138,7 +138,7 @@ From [DEPLOYMENT.md §3](DEPLOYMENT.md), measured on one machine (P12b):
 - **Past that, run one `agent-api` process** rather than giving every agent
   its own store handle.
 - **The action fence makes writers wait** while a fenced action runs: up to
-  about 2 s under continuous action, 12–16% fewer actions a second (S6).
+  about 2 s under continuous action, 12–16% fewer actions a second.
 
 These are measurements, not limits the code enforces. Measure your own
 workload before relying on them.

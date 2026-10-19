@@ -79,7 +79,7 @@ gemma3:4b), not on every push.
 | B3 | Evidence-aware satisfaction | **done** | `evidence_score`: authority, kind, freshness and validity, independence (source root), preference, relevance (`EvidenceAware`) |
 | B4 | Temporal and revision-aware | **done** | `as_of`, `freshness_ms`, expired validity ranks last; elevation and authority are per version |
 | B5 | Adaptive but not self-authorising, proposals and evaluations logged | **done** | `ObjectiveLog.propose` / `adopt`: a different reviewer, no metric worse than baseline; every step an `ObjectiveChanged` event (`GovernedChange`) |
-| B6 | Objective-quality experiment, six arms, eight metrics, vague / missing-metadata / changing objectives, malicious memories | **running** | `experiments/m1b_objective_quality.py`: plain, prompt, compiled filter, reviewed filter, V2 + evidence, V2 + evidence + safety, oracle. Dev pilot running; registration follows it, then held-out seeds 20–29 |
+| B6 | Objective-quality experiment, six arms, eight metrics, vague / missing-metadata / changing objectives, malicious memories | **done** | `experiments/m1b_objective_quality.py`, held-out ([result](../research/results/m1b-objective-quality.md)): accuracy not supported (0.585 vs 0.729 prompt-only); unsafe action 0 vs 0.867 and safety-fact omission 0 vs 1.00, both supported |
 
 ## C. Phase 0–7 release checklist
 
@@ -125,5 +125,5 @@ gemma3:4b), not on every push.
 2. ~~Physical tenant isolation~~: **done**: `tenancy.TenantRouter`, one store file and one key directory per tenant (`tests/test_tenancy.py`).
 3. ~~Paraphrase links~~: **done, unvalidated**: `influence.paraphrases` and `possible_paraphrases` in `impact()`; 1.000 / 1.000 on its own fixture after one tuning, no held-out set ([result](../research/results/paraphrase-links.md)).
 4. ~~Model-in-the-loop attacks~~: **scheduled**: `.github/workflows/model-attacks.yml` runs G4b and T2b weekly against a small Ollama model on the runner and fails on an invariant regression (`tools/model_attack_check.py`). Not on every push: one run takes hours. It has not run on GitHub yet.
-5. **M1b held-out result** (B6): the dev pilot is running.
+5. ~~M1b held-out result~~: **done**: safety supported, accuracy not.
 6. ~~A third-party injection dataset~~: **done**: deepset/prompt-injections, 0/60 → 20/60 caught on its test split with 0/56 benign flagged ([result](../research/results/injection-thirdparty.md)).

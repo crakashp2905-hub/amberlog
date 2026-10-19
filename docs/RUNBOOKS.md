@@ -106,8 +106,7 @@ conclusions that have independent support.
    with whether it was a necessary source. The record is generated from the
    log, so it cannot drift from what happened.
 5. **Do not** quarantine everything that was in context when something failed.
-   [Phase A](../research/results/phase-a-real-agent-benchmark.md) measured that
-   policy withdrawing correct memories about unrelated faults; `attention` flags
+   That policy withdraws correct memories about unrelated faults; `attention` flags
    a withdrawal made on weak evidence.
 
 ## 5. Content keys

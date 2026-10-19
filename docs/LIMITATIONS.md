@@ -1,43 +1,38 @@
 # Known limitations
 
-What Memory Fabric does **not** do, or does only partly, with the evidence for
-each. Read this before relying on it for something that matters. Every row
-links to the measurement or the review that found it. Nothing here is
-hypothetical, and anything that has since been fixed is in
-[SECURITY_REVIEW.md](SECURITY_REVIEW.md), not here.
+What Memory Fabric does **not** do, or does only partly. Read this before
+relying on it for something that matters. Anything fixed since is in the
+[CHANGELOG](../CHANGELOG.md).
 
 ## Security
 
-| limitation | evidence | what to do instead |
-|---|---|---|
-| **Paraphrased prompt injection passes the ingest screen.** The screen matches known injection forms. | G4: 0.05 safe success on paraphrased injection, against 1.00 on matched ([g4-labnet](../research/results/g4-labnet.md)) | Review imports from untrusted sources (`review`). Treat the screen as a filter, not a guarantee |
-| **Before a poison is detected, retrieval can show it.** Nothing distinguishes an undetected false claim from a true one. | G4: the poison ranked first in 35/40 questions. Contradiction surfacing cuts acting on it from 63% to 51–55%, which is significant but not solved ([g4b](../research/results/g4b-contradiction-surfacing.md)) | Contradiction flagging (`conflicts.py`, opt-in); review conflicts the manager lists |
-| **A source caught injecting is withheld from retrieval everywhere its memories went, which can hide a correct note it also wrote.** On by default since 0.12.0 (T2b, supported: 0.732 → 0.949, honest sources unharmed). Only the injection signal triggers it. | [t2b](../research/results/t2b-source-notice.md) | `MemoryFabric(withhold_hostile_sources=False)`; review the source's other memories with `incident` |
-| **Discrediting a source on any withdrawal punishes honest mistakes.** | T2: withholding cost an honest author 0.92 → 0.12 of their valid notes | Not enabled. `hindsight.py` stays experimental |
-| **An offline peer serves withdrawn knowledge until it reconnects.** | G4 stage 2, by design | Watch `doctor` and `maintain --status` for pending deliveries; they are reported, never hidden |
-| **Tenancy is logical.** A privileged database or process holder can read every tenant. | Threat model ([SAFETY_AND_SECURITY.md](SAFETY_AND_SECURITY.md)) | One store per tenant where isolation must survive an administrator |
-| **A database administrator can rewrite the log and its hash chain together.** | The integrity chain detects tampering only against a checkpoint kept elsewhere | Run the manager with `--checkpoint-dir` on separate storage |
-| **The action fence covers only tools run through `ActionGate.execute`.** `authorize` followed by acting still has a window. A crash mid-action records nothing. | S6 ([s6](../research/results/s6-action-fence.md)) | Run protected tools through `execute`. Give tools idempotency keys |
-| **Writers wait while a fenced action or a maintenance cycle holds the store.** | S6: up to about 2 s. A cycle that delivers to a slow peer holds the lock for that delivery | Keep tool calls short. Run one `agent-api` per store |
-| **Evidence independence trades false corroboration for blocked real evidence.** | S2: false corroboration 0.83 → 0.28, blocked independent evidence 0.02 → 0.25 ([s2](../research/results/s2-launder-sim.md)) | Not enabled by default |
-| **No independent security audit.** The review is internal. | [SECURITY_REVIEW.md](SECURITY_REVIEW.md) | Treat claims as tested, not certified |
+| limitation | what to do |
+|---|---|
+| **A plain false claim from a source that has never misbehaved looks like a true one** until something contradicts it. | Disagreements are flagged by default; review them (`maintain --status`, `attention`). Use validation for memories that matter. |
+| **The injection screens are text screens.** They catch common injection patterns and instructions addressed to the reader, not every paraphrase. | Treat them as a filter, not a guarantee. Review imports from untrusted sources (`review`). Untrusted content still cannot authorise an action at the gate. |
+| **A source caught injecting is withheld everywhere its memories went**, which can also hide a correct note it wrote. Only an injection finding triggers it, never an ordinary correction. | `MemoryFabric(withhold_hostile_sources=False)` to turn it off; review the source's other memories with `incident`. |
+| **An offline peer serves withdrawn knowledge until it reconnects.** | Watch `doctor` and `maintain --status`: pending deliveries are reported, never hidden, and retried every cycle. |
+| **Tenancy within one store is an authorisation boundary.** Someone holding the database file or the process can read every tenant. | One store per tenant (`tenancy.TenantRouter`) where isolation must survive an administrator. |
+| **A database administrator can rewrite the log and its hash chain together.** Tampering is detected only against a checkpoint kept elsewhere. | Run the manager with `--checkpoint-dir` on separate storage. |
+| **The action fence covers only tools run through `ActionGate.execute`.** `authorize` followed by acting separately leaves a window, and a crash mid-action records nothing. | Run protected tools through `execute`, and give them idempotency keys. |
+| **Writers wait while a fenced action or a maintenance cycle holds the store**, up to about 2 seconds. | Keep tool calls short. Put agents behind one `agent-api` per store. |
+| **Strict evidence independence** blocks some genuinely independent evidence along with false corroboration. | Off by default; turn it on only where corroboration is the main risk. |
+| **No independent security review** has taken place. | Treat security properties as tested, not certified. |
 
 ## Retrieval and memory quality
 
-| limitation | evidence |
+| limitation | what to do |
 |---|---|
-| **Better retrieval does not reliably beat a plain lexical baseline.** The project's accuracy claims were tested and mostly failed. | [SCORECARD §1–2](../research/SCORECARD.md) (H2, R6, P1) |
-| **The fabric almost never says it does not know.** | LongMemEval, on 500 third-party questions ([longmemeval](../research/results/longmemeval.md)) |
-| **The hashing embedder is weak on real text**: 0.315 nDCG@10 against lexical's 0.621. | SciFact ([scifact-external](../research/results/scifact-external.md)) |
-| **Model-compiled objectives drop alternatives.** Compiled filters lose to stating the objective in the prompt. | M1 ([m1](../research/results/m1-memory-objective.md)) |
-| **Self-revised rules improve slowly**, and without a gate they make agents worse. | M2 ([m2](../research/results/m2-reflective-rulebooks.md)) |
+| **It does not make answers more accurate than a good retriever.** It governs what is remembered; it does not find better memories. | Pair it with the best retriever you have (`Embedder`, rerankers). |
+| **It rarely says "I don't know".** If nothing relevant is stored, retrieval returns the closest memories. | Use `min_relevance`, or check the scores before acting. |
+| **The built-in hashing embedder is weak on real text.** | Plug in a real embedding model through the `Embedder` protocol. |
+| **Model-compiled objectives can drop alternatives** a session needed. | State the objective in the agent's prompt; use compiled filters only after review. |
+| **A session summary larger than the context budget is skipped, not shortened.** | Give handoffs a budget of at least ~80 words, or retrieve the session's notes directly. |
 
-## Scope of the evidence
+## Scope
 
-- **Most results come from worlds this project wrote** (LabNet, ObjectiveWorld,
-  TransferSim and the others). They are independent of each other's templates,
-  not of their author. The external datasets are listed in
-  [INDEPENDENT_EVALUATION.md](INDEPENDENT_EVALUATION.md).
-- **Small local models only**: qwen2.5:3b, gemma3:4b and similar. No
-  frontier model has been evaluated (no API access in this environment).
-- **One machine** for every performance number.
+- **Tested on one machine** for every performance figure, on Linux, macOS
+  and Windows in CI for correctness.
+- **Small local models** for the model-in-the-loop checks; no frontier
+  model has been evaluated.
+- **Not on PyPI** yet, pending a final name.

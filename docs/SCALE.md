@@ -6,7 +6,7 @@ Every number here is measured, with its source. An extrapolation says so.
 
 One store takes about **100–135 operations a second**, whatever the shape,
 because every write takes one lock that keeps the log ordered, and a
-retrieval is a write (exposures are logged) ([P12b](../research/results/p12b-catch-up.md)).
+retrieval is a write (exposures are logged).
 
 | shape (agents issuing operations back to back) | supported with p95 ≤ 150 ms |
 |---|---|
@@ -68,8 +68,7 @@ forms, and later sessions get it through governed retrieval:
    governed summary of what the session established, as a derivation of
    its memories, with disputes kept and every value checked. A correction to
    any input contests it, and the manager re-compacts from what still
-   stands. C1: stale values shown 0 against 1.00 for an ungoverned summary,
-   at the same coverage ([c1](../research/results/c1-compaction.md)).
+   stands, so a handoff never repeats a value that was later corrected.
 4. **Its purpose**: a `MemoryObjectiveV2` states what the session needs, and
    proposals to change it are logged and adopted only by another reviewer
    (`ObjectiveLog`), so the next session can start from the adopted one.

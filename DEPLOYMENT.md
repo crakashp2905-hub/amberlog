@@ -123,8 +123,7 @@ made by another process.
 
 ## 3. Capacity, as measured
 
-From the [P9 decision](research/decisions/2026-10-07-p9-declined.md), one laptop,
-pure Python, flat scan, no vector index:
+Measured on one laptop, pure Python, flat scan, no vector index:
 
 | memories | events | retrieval | store |
 |---|---|---|---|
@@ -138,14 +137,13 @@ per second. Storage extrapolates to about 400 MB per million events — that one
 *is* an extrapolation and is the only one here.
 
 The governed write path adds about 0.2 ms per episode over an ungoverned vector
-store ([Phase A](research/results/phase-a-real-agent-benchmark.md)). Governance
-is not where your latency goes.
+store. Governance is not where your latency goes.
 
 ### Many agents on one store
 
 Measured on one machine (Windows, 8 CPUs) with agents issuing operations back
 to back, which is the worst case: real agents wait on a model between
-operations. From [P12b](research/results/p12b-catch-up.md):
+operations:
 
 | Shape | Supported, with p95 ≤ 150 ms | Beyond it |
 |---|---|---|
@@ -161,11 +159,10 @@ operations. From [P12b](research/results/p12b-catch-up.md):
   process.
 - **Postgres has the tighter tail** with a handle per process, at a higher
   median. Choose it for writers on several machines, not for speed.
-- **Open-loop** ([p12-openloop.json](research/results/p12-openloop.json),
-  `experiments/p12_openloop.py`): arrivals on a Poisson schedule that does
-  not wait for completions, latency from the scheduled arrival, one store,
-  threads under the store lock, the P12 mix. Same machine, nothing else
-  running:
+- **Open-loop**: requests arrive on a schedule that does not wait for
+  completions, and latency is measured from the scheduled arrival, so
+  queueing counts. One store, a mix of 30% writes, 50% retrievals and 20%
+  gated actions, on the same machine with nothing else running:
 
   | offered ops/s | 10 | 40 | 70 | 100 | **130** | 160 |
   |---|---|---|---|---|---|---|
@@ -203,11 +200,11 @@ finding carrying the command that acts on it. The ones that need a human:
 
 | Finding | Why it matters |
 |---|---|
-| **Withdrawn on weak evidence** | A memory was withdrawn on co-occurrence with a failure, or on no stated basis. [Phase A](research/results/phase-a-real-agent-benchmark.md) measured that policy cutting the rate at which a *correct* memory reached the prompt from 60% of episodes to 18%. Release it unless there is evidence about the memory itself. |
+| **Withdrawn on weak evidence** | A memory was withdrawn on co-occurrence with a failure, or on no stated basis. Withdrawing memories because they appeared in failed episodes removes correct memories far more often than wrong ones. Release it unless there is evidence about the memory itself. |
 | **Quarantined** with a sensitive-data basis | A credential or personal datum reached the ingestion path. The *value* is never displayed — the reviewer sees the kind, which is what the decision needs. Rotate the credential; quarantining the memory does not un-leak it. |
 | **Justification retracted** | An ancestor was withdrawn, so this no longer rests on anything. |
 | **Restricted memory shared** | A scope promotion that should not have happened. |
-| **Open disagreements** | Contested hypothesis sets with no resolution. Left open deliberately, but someone should look. |
+| **Open disagreements** | Contested memories with no resolution. Left open deliberately, but someone should look. |
 
 `overview`'s diagnostics are the other half, and they answer a question most
 dashboards do not ask: *can this store support a value claim at all?* A new
@@ -287,19 +284,14 @@ A test pins both halves of that behaviour.
 **Embeddings are a dependency you choose.** The core is zero-dependency and
 ships a hashing embedder that exists so tests are reproducible, not because it
 retrieves well. Anything real wants `OllamaEmbedder` or another model behind the
-`Embedder` protocol — and retrieval quality is most of the outcome: Phase A found
-every arm converting a correct memory into a correct answer about 95% of the time
-and failing about 95% of the time without one.
+`Embedder` protocol. Retrieval quality is most of the outcome: an agent shown
+the right memory almost always answers correctly, and one that is not almost
+always fails.
 
-**The value estimators are not validated for live exposure decisions.**
-[H1](research/results/h1-causal-credit.md) showed the amortized estimator
-recovers true memory value in simulation; [H2](research/results/h2-credit-driven-retention.md)
-found that did not transfer to retention, where a smoothed success rate matched
-it; [Phase A](research/results/phase-a-real-agent-benchmark.md) found it did not
-transfer to live exposure either, and that the exploration it requires was itself
-a cost at a 24-episode horizon. The product default is `naive_usage` for that
-reason. Ranking exposure on estimated value is available and is not recommended
-on current evidence.
+**Value estimates are for inspection, not for ranking.** The estimators that
+work in simulation did not improve live retention or exposure, and the
+exploration they need has its own cost. The default is `naive_usage`.
+Ranking exposure on estimated value is available and is not recommended.
 
 **Do not withdraw memories because they were in context when something failed.**
 This is the one deployment rule that comes from a measurement rather than from

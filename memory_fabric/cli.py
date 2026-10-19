@@ -2052,6 +2052,10 @@ def build_parser() -> argparse.ArgumentParser:
         description="Inspect a Memory Fabric store. Read-only unless a command says otherwise.",
     )
     parser.add_argument(
+        "--version", action="version",
+        version=f"memory-fabric {__import__('memory_fabric').__version__} "
+                f"(schema {SCHEMA_VERSION})")
+    parser.add_argument(
         "--db", default="memory.db", help="path to the store (default: memory.db)"
     )
     parser.add_argument(
@@ -2156,7 +2160,7 @@ def build_parser() -> argparse.ArgumentParser:
     p = add("quarantine", cmd_quarantine,
             "WRITES: quarantine a memory and contest its descendants. Quarantine on "
             "evidence about the memory, not on it having been in context at a failure "
-            "- Phase A measured that policy making an agent much worse.")
+            "- that policy makes an agent much worse.")
     p.add_argument("id")
     p.add_argument("--reason", required=True)
     p.add_argument("--actor", default="operator")
@@ -2416,7 +2420,58 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("dest", help="directory to restore into; must not exist")
 
     add("demo", cmd_demo, "WRITES: seed a demonstration store")
+    _fill_help(sub)
     return parser
+
+
+ID_HELP = "the memory id"
+ACTOR_HELP = "who is making this change; recorded in the audit trail"
+REASON_HELP = "why, recorded with the change"
+HELP: dict[tuple[str | None, str], str] = {
+    (None, "id"): ID_HELP, (None, "--actor"): ACTOR_HELP, (None, "--reason"): REASON_HELP,
+    (None, "--limit"): "show at most this many",
+    (None, "--maintain-interval"): "seconds between background maintenance cycles",
+    (None, "--port"): "TCP port to listen on", (None, "--host"): "address to bind (default loopback)",
+    (None, "--tenant"): "tenant id to act within",
+    (None, "--agents-file"): "agent_id:tenant_id:hex_key per line; secret, server-only",
+    ("attention", "--severity"): "show only items at or above this severity",
+    ("list", "--state"): "filter by lifecycle state (candidate, active, contested, ...)",
+    ("list", "--scope"): "filter by scope (private, team, federated)",
+    ("list", "--type"): "filter by memory type (semantic, episodic, procedural, ...)",
+    ("list", "--sort"): "sort order",
+    ("lineage", "--direction"): "ancestors (what it came from), descendants (what came from it), or both",
+    ("lineage", "--depth"): "how many generations to follow",
+    ("search", "query"): "text to search for", ("episodes", "--limit"): "show at most this many episodes",
+    ("agent-api-issue", "--agent"): "the agent to issue a credential for",
+    ("init", "--agent"): "the first agent to register", ("init", "--tenant"): "its tenant id",
+    ("incident", "id"): "the memory at the centre of the incident; omit to list candidates",
+    ("incident", "--contain"): "withdraw it, contest what rests on it, and owe retractions to peers",
+    ("lifecycle", "--stale-days"): "memories unused for this many days count as stale",
+    ("audit-export", "--out"): "file to write (JSON lines, content-free)",
+    ("audit-export", "--kind"): "which records to include; repeatable (default: all)",
+    ("audit-export", "--since-seq"): "only events after this log sequence",
+    ("import", "file"): "a text, Markdown or JSONL file to import as memories",
+    ("collection", "action"): "what to do with the collection",
+    ("collection", "name"): "the collection's name", ("collection", "--memory"): "memory id to add or remove",
+    ("collection", "--agent"): "agent to grant or revoke",
+    ("correct", "--apply"): "withdraw it and owe retractions (without this, only preview)",
+    ("correct", "--basis"): "the evidence for withdrawing it (contradicted, sensitive_data, ...)",
+    ("review", "id"): "the candidate to decide on; omit to list the queue",
+    ("review", "--approve"): "make it active", ("review", "--reject"): "quarantine it",
+    ("review", "--correct"): "replace its content with a corrected version",
+    ("share", "--scope"): "how far it may travel: team or federated",
+    ("erasure-scope", "id"): "the memory whose erasure you are scoping",
+}
+
+
+def _fill_help(sub: argparse._SubParsersAction) -> None:
+    """Give every option a help line, from HELP: (command, flag) first, then (None, flag)."""
+    for name, command in sub.choices.items():
+        for action in command._actions:
+            if action.help or action.dest == "help":
+                continue
+            flag = action.option_strings[-1] if action.option_strings else action.dest
+            action.help = HELP.get((name, flag)) or HELP.get((None, flag))
 
 
 CREATING_COMMANDS = frozenset({"demo"})

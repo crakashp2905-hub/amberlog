@@ -5,6 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Product documentation and consumability
+
+- **README rewritten for users**: what it is and why, what you get with the
+  evidence for each, a quick start whose code runs, connecting an agent,
+  scale, operations, limits and a documentation map.
+- **New docs:** `docs/CONCEPTS.md`, `docs/COOKBOOK.md` (ten recipes),
+  `docs/FAQ.md`, `docs/README.md` (every document, by task),
+  `examples/README.md`, `docs/RELEASE_NOTES_0.12.0.md`, and **generated**
+  `docs/API.md` and `docs/CLI.md` (`tools/gen_reference.py`).
+- **TROUBLESHOOTING** explains every action-gate, certificate and limit
+  reason code (44), plus permission, hop-limit, compaction and restore errors.
+- **Docs that cannot rot:** tests run every Python block in the README,
+  quickstart, concepts and cookbook; every offline example; check every
+  relative link (698) and that every doc is indexed; check the generated
+  references are current, every CLI option has help (68 were missing), and
+  every reason code is documented.
+- `memory-fabric --version`. Package metadata: keywords, classifiers and
+  documentation, changelog, issue and security URLs.
+- **Security reporting** is by private email to the maintainer: GitHub's
+  private reporting is not available on a private repository.
+- **`tools/check.py`** runs what CI's quick jobs run; `tools/gen_stability.py`
+  moved into the repository.
+- **CI fixed**: main was red from the authority commit onward (mypy in
+  `objective_v2.py`; generated documents committed stale).
+
 ### Added: governed session compaction (experimental)
 
 - **`compaction.compact_session(fabric, episode, agent)`** writes one

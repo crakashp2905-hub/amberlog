@@ -5,6 +5,34 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Fixed and verified: authorization, crashes, tamper detection, cryptography
+
+- **F15 (high): a token stayed usable after its memory stopped being
+  visible.** The action-time re-check ignored scope, so a private memory an
+  agent read through a collection still verified after the grant was revoked.
+  Fixed; `tests/test_visibility_at_action.py`.
+- **Every access path tested against every authorisation change**
+  (`tests/test_access_matrix.py`): SDK, service session, tenant view, HTTP
+  agent API, MCP and function-calling tools, against another tenant's
+  memory, a revoked grant, a revoked credential, a revision and a
+  withdrawal. It catches F15 when the fix is reverted.
+- **A crash mid-action is uncertain, never absent.** `ActionAttempted` is
+  committed before the fence; a process that dies mid-tool leaves the key
+  `uncertain`, and the next call is refused until `retry=True`. Before, the
+  tool ran again as if nothing had happened (`tests/test_action_crash.py`,
+  a real process killed mid-action).
+- **Log-and-chain rewriting detected end to end**: the manager's
+  checkpoints, kept off the store's disk, catch an edited event with a
+  recomputed chain; `checkpoint --verify` reads the manager's JSONL file
+  (`tests/test_checkpoint_rewrite.py`).
+- **Production cryptography profile**: `MEMORY_FABRIC_CRYPTO_PROFILE=production`
+  writes only AES-256-GCM from the maintained `cryptography` library and
+  refuses to open without it; the Docker image installs it and defaults to
+  it; extra `memory-fabric[crypto]`; `doctor` reports the profile.
+  `docs/CRYPTOGRAPHY.md` sets out every decision for independent review.
+- `docs/SECURITY_REVIEW.md`: F15–F17 recorded; every open item now carries
+  current status and a review-by date.
+
 ### Fixed: writes slowed as a store filled with near-identical notes
 
 - Copy recognition re-tokenised the incoming text once per candidate, and

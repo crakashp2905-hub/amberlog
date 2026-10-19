@@ -183,8 +183,8 @@ Default rules:
 
 ### 0.12.0 — the background memory manager, source notices, origin-bound authority, objectives
 
-Additive: six event types, no projection change. A 0.11.0 log replays
-unchanged, and a 0.11.0 reader skips all six.
+Additive: seven event types, no projection change. A 0.11.0 log replays
+unchanged, and a 0.11.0 reader skips all seven.
 
 - **`ManagerLease`**, payload `{holder, expires_ms}`. Taken and renewed inside
   a write transaction, so at most one manager maintains a store at a time.
@@ -208,6 +208,12 @@ unchanged, and a 0.11.0 reader skips all six.
   reason, objective}`. A `MemoryObjectiveV2` proposed, adopted (by a
   reviewer who is not the proposer, with no registered metric worse than its
   baseline) or rejected. Rules over metadata only, never content.
+- **`ActionAttempted`**, payload `{key, tool, tenant_id}`. Committed *before*
+  the action fence opens, so a crash that rolls the fence back still leaves
+  it. An attempt with no `ActionExecuted` after it is **uncertain**: the
+  next call with the same key is refused until `retry=True`.
+- `ActionExecuted` gains the outcome `refused`, which settles an attempt
+  that the gate refused under the fence (nothing ran).
 - `ActionGated` gains `grant_id` and `binding` (null when absent).
 - `context.federation` on an import gains `authority` `{kind, trust,
   reasons, origins}`: the origin's verdict, applied as a floor at the

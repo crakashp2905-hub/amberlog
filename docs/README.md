@@ -47,6 +47,7 @@ Every document in the repository, by what you are trying to do.
 | [../SECURITY.md](../SECURITY.md) | The threat model, T1–T12, and how to report a vulnerability |
 | [SAFETY_AND_SECURITY.md](SAFETY_AND_SECURITY.md) | The safety model |
 | [LIMITATIONS.md](LIMITATIONS.md) | What it does not do |
+| [CRYPTOGRAPHY.md](CRYPTOGRAPHY.md) | Every cryptographic and key-management decision, written for review |
 | [../STABILITY.md](../STABILITY.md) | What is stable, beta and experimental; what is tested |
 | [HARDENING_STATUS.md](HARDENING_STATUS.md) | The owner's hardening lists, item by item, with evidence |
 | [SAFETY_ROADMAP_COVERAGE.md](SAFETY_ROADMAP_COVERAGE.md) | The AI-safety roadmap, item by item |

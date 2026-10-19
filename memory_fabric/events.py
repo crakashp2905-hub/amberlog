@@ -44,6 +44,7 @@ class EventType:
     ACTION_GATED = "ActionGated"
     COLLECTION_CHANGED = "CollectionChanged"
     ACTION_EXECUTED = "ActionExecuted"
+    ACTION_ATTEMPTED = "ActionAttempted"
     MANAGER_LEASE = "ManagerLease"
     MAINTENANCE_RAN = "MaintenanceRan"
     SOURCE_DISCREDITED = "SourceDiscredited"
@@ -812,4 +813,17 @@ def objective_changed(ts: int, actor: str, digest: str, status: str, proposer: s
                  payload={"digest": digest, "status": status, "proposer": proposer,
                           "evaluation": dict(evaluation), "reason": reason,
                           "objective": dict(objective)})
+
+
+def action_attempted(ts: int, agent_id: str, key: str, tool: str,
+                     tenant_id: str | None = None) -> Event:
+    """An action is about to run under the fence (0.12.0). Committed *before* it.
+
+    The fence's own record commits with the outcome, so a crash mid-tool
+    leaves nothing of it. This record survives: an attempt with no outcome
+    after it is an **uncertain** side effect, and the next call with the
+    same key is refused until a caller passes `retry=True`.
+    """
+    return Event(type=EventType.ACTION_ATTEMPTED, ts=ts, agent_id=agent_id,
+                 payload={"key": key, "tool": tool, "tenant_id": tenant_id})
 

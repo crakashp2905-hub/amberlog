@@ -42,6 +42,9 @@ claude = ["anthropic>=0.40"]
 postgres = ["psycopg>=3.1"]
 # A LangChain retriever (memory_fabric.integrations.langchain).
 langchain = ["langchain-core>=0.3"]
+# AES-256-GCM from a maintained library; required by the production crypto
+# profile (MEMORY_FABRIC_CRYPTO_PROFILE=production).
+crypto = ["cryptography>=42"]
 
 [project.scripts]
 memory-fabric = "memory_fabric.cli:main"

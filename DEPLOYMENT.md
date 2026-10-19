@@ -109,7 +109,12 @@ docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
   -e MEMORY_FABRIC_TOKEN=... memory-fabric
 ```
 
-Runs as uid 10001, not root. **Both volumes are required.** Without `/data` the
+Runs as uid 10001, not root, with the **production cryptography profile**:
+content is sealed only with AES-256-GCM from the maintained `cryptography`
+library, and the store refuses to open if that library is missing
+(`MEMORY_FABRIC_CRYPTO_PROFILE=production`; [CRYPTOGRAPHY.md](docs/CRYPTOGRAPHY.md)).
+Outside the container, install `memory-fabric[crypto]` and set the same
+variable to get it. **Both volumes are required.** Without `/data` the
 first `docker rm` takes the event log, and §1 is why that is unrecoverable.
 Without `/keys` it takes the content keys, and the content in `/data` becomes
 unreadable — the same mechanism erasure relies on, triggered by accident.

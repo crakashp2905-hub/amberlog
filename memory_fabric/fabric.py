@@ -251,6 +251,7 @@ class MemoryFabric:
         limits: "Any" = None,
         withhold_hostile_sources: bool = True,
         hold_suspicious: bool = True,
+        crypto_profile: str | None = None,
     ) -> None:
         # Off by default to keep the documented reason code. On, a request
         # from another tenant is refused exactly as a missing id is, so the
@@ -269,6 +270,14 @@ class MemoryFabric:
         # as a candidate even where clean writes activate at once (V1:
         # detection 1.00 on three poison families, 0 of 450 honest writes held).
         self.hold_suspicious = hold_suspicious
+        # Checked at open, not at the first write: a production deployment
+        # without the maintained library must fail to start, not fall back.
+        from .governance import cipher
+
+        if crypto_profile is not None:
+            cipher.set_profile(crypto_profile)
+        if encrypt_content:
+            cipher.require_profile()
         self._hostile_cache: tuple[int, frozenset[str]] = (-1, frozenset())
         # Default on, because the alternative is measured to be wrong rather
         # than merely unmeasured: a withdrawn document re-ingested under its own

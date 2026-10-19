@@ -173,6 +173,9 @@ docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
 - `backup --with-keys` and `restore` cover the log, keys and config, checked
   against a manifest.
 - `--log-format json` gives structured logs.
+- The container uses the production cryptography profile: content is sealed
+  only with AES-256-GCM from the maintained `cryptography` library
+  ([CRYPTOGRAPHY.md](docs/CRYPTOGRAPHY.md)).
 
 Deployment, capacity and upgrades: [DEPLOYMENT.md](DEPLOYMENT.md). Day-two
 operations and incidents: [docs/OPERATIONS.md](docs/OPERATIONS.md),
@@ -211,7 +214,7 @@ python tools/check.py           # regenerate docs, lint, type-check, doc tests, 
 python tools/check.py --full    # and the full suite, which needs no dependencies
 ```
 
-**1778 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
+**1796 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
 a multi-store fault matrix and an adversarial release gate run
 in CI on Linux, macOS and Windows. Read [AGENTS.md](AGENTS.md), the rules for
 everyone who changes this repository, humans and AI agents alike, and

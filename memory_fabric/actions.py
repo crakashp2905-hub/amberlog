@@ -111,6 +111,9 @@ FAILED = "failed"
 TIMED_OUT = "timed_out"
 ALREADY_EXECUTED = "already_executed"
 REFUSED = "refused"
+UNCERTAIN = "uncertain"
+"""An attempt with no recorded outcome: the process died mid-action. Treated
+like `timed_out`: the side effect may or may not have happened."""
 
 MAX_LEASE_S = 4.0
 """Below the store's default 5 s busy timeout, so a writer in another process
@@ -442,17 +445,30 @@ class ActionGate:
                 return ActionExecution(REFUSED, None, key, error=(
                     f"{RETRY_REQUIRED}: the last attempt {prior['outcome']} with an unknown "
                     "effect; pass retry=True to re-verify and run again"))
+        fabric = self.fabric
+        # Recorded and committed before the fence, so it survives a crash
+        # that rolls the fence's transaction back. Without it, a process that
+        # died mid-tool left no trace and the next call ran the tool again as
+        # though nothing had happened (tests/test_action_crash.py).
+        with fabric.lock, fabric._transaction():
+            fabric._emit(ev.action_attempted(ts=fabric.now(), agent_id=agent_id, key=key,
+                                             tool=tool, tenant_id=tenant_id))
         if isinstance(certificate, Mapping):
             try:
                 certificate = EvidenceCertificate.from_json(certificate)
             except CertificateError:
                 pass  # authorize reports it
-        fabric = self.fabric
         with fabric.lock, fabric._transaction():
             decision = self.authorize(tool, agent_id, certificate, tenant_id=tenant_id,
                                       approval=approval, session=session,
                                       request=request, grant=grant)
             if not decision.allowed:
+                # Settles the attempt recorded above: nothing ran.
+                fabric._emit(ev.action_executed(
+                    ts=fabric.now(), agent_id=decision.agent_id, key=key, tool=tool,
+                    outcome=REFUSED, fenced=True, watermark=None,
+                    lease_ms=int(lease_s * 1000), elapsed_ms=0, evidence=[],
+                    tenant_id=tenant_id))
                 return ActionExecution(REFUSED, decision, key)
             box: dict[str, Any] = {}
 
@@ -486,9 +502,21 @@ class ActionGate:
                                error=box.get("error"), fenced=fenced)
 
     def _last_execution(self, key: str) -> Mapping[str, Any] | None:
-        last = None
-        for event in self.fabric.log.read_types([ev.EventType.ACTION_EXECUTED]):
-            if event.payload.get("key") == key:
+        """The last settled outcome for this key; `uncertain` if an attempt has none.
+
+        A refusal under the fence records outcome `refused`: nothing ran, so
+        it is no reason to require a retry, and it is skipped here.
+        """
+        last: Mapping[str, Any] | None = None
+        for event in self.fabric.log.read_types([ev.EventType.ACTION_ATTEMPTED,
+                                                 ev.EventType.ACTION_EXECUTED]):
+            if event.payload.get("key") != key:
+                continue
+            if event.type == ev.EventType.ACTION_ATTEMPTED:
+                last = {"outcome": UNCERTAIN}
+            elif event.payload.get("outcome") == REFUSED:
+                last = None
+            else:
                 last = event.payload
         return last
 

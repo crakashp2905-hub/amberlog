@@ -358,8 +358,14 @@ class Enforcer:
                 detail="exposure token has expired; retrieve again",
             )
 
-        decision = self.check(token.memory_id, risk=risk, tenant_id=token.tenant_id)
-        if decision.reason_code == WRONG_TENANT:
+        # With the agent: scope is re-checked at action time, not only at
+        # retrieval. Without it `visible_to` took the operator's view, and a
+        # token stayed usable after the agent lost access to the memory (a
+        # collection grant revoked, the memory removed from the collection):
+        # tests/test_visibility_at_action.py.
+        decision = self.check(token.memory_id, risk=risk, tenant_id=token.tenant_id,
+                              agent_id=agent_id)
+        if decision.reason_code in (WRONG_TENANT, NOT_VISIBLE):
             # Return the tenant refusal as it stands. The version comparison
             # below would otherwise fire first and report `version_moved`,
             # because a cross-tenant check deliberately reports version 0 — so

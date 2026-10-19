@@ -126,7 +126,11 @@ order. `tests/test_troubleshooting.py` fails if a code is missing here.
 
 `execute` outcomes: `executed`, `failed` (the tool raised), `timed_out` (it
 overran its lease; see `actions.unfenced_changes`), `already_executed` (this
-key ran before) and `refused` (see the decision's code).
+key ran before) and `refused` (see the decision's code). A process that died
+mid-action leaves the key `uncertain`: the side effect may or may not have
+happened, so the next call is refused with `retry_required`. Check the
+tool's effect (the tool received the key for exactly this), then call again
+with `retry=True`.
 
 ## "LimitExceeded" / HTTP 429 or 413
 

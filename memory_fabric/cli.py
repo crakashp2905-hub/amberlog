@@ -302,10 +302,21 @@ def cmd_checkpoint(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """
     chain = fabric.log.chain
     if args.verify:
-        payload = json.loads(pathlib.Path(args.verify).read_text(encoding="utf-8"))
         from .integrity import Checkpoint
 
-        result = chain.verify_against(Checkpoint.from_json(payload))
+        # One JSON object, or the manager's `<store>.checkpoint.jsonl` with a
+        # line per cycle: every checkpoint in it must still hold, and the
+        # first one that does not is reported.
+        text = pathlib.Path(args.verify).read_text(encoding="utf-8").strip()
+        lines = [line for line in text.splitlines() if line.strip()]
+        payloads = ([json.loads(line) for line in lines] if len(lines) > 1
+                    else [json.loads(text)])
+        result = None
+        for payload in payloads:
+            result = chain.verify_against(Checkpoint.from_json(payload))
+            if not result.ok:
+                break
+        assert result is not None
         if args.json:
             print(json.dumps(result.to_json(), indent=2))
         elif result.ok:
@@ -1977,9 +1988,21 @@ def _check_content_cipher(fabric: MemoryFabric) -> Finding:
             "in plaintext, so erasing a key would be cosmetic",
             "Open the store with encrypt_content=True for new writes.",
         )
+    from .governance.cipher import profile as crypto_profile
+
+    if crypto_profile() == "production":
+        older = counts.get("v1", 0) + counts.get("v2", 0)
+        if older:
+            return Finding(
+                "warn", "content cipher",
+                f"production profile: new content is AES-GCM, but {older} older content "
+                f"version(s) were sealed with the in-house suites; {summary}; keys {where}",
+                "Revising a memory re-seals it with AES-GCM; there is no bulk rewrite of the log.",
+            )
     return Finding(
         "ok", "content cipher",
-        f"authenticated ({default_suite().name}); {summary}; keys {where}",
+        f"authenticated ({default_suite().name}, {crypto_profile()} profile); {summary}; "
+        f"keys {where}",
     )
 
 

@@ -15,7 +15,10 @@ LABEL org.opencontainers.image.title="Memory Fabric" \
       org.opencontainers.image.licenses="LicenseRef-Proprietary"
 
 COPY --from=build /dist/*.whl /tmp/
-RUN pip install --no-cache-dir /tmp/*.whl && rm /tmp/*.whl
+# The production cryptography profile: AES-256-GCM from the maintained
+# `cryptography` library only, and a store refuses to open without it.
+RUN pip install --no-cache-dir "$(ls /tmp/*.whl)[crypto]" && rm /tmp/*.whl
+ENV MEMORY_FABRIC_CRYPTO_PROFILE=production
 
 # The store is a SQLite file and the container is disposable: keep them apart,
 # or the first `docker rm` takes the event log with it. The log is the source of

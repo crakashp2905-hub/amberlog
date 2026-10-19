@@ -61,7 +61,8 @@ if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
     from .transport import Transport
 
-TASKS = ("sources", "dispatch", "retention", "audit", "conflicts", "checkpoint", "health")
+TASKS = ("sources", "dispatch", "retention", "audit", "conflicts", "compaction", "checkpoint",
+         "health")
 MAX_BACKOFF = 32
 
 
@@ -246,6 +247,16 @@ class MemoryManager:
         triggers = Auditor(self.fabric).scan(since_seq=since)
         return {"triggers": len(triggers),
                 "items": [{"kind": t.kind, "subject": t.subject} for t in triggers[:50]]}
+
+    def _task_compaction(self, since: int) -> dict[str, Any]:
+        """Re-compact sessions whose summary lost an input to a correction (`compaction.py`)."""
+        if not any((m.context or {}).get("compaction_of")
+                   for m in self.fabric.state.memories.values()):
+            return {"skipped": "no session summaries"}
+        from .compaction import recompact
+
+        reports = recompact(self.fabric, agent_id=self.holder)
+        return {"recompacted": [r.episode_id for r in reports]}
 
     def _task_conflicts(self, since: int) -> dict[str, Any]:
         from .conflicts import claim, find_conflicts

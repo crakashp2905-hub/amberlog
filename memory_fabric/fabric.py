@@ -3511,6 +3511,14 @@ class MemoryFabric:
             for memory in self.state.memories.values()
         ]
         decisions = self.retention.sweep(pairs, now)
+        # A premise of something still exposable is not retired: a summary
+        # (`compaction.py`) or conclusion must never outlive the sources a
+        # correction would need to follow. Raw turns age out after their
+        # summary does.
+        premises = {pid for m in self.state.memories.values()
+                    if m.lifecycle_state in EXPOSABLE_STATES
+                    for pid, _ in m.provenance.parents}
+        decisions = [d for d in decisions if d.memory_id not in premises]
         if actions is not None:
             allowed = set(actions)
             decisions = [d for d in decisions if d.action in allowed]

@@ -316,6 +316,81 @@ class EncodingNoise(unittest.TestCase):
         self.assertFalse(is_copy(self.DOC, self.DOC.replace("450", "420")))
 
 
+class TestIndexAgreesWithExhaustiveSearch(unittest.TestCase):
+    """Randomised: the index finds exactly what the exhaustive scan finds, both directions.
+
+    The anchors only matter when the incoming text is the *longer* side (a
+    stored memory contained in it), so half the probes are a stored memory
+    with words added, and half are a stored memory with words removed.
+    """
+
+    def test_random_corpora_both_directions(self) -> None:
+        import random
+
+        words = [f"w{i}" for i in range(60)] + ["purge", "time", "pressure", "valve", "site"]
+        for seed in range(25):
+            rng = random.Random(seed)
+            store = {f"m{i}": " ".join(rng.sample(words, rng.randint(5, 9)))
+                     for i in range(150)}
+            index = duplicates.CopyIndex()
+            for mid, content in store.items():
+                index.add(mid, content)
+            for _ in range(40):
+                base = store[rng.choice(sorted(store))].split()
+                if rng.random() < 0.5:
+                    probe = base + rng.sample(words, 2)          # stored memory inside the probe
+                else:
+                    probe = rng.sample(base, max(5, len(base) - 1))  # probe inside a stored memory
+                text = " ".join(probe)
+                exhaustive = duplicates.find_copy(text, store)
+                indexed = index.find(text)
+                self.assertEqual(exhaustive and exhaustive.memory_id,
+                                 indexed and indexed.memory_id, (seed, text))
+
+
+class TestNearDuplicatesStayCheap(unittest.TestCase):
+    """A store of near-identical notes must not make each write scan the whole store.
+
+    Before the fix, every memory's third anchor tied on a common word, so one
+    bucket held every memory, and the incoming text was re-tokenised for each
+    candidate: ~29 ms a write at 5,000 notes, growing with the store.
+    """
+
+    @staticmethod
+    def _note(i: int) -> str:
+        return f"The purge time for P{i} is {20 + i % 41} s."
+
+    def test_the_candidate_set_does_not_grow_with_the_store(self) -> None:
+        index = duplicates.CopyIndex()
+        for i in range(3000):
+            index.add(f"m{i}", self._note(i))
+        self.assertLess(len(index.candidates(self._note(99999))), 200)
+
+    def test_writes_at_5000_are_at_most_3x_writes_at_500(self) -> None:
+        import statistics
+        import time
+
+        from memory_fabric import MemoryFabric
+
+        def per_write(n: int) -> float:
+            f = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False)
+            try:
+                for i in range(n):
+                    f.remember("t", self._note(i), scope="team")
+                times = []
+                for batch in range(3):
+                    t0 = time.perf_counter()
+                    for i in range(n + batch * 50, n + batch * 50 + 50):
+                        f.remember("t", self._note(i), scope="team")
+                    times.append((time.perf_counter() - t0) / 50)
+                return statistics.median(times)
+            finally:
+                f.close()
+
+        small, large = per_write(500), per_write(5000)
+        self.assertLess(large, 3 * small, f"{large * 1000:.2f} ms vs {small * 1000:.2f} ms")
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
 

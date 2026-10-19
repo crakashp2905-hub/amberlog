@@ -139,6 +139,11 @@ per second. Storage extrapolates to about 400 MB per million events — that one
 The governed write path adds about 0.2 ms per episode over an ungoverned vector
 store. Governance is not where your latency goes.
 
+Near-identical notes stay cheap to write. Every write checks whether it
+copies something already held, and on a store of 5,000 near-identical notes
+("The purge time for P1 is 40 s.") a write takes about 0.9 ms, against
+about 0.5 ms at 500.
+
 ### Many agents on one store
 
 Measured on one machine (Windows, 8 CPUs) with agents issuing operations back

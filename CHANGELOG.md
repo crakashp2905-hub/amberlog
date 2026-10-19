@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Fixed: writes slowed as a store filled with near-identical notes
+
+- Copy recognition re-tokenised the incoming text once per candidate, and
+  every memory's third index anchor tied on a common word, so one bucket
+  held the whole store. On 5,000 near-identical notes a write took ~29 ms
+  and seeding them took 144 s. Now the text is tokenised once and each
+  memory is anchored under its single rarest term, which is still exact:
+  0.9 ms a write at 5,000, 0.5 ms at 500, seeding in 4 s.
+- New tests: a randomised comparison of the index with the exhaustive scan
+  in both directions, a bound on the candidate set, and writes at 5,000
+  near-duplicates at most 3x writes at 500.
+
 ### Added: federation across machines; two protocol bugs fixed
 
 - **Sharing over the network.** `offer_remote` and `/federation/offer`:

@@ -47,6 +47,8 @@ class EventType:
     MANAGER_LEASE = "ManagerLease"
     MAINTENANCE_RAN = "MaintenanceRan"
     SOURCE_DISCREDITED = "SourceDiscredited"
+    AUTHORITY_ELEVATED = "AuthorityElevated"
+    GRANT_ISSUED = "GrantIssued"
 
 
 @dataclass(frozen=True)
@@ -640,6 +642,8 @@ def action_gated(
     tenant_id: str | None = None,
     required_checks: list[str] | None = None,
     min_independent_sources: int | None = None,
+    grant_id: str | None = None,
+    binding: str | None = None,
 ) -> Event:
     """A decision about a protected tool call, with the evidence it rested on.
 
@@ -662,6 +666,8 @@ def action_gated(
             "tenant_id": tenant_id,
             "required_checks": list(required_checks or []),
             "min_independent_sources": min_independent_sources,
+            "grant_id": grant_id,
+            "binding": binding,
         },
     )
 
@@ -769,4 +775,27 @@ def source_discredited(ts: int, author_ref: str, signal: str, origin_store_id: s
                  payload={"author_ref": author_ref, "signal": signal,
                           "origin_store_id": origin_store_id, "notice_id": notice_id,
                           "reason_code": reason_code, "authorised": authorised})
+
+
+def authority_elevated(ts: int, memory_id: str, version: int, approver: str, policy: str,
+                       reason: str, revoked: bool = False) -> Event:
+    """An approver lifted a memory version's soft authority reasons, or revoked that (0.13.0).
+
+    Bound to one exact version: a correction is a new version and is not elevated.
+    """
+    return Event(type=EventType.AUTHORITY_ELEVATED, ts=ts, agent_id=approver,
+                 payload={"memory_id": memory_id, "version": version, "approver": approver,
+                          "policy": policy, "reason": reason, "revoked": revoked})
+
+
+def grant_issued(ts: int, grant_id: str, tool: str, agent_id: str, binding: str,
+                 expires_ms: int, issuer: str, revoked: bool = False) -> Event:
+    """A short-lived grant for one exact action (0.13.0).
+
+    `binding` is the digest of (tool, target, parameters, evidence versions,
+    agent, tenant). The grant is consumed by its first execution.
+    """
+    return Event(type=EventType.GRANT_ISSUED, ts=ts, agent_id=issuer,
+                 payload={"grant_id": grant_id, "tool": tool, "agent": agent_id,
+                          "binding": binding, "expires_ms": expires_ms, "revoked": revoked})
 

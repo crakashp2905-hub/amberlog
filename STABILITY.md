@@ -65,19 +65,21 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.txn`
 - `memory_fabric.vectors`
 
-## Beta (25)
+## Beta (27)
 
 - `memory_fabric.actions`
 - `memory_fabric.adapters.claude`
 - `memory_fabric.adapters.ollama`
 - `memory_fabric.agent_api`
 - `memory_fabric.auditor`
+- `memory_fabric.authority`
 - `memory_fabric.chains`
 - `memory_fabric.conflicts`
 - `memory_fabric.correction`
 - `memory_fabric.extraction`
 - `memory_fabric.governance.directive`
 - `memory_fabric.incident`
+- `memory_fabric.influence`
 - `memory_fabric.integrations.__init__`
 - `memory_fabric.integrations.langchain`
 - `memory_fabric.integrations.tools`

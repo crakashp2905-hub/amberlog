@@ -5,6 +5,27 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: origin-bound authority, exact-action grants, the influence graph
+
+- **`authority.py`**: every memory's trust (`untrusted` < `unverified` <
+  `elevated`) and kind (`instruction` / `observation` / `derived_claim`) are
+  bound to its origin. They are inherited through summaries, derivations,
+  recognised copies and federation, where the origin's verdict travels as a
+  floor. Sources are kept apart from summarisers. `MemoryFabric.elevate`
+  lifts soft reasons only, per version, by an approver who is not the author.
+  Outcomes never confer authority. The roadmap's test (inject → summarise →
+  tool copy → share) is `tests/test_authority.py`.
+- **`ActionGate`** refuses evidence below `ToolRule.min_authority` (default
+  `unverified`) and any `instruction` used as evidence. **Grants**
+  (`issue_grant`, `revoke_grant`) are short-lived (≤ 300 s), bound to the
+  exact tool, agent, tenant, target, parameters and evidence versions, and
+  consumed once: an expired, revoked, replayed or changed request is refused.
+  Approvals can be bound to the same digest.
+- **`influence.py`**: typed edges (`derived_from`, `summarized_from`,
+  `copied_from`, `imported_from`, `exposed_to`, `relied_on`, `authorized`,
+  `invalidated_by`), and `impact()`, which keeps potentially contaminated,
+  actually retrieved and confirmed use apart.
+
 ### Changed: two poisoning defences on by default (owner's decision, 2026-10-19)
 
 - **The directive screen runs at ingest and at share time**

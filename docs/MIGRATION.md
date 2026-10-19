@@ -19,7 +19,7 @@ whole path is drilled in CI against the last release
 | 0.9.0 | action gating (`ActionGated`) | nothing |
 | **0.10.0** | **scope is enforced on reads**; collections | **Decide once.** To keep the old visibility (every active memory readable by its tenant), run `memory-fabric --db <store> share --all-private-active --actor <you>`. Restricted memories are refused and listed rather than widened. Skip it if per-agent privacy is what you want |
 | 0.11.0 | the action fence (`ActionExecuted`); exposure records; the import provenance chain | nothing. Imports made earlier have no chain and fall back to their immediate origin. `Acknowledgement.state_revision` now counts the origin's own retractions (wire format unchanged) |
-| 0.12.0 | the background memory manager (`ManagerLease`, `MaintenanceRan`) | Nothing is required. Servers now **start the manager**: pass `--no-maintain` to keep maintenance manual. Give it `--peers` to deliver retractions, and `--checkpoint-dir` to keep checkpoints off-host. Retention deletions need `--retention-delete` |
+| 0.12.0 | the background memory manager (`ManagerLease`, `MaintenanceRan`) | Nothing is required. Servers now **start the manager**: pass `--no-maintain` to keep maintenance manual. Give it `--peers` to deliver retractions, and `--checkpoint-dir` to keep checkpoints off-host. Retention deletions need `--retention-delete`. Protected tools now refuse evidence below `unverified` origin-bound authority (tool outputs, imports, instructions, anything descending from a withdrawn memory) unless it is elevated: set `ToolRule(min_authority="untrusted")` to restore the 0.11.0 behaviour |
 
 ## Code calling the Python API
 

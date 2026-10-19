@@ -179,6 +179,9 @@ def offer(
         # (`independence`, S2).
         "root": {"store": root_store, "memory_id": root_id},
         "informed_by": [list(ref) for ref in informed],
+        # The origin's verdict on the memory's authority. The recipient
+        # treats it as a floor: it can lower trust there, never raise it.
+        "authority": source.authority(memory_id).to_wire(),
     }
 
     imported_id = target.remember(

@@ -520,6 +520,37 @@ class MemoryFabric:
             self.outbox.enqueue(retraction, recipients, _now_ms())
         return retraction
 
+    def authority(self, memory_id: str) -> "Any":
+        """Origin-bound authority of a memory (`authority.py`)."""
+        from . import authority
+
+        self._require(memory_id)
+        return authority.of(self, memory_id)
+
+    @_fresh
+    def elevate(self, memory_id: str, approver: str, reason: str,
+                policy: str = "manual-review", revoke: bool = False) -> "Any":
+        """Lift a memory version's *soft* authority reasons, after review.
+
+        Refused when the approver wrote the memory, or when a hard reason
+        (withdrawn or contested ancestor, hostile source, instruction) stands:
+        those are removed at their cause, not overridden.
+        """
+        from . import authority
+
+        memory = self._require(memory_id)
+        current = authority.of(self, memory_id)
+        if not revoke:
+            if approver == memory.provenance.created_by or approver in current.origins:
+                raise PolicyViolation("a memory's author or source cannot elevate it")
+            if current.hard:
+                raise PolicyViolation(
+                    f"cannot elevate past hard reasons: {sorted(r for r in current.reasons if r in authority.HARD)}")
+        self._emit(ev.authority_elevated(ts=self.now(), memory_id=memory_id,
+                                         version=memory.version, approver=approver,
+                                         policy=policy, reason=reason, revoked=revoke))
+        return authority.of(self, memory_id)
+
     @_fresh
     def discredit_source(self, author: str, actor: str, signal: str = "hostile",
                          reason_code: str = "injection_screen") -> "SourceNotice":

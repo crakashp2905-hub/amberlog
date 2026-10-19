@@ -181,10 +181,10 @@ Default rules:
 
 ---
 
-### 0.12.0 — the background memory manager
+### 0.12.0 — the background memory manager, source notices, origin-bound authority
 
-Additive: two event types, no projection change. A 0.11.0 log replays
-unchanged, and a 0.11.0 reader skips both events.
+Additive: five event types, no projection change. A 0.11.0 log replays
+unchanged, and a 0.11.0 reader skips all five.
 
 - **`ManagerLease`**, payload `{holder, expires_ms}`. Taken and renewed inside
   a write transaction, so at most one manager maintains a store at a time.
@@ -192,6 +192,22 @@ unchanged, and a 0.11.0 reader skips both events.
   for each task, what it did or the error. The tasks are dispatch, retention,
   audit, conflicts, checkpoint and health. Ids and counts only, never
   content.
+- **`SourceDiscredited`**, payload `{author_ref, signal, origin_store_id,
+  notice_id, reason_code, authorised}`. A source here was caught by an ingest
+  screen, or a peer said so in a signed `SourceNotice`. Unauthenticated
+  notices are recorded with `authorised: false` and change nothing.
+- **`AuthorityElevated`**, payload `{memory_id, version, approver, policy,
+  reason, revoked}`. An approver who is not the memory's author or source
+  lifted its *soft* authority reasons (tool output, import), for that version
+  only (`authority.py`). Hard reasons cannot be elevated.
+- **`GrantIssued`**, payload `{grant_id, tool, agent, binding, expires_ms,
+  revoked}`. A short-lived grant for one exact action: `binding` digests the
+  tool, agent, tenant, target, parameters and evidence versions. Consumed by
+  its first allowed use.
+- `ActionGated` gains `grant_id` and `binding` (null when absent).
+- `context.federation` on an import gains `authority` `{kind, trust,
+  reasons, origins}`: the origin's verdict, applied as a floor at the
+  recipient.
 
 Behaviour: `serve`, `agent-api` and `mcp` start the manager unless
 `--no-maintain` is given. `memory-fabric maintain` runs it on its own.

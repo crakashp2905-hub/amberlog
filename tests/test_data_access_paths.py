@@ -58,6 +58,7 @@ ENFORCED = {
 }
 
 METADATA = {
+    "authority": "origin-bound trust, kind and source ids of a memory; no content",
     "notice_recipients": "store ids holding an author's shared memories; no content",
     "lifecycle_of": "one memory's state, and no content — the safe way to ask",
     "relations_of": (
@@ -130,6 +131,7 @@ MUTATION = {
     "request_retraction": "withdraw locally and owe every recipient, atomically",
     "supersede_copies": "owe holders of an older version's copy a retraction of that version",
     "discredit_source": "record that a local source was caught being hostile; the notice for peers",
+    "elevate": "record an approver lifting a memory version's soft authority reasons",
     "receive_notice": "record a peer's signed hostile-source notice (ids only)",
     "receive_retraction": "apply one arriving from another store",
     "erase_content": "destroy a content key. Irreversible",

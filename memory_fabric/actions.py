@@ -93,6 +93,15 @@ HUMAN_APPROVAL_REQUIRED = "human_approval_required"
 APPROVAL_INVALID = "approval_invalid"
 CREDENTIAL_INVALID = "credential_invalid"
 RETRY_REQUIRED = "retry_required"
+AUTHORITY_INSUFFICIENT = "authority_insufficient"
+INSTRUCTION_EVIDENCE = "instruction_is_not_evidence"
+GRANT_REQUIRED = "grant_required"
+GRANT_UNKNOWN = "grant_unknown"
+GRANT_EXPIRED = "grant_expired"
+GRANT_REVOKED = "grant_revoked"
+GRANT_MISMATCH = "grant_binding_mismatch"
+GRANT_REPLAYED = "grant_replayed"
+MAX_GRANT_TTL_S = 300
 
 # Execution outcomes (`execute`).
 EXECUTED = "executed"
@@ -115,6 +124,46 @@ class ToolRule:
     required_checks: tuple[str, ...] = ALWAYS
     min_independent_sources: int = 1
     requires_human_approval: bool = False
+    min_authority: str = "unverified"
+    """The lowest origin-bound trust (`authority.py`) any piece of evidence
+    may have. `unverified` refuses evidence descending from a tool output, an
+    import, a hostile source, an instruction or a withdrawn memory, unless an
+    approver elevated it. `untrusted` turns the check off."""
+    requires_grant: bool = False
+    """Require a short-lived grant bound to this exact action (`issue_grant`)."""
+
+
+@dataclass(frozen=True)
+class ActionRequest:
+    """The exact action: what it acts on and with which parameters."""
+
+    target: str
+    parameters: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class Grant:
+    grant_id: str
+    tool: str
+    agent_id: str
+    binding: str
+    expires_ms: int
+
+
+def binding_digest(tool: str, agent_id: str, tenant_id: str | None,
+                   request: ActionRequest | None,
+                   certificate: EvidenceCertificate | None) -> str:
+    """Digest of everything an approval or grant is for. Any change is a different action."""
+    import hashlib
+    import json
+
+    body = {"tool": tool, "agent": agent_id, "tenant": tenant_id,
+            "target": request.target if request else None,
+            "parameters": dict(request.parameters) if request else None,
+            "evidence": sorted([e.memory_id, e.version] for e in certificate.evidence)
+            if certificate else []}
+    return hashlib.sha256(json.dumps(body, sort_keys=True, default=str,
+                                     separators=(",", ":")).encode()).hexdigest()
 
 
 @dataclass(frozen=True)
@@ -135,6 +184,9 @@ class Approval:
 
     approver_id: str
     certificate_digest: str
+    binding: str | None = None
+    """When set, the approval covers only the action with this
+    `binding_digest`: a changed target or parameter voids it."""
 
 
 @dataclass(frozen=True)
@@ -190,8 +242,15 @@ class ActionGate:
         tenant_id: str | None = None,
         approval: Approval | None = None,
         session: Any = None,
+        request: ActionRequest | None = None,
+        grant: Grant | str | None = None,
     ) -> ActionDecision:
         """Return whether `agent_id` may call `tool` now.
+
+        Fail-closed order: identity, tool grant, certificate, evidence
+        re-verification, origin-bound authority of every piece of evidence,
+        human approval, then the exact-action grant. `request` names the
+        target and parameters; approvals and grants are bound to them.
 
         With `session` (a `service.Session`), the caller's identity and tenant
         come from its credential, which is re-verified here: a credential
@@ -234,6 +293,11 @@ class ActionGate:
         if not verification.ok:
             return self._decide(tool, agent_id, verification.reason_codes,
                                 verification, rule, certificate=certificate, tenant_id=tenant_id)
+        authority_reason = self._authority(certificate, rule)
+        if authority_reason:
+            return self._decide(tool, agent_id, (authority_reason,), verification, rule,
+                                certificate=certificate, tenant_id=tenant_id)
+        binding = binding_digest(tool, agent_id, tenant_id, request, certificate)
 
         if rule.requires_human_approval:
             if approval is None:
@@ -241,12 +305,94 @@ class ActionGate:
                                     verification, rule, certificate=certificate, tenant_id=tenant_id)
             if (approval.approver_id not in self.policy.approvers
                     or approval.approver_id == agent_id
-                    or approval.certificate_digest != certificate.digest()):
+                    or approval.certificate_digest != certificate.digest()
+                    or (approval.binding is not None and approval.binding != binding)):
                 return self._decide(tool, agent_id, (APPROVAL_INVALID,),
                                     verification, rule, certificate=certificate, tenant_id=tenant_id)
 
+        grant_id = grant.grant_id if isinstance(grant, Grant) else grant
+        if rule.requires_grant or grant_id is not None:
+            if grant_id is None:
+                return self._decide(tool, agent_id, (GRANT_REQUIRED,), verification, rule,
+                                    certificate=certificate, tenant_id=tenant_id, binding=binding)
+            problem = self._check_grant(grant_id, tool, agent_id, binding)
+            if problem:
+                return self._decide(tool, agent_id, (problem,), verification, rule,
+                                    certificate=certificate, tenant_id=tenant_id,
+                                    grant_id=grant_id, binding=binding)
         return self._decide(tool, agent_id, (ALLOWED,), verification, rule,
-                            allowed=True, certificate=certificate, tenant_id=tenant_id)
+                            allowed=True, certificate=certificate, tenant_id=tenant_id,
+                            grant_id=grant_id, binding=binding)
+
+    # --- origin-bound authority and exact-action grants --------------------
+
+    def _authority(self, certificate: EvidenceCertificate, rule: ToolRule) -> str | None:
+        from . import authority
+
+        if rule.min_authority == authority.UNTRUSTED:
+            return None
+        for item in certificate.evidence:
+            try:
+                found = authority.of(self.fabric, item.memory_id)
+            except Exception:
+                return STATE_UNAVAILABLE
+            if found.kind == "instruction":
+                return INSTRUCTION_EVIDENCE
+            if not found.at_least(rule.min_authority):
+                return AUTHORITY_INSUFFICIENT
+        return None
+
+    def issue_grant(self, tool: str, agent_id: str, issuer: str, *,
+                    certificate: EvidenceCertificate | None = None,
+                    request: ActionRequest | None = None,
+                    tenant_id: str | None = None, ttl_s: float = 60.0) -> Grant:
+        """A grant for one exact action, valid for `ttl_s` and consumed by its first use.
+
+        The issuer is the host or a human; it must not be the agent.
+        """
+        from .ids import new_ulid
+
+        if issuer == agent_id:
+            raise ValueError("an agent cannot grant itself an action")
+        if not 0 < ttl_s <= MAX_GRANT_TTL_S:
+            raise ValueError(f"ttl_s must be in (0, {MAX_GRANT_TTL_S}]")
+        if tool not in self.policy.grants.get(agent_id, frozenset()):
+            raise ValueError(f"{agent_id} is not granted {tool}")
+        binding = binding_digest(tool, agent_id, tenant_id, request, certificate)
+        grant = Grant("gr_" + new_ulid(), tool, agent_id, binding,
+                      self.fabric.now() + int(ttl_s * 1000))
+        self.fabric._emit(ev.grant_issued(ts=self.fabric.now(), grant_id=grant.grant_id,
+                                          tool=tool, agent_id=agent_id, binding=binding,
+                                          expires_ms=grant.expires_ms, issuer=issuer))
+        return grant
+
+    def revoke_grant(self, grant_id: str, issuer: str) -> None:
+        self.fabric._emit(ev.grant_issued(ts=self.fabric.now(), grant_id=grant_id, tool="",
+                                          agent_id="", binding="", expires_ms=0,
+                                          issuer=issuer, revoked=True))
+
+    def _check_grant(self, grant_id: str, tool: str, agent_id: str, binding: str) -> str | None:
+        issued = None
+        revoked = False
+        for event in self.fabric.log.read_types([ev.EventType.GRANT_ISSUED]):
+            if event.payload.get("grant_id") != grant_id:
+                continue
+            if event.payload.get("revoked"):
+                revoked = True
+            elif issued is None:
+                issued = event.payload
+        if issued is None:
+            return GRANT_UNKNOWN
+        if revoked:
+            return GRANT_REVOKED
+        if self.fabric.now() >= int(issued["expires_ms"]):
+            return GRANT_EXPIRED
+        if (issued["tool"], issued["agent"], issued["binding"]) != (tool, agent_id, binding):
+            return GRANT_MISMATCH
+        for event in self.fabric.log.read_types([ev.EventType.ACTION_GATED]):
+            if event.payload.get("grant_id") == grant_id and event.payload.get("allowed"):
+                return GRANT_REPLAYED
+        return None
 
     def execute(
         self,
@@ -261,6 +407,8 @@ class ActionGate:
         approval: Approval | None = None,
         session: Any = None,
         retry: bool = False,
+        request: ActionRequest | None = None,
+        grant: Grant | str | None = None,
     ) -> ActionExecution:
         """Authorize and run `run(key)` with no window between them (module docstring).
 
@@ -286,7 +434,8 @@ class ActionGate:
         fabric = self.fabric
         with fabric.lock, fabric._transaction():
             decision = self.authorize(tool, agent_id, certificate, tenant_id=tenant_id,
-                                      approval=approval, session=session)
+                                      approval=approval, session=session,
+                                      request=request, grant=grant)
             if not decision.allowed:
                 return ActionExecution(REFUSED, decision, key)
             box: dict[str, Any] = {}
@@ -339,6 +488,8 @@ class ActionGate:
         allowed: bool = False,
         certificate: EvidenceCertificate | None = None,
         tenant_id: str | None = None,
+        grant_id: str | None = None,
+        binding: str | None = None,
     ) -> ActionDecision:
         decision = ActionDecision(
             allowed=allowed, tool=tool, agent_id=agent_id,
@@ -365,6 +516,7 @@ class ActionGate:
                     min_independent_sources=max(
                         certificate.min_independent_sources if certificate else 0,
                         rule.min_independent_sources if rule else 0),
+                    grant_id=grant_id, binding=binding,
                 ))
             except Exception:
                 # An audit write that fails must not turn a refusal into an

@@ -159,7 +159,10 @@ def cli_md() -> str:
     sub = next(a for a in parser._actions if isinstance(a, argparse._SubParsersAction))
     lines += ["", "## Commands", ""]
     for name, command in sorted(sub.choices.items()):
-        lines += [f"### `{name}`", "", (command.description or "").strip(), ""]
+        # cleandoc: Python 3.13 dedents docstrings at compile time and older
+        # versions do not, so a docstring-based description differed by
+        # version and failed this check on 3.11 and 3.12.
+        lines += [f"### `{name}`", "", inspect.cleandoc(command.description or ""), ""]
         for action in command._actions:
             if action.dest == "help":
                 continue

@@ -64,7 +64,13 @@ forms, and later sessions get it through governed retrieval:
    records the session's context (site, team, task). `adapters.ingest_transcript`
    stores a whole past conversation as an episode plus an episodic memory,
    with an optional verified outcome.
-3. **Its purpose**: a `MemoryObjectiveV2` states what the session needs, and
+3. **A compact handoff**: `compaction.compact_session(episode)` writes one
+   governed summary of what the session established, as a derivation of
+   its memories, with disputes kept and every value checked. A correction to
+   any input contests it, and the manager re-compacts from what still
+   stands. C1: stale values shown 0 against 1.00 for an ungoverned summary,
+   at the same coverage ([c1](../research/results/c1-compaction.md)).
+4. **Its purpose**: a `MemoryObjectiveV2` states what the session needs, and
    proposals to change it are logged and adopted only by another reviewer
    (`ObjectiveLog`), so the next session can start from the adopted one.
 

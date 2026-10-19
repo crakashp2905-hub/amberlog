@@ -34,7 +34,7 @@ class Stability(unittest.TestCase):
             self.assertIsNotNone(section, f"no {tier} section")
             for name in re.findall(r"^- `([\w.]+)`", section.group(1), re.M):
                 listed[name] = tier
-        self.assertEqual(listed, declared(), "regenerate the tier lists in STABILITY.md")
+        self.assertEqual(listed, declared(), "regenerate the tier lists: python tools/gen_stability.py")
 
     def test_experimental_modules_are_not_imported_by_the_default_path(self) -> None:
         experimental = {m.rsplit(".", 1)[-1] for m, t in declared().items() if t == "experimental"}

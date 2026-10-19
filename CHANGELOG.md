@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: governed session compaction (experimental)
+
+- **`compaction.compact_session(fabric, episode, agent)`** writes one
+  summary of a session as a `derive(consolidated)` of everything it wrote
+  or cited: lineage, retraction and authority follow it. Disputes are kept
+  with every value and source; a summary that drops a recorded value or
+  resolves a dispute is refused; the summary passes the ingest screen.
+  `summary_for(episode)` returns the current one. The manager's new
+  `compaction` task re-compacts a session whose summary lost an input.
+- **Retention never retires a premise of an exposable memory**, so a
+  summary cannot outlive its sources.
+- C1 (held-out): stale value shown 0 vs 1.00 for an ungoverned summary,
+  coverage 0.956 vs 0.944 for session-filtered notes, no recall gain.
+
 ### Added: reach limits, tenant routing, hostile-source withholding by default
 
 - **A copy no longer travels further than its retraction can follow.**

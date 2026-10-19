@@ -189,8 +189,8 @@ unchanged, and a 0.11.0 reader skips all six.
 - **`ManagerLease`**, payload `{holder, expires_ms}`. Taken and renewed inside
   a write transaction, so at most one manager maintains a store at a time.
 - **`MaintenanceRan`**, payload `{since_seq, until_seq, tasks}`. One cycle:
-  for each task, what it did or the error. The tasks are dispatch, retention,
-  audit, conflicts, checkpoint and health. Ids and counts only, never
+  for each task, what it did or the error. The tasks are sources, dispatch, retention,
+  audit, conflicts, compaction, checkpoint and health. Ids and counts only, never
   content.
 - **`SourceDiscredited`**, payload `{author_ref, signal, origin_store_id,
   notice_id, reason_code, authorised}`. A source here was caught by an ingest

@@ -129,9 +129,11 @@ class MemoryObjectiveV2:
                             if c.strength == "hard" and c.rule.holds(context)), None)
         if in_scope and excluded_by is None:
             return True, "in scope"
-        reason = ("outside scope" if not in_scope
-                  else f"hard exclusion {excluded_by.rule.field} {excluded_by.rule.op} "
-                       f"{excluded_by.rule.value!r}")
+        if excluded_by is None:
+            reason = "outside scope"
+        else:
+            rule = excluded_by.rule
+            reason = f"hard exclusion {rule.field} {rule.op} {rule.value!r}"
         if self.is_safety(context):
             if self.reviewed_by:
                 return False, f"{reason}; safety evidence excluded by reviewed objective " \
@@ -278,10 +280,10 @@ class ObjectiveLog:
                 evaluation: Mapping[str, float], reason: str) -> str:
         from . import events as ev
 
-        payload = {"digest": objective.digest(), "status": "proposed", "proposer": proposer,
-                   "evaluation": dict(evaluation), "reason": reason,
-                   "objective": objective.to_json()}
-        self.fabric._emit(ev.objective_changed(ts=self.fabric.now(), actor=proposer, **payload))
+        self.fabric._emit(ev.objective_changed(
+            ts=self.fabric.now(), actor=proposer, digest=objective.digest(), status="proposed",
+            proposer=proposer, evaluation=dict(evaluation), reason=reason,
+            objective=objective.to_json()))
         return objective.digest()
 
     def adopt(self, digest: str, reviewer: str, baseline: Mapping[str, float],

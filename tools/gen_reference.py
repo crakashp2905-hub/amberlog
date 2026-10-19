@@ -172,10 +172,18 @@ def cli_md() -> str:
 def main(argv: list[str]) -> int:
     outputs = {ROOT / "docs" / "API.md": api_md(), ROOT / "docs" / "CLI.md": cli_md()}
     if "--check" in argv:
-        stale = [p.name for p, text in outputs.items()
+        import difflib
+
+        stale = [p for p, text in outputs.items()
                  if not p.exists() or p.read_text(encoding="utf-8") != text]
+        for path in stale:
+            current = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+            diff = list(difflib.unified_diff(current, outputs[path].splitlines(), "committed",
+                                             "generated", lineterm="", n=0))
+            print("
+".join(diff[:40]))
         if stale:
-            print(f"out of date: {stale}; run python tools/gen_reference.py")
+            print(f"out of date: {[p.name for p in stale]}; run python tools/gen_reference.py")
             return 1
         return 0
     for path, text in outputs.items():

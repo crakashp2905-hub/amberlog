@@ -106,6 +106,7 @@ Preview what withdrawing a memory would touch; with --apply, WRITES it and owes 
 - `--reason`: why, recorded with the change
 - `--actor`: who is correcting this; required with --apply
 - `--basis`: the evidence for withdrawing it (contradicted, sensitive_data, ...)
+- `--preview`: the digest the preview printed; --apply refuses if the store changed
 
 ### `demo`
 

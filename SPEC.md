@@ -181,6 +181,41 @@ Default rules:
 
 ---
 
+### 0.13.0 — context receipts and memory branches
+
+Additive: six event types, no projection change. A 0.12.0 log replays
+unchanged, and a 0.12.0 reader skips all six. None carries memory content or
+query text: ids, versions, digests and reason codes only.
+
+- **`ContextBuilt`**, payload `{receipt_id, tenant_id, agent_id, branch,
+  commit_id, request_digest, selected, excluded, token_budget,
+  tokens_estimated, mode, policy_id, retrieval_config, log_head,
+  nondeterminism}`. What one context bundle delivered: each memory as id and
+  version, each summary node with its exact source versions, and each
+  excluded candidate with a reason code (`context_receipt.py`,
+  docs/architecture/ADR-003-context-receipts.md).
+- **`BranchCreated`**, payload `{branch, tenant_id, owner, members,
+  reviewers, base_seq}`.
+- **`BranchCommitted`**, payload `{branch, tenant_id, commit}`. The commit
+  is `{commit_id, branch, tenant_id, parents, base_seq, changes, author,
+  message, created_at, schema_version}`; `commit_id` is `c_` + SHA-256 of the
+  canonical JSON of everything but itself, `created_at` and
+  `schema_version`. A change is `{op: add|revise|withdraw, memory_id?,
+  base_version?, candidate_id?, digest}`.
+- **`BranchHeadMoved`**, payload `{branch, tenant_id, from, to}`. Appended in
+  the same transaction as the commit, after a compare-and-swap check of
+  `from` under the write lock.
+- **`MergeApplied`**, payload `{merge_id, branch, tenant_id, branch_head,
+  preview_digest, idempotency_key, actor, policy_version, results, summary}`,
+  each result a change with its `class`, `decision` and what was `applied`;
+  a revert has `reverts` and `reverted` instead
+  (docs/architecture/ADR-001-branch-commit-model.md).
+- **`BranchClosed`**, payload `{branch, tenant_id}`.
+
+Behaviour: a branch's changes are ordinary memories written as candidates
+with `context.branch`, so they are screened, sealed and erasable, and are
+never served outside their branch until merged.
+
 ### 0.12.0 — the background memory manager, source notices, origin-bound authority, objectives
 
 Additive: seven event types, no projection change. A 0.11.0 log replays

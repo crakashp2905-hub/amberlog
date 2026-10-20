@@ -206,7 +206,7 @@ preview(fabric: MemoryFabric, memory_id: str) -> CorrectionPreview
 ### `correction.apply` (beta)
 
 ```python
-apply(fabric: MemoryFabric, memory_id: str, reason: str, actor: str, basis: str = 'contradicted') -> dict[str, Any]
+apply(fabric: MemoryFabric, memory_id: str, reason: str, actor: str, basis: str = 'contradicted', preview_digest: str | None = None) -> dict[str, Any]
 ```
 
 Quarantine and owe the retraction to every store that received the memory.

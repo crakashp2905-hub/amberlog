@@ -51,6 +51,12 @@ class EventType:
     AUTHORITY_ELEVATED = "AuthorityElevated"
     GRANT_ISSUED = "GrantIssued"
     OBJECTIVE_CHANGED = "ObjectiveChanged"
+    CONTEXT_BUILT = "ContextBuilt"
+    BRANCH_CREATED = "BranchCreated"
+    BRANCH_COMMITTED = "BranchCommitted"
+    BRANCH_HEAD_MOVED = "BranchHeadMoved"
+    MERGE_APPLIED = "MergeApplied"
+    BRANCH_CLOSED = "BranchClosed"
 
 
 @dataclass(frozen=True)
@@ -827,3 +833,22 @@ def action_attempted(ts: int, agent_id: str, key: str, tool: str,
     return Event(type=EventType.ACTION_ATTEMPTED, ts=ts, agent_id=agent_id,
                  payload={"key": key, "tool": tool, "tenant_id": tenant_id})
 
+
+
+def context_built(ts: int, agent_id: str, receipt: Mapping[str, Any]) -> Event:
+    """A context bundle was delivered to an agent (0.13.0).
+
+    Ids, versions, digests and reason codes only: never the query, never
+    memory or summary content (docs/architecture/ADR-003-context-receipts.md).
+    """
+    return Event(type=EventType.CONTEXT_BUILT, ts=ts, agent_id=agent_id,
+                 payload=dict(receipt))
+
+
+def branch_event(type_: str, ts: int, actor: str, payload: Mapping[str, Any]) -> Event:
+    """A branch was created, committed to, moved, merged or closed (0.13.0).
+
+    Commit envelopes carry ids and digests, never content
+    (docs/architecture/ADR-001-branch-commit-model.md).
+    """
+    return Event(type=type_, ts=ts, agent_id=actor, payload=dict(payload))

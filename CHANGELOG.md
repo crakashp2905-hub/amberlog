@@ -5,6 +5,41 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added (schema 0.13.0): context receipts, the Governed Context Map and memory branches
+
+Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
+0.12.0 log replays unchanged.
+
+- **Capability registry** (`product/capabilities.json`, generated
+  `docs/product/CAPABILITY_REGISTRY.md`): every capability's status, code,
+  tests and surfaces, checked against the code. It found session compaction
+  listed as available while its module is experimental.
+- **Correction previews are revalidated at apply**: `apply(preview_digest=)`
+  and `correct --apply --preview DIGEST` refuse with `STALE_PREVIEW` if a
+  version, descendant, copy or recipient changed since the preview.
+- **Context receipts** (`context_receipt.py`, experimental): every context
+  bundle records the exact memory versions and summary nodes delivered and
+  each exclusion's reason code, as a `ContextBuilt` event with no content or
+  query text. `explain_receipt` reports what is no longer admissible.
+- **Governed Context Map** (`context_map.py`, experimental): L1/L2 summary
+  nodes keyed by exact source versions, refused if they would drop a number,
+  identifier or negation, checked for staleness and admissibility at every
+  use, and a token-budgeted planner with four modes.
+- **Memory branches** (`branching.py`, experimental): branches, immutable
+  content-addressed commits, compare-and-swap heads, deterministic diff, a
+  three-way merge that classifies every change and never resurrects a
+  withdrawn memory, stale-preview refusal, idempotent apply, compensating
+  revert, and snapshots that keep history separate from current permission.
+- ADR-001 to ADR-003 in `docs/architecture/`; baseline and gap report in
+  `docs/product/BASELINE_AND_GAPS.md`.
+
+### Fixed
+
+- A write rolled back with its transaction stayed in the copy-recognition
+  index, so the next similar write failed with `KeyError`. Found by
+  concurrent branch commits; `_replay` now unindexes what the log does not
+  hold.
+
 ### Added (release evidence): product benchmark and a generated release report
 
 - `experiments/product_bench.py`: retrieval quality (recall@1, recall@5,

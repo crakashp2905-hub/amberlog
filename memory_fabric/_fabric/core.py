@@ -497,6 +497,13 @@ class FabricCore:
         self.projection = Projection.rebuild(
             self.log, unsealer=self._unseal_content
         )
+        # A rolled-back write left its memory in the indexes. Unindexed here,
+        # or the copy index goes on "recognising" a memory the log never
+        # committed and the next similar write looks it up and fails
+        # (found by concurrent branch commits, tests/test_branching.py).
+        for memory_id in set(self.chain_terms) - set(self.state.memories):
+            self._unindex(memory_id)
+            self.copy_index.remove(memory_id)
         for memory in self.state.memories.values():
             if memory.lifecycle_state is not LifecycleState.DELETED:
                 self._index(memory.id, self._index_text(memory))

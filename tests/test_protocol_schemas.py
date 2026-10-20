@@ -151,11 +151,12 @@ class TestSchemaMatchesTheCode(unittest.TestCase):
         additive event change."""
         # Pinned, and bumped deliberately: 0.8.0 added copy recognition and
         # 0.9.0 added `ActionGated`, 0.10.0 `CollectionChanged`, 0.11.0
-        # `ActionExecuted` and 0.12.0 the manager's lease and cycle events, each
+        # `ActionExecuted`, 0.12.0 the manager's lease and cycle events and 0.13.0
+        # context receipts and branches, each
         # additive. The protocol
         # version did not move, which is the point this test makes -- an
         # additive log change must not force a wire break.
-        self.assertEqual(SCHEMA_VERSION, "0.12.0")
+        self.assertEqual(SCHEMA_VERSION, "0.13.0")
         self.assertEqual(
             load("retraction-v1.schema.json")["properties"]["protocol_version"]["const"], 1
         )

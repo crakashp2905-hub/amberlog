@@ -1184,7 +1184,11 @@ def cmd_correct(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             return 2
         try:
             result = correction.apply(fabric, args.id, reason=args.reason,
-                                      actor=args.actor or "", basis=args.basis)
+                                      actor=args.actor or "", basis=args.basis,
+                                      preview_digest=args.preview_digest)
+        except correction.StalePreview as exc:
+            print(f"{C.RED}{exc.code}: {exc}{C.RESET}", file=sys.stderr)
+            return 5
         except (ValueError, KeyError) as exc:
             print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
             return 4
@@ -1207,8 +1211,9 @@ def cmd_correct(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     print(f"  take copies    {', '.join(p.copies) or 'none'}")
     stores = ", ".join(s["store_id"] for s in p.stores)
     print(f"  owe stores     {stores or 'none'}")
+    print(f"  preview        {p.digest[:16]}")
     print(f"\n{C.DIM}Apply: memory-fabric --db {_shown(args.db)} correct {args.id} --apply "
-          f"--reason WHY --actor YOU{C.RESET}")
+          f"--reason WHY --actor YOU --preview {p.digest[:16]}{C.RESET}")
     return 0
 
 
@@ -2527,6 +2532,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--actor", help="who is correcting this; required with --apply")
     p.add_argument("--basis", default="contradicted",
                    choices=["contradicted", "sensitive_data", "contrastive_harm"])
+    p.add_argument("--preview", dest="preview_digest",
+                   help="the digest the preview printed; --apply refuses if the store changed")
 
     p = add("suspicious", cmd_suspicious,
             "Memories whose claim contradicts what the store knows: a corrected value "
@@ -2624,6 +2631,7 @@ HELP: dict[tuple[str | None, str], str] = {
     ("collection", "name"): "the collection's name", ("collection", "--memory"): "memory id to add or remove",
     ("collection", "--agent"): "agent to grant or revoke",
     ("correct", "--apply"): "withdraw it and owe retractions (without this, only preview)",
+    ("correct", "--preview"): "the preview's digest: refuse to apply if anything it showed changed",
     ("correct", "--basis"): "the evidence for withdrawing it (contradicted, sensitive_data, ...)",
     ("review", "id"): "the candidate to decide on; omit to list the queue",
     ("review", "--approve"): "make it active", ("review", "--reject"): "quarantine it",

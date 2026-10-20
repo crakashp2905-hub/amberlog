@@ -110,6 +110,49 @@ class StoresAreOwedTheRetraction(unittest.TestCase):
             apply(fabric, mid, reason="wrong", actor="operator")
 
 
+class StalePreviewsAreRefused(unittest.TestCase):
+    """Blueprint 5.5: a preview is revalidated at apply time, never applied blindly."""
+
+    def setUp(self) -> None:
+        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.root = self.f.remember("a", "Pump P1 runs at 4 bar.", scope="team")
+        self.child = self.f.derive("a", "Line 1 is safe at 4 bar.", parents=[self.root],
+                                   scope="team")
+
+    def tearDown(self) -> None:
+        self.f.close()
+
+    def test_an_unchanged_preview_applies(self) -> None:
+        shown = preview(self.f, self.root)
+        result = apply(self.f, self.root, reason="wrong", actor="lead",
+                       preview_digest=shown.digest[:16])
+        self.assertTrue(result["preview_checked"])
+        self.assertEqual(self.f.get(self.root).lifecycle_state, LifecycleState.QUARANTINED)
+
+    def test_a_new_descendant_after_the_preview_refuses_the_apply(self) -> None:
+        from memory_fabric.correction import StalePreview
+
+        shown = preview(self.f, self.root)
+        self.f.derive("b", "Line 2 is safe at 4 bar too.", parents=[self.root], scope="team")
+        with self.assertRaises(StalePreview):
+            apply(self.f, self.root, reason="wrong", actor="lead", preview_digest=shown.digest)
+        self.assertEqual(self.f.get(self.root).lifecycle_state, LifecycleState.ACTIVE)
+
+    def test_a_revision_after_the_preview_refuses_the_apply(self) -> None:
+        from memory_fabric.correction import StalePreview
+
+        shown = preview(self.f, self.root)
+        self.f.revise(self.child, "Line 1 is safe at 4.5 bar.", agent_id="a", reason="re-measured")
+        with self.assertRaises(StalePreview):
+            apply(self.f, self.root, reason="wrong", actor="lead", preview_digest=shown.digest)
+
+    def test_a_short_digest_is_not_enough(self) -> None:
+        from memory_fabric.correction import StalePreview
+
+        with self.assertRaises(StalePreview):
+            apply(self.f, self.root, reason="wrong", actor="lead", preview_digest="ab")
+
+
 class TheCommand(unittest.TestCase):
     def test_preview_then_apply_from_the_command_line(self) -> None:
         import contextlib

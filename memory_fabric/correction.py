@@ -13,7 +13,11 @@ the outcome.
   independent support, which copies fall with it, and which stores are owed
   a retraction.
 - `apply`: quarantine it and owe the retraction to every store that received
-  it, in one transaction (the protocol's invariant 3).
+  it, in one transaction (the protocol's invariant 3). Given the preview's
+  `digest`, it first recomputes the preview **inside the same transaction**
+  and refuses with `StalePreview` if anything it showed has changed: a
+  version, a descendant's state, a new copy or recipient. An operator never
+  applies a blast radius they did not see.
 - `status`: per store, what each recipient has acknowledged.
 """
 
@@ -21,6 +25,8 @@ from __future__ import annotations
 
 __stability__ = "beta"
 
+import hashlib
+import json
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any
 
@@ -42,9 +48,29 @@ class CorrectionPreview:
     copies: list[str] = field(default_factory=list)
     stores: list[dict[str, Any]] = field(default_factory=list)
     """Stores holding a copy: each is owed a retraction."""
+    digest: str = ""
+    """What this preview was computed from; `apply(preview_digest=...)` checks it."""
 
     def to_json(self) -> dict[str, Any]:
         return dict(self.__dict__)
+
+
+class StalePreview(Exception):
+    """The store changed after the preview was shown. Preview again; nothing was applied."""
+
+    code = "STALE_PREVIEW"
+
+
+def _digest(state: Any, result: CorrectionPreview) -> str:
+    touched = sorted({result.memory_id, *result.would_contest, *result.would_survive,
+                      *result.copies, *_descendants(state, result.memory_id)})
+    basis = {"memories": [[m, state.memories[m].version, state.memories[m].lifecycle_state.value]
+                          for m in touched if m in state.memories],
+             "contest": result.would_contest, "survive": result.would_survive,
+             "copies": result.copies,
+             "stores": sorted((s["store_id"] or "", s["imported_memory_id"] or "")
+                              for s in result.stores)}
+    return hashlib.sha256(json.dumps(basis, sort_keys=True).encode()).hexdigest()
 
 
 def _descendants(state: Any, memory_id: str) -> set[str]:
@@ -82,19 +108,31 @@ def preview(fabric: "MemoryFabric", memory_id: str) -> CorrectionPreview:
             result.would_survive.append(other)
         else:
             result.would_contest.append(other)
+    result.digest = _digest(state, result)
     return result
 
 
 def apply(fabric: "MemoryFabric", memory_id: str, reason: str, actor: str,
-          basis: str = WithdrawalBasis.CONTRADICTED.value) -> dict[str, Any]:
-    """Quarantine and owe the retraction to every store that received the memory."""
+          basis: str = WithdrawalBasis.CONTRADICTED.value,
+          preview_digest: str | None = None) -> dict[str, Any]:
+    """Quarantine and owe the retraction to every store that received the memory.
+
+    With `preview_digest`, refuses with `StalePreview` unless the preview
+    computed now, under the write lock, is the one that was shown.
+    """
     if not actor or actor == "operator":
         raise ValueError("name who is correcting this: the decision is audited")
-    recipients = sorted({s["store_id"] for s in _stores(fabric, memory_id) if s["store_id"]})
-    retraction = fabric.request_retraction(memory_id, reason=reason, recipients=recipients,
-                                           actor=actor, basis=basis)
+    with fabric._transaction():
+        if preview_digest is not None:
+            current = preview(fabric, memory_id)
+            # A prefix is accepted, so the CLI can print a short one.
+            if len(preview_digest) < 12 or not current.digest.startswith(preview_digest):
+                raise StalePreview(f"{memory_id} changed since the preview: preview again")
+        recipients = sorted({s["store_id"] for s in _stores(fabric, memory_id) if s["store_id"]})
+        retraction = fabric.request_retraction(memory_id, reason=reason, recipients=recipients,
+                                               actor=actor, basis=basis)
     return {"memory_id": memory_id, "retraction_id": retraction.retraction_id,
-            "owed_to": recipients}
+            "owed_to": recipients, "preview_checked": preview_digest is not None}
 
 
 def status(fabric: "MemoryFabric", memory_id: str) -> list[dict[str, Any]]:

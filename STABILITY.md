@@ -111,10 +111,13 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.tenancy`
 - `memory_fabric.validation`
 
-## Experimental (10)
+## Experimental (13)
 
 - `memory_fabric.adapters.systemone`
+- `memory_fabric.branching`
 - `memory_fabric.compaction`
+- `memory_fabric.context_map`
+- `memory_fabric.context_receipt`
 - `memory_fabric.governance.model_screen`
 - `memory_fabric.independence`
 - `memory_fabric.mental_models`

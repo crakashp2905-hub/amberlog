@@ -74,7 +74,8 @@ memory_fabric/
 ├── exposure.py      exposure policies and propensity logging
 ├── estimators.py    naive baseline + propensity-corrected IPS
 ├── explain.py       "why does the system remember this?"
-├── fabric.py        the MemoryFabric facade
+├── fabric.py        the MemoryFabric facade: composes _fabric/ (see below)
+├── _fabric/         MemoryFabric's internals, one module per service (not public)
 ├── session.py       AgentSession: capability-scoped writes
 ├── federation.py    offering a memory across a store boundary
 ├── cli.py           command line interface
@@ -101,6 +102,31 @@ experiments/         RuleWorld, the H1 harness, statistics (not installed)
 research/            review, hypotheses, pre-registrations, results, decisions
 tests/
 ```
+
+**`MemoryFabric` is a facade over a core and seven services** (2026-10-20).
+It was one 3,400-line class; it is now `class MemoryFabric(FederationMixin,
+SealingMixin, RetrievalMixin, LifecycleMixin, SharingMixin, AccessMixin,
+WritesMixin, FabricCore)` in a 200-line `fabric.py`:
+
+| module | owns |
+|---|---|
+| `_fabric/core.py` | `FabricCore`: store identity, the event log, refresh across processes, transactions, replay |
+| `_fabric/writes.py` | episodes, outcomes, `remember`, `revise`, `derive`, citations |
+| `_fabric/retrieval.py` | eligibility, search, ranking, lineage expansion, relations, evidence chains |
+| `_fabric/lifecycle.py` | validation, quarantine and its propagation, release, challenges, retention, authority |
+| `_fabric/federation.py` | shares, retractions requested, received and forwarded, hostile-source notices |
+| `_fabric/sharing.py` | the firewall decision on widening scope; collections |
+| `_fabric/sealing.py` | content encryption, crypto-erasure |
+| `_fabric/access.py` | the enforced read, action-time verification, certificates, inspection, health |
+| `_fabric/common.py` | exceptions, result types, `_fresh` |
+
+Each service inherits `FabricCore` and none imports another; a call from one
+service into another goes through `self` and is declared on `FabricCore` for
+the type checker (generated from the real signature). The event log stays the
+only source of truth: every service writes through `FabricCore._emit` and
+reads projections. `tests/test_fabric_structure.py` holds the public API to
+the one recorded before the split, keeps the declarations matched to their
+implementations, and fails if a module grows past 1,200 lines.
 
 **The embedder is now real, where a model is available.** `OllamaEmbedder` implements the same `Embedder` protocol as the hashing placeholder and plugs in through `MemoryFabric(embedder=...)`. The placeholder matches whole tokens, so `symptom_3` never reaches `symptom 3`; every retrieval-quality number measured before P1–P7 was measured against a deliberately weak stand-in, and the live runs are the first to use real semantics. It caches aggressively — an embed call costs ~1.2s, and the fabric re-embeds on every `add` and every `search`.
 

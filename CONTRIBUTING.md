@@ -39,9 +39,13 @@ including the CHANGELOG.
 1. Name the milestone in [ROADMAP.md](ROADMAP.md) it belongs to. If its gate hasn't passed, the feature waits.
 2. If it changes the memory schema or event types, update [SPEC.md](SPEC.md), bump `schema_version`, and add a migration.
 3. Add unit tests. For estimators or policies, also add known-answer tests on RuleWorld.
-4. Declare the module's tier (`__stability__ = "stable" | "beta" | "experimental"`). New
+4. A change to the store's behaviour goes in the service that owns it
+   (`memory_fabric/_fabric/`, table in ARCHITECTURE.md §6), not in
+   `fabric.py`. A new public `MemoryFabric` method is added to
+   `tests/data/memory_fabric_api.json`, deliberately.
+5. Declare the module's tier (`__stability__ = "stable" | "beta" | "experimental"`). New
    mechanisms start experimental and stay off the default path.
-5. If it adds a refusal a user can see, give it a reason code and a row in
+6. If it adds a refusal a user can see, give it a reason code and a row in
    `docs/TROUBLESHOOTING.md`. If it adds a CLI option, give it help text.
 
 ## Adding an experimental mechanism

@@ -15,9 +15,19 @@ the code disagree.
 Promotion needs evidence that the change in default behaviour helps,
 and the owner's decision (AGENTS.md principle 9).
 
-## Stable (47)
+## Stable (57)
 
 - `memory_fabric.__init__`
+- `memory_fabric._fabric.__init__`
+- `memory_fabric._fabric.access`
+- `memory_fabric._fabric.common`
+- `memory_fabric._fabric.core`
+- `memory_fabric._fabric.federation`
+- `memory_fabric._fabric.lifecycle`
+- `memory_fabric._fabric.retrieval`
+- `memory_fabric._fabric.sealing`
+- `memory_fabric._fabric.sharing`
+- `memory_fabric._fabric.writes`
 - `memory_fabric.adapters.__init__`
 - `memory_fabric.adapters.context`
 - `memory_fabric.adapters.mcp`

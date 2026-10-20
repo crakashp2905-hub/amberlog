@@ -5,6 +5,20 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Changed (internal): MemoryFabric split into a core and seven services
+
+- `fabric.py` was one 3,722-line module with a 3,400-line class. It is now a
+  182-line facade composing `memory_fabric/_fabric/`: `FabricCore` (identity,
+  log, refresh, transactions, replay) and services for writes, retrieval,
+  lifecycle, federation, sharing, sealing and access. Methods moved
+  verbatim; no behaviour changed.
+- **No public API changed**: `tests/test_fabric_structure.py` checks all 74
+  public members against signatures recorded from the original class, and
+  the full suite passed unchanged.
+- Fully type-checked as before: the cross-service calls are declared on
+  `FabricCore` for mypy, and the declarations are tested against the
+  implementations. No checking was switched off.
+
 ### Fixed and verified: authorization, crashes, tamper detection, cryptography
 
 - **F15 (high): a token stayed usable after its memory stopped being

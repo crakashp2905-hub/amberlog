@@ -56,6 +56,17 @@ class Session(unittest.TestCase):
             compact_session(self.f, self.ep, agent_id="compactor", summarise=drops)
         self.assertEqual(len(self.f.state.memories), before, "nothing was written")
 
+    def test_a_summariser_that_drops_an_undisputed_value_is_refused(self) -> None:
+        """Without a dispute in play, so only the value check can refuse it."""
+        f = MemoryFabric(":memory:", auto_activate=True)
+        self.addCleanup(f.close)
+        ep = f.start_episode("ops", "quiet-shift").id
+        f.remember("ops", "Pump P1 purge time is 30 s.", source_episodes=[ep], scope="team")
+        f.remember("ops", "Valve V7 opens below 4 bar.", source_episodes=[ep], scope="team")
+        drops = lambda mems, disputes: "Pump P1 purge time is 30 s."  # noqa: E731
+        with self.assertRaises(CompactionRefused):
+            compact_session(f, ep, agent_id="compactor", summarise=drops)
+
     def test_withdrawn_inputs_are_left_out_and_listed(self) -> None:
         self.f.quarantine(self.b, reason="wrong", actor="op")
         report = compact_session(self.f, self.ep, agent_id="compactor")

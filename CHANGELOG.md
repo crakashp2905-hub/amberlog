@@ -5,6 +5,17 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added (testing): property-based authorisation walks and mutation testing
+
+- `tests/test_properties_authz.py`: 30 seeded walks of 60 steps over writes,
+  validation, quarantine, revision, collections and grants; after every step
+  `use()` and every held token are checked against an oracle written from the
+  specification. Reverting the F15 fix fails it (seed 18, step 25).
+- `tools/mutation_check.py`: 20 curated mutants of security guards, each of
+  which must be killed by its named tests; run in CI (`mutation` job). The
+  first run found two untested guards, now covered: a summariser dropping an
+  undisputed value, and an ungranted agent holding its own valid certificate.
+
 ### Changed (internal): MemoryFabric split into a core and seven services
 
 - `fabric.py` was one 3,722-line module with a 3,400-line class. It is now a

@@ -43,9 +43,12 @@ including the CHANGELOG.
    (`memory_fabric/_fabric/`, table in ARCHITECTURE.md §6), not in
    `fabric.py`. A new public `MemoryFabric` method is added to
    `tests/data/memory_fabric_api.json`, deliberately.
-5. Declare the module's tier (`__stability__ = "stable" | "beta" | "experimental"`). New
+5. A new security guard (a tenant, visibility, signature, grant or limit
+   check) gets a mutant in `tools/mutation_check.py` naming the tests that
+   must notice it removed; CI fails on a survivor.
+6. Declare the module's tier (`__stability__ = "stable" | "beta" | "experimental"`). New
    mechanisms start experimental and stay off the default path.
-6. If it adds a refusal a user can see, give it a reason code and a row in
+7. If it adds a refusal a user can see, give it a reason code and a row in
    `docs/TROUBLESHOOTING.md`. If it adds a CLI option, give it help text.
 
 ## Adding an experimental mechanism

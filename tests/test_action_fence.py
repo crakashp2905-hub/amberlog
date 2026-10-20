@@ -56,6 +56,21 @@ class Fence(unittest.TestCase):
         self.assertEqual(result.outcome, REFUSED)
         self.assertEqual(self.effects, [])
 
+    def test_an_ungranted_agent_with_its_own_valid_certificate_is_refused_for_the_grant(self) -> None:
+        """Refused because the tool is not granted, not because the certificate names someone else.
+
+        `test_an_ungranted_agent_never_runs` uses another agent's certificate,
+        so it is refused by the certificate check even with no grant check at
+        all (found by tools/mutation_check.py).
+        """
+        from memory_fabric.actions import TOOL_NOT_GRANTED
+
+        own = self.f.certify("open-7", [self.m], "mallory")
+        decision = self.gate.authorize("open_valve", "mallory", own)
+        self.assertEqual(decision.reason_code, TOOL_NOT_GRANTED)
+        result = self.gate.execute("open_valve", "mallory", self.tool, own, key="k-own")
+        self.assertEqual((result.outcome, self.effects), (REFUSED, []))
+
     def test_a_concurrent_retraction_waits_for_the_action(self) -> None:
         marks: dict[str, float] = {}
 

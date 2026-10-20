@@ -190,6 +190,19 @@ jobs:
           python-version: "3.13"
       - run: python -m experiments.faultsim
 
+  mutation:
+    # Curated mutants of the security guards (tenant, visibility, signature,
+    # grant, replay, hop limit, payload limit). Each must be killed by its
+    # named tests; a survivor is an untested guard and fails the build.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e .
+      - run: python tools/mutation_check.py
+
   fresh-machine:
     # Install the wheel into a new venv outside the repo, run the quickstart
     # and the reference agent against the installed package, init + doctor,

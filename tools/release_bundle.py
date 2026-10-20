@@ -12,6 +12,9 @@ Writes `<out>/<sha>/`:
 - `adversarial-gate.json`: `tools/adversarial_gate.py` per-family results;
 - `tests.json`: the unit suite's counts and failures;
 - `wheel.sha256`: the hash of each wheel passed with `--wheel`;
+- `product-bench.json`: `experiments.product_bench` (quality, latency,
+  throughput, growth, false blocks), with `--bench quick|full`;
+- `RELEASE_REPORT.md`: all of the above as one page (`tools/release_report.py`);
 - `LIMITATIONS.md`, `STABILITY.md`: what this release does not claim.
 
 It exits non-zero if the tree is dirty, the scan finds anything, the gate
@@ -82,6 +85,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--allow-dirty", action="store_true")
     parser.add_argument("--skip-tests", action="store_true",
                         help="when CI has just run the suite on this commit")
+    parser.add_argument("--bench", choices=["none", "quick", "full"], default="none",
+                        help="run experiments.product_bench into the bundle")
     args = parser.parse_args(argv)
 
     sha = git("rev-parse", "HEAD")
@@ -108,12 +113,19 @@ def main(argv: list[str] | None = None) -> int:
     if args.wheel:
         (out / "wheel.sha256").write_text(
             "".join(f"{sha256(w)}  {w.name}\n" for w in args.wheel), encoding="utf-8")
+    bench_ok = True
+    if args.bench != "none":
+        bench = subprocess.run([sys.executable, "-m", "experiments.product_bench",
+                                "--out", str(out / "product-bench.json"),
+                                *(["--quick"] if args.bench == "quick" else [])],
+                               capture_output=True, text=True, cwd=ROOT)
+        bench_ok = bench.returncode == 0
     for doc in ("docs/LIMITATIONS.md", "STABILITY.md"):
         shutil.copy(ROOT / doc, out / Path(doc).name)
 
     checks = {"clean tree": not dirty, "secret scan": scan.returncode == 0,
               "adversarial gate": gate.returncode == 0,
-              "tests": bool(tests.get("passed", args.skip_tests))}
+              "tests": bool(tests.get("passed", args.skip_tests)), "benchmark": bench_ok}
     manifest = {"commit": sha, "dirty": dirty, "package_version": project["version"],
                 "schema_version": SCHEMA_VERSION, "python": platform.python_version(),
                 "platform": platform.platform(),
@@ -122,6 +134,9 @@ def main(argv: list[str] | None = None) -> int:
                 "files": {p.name: sha256(p) for p in sorted(out.iterdir())
                           if p.name != "manifest.json"}}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+    from release_report import render  # tools/ is this script's directory
+
+    (out / "RELEASE_REPORT.md").write_text(render(out), encoding="utf-8")
     for name, ok in checks.items():
         print(("PASS " if ok else "FAIL ") + name)
     print(f"bundle: {out}")

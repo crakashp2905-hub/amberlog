@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added (release evidence): product benchmark and a generated release report
+
+- `experiments/product_bench.py`: retrieval quality (recall@1, recall@5,
+  MRR on planted facts whose tags other notes also name), `remember` and
+  `retrieve` latency percentiles, throughput, disk and heap per memory, and
+  false blocks on 200 benign writes built to look suspicious, at 1k, 5k and
+  20k memories. Results: `research/results/product-bench.md`.
+- `tools/release_report.py`: renders a release evidence bundle as one page,
+  `RELEASE_REPORT.md`, from the bundle's own files. `release_bundle.py
+  --bench quick|full` adds the benchmark; CI's `release-evidence` job runs it
+  in full on every commit, so the numbers for a commit come from that commit.
+
 ### Added (testing): property-based authorisation walks and mutation testing
 
 - `tests/test_properties_authz.py`: 30 seeded walks of 60 steps over writes,

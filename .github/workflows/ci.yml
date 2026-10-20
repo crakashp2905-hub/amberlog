@@ -233,7 +233,7 @@ jobs:
           python-version: "3.13"
       - run: python -m pip install --upgrade build
       - run: python -m build --wheel --outdir dist
-      - run: python tools/release_bundle.py --out release-evidence --wheel dist/*.whl
+      - run: python tools/release_bundle.py --out release-evidence --wheel dist/*.whl --bench full
       - uses: actions/upload-artifact@v4
         if: always()
         with:

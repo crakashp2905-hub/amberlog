@@ -1,3 +1,16 @@
+# Release evaluation
+
+**After 0.12.0, the evidence for a release is generated, not written.** CI's
+`release-evidence` job builds the bundle for every commit on main
+(`tools/release_bundle.py --bench full`): manifest with file hashes, SBOM,
+secret scan, adversarial gate, test counts, wheel hash, the product benchmark,
+and `RELEASE_REPORT.md` rendered from those files by `tools/release_report.py`.
+A release's evaluation is the report from the tagged commit's run, attached to
+the release; the sections below are the hand-written evaluations of earlier
+releases.
+
+---
+
 # Release evaluation: 0.11.0 (release gate G6)
 
 **Tagged as `v0.11.0` from `rc/0.11.0`.** The code under test is `7d3fc25`. The

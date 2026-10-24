@@ -55,6 +55,13 @@ WRITES: revoke a leaked credential, or all of one agent's; a running agent-api o
 - `--agent`: revoke every credential this agent holds
 - `--token`: the leaked credential, or - to read it from stdin
 
+### `anchor`
+
+Anchor the integrity checkpoint off the store (dir:, git:, https://), or verify anchors
+
+- `--to`: dir:PATH, git:REPO or an http(s) URL; repeat for several
+- `--verify`: an anchors file or dir: directory to check this store against
+
 ### `attention`
 
 Triage list: what needs a human, worst first

@@ -74,6 +74,24 @@ A checkpoint kept beside the database buys nothing.
 Suggested cadence: one per deploy, and one per backup, committed alongside the
 backup's checksum.
 
+**Anchoring, in one command.** `anchor` appends the checkpoint to places the
+store's writer cannot rewrite, and `--verify` checks the store against all of
+them:
+
+```bash
+memory-fabric --db store.db anchor --to dir:/mnt/other-disk/anchors \
+                                   --to git:/srv/anchors-repo \
+                                   --to https://audit.example/anchors
+memory-fabric --db store.db anchor --verify dir:/mnt/other-disk/anchors   # exit 0 or 5
+```
+
+Run it from cron or a systemd timer, for example every 15 minutes:
+`*/15 * * * * memory-fabric --db /srv/store.db anchor --to git:/srv/anchors-repo`.
+Choose a git repository the database host can commit to but not rewrite (a
+pushed-to remote with protected history), or an HTTP endpoint that keeps what
+it receives. Each target reports separately, so one failing target does not
+hide the others, and any failure makes the exit code non-zero.
+
 ### Draining retractions
 
 A retraction is owed until delivered. After an outage:

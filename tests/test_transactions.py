@@ -271,9 +271,6 @@ def _event(type_name: str):
     return Event(type=type_name, ts=0, payload={})
 
 
-if __name__ == "__main__":  # pragma: no cover
-    unittest.main()
-
 
 class RolledBackWritesLeaveNoIndexEntry(unittest.TestCase):
     """A write rolled back with its transaction must not stay in the copy index.
@@ -296,3 +293,7 @@ class RolledBackWritesLeaveNoIndexEntry(unittest.TestCase):
             self.assertEqual(len(f.state.memories), 1)
         finally:
             f.close()
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()

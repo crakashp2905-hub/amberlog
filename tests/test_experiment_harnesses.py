@@ -391,9 +391,6 @@ class TestPhaseBArms(unittest.TestCase):
         self.assertEqual(set(per), set(phase_b.AGENTS))
 
 
-if __name__ == "__main__":  # pragma: no cover
-    unittest.main()
-
 
 class TestPhaseCArms(unittest.TestCase):
     """The population arms, and the two statistics the ecology claim rests on."""
@@ -570,3 +567,18 @@ class GmeMatrixHarness(unittest.TestCase):
         self.assertEqual(run["version_control"], {"resurrected": 0, "lost_updates": 0})
         self.assertEqual(run["phases"]["1"]["A"]["accuracy"], 0.0)
         self.assertEqual(run["phases"]["1"]["C"]["branch_leak_rate"] <= 0.03, True)
+
+
+class DecayEvalHarness(unittest.TestCase):
+    def test_one_seed_runs_and_the_oracle_is_not_beaten(self) -> None:
+        from experiments import decay_eval as d
+
+        run = d.run_seed(11, d.ARMS, d.BUDGET)
+        self.assertTrue(all(run[a]["current_recall"] <= run["oracle"]["current_recall"]
+                            for a in d.ARMS))
+        self.assertEqual(run["X"]["stale_answer_rate"], 0.0)
+        self.assertEqual(run["S"]["stale_answer_rate"], 0.0)
+
+
+if __name__ == "__main__":  # pragma: no cover
+    unittest.main()

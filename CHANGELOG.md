@@ -5,6 +5,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: governed decay view (OptMem-inspired compression)
+
+- `memory_fabric/decay.py` (experimental): a bounded session-start view with
+  recent memories whole and older ones in summaries that coarsen with age over
+  a binary tree of fixed log positions; `zoom` back down to the records;
+  summaries written by the agent on request ("nap"), stored as derived
+  candidate memories so lineage, retraction and erasure reach them, refused if
+  they state any number, identifier, date or negation their sources do not.
+  A summary is served only while every source is current and readable.
+  Inspired by OptMem's published design; no OptMem code is used (no licence).
+- CLI `context wake|zoom|pending|summarise`; MCP extended tools `wake`,
+  `zoom`, `nap`.
+- Evaluation (pre-registered, research/results/decay-view.md): bars narrowly
+  not met on fresh seeds (0.21 of 0.25; 0.71 of 0.75), but at the same budget
+  the view carried 86% of current facts against 50% for the newest records,
+  with no stale value on any seed.
+
+### Changed
+
+- Context receipts and branches are **available** (module tier beta): the
+  merge result held on ten fresh seeds, with CLI, dashboard, MCP and Postgres
+  coverage. The Governed Context Map and the decay view stay experimental.
+
+### Changed: faster retrieval, same results
+
+- Lexical search uses an inverted index and a top-k selection; the fold after
+  each write re-indexes only the memories it changed (`ChangeTrackingDict`)
+  instead of comparing the whole table. Rankings are unchanged (randomised
+  equivalence test against a full scan, `tests/test_lexical_postings.py`).
+  Retrieval at 10,000 memories: 19.1 -> 10.2 ms p50, measured back to back.
+
 ### Changed: a correction reaches the notes that repeat the old value
 
 - Revising a fact, or withdrawing it with basis `contradicted`, now contests

@@ -110,6 +110,26 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 - **Tests:** `tests/test_tenancy.py`, `tests/test_access_matrix.py`, `tests/test_metadata_leakage.py`
 - **Limitation:** Single store; tenants share a process and its keys.
 
+### Context receipts: what an agent was given, and what was excluded and why
+
+`context.receipt` — I need to reproduce and explain exactly what context an agent received.
+
+- **Surfaces:** sdk: `context_receipt.build_context`, mcp: `build_context`, cli: `context`, dashboard: `receipts`
+- **Code:** `memory_fabric/context_receipt.py`
+- **Tests:** `tests/test_cli_versioning.py`, `tests/test_context_map.py`, `tests/test_dashboard_versioning.py`, `tests/test_mcp_extended.py`
+- **Limitation:** Token counts are estimates (characters / 4), not a tokenizer.
+- **Limitation:** Exclusions list candidates retrieval returned; memories below the relevance floor are not listed.
+
+### Branches, commits, diff and governance-aware merge
+
+`versioning.branches` — I need to try memory changes in isolation and merge them with conflicts surfaced.
+
+- **Surfaces:** sdk: `branching.Branches`, mcp: `branch_create`, cli: `branch`, dashboard: `branches`
+- **Code:** `memory_fabric/branching.py`
+- **Tests:** `tests/test_branching.py`, `tests/test_cli_versioning.py`, `tests/test_dashboard_versioning.py`, `tests/test_mcp_extended.py`
+- **Limitation:** No branch of a branch; merges go into main only.
+- **Limitation:** Branch retrieval is the overlay view; it is not ranked by the store's retrieval arms.
+
 ### Signed federation between stores, with key rotation
 
 `federation.signed` — Stores on different machines must share validated memories and retractions safely.
@@ -166,16 +186,6 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 - **Tests:** `tests/test_compaction.py`, `tests/test_context_compact.py`
 - **Limitation:** One summary per episode; no hierarchy.
 
-### Context receipts: what an agent was given, and what was excluded and why
-
-`context.receipt` — I need to reproduce and explain exactly what context an agent received.
-
-- **Surfaces:** sdk: `context_receipt.build_context`, mcp: `build_context`, cli: `context`, dashboard: `receipts`
-- **Code:** `memory_fabric/context_receipt.py`
-- **Tests:** `tests/test_cli_versioning.py`, `tests/test_context_map.py`, `tests/test_dashboard_versioning.py`, `tests/test_mcp_extended.py`
-- **Limitation:** Token counts are estimates (characters / 4), not a tokenizer.
-- **Limitation:** Exclusions list candidates retrieval returned; memories below the relevance floor are not listed.
-
 ### Governed Context Map: source-linked summaries, invalidation and a budgeted planner
 
 `context.map` — Long histories must fit a token budget without losing their sources or using stale summaries.
@@ -186,15 +196,16 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 - **Limitation:** extractive-v1 keeps every distinct fact verbatim, so it saves tokens only on restatements and chatter.
 - **Limitation:** Summary nodes live in process memory and are rebuilt per process.
 
-### Branches, commits, diff and governance-aware merge
+### Governed decay view: recent memories whole, older ones summarised, agent-written summaries
 
-`versioning.branches` — I need to try memory changes in isolation and merge them with conflicts surfaced.
+`context.decay` — A session needs what is currently known within a fixed budget, without withdrawn or superseded values.
 
-- **Surfaces:** sdk: `branching.Branches`, mcp: `branch_create`, cli: `branch`, dashboard: `branches`
-- **Code:** `memory_fabric/branching.py`
-- **Tests:** `tests/test_branching.py`, `tests/test_cli_versioning.py`, `tests/test_dashboard_versioning.py`, `tests/test_mcp_extended.py`
-- **Limitation:** No branch of a branch; merges go into main only.
-- **Limitation:** Branch retrieval is the overlay view; it is not ranked by the store's retrieval arms.
+- **Surfaces:** sdk: `decay.DecayView`, mcp: `wake`, cli: `context`
+- **Code:** `memory_fabric/decay.py`
+- **Tests:** `tests/test_decay.py`, `tests/test_mcp_extended.py`, `tests/test_cli_versioning.py`
+- **Limitation:** Agent summaries were evaluated with a rule-based stand-in, not a language model.
+- **Limitation:** Pre-registered bars narrowly not met (research/results/decay-view.md), though the view beat recency on every seed.
+- **Limitation:** Inspired by OptMem's published design; no OptMem code is used (upstream has no licence).
 
 
 ## Unsupported

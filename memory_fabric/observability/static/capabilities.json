@@ -290,7 +290,7 @@
     {
       "id": "context.receipt",
       "title": "Context receipts: what an agent was given, and what was excluded and why",
-      "status": "experimental",
+      "status": "available",
       "user_problem": "I need to reproduce and explain exactly what context an agent received.",
       "modules": [
         "memory_fabric/context_receipt.py"
@@ -335,9 +335,34 @@
       ]
     },
     {
+      "id": "context.decay",
+      "title": "Governed decay view: recent memories whole, older ones summarised, agent-written summaries",
+      "status": "experimental",
+      "user_problem": "A session needs what is currently known within a fixed budget, without withdrawn or superseded values.",
+      "modules": [
+        "memory_fabric/decay.py"
+      ],
+      "tests": [
+        "tests/test_decay.py",
+        "tests/test_mcp_extended.py",
+        "tests/test_cli_versioning.py"
+      ],
+      "surfaces": {
+        "sdk": "decay.DecayView",
+        "mcp": "wake",
+        "cli": "context",
+        "dashboard": null
+      },
+      "limitations": [
+        "Agent summaries were evaluated with a rule-based stand-in, not a language model.",
+        "Pre-registered bars narrowly not met (research/results/decay-view.md), though the view beat recency on every seed.",
+        "Inspired by OptMem's published design; no OptMem code is used (upstream has no licence)."
+      ]
+    },
+    {
       "id": "versioning.branches",
       "title": "Branches, commits, diff and governance-aware merge",
-      "status": "experimental",
+      "status": "available",
       "user_problem": "I need to try memory changes in isolation and merge them with conflicts surfaced.",
       "modules": [
         "memory_fabric/branching.py"

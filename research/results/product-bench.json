@@ -15,23 +15,23 @@
       },
       "latency_ms": {
         "remember": {
-          "p50": 11.137,
-          "p95": 13.743,
-          "p99": 17.228
+          "p50": 11.146,
+          "p95": 13.481,
+          "p99": 16.202
         },
         "retrieve": {
-          "p50": 4.362,
-          "p95": 6.135,
-          "p99": 10.75
+          "p50": 3.917,
+          "p95": 5.522,
+          "p99": 10.08
         }
       },
       "throughput_per_s": {
-        "remember": 87.4,
-        "retrieve": 214.7
+        "remember": 87.1,
+        "retrieve": 233.9
       },
       "growth": {
         "disk_bytes_per_memory": 4100,
-        "heap_bytes_per_memory": 18201
+        "heap_bytes_per_memory": 18948
       },
       "false_blocks": {
         "benign_writes": 200,
@@ -51,23 +51,23 @@
       },
       "latency_ms": {
         "remember": {
-          "p50": 12.833,
-          "p95": 20.701,
-          "p99": 24.736
+          "p50": 11.606,
+          "p95": 19.869,
+          "p99": 22.417
         },
         "retrieve": {
-          "p50": 11.273,
-          "p95": 14.099,
-          "p99": 19.529
+          "p50": 7.659,
+          "p95": 9.629,
+          "p99": 15.312
         }
       },
       "throughput_per_s": {
-        "remember": 72.4,
-        "retrieve": 86.6
+        "remember": 76.7,
+        "retrieve": 124.5
       },
       "growth": {
         "disk_bytes_per_memory": 1928,
-        "heap_bytes_per_memory": 17624
+        "heap_bytes_per_memory": 18503
       },
       "false_blocks": {
         "benign_writes": 200,
@@ -75,7 +75,7 @@
         "rate": 0.0,
         "examples": []
       },
-      "seconds": 74.7
+      "seconds": 69.6
     },
     {
       "memories": 20000,
@@ -87,23 +87,23 @@
       },
       "latency_ms": {
         "remember": {
-          "p50": 13.992,
-          "p95": 47.239,
-          "p99": 55.722
+          "p50": 11.814,
+          "p95": 48.521,
+          "p99": 57.489
         },
         "retrieve": {
-          "p50": 39.038,
-          "p95": 43.287,
-          "p99": 48.381
+          "p50": 25.488,
+          "p95": 28.235,
+          "p99": 33.285
         }
       },
       "throughput_per_s": {
-        "remember": 49.1,
-        "retrieve": 24.8
+        "remember": 51.5,
+        "retrieve": 38.6
       },
       "growth": {
         "disk_bytes_per_memory": 1417,
-        "heap_bytes_per_memory": 17597
+        "heap_bytes_per_memory": 18465
       },
       "false_blocks": {
         "benign_writes": 200,
@@ -111,7 +111,7 @@
         "rate": 0.0,
         "examples": []
       },
-      "seconds": 422.1
+      "seconds": 399.4
     }
   ]
 }

@@ -11,6 +11,7 @@ from __future__ import annotations
 __stability__ = "stable"
 
 import hashlib
+import heapq
 import math
 import re
 from typing import Iterable, Protocol, Sequence
@@ -52,6 +53,12 @@ class LexicalIndex:
 
     def __init__(self) -> None:
         self._terms: dict[str, frozenset[str]] = {}
+        # term -> keys containing it. A search scores only documents sharing a
+        # query term; every other document scores 0, which no non-negative
+        # floor admits. Scanning every document instead made a query cost
+        # grow linearly with the store: 39 ms p50 at 20,000 memories
+        # (research/results/product-bench.md).
+        self._postings: dict[str, set[str]] = {}
         # IDF depends on the corpus and not on the query, so it is computed
         # once and invalidated on write. It used to be recomputed inside every
         # `search` — a full scan of every document and all its terms, per
@@ -65,12 +72,24 @@ class LexicalIndex:
         self._idf_cache: dict[str, float] | None = None
 
     def add(self, key: str, text: str) -> str:
-        self._terms[key] = frozenset(self._tokens(text))
+        if key in self._terms:
+            self.remove(key)
+        terms = frozenset(self._tokens(text))
+        self._terms[key] = terms
+        for term in terms:
+            self._postings.setdefault(term, set()).add(key)
         self._idf_cache = None
         return key
 
     def remove(self, key: str) -> None:
-        if self._terms.pop(key, None) is not None:
+        terms = self._terms.pop(key, None)
+        if terms is not None:
+            for term in terms:
+                keys = self._postings.get(term)
+                if keys is not None:
+                    keys.discard(key)
+                    if not keys:
+                        del self._postings[term]
             self._idf_cache = None
 
     def __len__(self) -> int:
@@ -107,9 +126,17 @@ class LexicalIndex:
         weights = self._idf()
         allowed = set(restrict_to) if restrict_to is not None else None
         scored: list[tuple[str, float]] = []
-        for key, terms in self._terms.items():
-            if allowed is not None and key not in allowed:
-                continue
+        if min_relevance >= 0:
+            candidates: set[str] = set()
+            for term in query_terms:
+                candidates |= self._postings.get(term, set())
+            if allowed is not None:
+                candidates &= allowed
+            pool: Iterable[str] = candidates
+        else:  # a negative floor admits documents sharing nothing: score them all
+            pool = self._terms if allowed is None else (k_ for k_ in self._terms if k_ in allowed)
+        for key in pool:
+            terms = self._terms[key]
             if not terms:
                 continue
             overlap = sum(weights.get(t, 0.0) for t in terms & query_terms)
@@ -118,8 +145,8 @@ class LexicalIndex:
             score = overlap / math.sqrt(len(terms))
             if score > min_relevance:
                 scored.append((key, score))
-        scored.sort(key=lambda pair: (-pair[1], pair[0]))
-        return scored[:k]
+        # Top k without sorting every candidate; same order as a full sort.
+        return heapq.nsmallest(k, scored, key=lambda pair: (-pair[1], pair[0]))
 
 
 def fuse(

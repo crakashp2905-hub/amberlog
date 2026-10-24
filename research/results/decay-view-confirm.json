@@ -1,0 +1,175 @@
+{
+  "experiment": "decay-view",
+  "budget": 300,
+  "seeds": [
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "runs": [
+    {
+      "seed": 6,
+      "R": {
+        "current_recall": 0.5312,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.5938,
+        "stale_answer_rate": 0.0,
+        "tokens": 287,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.9062,
+        "stale_answer_rate": 0.0,
+        "tokens": 298,
+        "summaries_stored": 15
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      }
+    },
+    {
+      "seed": 7,
+      "R": {
+        "current_recall": 0.4375,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.6562,
+        "stale_answer_rate": 0.0,
+        "tokens": 294,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.8438,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 13
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 127,
+        "summaries_stored": 0
+      }
+    },
+    {
+      "seed": 8,
+      "R": {
+        "current_recall": 0.5,
+        "stale_answer_rate": 0.0,
+        "tokens": 298,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.625,
+        "stale_answer_rate": 0.0,
+        "tokens": 297,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.875,
+        "stale_answer_rate": 0.0,
+        "tokens": 299,
+        "summaries_stored": 16
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      }
+    },
+    {
+      "seed": 9,
+      "R": {
+        "current_recall": 0.375,
+        "stale_answer_rate": 0.0,
+        "tokens": 293,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.5625,
+        "stale_answer_rate": 0.0,
+        "tokens": 285,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.875,
+        "stale_answer_rate": 0.0,
+        "tokens": 289,
+        "summaries_stored": 19
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      }
+    },
+    {
+      "seed": 10,
+      "R": {
+        "current_recall": 0.6562,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.6562,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.8125,
+        "stale_answer_rate": 0.0,
+        "tokens": 299,
+        "summaries_stored": 14
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      }
+    }
+  ],
+  "summary": {
+    "R": {
+      "current_recall": 0.5,
+      "stale_answer_rate": 0.0,
+      "tokens": 298.2,
+      "summaries_stored": 0
+    },
+    "X": {
+      "current_recall": 0.6187,
+      "stale_answer_rate": 0.0,
+      "tokens": 292.6,
+      "summaries_stored": 0
+    },
+    "S": {
+      "current_recall": 0.8625,
+      "stale_answer_rate": 0.0,
+      "tokens": 297,
+      "summaries_stored": 15.4
+    },
+    "oracle": {
+      "current_recall": 1.0,
+      "stale_answer_rate": 0.0,
+      "tokens": 127.8,
+      "summaries_stored": 0
+    }
+  },
+  "any_arm_beats_oracle": []
+}

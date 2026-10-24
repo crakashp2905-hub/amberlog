@@ -115,13 +115,15 @@ Collections: named sets of memories agents can be attached to. list, or WRITES: 
 
 Build an agent's context bundle under a token budget and record its receipt (WRITES the receipt), list receipts, or explain one
 
-- `action`: build a bundle and its receipt, list receipts, or explain one
+- `action`: build a bundle and its receipt, list receipts, explain one; wake/zoom the decay view, list nodes pending a summary, summarise one
 - `receipt`: a receipt id, for explain
 - `--agent`: the agent the context is for
 - `--query`: what the agent is working on (stored only as a digest)
 - `--budget`: token budget (estimated as characters / 4)
 - `--mode`: auto picks exact for numbers, ids and dates, else balanced
 - `--limit`: how many receipts to list
+- `--node`: a decay-view node LO-HI, for zoom and summarise
+- `--text`: the summary to store for --node (summarise)
 - `--tenant`: tenant id to act within
 
 ### `correct`

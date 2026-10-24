@@ -95,5 +95,39 @@ class Extended(unittest.TestCase):
         self.assertTrue(err)
 
 
+
+class DecayTools(unittest.TestCase):
+    def setUp(self) -> None:
+        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.addCleanup(self.f.close)
+        for i in range(30):
+            self.f.remember("ag_mcp", f"Pump P{i} runs at {i + 10} bar.", scope="team")
+        self.server = McpServer(agent(self.f, "ag_mcp"), self.f, extended=True)
+
+    def call(self, tool: str, **arguments: object) -> tuple[dict, bool]:
+        r = self.server.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                                "params": {"name": tool, "arguments": arguments}})
+        assert r is not None
+        return json.loads(r["result"]["content"][0]["text"]), r["result"]["isError"]
+
+    def test_wake_nap_zoom(self) -> None:
+        out, err = self.call("wake", budget=120)
+        self.assertFalse(err, out)
+        self.assertIn("<retrieved_memories>", out["memory"])
+        pending, _ = self.call("nap", budget=120)
+        node = pending["pending"][0]["node"]
+        lo, hi = map(int, node.split("-"))
+        nums = sorted(int(w) for r in pending["pending"][0]["records"] for w in r.split()
+                      if w.isdigit())
+        out, err = self.call("nap", node=node, summary=f"Pumps run {nums[0]} to {nums[-1]} bar.")
+        self.assertFalse(err, out)
+        bad, err = self.call("nap", node=node, summary="Pumps run at 999 bar.")
+        self.assertTrue(err)
+        out, err = self.call("zoom", node=node)
+        self.assertFalse(err, out)
+        out, err = self.call("zoom", node="nope")
+        self.assertTrue(err)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

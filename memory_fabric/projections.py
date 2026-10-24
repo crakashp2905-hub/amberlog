@@ -81,9 +81,52 @@ class HypothesisSet:
     opened_at: int = 0
 
 
+class ChangeTrackingDict(dict):  # type: ignore[type-arg]
+    """The memory table, remembering which entries a fold changed and what they were.
+
+    `_reindex_changed` used to copy the whole table before every fold and
+    compare every entry after it, so each write -- and each retrieval, which
+    writes exposure events -- cost a pass over every memory. With this it
+    visits only what the fold touched.
+    """
+
+    def __init__(self, *args: object, **kwargs: object) -> None:
+        super().__init__(*args, **kwargs)
+        self.before: dict[str, "Memory | None"] = {}
+
+    def begin(self) -> None:
+        self.before = {}
+
+    def _note(self, key: str) -> None:
+        if key not in self.before:
+            self.before[key] = dict.get(self, key)
+
+    def __setitem__(self, key: str, value: "Memory") -> None:
+        self._note(key)
+        super().__setitem__(key, value)
+
+    def __delitem__(self, key: str) -> None:
+        self._note(key)
+        super().__delitem__(key)
+
+    def pop(self, key: str, *default: object) -> object:  # type: ignore[override]
+        if key in self:
+            self._note(key)
+        return super().pop(key, *default)
+
+    def setdefault(self, key: str, default: "Memory") -> "Memory":  # type: ignore[override]
+        if key not in self:
+            self._note(key)
+        return super().setdefault(key, default)
+
+    def update(self, *args: object, **kwargs: object) -> None:  # type: ignore[override]
+        for key, value in dict(*args, **kwargs).items():  # type: ignore[arg-type]
+            self[key] = value  # type: ignore[assignment]
+
+
 @dataclass
 class ProjectionState:
-    memories: dict[str, Memory] = field(default_factory=dict)
+    memories: dict[str, Memory] = field(default_factory=ChangeTrackingDict)
     history: dict[str, list[Memory]] = field(default_factory=dict)
     stats: dict[str, MemoryStats] = field(default_factory=dict)
     episodes: dict[str, Episode] = field(default_factory=dict)

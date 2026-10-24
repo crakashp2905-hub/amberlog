@@ -22,7 +22,7 @@ delivered; it never makes a memory usable again.
 
 from __future__ import annotations
 
-__stability__ = "experimental"
+__stability__ = "beta"
 
 import hashlib
 import json

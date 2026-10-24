@@ -135,3 +135,44 @@ class TestOperations(PostgresCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+BRANCH_WRITER = r"""
+import sys
+from memory_fabric import MemoryFabric
+from memory_fabric.branching import Branches, HeadMoved
+f = MemoryFabric(sys.argv[1], auto_activate=True, hold_suspicious=False)
+b = Branches(f)
+for n in range(int(sys.argv[3])):
+    while True:
+        try:
+            with b.commit("shared", sys.argv[2], f"{sys.argv[2]} {n}") as c:
+                c.add(f"Note {sys.argv[2]}-{n}: pump P{n} checked at {n} bar.")
+            break
+        except HeadMoved:
+            pass
+f.close()
+"""
+
+
+class TestConcurrentBranchCommits(PostgresCase):
+    def test_processes_committing_to_one_branch_lose_nothing(self) -> None:
+        """Compare-and-swap of a branch head across processes on Postgres."""
+        from memory_fabric import MemoryFabric
+        from memory_fabric.branching import Branches
+
+        f = MemoryFabric(self.url)
+        Branches(f).create("shared", owner="w0", members=("w1", "w2"))
+        f.close()
+        procs = [subprocess.Popen([sys.executable, "-c", BRANCH_WRITER, self.url, f"w{n}", "5"])
+                 for n in range(3)]
+        for proc in procs:
+            self.assertEqual(proc.wait(timeout=300), 0)
+        f = MemoryFabric(self.url)
+        try:
+            history = Branches(f).history("shared")
+            self.assertEqual(len(history), 15)
+            for newer, older in zip(history, history[1:]):
+                self.assertEqual(newer["parents"], [older["commit_id"]])
+        finally:
+            f.close()

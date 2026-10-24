@@ -43,7 +43,7 @@ Not supported yet: a branch of a branch, and merging into anything but main.
 
 from __future__ import annotations
 
-__stability__ = "experimental"
+__stability__ = "beta"
 
 import hashlib
 import json

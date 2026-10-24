@@ -1330,11 +1330,53 @@ def cmd_merge(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         return _branch_error(exc)
 
 
+def _decay_command(fabric: MemoryFabric, args: argparse.Namespace, tenant: str) -> int:
+    """The governed decay view (`decay.py`): wake, zoom, what needs a summary, submit one."""
+    from .decay import DecayView, SummaryRejected
+
+    if not args.agent:
+        print(f"{C.RED}--agent is required{C.RESET}", file=sys.stderr)
+        return 2
+    view = DecayView(fabric, args.agent, tenant_id=tenant)
+    try:
+        if args.action == "pending":
+            data: Any = view.pending(args.budget)
+        elif args.action == "summarise":
+            if not (args.node and args.text):
+                print(f"{C.RED}--node LO-HI and --text are required{C.RESET}", file=sys.stderr)
+                return 2
+            lo, hi = map(int, args.node.split("-"))
+            data = {"summary_id": view.submit(lo, hi, args.text)}
+        else:
+            if args.action == "zoom":
+                if not args.node:
+                    print(f"{C.RED}--node LO-HI is required{C.RESET}", file=sys.stderr)
+                    return 2
+                lo, hi = map(int, args.node.split("-"))
+                pieces = view.zoom(lo, hi)
+            else:
+                pieces = view.wake(args.budget)
+            if not args.json:
+                print(view.render(pieces) or "(nothing readable)")
+                return 0
+            data = [p.to_json() for p in pieces]
+    except SummaryRejected as exc:
+        print(f"{C.RED}{exc.code}: {exc}{C.RESET}", file=sys.stderr)
+        return 4
+    except ValueError as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 2
+    print(json.dumps(data, indent=2))
+    return 0
+
+
 def cmd_context(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Build a context bundle with its receipt (WRITES the receipt), or read receipts back."""
     from . import context_receipt as cr
 
     tenant = args.tenant or DEFAULT_TENANT
+    if args.action in ("wake", "zoom", "pending", "summarise"):
+        return _decay_command(fabric, args, tenant)
     if args.action == "build":
         if not (args.agent and args.query):
             print(f"{C.RED}--agent and --query are required{C.RESET}", file=sys.stderr)
@@ -2716,7 +2758,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = add("context", cmd_context,
             "Build an agent's context bundle under a token budget and record its receipt "
             "(WRITES the receipt), list receipts, or explain one")
-    p.add_argument("action", choices=["build", "receipts", "explain"])
+    p.add_argument("action", choices=["build", "receipts", "explain", "wake", "zoom",
+                                      "pending", "summarise"])
     p.add_argument("receipt", nargs="?")
     p.add_argument("--agent")
     p.add_argument("--query")
@@ -2724,6 +2767,8 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--mode", default="auto",
                    choices=["auto", "compact", "balanced", "evidence-first", "exact"])
     p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--node")
+    p.add_argument("--text")
     p.add_argument("--tenant")
 
     p = add("correct", cmd_correct,
@@ -2838,7 +2883,8 @@ HELP: dict[tuple[str | None, str], str] = {
     ("correct", "--apply"): "withdraw it and owe retractions (without this, only preview)",
     ("branch", "action"): "list, show (history), diff; or create, add, revise, withdraw, close",
     ("merge", "action"): "preview, apply (needs --preview and --key) or revert (a merge id)",
-    ("context", "action"): "build a bundle and its receipt, list receipts, or explain one",
+    ("context", "action"): "build a bundle and its receipt, list receipts, explain one; "
+                           "wake/zoom the decay view, list nodes pending a summary, summarise one",
     ("branch", "--actor"): "who is acting; the owner for create and close",
     ("branch", "--text"): "the memory text to add or the revised text",
     ("branch", "--memory"): "the main memory to revise or withdraw",
@@ -2851,6 +2897,8 @@ HELP: dict[tuple[str | None, str], str] = {
     ("merge", "--preview"): "the full digest the preview printed",
     ("merge", "--key"): "an idempotency key: a retry with it replays, never applies twice",
     ("context", "receipt"): "a receipt id, for explain",
+    ("context", "--node"): "a decay-view node LO-HI, for zoom and summarise",
+    ("context", "--text"): "the summary to store for --node (summarise)",
     ("context", "--agent"): "the agent the context is for",
     ("context", "--query"): "what the agent is working on (stored only as a digest)",
     ("context", "--budget"): "token budget (estimated as characters / 4)",

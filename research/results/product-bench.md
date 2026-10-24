@@ -45,3 +45,21 @@ bundle (`RELEASE_REPORT.md`). Not pre-registered; no threshold.
 Synthetic corpus from templates; one process (multi-process load is
 `p12-load.md`); local disk; the false-block set is 200 texts from eight
 templates, so 0/200 bounds the rate below about 1.5% (95%), not at zero.
+
+## Rerun after the retrieval speed-ups (inverted index, change tracking, top-k selection)
+
+Same benchmark and seed; quality is identical to the row above at every size,
+so ranking did not change.
+
+| memories | retrieve p50 / p95 ms (before) | retrieve p50 / p95 ms (after) |
+|---|---|---|
+| 1,000 | 4.4 / 6.1 | 3.9 / 5.5 |
+| 5,000 | 11.3 / 14.1 | 7.7 / 9.6 |
+| 20,000 | 39.0 / 43.3 | 25.5 / 28.2 |
+
+The two runs were on different days and this machine's speed varied; a
+back-to-back comparison of the old and new code at 10,000 memories gave
+**19.1 → 10.2 ms p50 (1.9×)**. Retrieval still grows with the store: the
+queries share common words ("pump", a site name) with a large share of notes,
+which the inverted index still has to score, and the eligibility filter still
+checks every memory. Making that filter incremental is the next step.

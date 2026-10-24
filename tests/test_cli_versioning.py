@@ -80,5 +80,35 @@ class Commands(unittest.TestCase):
         self.assertEqual(self.cli("context", "explain", "ctx_missing")[0], 4)
 
 
+
+class DecayCommands(unittest.TestCase):
+    def test_wake_pending_summarise_zoom(self) -> None:
+        tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
+        self.addCleanup(tmp.cleanup)
+        db = os.path.join(tmp.name, "s.db")
+        f = MemoryFabric(db, auto_activate=True)
+        for i in range(24):
+            f.remember("ann", f"Pump P{i} runs at {i + 10} bar.", scope="team")
+        f.close()
+
+        def cli(*args: str) -> tuple[int, str]:
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out), contextlib.redirect_stderr(out):
+                code = main(["--db", db, *args])
+            return code, out.getvalue()
+
+        code, out = cli("context", "wake", "--agent", "ann", "--budget", "100")
+        self.assertEqual(code, 0, out)
+        self.assertIn("#", out)
+        code, out = cli("--json", "context", "pending", "--agent", "ann", "--budget", "100")
+        node = json.loads(out)[0]["node"]
+        code, out = cli("context", "summarise", "--agent", "ann", "--node", node,
+                        "--text", "Pumps run at 999 bar.")
+        self.assertEqual(code, 4)
+        code, out = cli("--json", "context", "zoom", "--agent", "ann", "--node", node)
+        self.assertEqual(code, 0, out)
+        self.assertEqual(len(json.loads(out)), 2)
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

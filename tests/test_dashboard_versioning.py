@@ -67,7 +67,8 @@ class Routes(unittest.TestCase):
     def test_capabilities_are_the_registry(self) -> None:
         data = self.get("/api/capabilities")
         ids = {c["id"]: c["status"] for c in data["capabilities"]}
-        self.assertEqual(ids["versioning.branches"], "experimental")
+        self.assertEqual(ids["versioning.branches"], "available")
+        self.assertEqual(ids["context.decay"], "experimental")
 
 
 if __name__ == "__main__":  # pragma: no cover

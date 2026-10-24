@@ -352,10 +352,11 @@ class FabricCore:
             # order -- theirs, then ours -- which is what a rebuild would do.
             self._catch_up()
             return stored
-        before = dict(self.state.memories)
+        tracked = self.state.memories
+        tracked.begin()  # type: ignore[attr-defined]
         for event in stored:
             self.projection.apply(event)
-        self._reindex_changed(before)
+        self._reindex_changed(dict(tracked.before))  # type: ignore[attr-defined]
         if stored and stored[-1].seq is not None:
             self._seen_seq = stored[-1].seq
         self._estimator_dirty = True
@@ -411,10 +412,11 @@ class FabricCore:
         Returns the number of events folded.
         """
         head = self.log.head_seq
-        before = dict(self.state.memories)
+        tracked = self.state.memories
+        tracked.begin()  # type: ignore[attr-defined]
         events = list(self.log.read(since_seq=self._seen_seq))
         self.projection.apply_all(events)
-        self._reindex_changed(before)
+        self._reindex_changed(dict(tracked.before))  # type: ignore[attr-defined]
         # Only forward. `head` was read first, so a suffix that grew while it
         # was being read ends later than `head`, and the watermark follows the
         # last event actually folded.
@@ -436,11 +438,16 @@ class FabricCore:
         memories need not be present, since retrieval refuses both, but an
         entry that is present always holds the current text.
 
-        Memories are frozen, so "changed" is an identity test, and the cost is
-        one pass over the memory table, not a pass over the log.
+        `before` holds only the memories the fold touched, with their prior
+        versions (`projections.ChangeTrackingDict`), so the cost is the size of
+        the change, not of the table.
         """
-        for memory_id, memory in self.state.memories.items():
-            old = before.get(memory_id)
+        for memory_id in before:
+            memory = self.state.memories.get(memory_id)
+            old = before[memory_id]
+            if memory is None:  # removed from the table: nothing to serve
+                self._unindex(memory_id)
+                continue
             if old is memory:
                 continue
             state = memory.lifecycle_state

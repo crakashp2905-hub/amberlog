@@ -10,7 +10,7 @@ __stability__ = "stable"
 
 
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from ..fabric import MemoryFabric  # noqa: F401
@@ -128,6 +128,11 @@ class SealingMixin(FabricCore):
         # recognisable, but its term set is derived from the erased text.
         self._unindex(memory_id)
         self.copy_index.remove(memory_id)
+        # A summary written from this memory holds some of its text: erased too
+        # (decay.py). Recursion ends, since a summary is never a summary's source.
+        from ..decay import erase_summaries_of
+
+        erase_summaries_of(cast("MemoryFabric", self), memory_id, actor)
         return had_content
 
     @_fresh

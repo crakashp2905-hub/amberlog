@@ -225,7 +225,7 @@ def to_markdown(r: dict[str, Any]) -> str:
 
 Registered in [a1-answerability-abstention.md](../prereg/a1-answerability-abstention.md)
 before the harness existed. Produced by `python -m experiments.a1_abstention` at commit
-`{r['commit']}`; every reply in [a1-abstention.json](a1-abstention.json). Model `{r['model']}`
+`{r['commit']}`; every reply in [{r['out']}.json]({r['out']}.json). Model `{r['model']}`
 (served: {', '.join(r['served'])}), seeds {r['seeds']}, 30 questions a seed, k = 5. Mean over
 seeds, 95% bootstrap CI over seeds. Cost ${r['cost_usd']:.2f}.
 
@@ -258,6 +258,7 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--workers", type=int, default=8)
     p.add_argument("--check", action="store_true")
     p.add_argument("--cache", default=str(ROOT / ".a1-cache.json"))
+    p.add_argument("--out", default="a1-abstention")
     args = p.parse_args(argv)
 
     structural: dict[str, Any] = {}
@@ -296,8 +297,9 @@ def main(argv: list[str] | None = None) -> int:
     r["commit"] = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
                                  text=True, cwd=ROOT).stdout.strip()
     out = ROOT / "research" / "results"
-    (out / "a1-abstention.json").write_text(json.dumps(r, indent=1) + "\n")
-    (out / "a1-abstention.md").write_text(to_markdown(r))
+    r["out"] = args.out
+    (out / f"{args.out}.json").write_text(json.dumps(r, indent=1) + "\n")
+    (out / f"{args.out}.md").write_text(to_markdown(r))
     print(json.dumps(r["verdict"], indent=2))
     return 0
 

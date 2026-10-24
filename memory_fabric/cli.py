@@ -14,6 +14,7 @@ __stability__ = "stable"
 import argparse
 import json
 import os
+import subprocess
 import time
 import pathlib
 import platform
@@ -289,6 +290,80 @@ def cmd_attention(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         print(f"  {C.DIM}$ {item.action}{C.RESET}")
     # A non-zero exit lets this run as a health check in a script.
     return 1 if any(i.severity == "high" for i in items) else 0
+
+
+def cmd_anchor(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Anchor the current checkpoint somewhere the store's writer cannot rewrite.
+
+    A checkpoint only detects a rewritten log if it is kept beyond the reach
+    of whoever can rewrite it (security review O3). This makes that one
+    command, run from cron or a timer, to any mix of:
+
+    * `dir:/path`: append to `<path>/<store_id>.anchors.jsonl` (other storage);
+    * `git:/repo`: append there and commit (a repository the writer cannot push to);
+    * `http(s)://...`: POST the checkpoint as JSON (an audit service or chat hook).
+
+    `--verify PATH` checks the store against every anchor in a file or a
+    `dir:` directory and names the first one that no longer holds.
+    """
+    import urllib.request
+
+    from .integrity import Checkpoint
+
+    chain = fabric.log.chain
+    if args.verify:
+        path = pathlib.Path(args.verify.removeprefix("dir:").removeprefix("git:"))
+        if path.is_dir():
+            path = path / f"{fabric.store_id}.anchors.jsonl"
+        payloads = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+                    if line.strip()]
+        mine = [p for p in payloads if p.get("store_id") in (None, fabric.store_id)]
+        if not mine:
+            print(f"no anchors for store {fabric.store_id} in {path}", file=sys.stderr)
+            return 5
+        for payload in mine:
+            result = chain.verify_against(Checkpoint.from_json(payload))
+            if not result.ok:
+                print(f"{C.RED}anchor at seq {payload.get('seq')} no longer holds: "
+                      f"{result.detail}{C.RESET}", file=sys.stderr)
+                return 5
+        print(f"{C.GREEN}{len(mine)} anchor(s) hold{C.RESET}")
+        return 0
+
+    if not args.to:
+        print("give at least one --to dir:PATH | git:REPO | https://URL", file=sys.stderr)
+        return 2
+    record = {**chain.checkpoint().to_json(), "store_id": fabric.store_id,
+              "anchored_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    line = json.dumps(record, sort_keys=True)
+    failed = 0
+    for target in args.to:
+        try:
+            if target.startswith(("http://", "https://")):
+                request = urllib.request.Request(target, data=line.encode(), method="POST",
+                                                 headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(request, timeout=10) as response:
+                    response.read()
+            elif target.startswith(("dir:", "git:")):
+                folder = pathlib.Path(target[4:])
+                folder.mkdir(parents=True, exist_ok=True)
+                name = f"{fabric.store_id}.anchors.jsonl"
+                with open(folder / name, "a", encoding="utf-8") as handle:
+                    handle.write(line + "\n")
+                if target.startswith("git:"):
+                    for cmd in (["add", name],
+                                ["-c", "user.name=memory-fabric", "-c",
+                                 "user.email=anchor@memory-fabric.invalid", "commit", "-q",
+                                 "-m", f"anchor {fabric.store_id} seq {record.get('seq')}"]):
+                        subprocess.run(["git", "-C", str(folder), *cmd], check=True,
+                                       capture_output=True)
+            else:
+                raise ValueError(f"unknown anchor target {target!r}")
+            print(f"anchored seq {record.get('seq')} to {target}")
+        except Exception as exc:  # noqa: BLE001 - each target reports separately
+            failed += 1
+            print(f"{C.RED}anchor to {target} failed: {exc}{C.RESET}", file=sys.stderr)
+    return 5 if failed else 0
 
 
 def cmd_checkpoint(fabric: MemoryFabric, args: argparse.Namespace) -> int:
@@ -2498,6 +2573,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("overview", cmd_overview, "Store health and what it can and cannot tell you")
     add("tenants", cmd_tenants, "Which tenants this store holds")
+    p = add("anchor", cmd_anchor,
+            "Anchor the integrity checkpoint off the store (dir:, git:, https://), or verify anchors")
+    p.add_argument("--to", action="append", metavar="TARGET",
+                   help="dir:PATH, git:REPO or an http(s) URL; repeat for several")
+    p.add_argument("--verify", metavar="PATH",
+                   help="an anchors file or dir: directory to check this store against")
     p = add("checkpoint", cmd_checkpoint,
             "Print an integrity checkpoint, or verify against a saved one")
     p.add_argument("--verify", metavar="FILE",

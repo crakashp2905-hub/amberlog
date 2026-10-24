@@ -95,3 +95,11 @@ C = correct(oracle)
 - It is one model.
 - Unanswerable questions are 40% of the world by design; in real traffic the
   share is unknown.
+
+## Amendment 1 — 2026-10-24, after the sonnet run, before any haiku number
+
+The `sonnet` run was abandoned for lack of headroom: `instructed` was
+perfect. **A1-h** repeats §2–§5 unchanged with `haiku` on fresh seeds 6–10,
+to test whether a weaker, cheaper model leaves headroom that the verdict can
+close. It is the same world, arms, metrics and thresholds, with results in
+`a1h-abstention.md`.

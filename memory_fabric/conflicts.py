@@ -77,7 +77,9 @@ def claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]
     claim's verb belong to the subject and any later one ("part number is
     FP-1458") is a value, as an unseparated code already was an identifier.
     """
-    identifiers, words, values = set(), set(), set()
+    identifiers: set[str] = set()
+    words: set[str] = set()
+    values: set[str] = set()
     text = content.lower()
     codes = list(_CODE.finditer(text))
     # Every code before the claim's verb is part of the subject ("on K/31's

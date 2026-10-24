@@ -145,6 +145,8 @@ WRITES: seed a demonstration store
 
 Whether this installation's answers can be believed (exit 0/1/5)
 
+- `--webhook`: POST a JSON alert here when the store is not sound
+- `--webhook-on`: alert on failures only (default), or on warnings too
 
 ### `episodes`
 

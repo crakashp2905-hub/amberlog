@@ -261,7 +261,7 @@ Said plainly rather than left for an incident to discover.
 - **No concurrency beyond serialised single-writer.** Measured, not assumed: 4 processes × 20 appends land all 80 with a gapless sequence and a verifying chain. Throughput is bounded by that one writer (§4a).
 - **No multi-host story.** Distribution was declined on measurement — 25× the memories cost 1.7× the latency.
 - **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those — `erasure_scope` reports them as unknown rather than pretending otherwise, which is the most a store can honestly do.
-- **No alerting.** `doctor` and `attention` exit non-zero; wiring that to a pager is yours.
+- **Alerting is one webhook.** `memory-fabric doctor --webhook URL` POSTs a JSON alert when the store is not sound (`--webhook-on warn` for warnings too). Run it from cron or a systemd timer. Escalation, deduplication and paging rules are still yours.
 - **Revocation durability depends on which surface you use.** A `MemoryService` writes revocations to the database; a bare `PrincipalRegistry` keeps them in memory. `service.revocations_are_durable` answers it rather than leaving it to be inferred.
 - **Untested here:** restore onto a different OS, stores above a few hundred thousand events, and recovery from filesystem-level corruption rather than logical tampering.
 

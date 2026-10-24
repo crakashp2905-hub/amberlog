@@ -121,6 +121,8 @@ class _ClaimIndex:
         self.by_ident: dict[str, set[str]] = {}
         self.by_word: dict[str, set[str]] = {}
         self.by_author: dict[tuple[str, str], set[str]] = {}
+        self.vouched: dict[str, set[str]] = {}
+        """memory id -> actors who validated it, from the log, kept incrementally."""
         self.seq: int | None = None
 
     def _drop(self, mid: str) -> None:
@@ -157,6 +159,8 @@ class _ClaimIndex:
         if self.seq is None:
             for mid in fabric.state.memories:
                 self._index_one(fabric, mid)
+            for event in fabric.log.read():
+                self._note_validation(event)
             self.seq = head
             return
         if head == self.seq:
@@ -169,9 +173,18 @@ class _ClaimIndex:
                     changed.add(str(body["id"]))
             elif event.type == EventType.CONTENT_ERASED and event.payload.get("memory_id"):
                 changed.add(str(event.payload["memory_id"]))
+            self._note_validation(event)
         for mid in changed:
             self._index_one(fabric, mid)
         self.seq = head
+
+    def _note_validation(self, event: Any) -> None:
+        from .events import EventType
+
+        p = event.payload
+        if (event.type == EventType.LIFECYCLE_CHANGED and p.get("to") == "active"
+                and p.get("reason") == "validated" and p.get("actor") and p.get("memory_id")):
+            self.vouched.setdefault(str(p["memory_id"]), set()).add(str(p["actor"]))
 
     def claim_of(self, mid: str) -> tuple:
         return self.seen[mid][1]
@@ -186,16 +199,15 @@ def _index(fabric: "MemoryFabric") -> _ClaimIndex:
     return index
 
 
-def _validated_by_other(fabric: "MemoryFabric", memory_id: str, who: str) -> str | None:
-    """The actor, other than `who`, who validated this memory, if any."""
-    if not memory_id:
-        return None
-    for event in fabric.audit_trail(memory_id):
-        p = event.payload
-        if (p.get("to") == "active" and p.get("reason") == "validated"
-                and p.get("actor") not in (None, who)):
-            return str(p.get("actor"))
-    return None
+def _validated_by_other(index: "_ClaimIndex", memory_id: str, who: str) -> str | None:
+    """An actor, other than `who`, who validated this memory, if any.
+
+    Read from the claim index, which follows the log incrementally. Reading
+    each memory's audit trail instead scanned the whole log per check, and
+    the full suite went from 6 to over 20 minutes.
+    """
+    others = sorted(index.vouched.get(memory_id, set()) - {who}) if memory_id else []
+    return others[0] if others else None
 
 
 def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assessment:
@@ -234,8 +246,8 @@ def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assess
             # marked provisional until someone validates it, and a gate rule
             # can refuse it (`ToolRule.refuse_provisional`).
             if (author(other) == me and other.created_at <= memory.created_at
-                    and (vouched := _validated_by_other(fabric, oid, me))
-                    and not _validated_by_other(fabric, memory_id, me)):
+                    and (vouched := _validated_by_other(index, oid, me))
+                    and not _validated_by_other(index, memory_id, me)):
                 signals.setdefault("revises_validated", f"{oid} validated by {vouched}")
             # Established means older *and* by an author with a track record
             # (another usable memory) by now. Without the second condition an

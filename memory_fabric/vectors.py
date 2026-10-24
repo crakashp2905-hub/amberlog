@@ -14,7 +14,7 @@ import hashlib
 import heapq
 import math
 import re
-from typing import Iterable, Protocol, Sequence
+from typing import AbstractSet, Iterable, Protocol, Sequence
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -33,6 +33,13 @@ _STOPWORDS = frozenset(
     "still can could we i me my our us".split()
 )
 
+
+
+def _as_set(keys: Iterable[str] | None) -> AbstractSet[str] | None:
+    """A membership-testable view of `restrict_to`, without copying one that already is."""
+    if keys is None:
+        return None
+    return keys if isinstance(keys, AbstractSet) else set(keys)
 
 class LexicalIndex:
     """IDF-weighted token overlap. The arm the product was missing.
@@ -124,14 +131,14 @@ class LexicalIndex:
         if not query_terms:
             return []
         weights = self._idf()
-        allowed = set(restrict_to) if restrict_to is not None else None
+        allowed = _as_set(restrict_to)
         scored: list[tuple[str, float]] = []
         if min_relevance >= 0:
             candidates: set[str] = set()
             for term in query_terms:
                 candidates |= self._postings.get(term, set())
             if allowed is not None:
-                candidates &= allowed
+                candidates = {k_ for k_ in candidates if k_ in allowed}
             pool: Iterable[str] = candidates
         else:  # a negative floor admits documents sharing nothing: score them all
             pool = self._terms if allowed is None else (k_ for k_ in self._terms if k_ in allowed)
@@ -317,7 +324,7 @@ class VectorIndex:
         nonzero = [(i, v) for i, v in enumerate(query_vector) if v != 0.0]
         sparse = len(nonzero) <= SPARSE_QUERY_FRACTION * len(query_vector)
 
-        allowed = set(restrict_to) if restrict_to is not None else None
+        allowed = _as_set(restrict_to)
         scored: list[tuple[str, float]] = []
         for key, vector in self._vectors.items():
             if allowed is not None and key not in allowed:

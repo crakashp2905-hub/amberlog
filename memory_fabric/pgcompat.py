@@ -172,7 +172,8 @@ class PgConnection:
         # long a mistyped URL hangs: 131 s against a closed port on Windows,
         # found by the 0.11.0 RC's Postgres acceptance run. A URL that sets its
         # own `connect_timeout` keeps it.
-        extra = {} if "connect_timeout" in url else {"connect_timeout": CONNECT_TIMEOUT_S}
+        extra: dict[str, Any] = ({} if "connect_timeout" in url
+                                 else {"connect_timeout": CONNECT_TIMEOUT_S})
         try:
             self._pg = psycopg.connect(url, autocommit=True, **extra)
         except psycopg.Error as exc:

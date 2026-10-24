@@ -62,3 +62,25 @@ whether a model writes summaries this dense is untested here (no API key in
 this environment). Synthetic world, rule reader, query-independent view.
 OptMem itself was not run or compared: it has no licence, and the comparison
 here is to the baseline it improves on, recency truncation.
+
+## With real language models (Addendum B, seeds 11–15)
+
+| arm | current recall | stale answers | summaries refused by the check |
+|---|---|---|---|
+| R newest records | 0.506 | 0.006 | — |
+| S stand-in summaries | 0.813 | 0.006 | — |
+| **M `qwen2.5:7b`** | **0.569** | **0.031** | 17 of 92 requests |
+| M `llama3.1:8b` (descriptive) | 0.763 | 0.050 | 37 of 99 requests |
+| oracle | 0.994 | 0.006 | — |
+
+- **D3 not supported:** qwen2.5:7b captured 0.12 of the headroom over R (bar
+  0.75). llama3.1:8b, run the same way as a descriptive second model,
+  captured 0.53.
+- **The check caught invented facts** (18% and 37% of summaries refused), but
+  not **wrong choices among real ones**: a model that writes an older value
+  that does appear in the records passes it, which is where the stale answers
+  (3–5%) came from. The stand-in never does this.
+- The oracle and every arm miss one asset on one seed: a pressure that went
+  negative ("-2 bar"), which the reader parses as 2. A harness artefact,
+  equal for every arm.
+- 112 and 139 local model calls, about 20,000 and 26,000 tokens; no cost.

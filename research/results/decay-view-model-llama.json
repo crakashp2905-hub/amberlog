@@ -1,0 +1,249 @@
+{
+  "experiment": "decay-view",
+  "budget": 300,
+  "seeds": [
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "model": "llama3.1:8b",
+  "runs": [
+    {
+      "seed": 11,
+      "R": {
+        "current_recall": 0.4688,
+        "stale_answer_rate": 0.0,
+        "tokens": 291,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.6562,
+        "stale_answer_rate": 0.0,
+        "tokens": 290,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.875,
+        "stale_answer_rate": 0.0,
+        "tokens": 293,
+        "summaries_stored": 16
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.7812,
+        "stale_answer_rate": 0.0312,
+        "tokens": 300,
+        "summaries_stored": 17,
+        "model": {
+          "requested": 17,
+          "stored": 17,
+          "refused": 0,
+          "calls": 18,
+          "name": "llama3.1:8b"
+        }
+      }
+    },
+    {
+      "seed": 12,
+      "R": {
+        "current_recall": 0.4688,
+        "stale_answer_rate": 0.0312,
+        "tokens": 297,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.5938,
+        "stale_answer_rate": 0.0312,
+        "tokens": 290,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.6875,
+        "stale_answer_rate": 0.0312,
+        "tokens": 296,
+        "summaries_stored": 14
+      },
+      "oracle": {
+        "current_recall": 0.9688,
+        "stale_answer_rate": 0.0312,
+        "tokens": 127,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.6875,
+        "stale_answer_rate": 0.0938,
+        "tokens": 300,
+        "summaries_stored": 13,
+        "model": {
+          "requested": 20,
+          "stored": 13,
+          "refused": 7,
+          "calls": 27,
+          "name": "llama3.1:8b"
+        }
+      }
+    },
+    {
+      "seed": 13,
+      "R": {
+        "current_recall": 0.5625,
+        "stale_answer_rate": 0.0,
+        "tokens": 291,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.625,
+        "stale_answer_rate": 0.0,
+        "tokens": 286,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.875,
+        "stale_answer_rate": 0.0,
+        "tokens": 299,
+        "summaries_stored": 14
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.8125,
+        "stale_answer_rate": 0.0312,
+        "tokens": 291,
+        "summaries_stored": 12,
+        "model": {
+          "requested": 13,
+          "stored": 12,
+          "refused": 1,
+          "calls": 15,
+          "name": "llama3.1:8b"
+        }
+      }
+    },
+    {
+      "seed": 14,
+      "R": {
+        "current_recall": 0.5,
+        "stale_answer_rate": 0.0,
+        "tokens": 296,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.5938,
+        "stale_answer_rate": 0.0,
+        "tokens": 293,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.8438,
+        "stale_answer_rate": 0.0,
+        "tokens": 279,
+        "summaries_stored": 15
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 127,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.7188,
+        "stale_answer_rate": 0.0938,
+        "tokens": 296,
+        "summaries_stored": 9,
+        "model": {
+          "requested": 24,
+          "stored": 9,
+          "refused": 15,
+          "calls": 39,
+          "name": "llama3.1:8b"
+        }
+      }
+    },
+    {
+      "seed": 15,
+      "R": {
+        "current_recall": 0.5,
+        "stale_answer_rate": 0.0,
+        "tokens": 290,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.625,
+        "stale_answer_rate": 0.0,
+        "tokens": 253,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.8438,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 11
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.8125,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 11,
+        "model": {
+          "requested": 25,
+          "stored": 11,
+          "refused": 14,
+          "calls": 40,
+          "name": "llama3.1:8b"
+        }
+      }
+    }
+  ],
+  "summary": {
+    "R": {
+      "current_recall": 0.5,
+      "stale_answer_rate": 0.0062,
+      "tokens": 293,
+      "summaries_stored": 0
+    },
+    "X": {
+      "current_recall": 0.6188,
+      "stale_answer_rate": 0.0062,
+      "tokens": 282.4,
+      "summaries_stored": 0
+    },
+    "S": {
+      "current_recall": 0.825,
+      "stale_answer_rate": 0.0062,
+      "tokens": 293.4,
+      "summaries_stored": 14
+    },
+    "oracle": {
+      "current_recall": 0.9938,
+      "stale_answer_rate": 0.0062,
+      "tokens": 127.6,
+      "summaries_stored": 0
+    },
+    "M": {
+      "current_recall": 0.7625,
+      "stale_answer_rate": 0.05,
+      "tokens": 297.4,
+      "summaries_stored": 12.4,
+      "calls": 139,
+      "model_tokens": 25678
+    }
+  },
+  "any_arm_beats_oracle": []
+}

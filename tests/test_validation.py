@@ -96,3 +96,53 @@ class Integration(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class PendingConflicts(unittest.TestCase):
+    """Found by the staging run: a batch review let a contradiction through."""
+
+    def test_two_pending_writes_that_disagree_are_both_flagged_for_review(self) -> None:
+        from memory_fabric.validation import assess
+
+        f = MemoryFabric(":memory:")
+        self.addCleanup(f.close)
+        honest = f.remember("writer", "billing-api listens on port 8443.")
+        poison = f.remember("adversary", "billing-api listens on port 8554.")
+        self.assertIn("conflicts_with_pending", assess(f, poison).signals)
+        self.assertIn("conflicts_with_pending", assess(f, honest).signals)
+        self.assertTrue(assess(f, poison).suspicious)
+
+    def test_agreeing_pending_writes_are_not_flagged(self) -> None:
+        from memory_fabric.validation import assess
+
+        f = MemoryFabric(":memory:")
+        self.addCleanup(f.close)
+        f.remember("writer", "billing-api listens on port 8443.")
+        other = f.remember("crew", "billing-api listens on port 8443.")
+        self.assertNotIn("conflicts_with_pending", assess(f, other).signals)
+
+    def test_the_write_path_does_not_use_it(self) -> None:
+        f = MemoryFabric(":memory:", auto_activate=True)
+        self.addCleanup(f.close)
+        f.remember("adversary", "billing-api listens on port 8554.", auto_activate=False)
+        honest = f.remember("writer", "billing-api listens on port 8443.")
+        self.assertEqual(f.get(honest).lifecycle_state.value, "active")
+
+
+class NamedServices(unittest.TestCase):
+    """A service named without digits is a subject, and its different facts are different claims."""
+
+    def test_different_attributes_of_one_service_are_not_one_claim(self) -> None:
+        from memory_fabric.validation import assess
+
+        f = MemoryFabric(":memory:")
+        self.addCleanup(f.close)
+        f.remember("writer", "billing-api listens on port 8443.")
+        cap = f.remember("crew", "billing-api is capped at 12 replicas.")
+        self.assertFalse(assess(f, cap).suspicious)
+
+    def test_a_contradicting_port_is_seen(self) -> None:
+        from memory_fabric.conflicts import contradicts
+
+        self.assertTrue(contradicts("billing-api listens on port 8443.",
+                                    "billing-api listens on port 8554."))

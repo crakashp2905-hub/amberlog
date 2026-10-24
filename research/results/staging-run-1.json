@@ -1,0 +1,101 @@
+{
+  "model": "llama3.1:8b",
+  "seed": 7,
+  "facts": 48,
+  "backend": "postgres",
+  "ingest": {
+    "tickets": 48,
+    "memories_written": 64,
+    "seconds": 208.2
+  },
+  "review": {
+    "approved": 33,
+    "held_suspicious": 33,
+    "not_candidate": 2
+  },
+  "adversary": {
+    "injection": "quarantined",
+    "credential": "quarantined",
+    "contradiction": "candidate",
+    "first_claim": "active"
+  },
+  "changes": {
+    "revised": 8,
+    "withdrawn": 4,
+    "restatements_contested": 0
+  },
+  "answers": {
+    "no_memory": 0.0,
+    "plain_retrieval": 0.583,
+    "governed": 0.146,
+    "oracle": 1.0
+  },
+  "context_exposure_rate": {
+    "plain_retrieval": {
+      "poison": 0.062,
+      "stale": 0.0
+    },
+    "governed": {
+      "poison": 0.0,
+      "stale": 0.0
+    }
+  },
+  "questions": 48,
+  "answer_phase_seconds": 685.0,
+  "race": {
+    "recalled": true,
+    "usable_before": true,
+    "usable_after_withdrawal": false,
+    "reason": "blocked_lifecycle"
+  },
+  "integrity_chain_ok": true,
+  "events": 116334,
+  "llm": {
+    "calls": 240,
+    "tokens": 23667
+  },
+  "http": {
+    "requests": 20280,
+    "status_counts": {
+      "agent:remember:200": 68,
+      "load:recall:200": 13989,
+      "load:remember:200": 6172,
+      "agent:recall:200": 49,
+      "agent:verify:200": 2
+    },
+    "latency_ms": {
+      "agent:recall": {
+        "n": 49,
+        "p50": 80.35,
+        "p95": 227.96,
+        "p99": 313.53
+      },
+      "agent:remember": {
+        "n": 68,
+        "p50": 13.87,
+        "p95": 35.56,
+        "p99": 116.8
+      },
+      "agent:verify": {
+        "n": 2,
+        "p50": 22.98,
+        "p95": 22.98,
+        "p99": 22.98
+      },
+      "load:recall": {
+        "n": 13989,
+        "p50": 84.85,
+        "p95": 227.85,
+        "p99": 369.58
+      },
+      "load:remember": {
+        "n": 6172,
+        "p50": 65.87,
+        "p95": 190.04,
+        "p99": 315.58
+      }
+    }
+  },
+  "python": "3.13.5",
+  "platform": "Windows-11-10.0.26200-SP0"
+}

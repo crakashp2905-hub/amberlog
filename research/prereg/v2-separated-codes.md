@@ -55,3 +55,15 @@ the fix, run on the same world and reported.
 - A free-text claim with no code, or a claim about equipment never seen
   before, is still not checkable. A plausible claim from a new author stays
   provisional, not suspicious.
+
+## Amendment 1 — 2026-10-24, after the V2 run, before any seed 700+ number
+
+V2 passed (detection 1.000, false alarms 0.000), and the registered risk held
+as predicted: `risk_two_codes` was 1.000. The refinement is that every code
+before the claim's verb (`:`, `is`, `=`, `to`, `be`, `;`) belongs to the
+subject, and codes after it are values. With no verb, the first code is the
+subject, as before. The refinement was designed after seeing seeds 600–604,
+so it is evaluated on **fresh seeds 700–704** of the same world, run once,
+with the same thresholds (V2-D ≥ 0.90, V2-F ≤ 0.05). In addition,
+`risk_two_codes` must not exceed 0.05 for the refinement to be kept.
+Otherwise it is reverted.

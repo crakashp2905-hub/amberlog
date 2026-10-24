@@ -182,7 +182,7 @@ Decides, immediately before a tool runs, whether it may run.
 ### `actions.ToolRule` (beta)
 
 ```python
-ToolRule(name: str, protected: bool = True, required_checks: tuple[str, ...] = ('authorized_for_caller', 'policy_current', 'evidence_current'), min_independent_sources: int = 1, requires_human_approval: bool = False, min_authority: str = 'unverified', requires_grant: bool = False, refuse_suspicious: bool = True, refuse_provisional: bool = False)
+ToolRule(name: str, protected: bool = True, required_checks: tuple[str, ...] = ('authorized_for_caller', 'policy_current', 'evidence_current'), min_independent_sources: int = 1, requires_human_approval: bool = False, min_authority: str = 'unverified', requires_grant: bool = False, refuse_suspicious: bool = True, require_fresh: bool = False, refuse_provisional: bool = False)
 ```
 
 How one tool is governed. `protected` tools need a valid certificate.

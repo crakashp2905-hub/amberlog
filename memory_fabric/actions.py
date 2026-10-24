@@ -98,6 +98,7 @@ AUTHORITY_INSUFFICIENT = "authority_insufficient"
 INSTRUCTION_EVIDENCE = "instruction_is_not_evidence"
 EVIDENCE_SUSPICIOUS = "evidence_suspicious"
 EVIDENCE_PROVISIONAL = "evidence_provisional"
+EVIDENCE_NOT_FRESH = "evidence_not_fresh"
 GRANT_REQUIRED = "grant_required"
 GRANT_UNKNOWN = "grant_unknown"
 GRANT_EXPIRED = "grant_expired"
@@ -141,6 +142,11 @@ class ToolRule:
     """Refuse evidence whose claim contradicts what the store knows
     (`validation.assess`: a corrected value restated, a value far out of
     range, or a contradiction of an established fact)."""
+    require_fresh: bool = False
+    """Strict freshness: refuse imported evidence unless the gate's `LeaseBook`
+    holds a valid, unexpired lease from its origin at the held version
+    (`freshness.py`). Bounds how stale a withdrawal at an offline peer can be
+    when an action relies on it: one lease lifetime. Native evidence is fresh."""
     refuse_provisional: bool = False
     """Also refuse evidence `validation.assess` rates provisional: a first
     claim from a new source, untrusted origin, or an author's own change to a
@@ -243,9 +249,12 @@ class ActionGate:
         policy: ActionPolicy,
         mode: str = "selective",
         audit: bool = True,
+        leases: Any = None,
     ) -> None:
         self.fabric = fabric
         self.policy = policy
+        self.leases = leases
+        """A `freshness.LeaseBook`, consulted by rules with `require_fresh`."""
         self.verifier = CertificateVerifier(fabric, mode=mode)
         self.audit = audit
 
@@ -356,6 +365,16 @@ class ActionGate:
                 return INSTRUCTION_EVIDENCE
             if not found.at_least(rule.min_authority):
                 return AUTHORITY_INSUFFICIENT
+        if rule.require_fresh:
+            from .freshness import FRESH, LOCAL, LeaseBook, freshness_of
+
+            book = self.leases if self.leases is not None else LeaseBook()
+            for item in certificate.evidence:
+                try:
+                    if freshness_of(self.fabric, item.memory_id, book) not in (FRESH, LOCAL):
+                        return EVIDENCE_NOT_FRESH
+                except KeyError:
+                    return STATE_UNAVAILABLE
         if rule.refuse_suspicious or rule.refuse_provisional:
             from .validation import assess
 

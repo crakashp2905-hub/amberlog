@@ -339,6 +339,13 @@ WRITES: quarantine a memory and contest its descendants. Quarantine on evidence 
 - `--basis`: what kind of evidence this rests on. Omitted is recorded as 'unstated', which the attention list then flags - as it does 'co_occurrence', because being present when something failed is agreement, not causation.
 - `--no-propagate`: leave descendants alone (they keep a retracted justification)
 
+### `receipt-verify`
+
+Verify a signed action receipt (exit 0 valid, 5 invalid); needs no store
+
+- `path`: the receipt JSON file
+- `--public-key`: the signer's Ed25519 public key, base64, obtained independently
+
 ### `release`
 
 WRITES: return a quarantined memory to candidate

@@ -1159,6 +1159,28 @@ def cmd_posture(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_receipt_verify(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Verify an action receipt's signature with a trusted public key. Needs no store."""
+    import base64
+
+    from .action_receipt import ReceiptInvalid, verify_receipt
+
+    doc = json.loads(pathlib.Path(args.path).read_text(encoding="utf-8"))
+    key = base64.b64decode(args.public_key) if args.public_key else None
+    try:
+        verify_receipt(doc, key)
+    except ReceiptInvalid as exc:
+        print(f"{C.RED}INVALID: {exc}{C.RESET}")
+        return 5
+    action, decision = doc["action"], doc["decision"]
+    trust = "trusted key" if key else "embedded key only (integrity, not identity)"
+    print(f"valid ({trust}): {action['agent_id']} -> {action['tool']}: "
+          f"{'ALLOWED' if decision['allowed'] else 'REFUSED'} "
+          f"({', '.join(decision['reason_codes'])}), {len(doc['evidence'])} evidence item(s), "
+          f"log seq {doc['log']['seq']}")
+    return 0
+
+
 def cmd_access_log_verify(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Check the dashboard access log's hash chain. Exit 0 intact, 5 broken."""
     from .observability.server import verify_access_log
@@ -2841,6 +2863,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("posture", cmd_posture,
         "Which security controls are on in this store, and the accepted gaps")
+    p = add("receipt-verify", cmd_receipt_verify,
+            "Verify a signed action receipt (exit 0 valid, 5 invalid); needs no store")
+    p.add_argument("path", help="the receipt JSON file")
+    p.add_argument("--public-key", help="the signer's Ed25519 public key, base64, obtained independently")
+
     p = add("access-log-verify", cmd_access_log_verify,
             "Check the dashboard access log's hash chain (exit 0 intact, 5 broken)")
     p.add_argument("path", help="the access log file (JSON lines)")
@@ -3129,6 +3156,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "receipt-verify":  # reads a file; opens no --db
+        return cmd_receipt_verify(None, args)  # type: ignore[arg-type]
     if args.command == "access-log-verify":  # reads a file; opens no --db
         return cmd_access_log_verify(None, args)  # type: ignore[arg-type]
 

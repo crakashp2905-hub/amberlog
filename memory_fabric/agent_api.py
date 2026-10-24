@@ -303,7 +303,14 @@ class AgentApi:
         if not isinstance(include, bool):
             raise _ApiError(HTTPStatus.BAD_REQUEST, "include_contested must be a boolean")
         hits = client.recall(query, k=k, include_contested=include)
-        return {"memories": [self._present(client, m) for m in hits]}
+        # A verdict on the evidence, separate from how well it ranked: an
+        # unanswerable question still gets its nearest neighbours back.
+        from .answerability import assess
+
+        shown = [self._fabric.state.memories[m.memory_id] for m in hits
+                 if m.memory_id in self._fabric.state.memories]
+        return {"memories": [self._present(client, m) for m in hits],
+                "answerability": assess(query, shown).to_json()}
 
     def _fetch(self, client: AgentClient, body: Mapping[str, Any]) -> dict[str, Any]:
         memory_id = _string(body, "memory_id")

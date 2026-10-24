@@ -63,6 +63,8 @@ def post(port: int, op: str, body: dict, bearer: str) -> tuple[int, dict]:
             return response.status, json.loads(response.read())
     except urllib.error.HTTPError as exc:
         return exc.code, json.loads(exc.read() or b"{}")
+    except OSError as exc:              # a dropped connection is an error, not a crash
+        return 0, {"error": type(exc).__name__}
 
 
 def agent_loop(port: int, bearer: str, seed: int, barrier: threading.Barrier,

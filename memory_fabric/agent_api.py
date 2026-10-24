@@ -405,6 +405,13 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
             else:
                 self._reply(HTTPStatus.METHOD_NOT_ALLOWED, {"error": "use POST"})
 
-    server = ThreadingHTTPServer((host, port), Handler)
+    server = _Server((host, port), Handler)
     server.daemon_threads = True
     return server
+
+
+class _Server(ThreadingHTTPServer):
+    # The socketserver default backlog is 5. With 100 agents connecting at
+    # once the kernel reset the overflow (P12b), and callers saw a dropped
+    # connection rather than a queue.
+    request_queue_size = 128

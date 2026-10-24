@@ -91,8 +91,8 @@ def claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]
         cut = verb.start() if verb else codes[0].end()
 
     def code(match: "re.Match[str]") -> str:
-        token = match.group(1) + match.group(2)
-        (identifiers if match.start() < cut else values).add(token)
+        joined = match.group(1) + match.group(2)
+        (identifiers if match.start() < cut else values).add(joined)
         return " "
 
     text = _CODE.sub(code, text)

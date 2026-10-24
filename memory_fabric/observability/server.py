@@ -210,6 +210,37 @@ class Api:
                     f, _memory_id(raw), direction=direction, max_depth=depth
                 ).to_json()
 
+            case ["memories", raw, "why"]:
+                from .control import eligibility
+
+                return eligibility(f, _memory_id(raw), agent_id=_one(params, "agent") or "",
+                                   tenant_id=_one(params, "tenant"), query=_one(params, "q") or "")
+
+            case ["memories", raw, "dependence"]:
+                from .control import dependence
+
+                return dependence(f, _memory_id(raw))
+
+            case ["actions"]:
+                from .control import action_rows
+
+                return action_rows(f, limit=_int(params, "limit", 200) or 200)
+
+            case ["actions", raw_seq]:
+                from .control import action_detail
+
+                if not raw_seq.isdigit():
+                    raise ApiError(HTTPStatus.BAD_REQUEST, "action is a log sequence number")
+                try:
+                    return action_detail(f, int(raw_seq))
+                except KeyError as exc:
+                    raise ApiError(HTTPStatus.NOT_FOUND, "no such action") from exc
+
+            case ["limitations"]:
+                from .control import limitations
+
+                return limitations()
+
             case ["memories", raw, "audit"]:
                 return report.memory_detail(f, _memory_id(raw))["audit"]
 

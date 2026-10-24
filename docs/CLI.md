@@ -381,6 +381,14 @@ The review queue. With an id and a decision, WRITES it: approve (usable by the t
 - `--override-screen`: approve a memory an ingest screen quarantined
 - `--tenant`: only this tenant's queue
 
+### `sandbox`
+
+A throwaway store with deliberately wrong memories, opened in the dashboard
+
+- `--port`: TCP port to listen on
+- `--dir`: where to create it (default: a new temporary folder)
+- `--no-serve`: seed only; print the path
+
 ### `search`
 
 Search the index without logging anything

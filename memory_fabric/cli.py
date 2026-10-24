@@ -1908,6 +1908,32 @@ def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
     return 0 if ok else 5
 
 
+def cmd_sandbox(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """A throwaway store full of deliberately wrong memories, opened in the dashboard.
+
+    Nothing touches `--db`: the store is created in a temporary directory, seeded
+    (`demo.seed_sandbox`: a poisoning and its retraction, a disagreement, a
+    leaked secret, a held contradicting claim, and gated actions, one of which
+    rested on evidence withdrawn afterwards), and served on localhost.
+    """
+    import tempfile
+
+    from .demo import seed_sandbox
+
+    folder = pathlib.Path(args.dir) if args.dir else pathlib.Path(tempfile.mkdtemp(prefix="mf-sandbox-"))
+    folder.mkdir(parents=True, exist_ok=True)
+    db = folder / "sandbox.db"
+    store = MemoryFabric(str(db), auto_activate=True)
+    try:
+        seed_sandbox(store)
+    finally:
+        store.close()
+    print(f"sandbox store: {db}  (delete the folder when done)")
+    if args.no_serve:
+        return 0
+    return main(["--db", str(db), "serve", "--port", str(args.port), "--no-maintain"])
+
+
 def cmd_demo(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Seed a store that exercises every panel, so the surfaces can be looked at."""
     from .demo import seed
@@ -3016,6 +3042,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("dest", help="directory to restore into; must not exist")
 
     add("demo", cmd_demo, "WRITES: seed a demonstration store")
+    p = add("sandbox", cmd_sandbox,
+            "A throwaway store with deliberately wrong memories, opened in the dashboard")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--dir", help="where to create it (default: a new temporary folder)")
+    p.add_argument("--no-serve", action="store_true", help="seed only; print the path")
     _fill_help(sub)
     return parser
 
@@ -3156,6 +3187,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "sandbox":  # creates its own store; opens no --db
+        return cmd_sandbox(None, args)  # type: ignore[arg-type]
     if args.command == "receipt-verify":  # reads a file; opens no --db
         return cmd_receipt_verify(None, args)  # type: ignore[arg-type]
     if args.command == "access-log-verify":  # reads a file; opens no --db

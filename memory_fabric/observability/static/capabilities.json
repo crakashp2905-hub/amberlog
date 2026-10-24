@@ -29,7 +29,8 @@
         "dashboard": null
       },
       "limitations": [
-        "Screens catch known patterns only; a novel injection can pass."
+        "Screens catch known patterns only; a novel injection can pass.",
+        "A plausible first claim about something the store has never seen cannot be checked (staging run)."
       ]
     },
     {
@@ -354,9 +355,9 @@
         "dashboard": null
       },
       "limitations": [
-        "Agent summaries were evaluated with a rule-based stand-in, not a language model.",
         "Pre-registered bars narrowly not met (research/results/decay-view.md), though the view beat recency on every seed.",
-        "Inspired by OptMem's published design; no OptMem code is used (upstream has no licence)."
+        "Inspired by OptMem's published design; no OptMem code is used (upstream has no licence).",
+        "With real local models the registered bar was missed (qwen2.5:7b 0.12, llama3.1:8b 0.53 of the headroom); model summaries can pick an older real value, which the check cannot catch."
       ]
     },
     {

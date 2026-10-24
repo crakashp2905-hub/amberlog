@@ -10,6 +10,7 @@ its identifiers, content words and values) against the store:
 |---|---|---|
 | `reasserts_corrected` | it states a value that was **withdrawn** for this same claim | suspicious |
 | `contradicts_established` | an active memory by another author, with a track record, gives another value for this claim and has been in the store longer | suspicious |
+| `conflicts_with_pending` | **under review** (a candidate), and another candidate by another author gives another value for this claim; neither is established yet, so a reviewer approving a batch must decide between them | suspicious |
 | `outlier` | its value is far outside what the store holds for this kind of parameter on other equipment: robust z > 3.5 **and** beyond twice the largest or half the smallest of at least 5 comparable claims | suspicious |
 | `new_source` | its author has no validated memory older than this one | provisional |
 | `untrusted_origin` | its origin-bound authority is untrusted (tool output, import, web) | provisional |
@@ -42,7 +43,8 @@ from .conflicts import author, claim
 if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
 
-SUSPICIOUS = ("reasserts_corrected", "contradicts_established", "outlier")
+SUSPICIOUS = ("reasserts_corrected", "contradicts_established", "conflicts_with_pending",
+              "outlier")
 PROVISIONAL = ("new_source", "untrusted_origin", "revises_validated")
 OUTLIER_Z = 3.5
 MIN_COMPARABLE = 5
@@ -250,9 +252,12 @@ def _validated_by_other(index: "_ClaimIndex", memory_id: str, who: str) -> str |
 
 def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assessment:
     from . import authority
-    from .model import EXPOSABLE_STATES, WITHDRAWN_STATES
+    from .model import EXPOSABLE_STATES, WITHDRAWN_STATES, LifecycleState
 
     memory_id = memory.id
+    # Reviewing an existing candidate (not checking a write in flight).
+    reviewing = (with_authority and memory_id in fabric.state.memories
+                 and memory.lifecycle_state is LifecycleState.CANDIDATE)
     mine = claim(memory.content)
     ids, words, values = mine
     signals: dict[str, str] = {}
@@ -294,6 +299,15 @@ def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assess
             if (author(other) != me and other.created_at <= memory.created_at
                     and track_record(author(other), memory.created_at, exclude=oid)):
                 signals.setdefault("contradicts_established", oid)
+        elif (reviewing and other.lifecycle_state is LifecycleState.CANDIDATE
+              and theirs[2] and theirs[2] != values and author(other) != me):
+            # Found by the staging run: a reviewer approving a batch of new
+            # writes let a contradiction through, because the true fact was
+            # itself still pending, so nothing was "established" to contradict.
+            # Review only: on the write path a held poison is a candidate too,
+            # and flagging every honest correction of it would hold the
+            # correction as well.
+            signals.setdefault("conflicts_with_pending", oid)
         elif (other.lifecycle_state in EXPOSABLE_STATES and theirs[2] == values
               and (not memory_id or fabric.source_root(oid) != fabric.source_root(memory_id))
               and author(other) != me):

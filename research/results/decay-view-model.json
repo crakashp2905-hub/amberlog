@@ -1,0 +1,249 @@
+{
+  "experiment": "decay-view",
+  "budget": 300,
+  "seeds": [
+    11,
+    12,
+    13,
+    14,
+    15
+  ],
+  "model": "qwen2.5:7b",
+  "runs": [
+    {
+      "seed": 11,
+      "R": {
+        "current_recall": 0.4688,
+        "stale_answer_rate": 0.0,
+        "tokens": 297,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.6562,
+        "stale_answer_rate": 0.0,
+        "tokens": 298,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.875,
+        "stale_answer_rate": 0.0,
+        "tokens": 281,
+        "summaries_stored": 15
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.5625,
+        "stale_answer_rate": 0.0938,
+        "tokens": 298,
+        "summaries_stored": 16,
+        "model": {
+          "requested": 19,
+          "stored": 16,
+          "refused": 3,
+          "calls": 23,
+          "name": "qwen2.5:7b"
+        }
+      }
+    },
+    {
+      "seed": 12,
+      "R": {
+        "current_recall": 0.4688,
+        "stale_answer_rate": 0.0312,
+        "tokens": 297,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.5938,
+        "stale_answer_rate": 0.0312,
+        "tokens": 290,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.6875,
+        "stale_answer_rate": 0.0312,
+        "tokens": 297,
+        "summaries_stored": 14
+      },
+      "oracle": {
+        "current_recall": 0.9688,
+        "stale_answer_rate": 0.0312,
+        "tokens": 127,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.5312,
+        "stale_answer_rate": 0.0625,
+        "tokens": 294,
+        "summaries_stored": 16,
+        "model": {
+          "requested": 19,
+          "stored": 16,
+          "refused": 3,
+          "calls": 22,
+          "name": "qwen2.5:7b"
+        }
+      }
+    },
+    {
+      "seed": 13,
+      "R": {
+        "current_recall": 0.5625,
+        "stale_answer_rate": 0.0,
+        "tokens": 291,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.6875,
+        "stale_answer_rate": 0.0,
+        "tokens": 299,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.8125,
+        "stale_answer_rate": 0.0,
+        "tokens": 273,
+        "summaries_stored": 13
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.5,
+        "stale_answer_rate": 0.0,
+        "tokens": 295,
+        "summaries_stored": 12,
+        "model": {
+          "requested": 17,
+          "stored": 12,
+          "refused": 5,
+          "calls": 22,
+          "name": "qwen2.5:7b"
+        }
+      }
+    },
+    {
+      "seed": 14,
+      "R": {
+        "current_recall": 0.5312,
+        "stale_answer_rate": 0.0,
+        "tokens": 299,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.5938,
+        "stale_answer_rate": 0.0,
+        "tokens": 293,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.8438,
+        "stale_answer_rate": 0.0,
+        "tokens": 279,
+        "summaries_stored": 15
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 127,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.5938,
+        "stale_answer_rate": 0.0,
+        "tokens": 275,
+        "summaries_stored": 16,
+        "model": {
+          "requested": 22,
+          "stored": 16,
+          "refused": 6,
+          "calls": 29,
+          "name": "qwen2.5:7b"
+        }
+      }
+    },
+    {
+      "seed": 15,
+      "R": {
+        "current_recall": 0.5,
+        "stale_answer_rate": 0.0,
+        "tokens": 290,
+        "summaries_stored": 0
+      },
+      "X": {
+        "current_recall": 0.625,
+        "stale_answer_rate": 0.0,
+        "tokens": 253,
+        "summaries_stored": 0
+      },
+      "S": {
+        "current_recall": 0.8438,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 11
+      },
+      "oracle": {
+        "current_recall": 1.0,
+        "stale_answer_rate": 0.0,
+        "tokens": 128,
+        "summaries_stored": 0
+      },
+      "M": {
+        "current_recall": 0.6562,
+        "stale_answer_rate": 0.0,
+        "tokens": 300,
+        "summaries_stored": 15,
+        "model": {
+          "requested": 15,
+          "stored": 15,
+          "refused": 0,
+          "calls": 16,
+          "name": "qwen2.5:7b"
+        }
+      }
+    }
+  ],
+  "summary": {
+    "R": {
+      "current_recall": 0.5063,
+      "stale_answer_rate": 0.0062,
+      "tokens": 294.8,
+      "summaries_stored": 0
+    },
+    "X": {
+      "current_recall": 0.6313,
+      "stale_answer_rate": 0.0062,
+      "tokens": 286.6,
+      "summaries_stored": 0
+    },
+    "S": {
+      "current_recall": 0.8125,
+      "stale_answer_rate": 0.0062,
+      "tokens": 286,
+      "summaries_stored": 13.6
+    },
+    "oracle": {
+      "current_recall": 0.9938,
+      "stale_answer_rate": 0.0062,
+      "tokens": 127.6,
+      "summaries_stored": 0
+    },
+    "M": {
+      "current_recall": 0.5687,
+      "stale_answer_rate": 0.0313,
+      "tokens": 292.4,
+      "summaries_stored": 15,
+      "calls": 112,
+      "model_tokens": 20259
+    }
+  },
+  "any_arm_beats_oracle": []
+}

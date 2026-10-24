@@ -20,6 +20,37 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **Memory Control Center** (dashboard): a guided start page, agent actions with their evidence then and now, a "would retrieval show this?" trace, decision dependence and known limitations. `memory-fabric sandbox` seeds a store with deliberately wrong memories and opens it in the dashboard.
 - **Tenant isolation patterns** (DEPLOYMENT.md), **PostgreSQL failover runbook** (OPERATIONS §4b), and the team review flow (validate *and* share).
 
+### Added: staging run, real-model summaries, related work, review kits
+
+- `experiments/staging_run.py`: the production deployment end to end on
+  PostgreSQL — `agent-api` with default rate limits, local-model writer and
+  answering agents, operators reviewing and changing facts, a scripted
+  adversary, background load. Governed answers 0.625 vs 0.542 for plain
+  retrieval with no poisoned or stale value in context (plain: 4% / 21%);
+  `research/results/staging-run.md`, with a failed first run kept.
+- Decay view with real models (`--model`): qwen2.5:7b missed the registered
+  bar badly (0.12 of 0.75); llama3.1:8b reached 0.53. The submission check
+  refused 18–37% of model summaries for invented facts but cannot catch an
+  older real value, which caused 3–5% stale answers.
+- `research/RELATED_WORK.md`: prior work (Lemmalog, Kumiho, Git Context
+  Controller, Memoria, a provenance-aware tiered memory preprint) narrows
+  every novelty claim; only specific governance checks remain possibly new.
+- `docs/product/USABILITY_STUDY_KIT.md`, `LEGAL_PRIVACY_REVIEW_BRIEF.md`, and
+  `tools/eval_pack.py` (a reproduction pack for an outside evaluator).
+
+### Fixed (found by the staging run)
+
+- Claims about things named without digits ("billing-api") had no
+  identifier, so validation and conflict detection checked nothing about
+  them. A separated name before the verb is now the claim's subject.
+- A reviewer approving a batch let a contradiction through when the true
+  fact was itself pending: `conflicts_with_pending` flags both for review.
+
+### Changed
+
+- Retrieval no longer scans every memory to decide eligibility (`Eligible`,
+  checked per memory): 9.9 -> 8.6 ms p50 at 10,000 memories, back to back.
+
 ### Fixed: constraints an engineer would hit
 - **Claim checks missed every equipment code written with a separator.** `H-14`, `PMP_0012` and `K/31` were split into a word and a number, so the claim had no identifier and the contradiction, re-assertion and corroboration checks never ran on it. A poisoned "update" to such a code went through unflagged (D1, with one attacker account per case: 15 of 15). Codes before a claim's verb now form its subject, and codes after it are values. Held-out: detection 1.000, false alarms 0.000 ([V2](research/results/v2-codes.md)).
 - **A compromised account could change a reviewer-validated fact unflagged.** The change is now provisional (`revises_validated`) until someone validates it. `ToolRule(refuse_provisional=True)` lets a protected tool refuse it.

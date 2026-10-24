@@ -10,7 +10,8 @@ __stability__ = "stable"
 
 
 
-from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence, cast
+from collections.abc import Set as AbcSet
+from typing import TYPE_CHECKING, AbstractSet, Any, Callable, Iterable, Iterator, Mapping, Sequence, cast
 
 if TYPE_CHECKING:
     from ..fabric import MemoryFabric  # noqa: F401
@@ -48,6 +49,46 @@ _RETRIEVE_DEFAULTS: dict[str, Any] = {
 }
 
 
+class Eligible(AbcSet):  # type: ignore[type-arg]
+    """The memories a retrieval may consider, decided per memory rather than listed up front.
+
+    `_eligible_ids` used to build this set by checking every memory in the
+    store on every query, and the lexical index then copied it again; at
+    20,000 memories that was most of what remained of a query's cost after
+    the inverted index (research/results/product-bench.md). Membership is
+    the same check on one memory, filters compose without copying, and the
+    full list is built only if something iterates it.
+    """
+
+    def __init__(self, memories: Mapping[str, Memory],
+                 predicates: tuple[Callable[[Memory], bool], ...]) -> None:
+        self._memories = memories
+        self._predicates = predicates
+        self._listed: frozenset[str] | None = None
+
+    def __contains__(self, memory_id: object) -> bool:
+        memory = self._memories.get(memory_id) if isinstance(memory_id, str) else None
+        return memory is not None and all(p(memory) for p in self._predicates)
+
+    def _list(self) -> frozenset[str]:
+        if self._listed is None:
+            self._listed = frozenset(mid for mid, m in self._memories.items()
+                                     if all(p(m) for p in self._predicates))
+        return self._listed
+
+    def __iter__(self) -> Iterator[str]:
+        return iter(self._list())
+
+    def __len__(self) -> int:
+        return len(self._list())
+
+    def narrow(self, predicate: Callable[[Memory], bool]) -> "Eligible":
+        return Eligible(self._memories, self._predicates + (predicate,))
+
+    @classmethod
+    def _from_iterable(cls, it: Iterable[str]) -> set[str]:  # type: ignore[override]
+        return set(it)
+
 class RetrievalMixin(FabricCore):
 
     # --- the three mechanisms the store had and retrieval did not use -----
@@ -62,7 +103,7 @@ class RetrievalMixin(FabricCore):
     # which is the H2/H3/H4a pattern this project keeps recording.
 
     def _applicable_at(self, memory_ids: Iterable[str], when: int | None,
-                       until: int | None = None) -> set[str]:
+                       until: int | None = None) -> AbstractSet[str]:
         """Narrow by validity: a point in time, or a history through a time.
 
         `when` is **state at a point** -- `valid_from <= when < valid_to` --
@@ -83,7 +124,9 @@ class RetrievalMixin(FabricCore):
         store written before 0.7.0 is unaffected.
         """
         if when is None and until is None:
-            return set(memory_ids)
+            # Unchanged, and not copied: copying the eligible set was a pass
+            # over every memory on every query.
+            return memory_ids if isinstance(memory_ids, Eligible) else set(memory_ids)
         out = set()
         for memory_id in memory_ids:
             memory = self.state.memories[memory_id]
@@ -200,7 +243,7 @@ class RetrievalMixin(FabricCore):
     def _expand_lineage(
         self,
         ranked: Sequence[tuple[str, float]],
-        eligible: set[str],
+        eligible: AbstractSet[str],
         limit: int,
         depth: int = 1,
     ) -> list[tuple[str, float]]:
@@ -261,7 +304,7 @@ class RetrievalMixin(FabricCore):
         self,
         query: str,
         k: int,
-        eligible: set[str],
+        eligible: AbstractSet[str],
         min_relevance: float,
         method: str | None = None,
     ) -> list[tuple[str, float]]:
@@ -458,7 +501,7 @@ class RetrievalMixin(FabricCore):
             min_relevance = given["min_relevance"]
             if method is None:
                 method = chosen.method
-        eligible = self._eligible_ids(
+        eligible: AbstractSet[str] = self._eligible_ids(
             include_contested=include_contested, tenant_id=tenant_id,
             agent_id=agent_id,
         )
@@ -473,8 +516,10 @@ class RetrievalMixin(FabricCore):
             # The session's own statement of relevance, at the same chokepoint
             # as tenancy and lifecycle, for the same reason: an excluded memory
             # is never ranked, exposed, or logged as a withheld candidate.
-            eligible = {m for m in eligible
-                        if objective.admits(self.state.memories[m].context)}
+            eligible = (eligible.narrow(lambda m: objective.admits(m.context))
+                        if isinstance(eligible, Eligible)
+                        else {m for m in eligible
+                              if objective.admits(self.state.memories[m].context)})
         hits = self._search(query, pool_size, eligible, min_relevance, method=method)
         if objective is not None and hasattr(objective, "rank"):
             # V2: evidence-aware ranking within what is eligible. It can only
@@ -617,7 +662,7 @@ class RetrievalMixin(FabricCore):
         Every step carries why it is there and a leave-one-out necessity
         verdict — see `chains.EvidenceChain.why`.
         """
-        eligible = self._eligible_ids(
+        eligible: AbstractSet[str] = self._eligible_ids(
             include_contested=include_contested, tenant_id=tenant_id,
             agent_id=agent_id,
         )
@@ -762,7 +807,7 @@ class RetrievalMixin(FabricCore):
         self.extracted[record.memory_id] = record
 
     def _admit_defaults(
-        self, ranked: Sequence[tuple[str, float]], eligible: set[str],
+        self, ranked: Sequence[tuple[str, float]], eligible: AbstractSet[str],
         entities: Sequence[str], limit: int, k: int | None = None,
     ) -> list[tuple[str, float]]:
         """Add default rules and scoped adjustments that cover the asked entities.
@@ -912,7 +957,7 @@ class RetrievalMixin(FabricCore):
             self.state.relations.get((memory_id, RelationKind(kind).value), ()))
 
     def _follow_relations(
-        self, ranked: Sequence[tuple[str, float]], eligible: set[str],
+        self, ranked: Sequence[tuple[str, float]], eligible: AbstractSet[str],
         limit: int,
     ) -> list[tuple[str, float]]:
         """Pull in whatever qualifies a selected memory.
@@ -946,7 +991,7 @@ class RetrievalMixin(FabricCore):
     def _eligible_ids(
         self, include_contested: bool = False, tenant_id: str | None = None,
         agent_id: str | None = None,
-    ) -> set[str]:
+    ) -> "Eligible":
         """The one chokepoint every retrieval narrows through.
 
         The tenant filter belongs here rather than after ranking, for the same
@@ -959,14 +1004,15 @@ class RetrievalMixin(FabricCore):
         allowed = set(EXPOSABLE_STATES)
         if include_contested:
             allowed |= EXPLORATORY_STATES
-        return {
-            memory_id
-            for memory_id, memory in self.state.memories.items()
-            if memory.lifecycle_state in allowed
-            and memory.lifecycle_state not in BLOCKED_STATES
-            and (tenant_id is None or memory.tenant_id == tenant_id)
-            and visible_to(memory, agent_id, self.state)
-        }
+        state = self.state
+
+        def admits(memory: Memory) -> bool:
+            return (memory.lifecycle_state in allowed
+                    and memory.lifecycle_state not in BLOCKED_STATES
+                    and (tenant_id is None or memory.tenant_id == tenant_id)
+                    and visible_to(memory, agent_id, state))
+
+        return Eligible(state.memories, (admits,))
 
     def hostile_authors(self) -> frozenset[str]:
         """Authors caught injecting, here or by a peer's authenticated notice. Cached per log head."""
@@ -978,7 +1024,7 @@ class RetrievalMixin(FabricCore):
                 hindsight.discredited_authors(cast("MemoryFabric", self), hindsight.HOSTILE, federated=True)))
         return self._hostile_cache[1]
 
-    def _without_hostile_sources(self, eligible: set[str]) -> set[str]:
+    def _without_hostile_sources(self, eligible: AbstractSet[str]) -> AbstractSet[str]:
         if not self.withhold_hostile_sources:
             return eligible
         bad = self.hostile_authors()
@@ -986,4 +1032,6 @@ class RetrievalMixin(FabricCore):
             return eligible
         from ..hindsight import author
 
+        if isinstance(eligible, Eligible):
+            return eligible.narrow(lambda m: author(m) not in bad)
         return {m for m in eligible if author(self.state.memories[m]) not in bad}

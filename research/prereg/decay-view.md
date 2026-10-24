@@ -41,3 +41,20 @@ three were repaired by looking at seeds 1–5, so the post-hoc rerun there
 confirms nothing. This addendum runs the repaired code, unchanged, on
 **seeds 6–10** with **D1 and D2 unchanged**. Output:
 `research/results/decay-view-confirm.json`.
+
+## Addendum B — a real language model writes the summaries (registered before it ran)
+
+Arm **M**: `qwen2.5:7b` (Ollama, local, temperature 0) answers the view's
+summary requests through `OllamaClient`, which logs every call and its
+tokens. Each reply goes through the same submission check as any agent; a
+refusal is retried once with the reason, and what is still refused is
+counted. Seeds **11–15** (never run before), budget 300, the repaired code.
+
+- **D3.** M captures **≥ 0.75** of the headroom over R (the D2 bar), with
+  stale answers **≤ 0.02** on every seed.
+- Reported, no threshold: the share of summary requests the check refused
+  (summaries stating something their sources do not), and model calls and
+  tokens.
+- `llama3.1:8b` is run the same way as a second, descriptive model.
+
+Output: `research/results/decay-view-model.json` (and `-llama.json`).

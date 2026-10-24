@@ -89,7 +89,8 @@ class Governance(unittest.TestCase):
         f, _ = store(4)
         self.addCleanup(f.close)
         f.remember("zed", "Pump P5 runs at 99 bar.", scope="team", tenant_id="tn_b")
-        self.assertNotIn("99", json.dumps([p.to_json() for p in DecayView(f, "r").wake(10_000)]))
+        texts = " ".join(p.text for p in DecayView(f, "r").wake(10_000))
+        self.assertNotIn("99 bar", texts)  # the text, not ids: a random id can contain "99"
 
     def test_summaries_are_never_retrieved_as_evidence(self) -> None:
         f, _ = store(4)

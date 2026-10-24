@@ -19,6 +19,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 - **Code:** `memory_fabric/_fabric/writes.py`, `memory_fabric/governance/firewall.py`, `memory_fabric/governance/sensitive.py`
 - **Tests:** `tests/test_fabric.py`, `tests/test_governance.py`, `tests/test_sensitive_patterns.py`
 - **Limitation:** Screens catch known patterns only; a novel injection can pass.
+- **Limitation:** A plausible first claim about something the store has never seen cannot be checked (staging run).
 
 ### Retrieve with tenant, scope and lifecycle enforced
 
@@ -203,9 +204,9 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 - **Surfaces:** sdk: `decay.DecayView`, mcp: `wake`, cli: `context`
 - **Code:** `memory_fabric/decay.py`
 - **Tests:** `tests/test_decay.py`, `tests/test_mcp_extended.py`, `tests/test_cli_versioning.py`
-- **Limitation:** Agent summaries were evaluated with a rule-based stand-in, not a language model.
 - **Limitation:** Pre-registered bars narrowly not met (research/results/decay-view.md), though the view beat recency on every seed.
 - **Limitation:** Inspired by OptMem's published design; no OptMem code is used (upstream has no licence).
+- **Limitation:** With real local models the registered bar was missed (qwen2.5:7b 0.12, llama3.1:8b 0.53 of the headroom); model summaries can pick an older real value, which the check cannot catch.
 
 
 ## Unsupported

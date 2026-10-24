@@ -50,6 +50,9 @@ ALLOWED_LINES = {
     # `token=args.token`, which is code rather than an assignment of a secret.
     ("memory_fabric/estimators.py", "credit_card"),
     ("memory_fabric/cli.py", "password_assignment"),
+    # The staging run's adversary submits a fake credential on purpose, to
+    # check that the ingest screen quarantines it.
+    ("experiments/staging_run.py", "password_in_prose"),
 
     # These test the auth layer and the detector itself, so synthetic
     # credentials are the subject matter.

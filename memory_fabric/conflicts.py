@@ -64,6 +64,8 @@ _TOKEN = re.compile(r"[a-z0-9]+(?:\.[0-9]+)?")
 # A code written with a separator: "H-14", "FP-1458", "PMP_0012", "K/31".
 _VERB = re.compile(r":|;|=|\b(?:is|are|to|be)\b")
 _CODE = re.compile(r"(?<![a-z0-9])([a-z]{1,6})[-_/]([0-9][a-z0-9]*)(?![a-z0-9])")
+# A name written with a separator and no digits: "billing-api", "auth_gateway".
+_NAME = re.compile(r"(?<![a-z0-9\-_])([a-z][a-z0-9]*(?:[-_][a-z][a-z0-9]*)+)(?![a-z0-9\-_])")
 
 
 def claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
@@ -98,6 +100,24 @@ def claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]
         return " "
 
     text = _CODE.sub(code, text)
+    # A separated name in the subject is an identifier too. Found by the
+    # staging run: "billing-api listens on port 8443" had no identifier, so
+    # validation and conflict detection passed every claim about a named
+    # service untested, a contradicting port included. Only before the verb
+    # (or, with no verb, the first name), so "a follow-up is due" is a word.
+    names = list(_NAME.finditer(text))
+    if names and not identifiers:
+        verb = _VERB.search(text, names[0].end())
+        stop = verb.start() if verb else names[0].end()
+        subject = [m for m in names if m.start() < stop]
+        for match in subject:
+            identifiers.add(match.group(1).replace("_", "-"))
+        # Out of the words, as a code is: left in, "billing" and "api" made
+        # every claim about billing-api the same claim (two shared words), so
+        # its port and its replica cap read as one fact with two values and
+        # the staging run's review held half of all honest writes.
+        for match in reversed(subject):
+            text = text[:match.start()] + " " + text[match.end():]
     for token in _TOKEN.findall(text):
         has_digit = any(ch.isdigit() for ch in token)
         has_alpha = any(ch.isalpha() for ch in token)

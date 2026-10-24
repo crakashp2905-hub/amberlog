@@ -129,10 +129,16 @@ class TestIdentityAndTenancy(ApiCase):
                                    self.token("ag_other"))[0], 403)
 
     def test_tokens_are_per_agent(self) -> None:
-        """ag_b cannot verify on the strength of ag_a's recall."""
+        """ag_b cannot verify on the strength of ag_a's recall.
+
+        ag_b's verify fetches the memory under ag_b's own permission check and
+        token (so a withdrawn memory can be answered as withdrawn); ag_a's token
+        is never used for it.
+        """
         self.post("recall", {"query": "pilot cable coastal"}, self.token("ag_a"))
-        status, _ = self.post("verify", {"memory_id": self.mid}, self.token("ag_b"))
-        self.assertEqual(status, 409)
+        status, body = self.post("verify", {"memory_id": self.mid}, self.token("ag_b"))
+        self.assertEqual(status, 200, body)
+        self.assertTrue(body["usable"])
 
 
 class TestTransportDefences(ApiCase):

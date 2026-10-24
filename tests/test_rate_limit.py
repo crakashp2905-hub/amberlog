@@ -176,11 +176,9 @@ class TestBoundedTokens(ApiCase):
             operator(self.fabric, "op").share(other, "team")
             self.api.handle("fetch", a, {"memory_id": other})
             self.assertEqual(list(self.api._issued["ag_a"]), [other])
-            with self.assertRaises(_ApiError) as caught:
-                self.api.handle("verify", a, {"memory_id": self.mid})
-            self.assertEqual(caught.exception.status, 409)
-            self.api.handle("fetch", a, {"memory_id": self.mid})
+            # An evicted memory is fetched again on verify; the cache stays bounded.
             self.assertTrue(self.api.handle("verify", a, {"memory_id": self.mid})["usable"])
+            self.assertEqual(list(self.api._issued["ag_a"]), [self.mid])
 
 
 class TestOverHttp(ApiCase):

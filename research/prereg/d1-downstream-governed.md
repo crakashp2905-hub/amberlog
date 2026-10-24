@@ -134,3 +134,20 @@ ever in its context.
   settings the CLI uses. It is not temperature 0, which is why there are seeds.
 - **Seeds vary the world.** Model sampling noise is folded into the CI over
   seeds and not separated from it.
+
+## Amendment 1 — 2026-10-24, before any seed 6–10 number
+
+D1 is re-run on the current product as **D1-r**, with two harness changes and
+nothing else. Arms, k, metrics and thresholds are as in §3–§6.
+
+1. **`naive` stays ungoverned.** The product now holds suspicious claims and
+   withholds hostile sources inside retrieval. The `naive` store is built with
+   both switched off (`hold_suspicious=False`, `withhold_hostile_sources=False`),
+   which is what §3 defines it as.
+2. **One attacker account per case.** In the original world one account wrote
+   every poison and injection, so a single detection withheld all of them.
+   Each hazard now has its own author.
+
+Seeds 6–10 (fresh), `sonnet`. `poison_undetected` remains labelled as written.
+The product may now catch some of those cases (the claim-parser fix, V2), and
+a catch is counted as the product's.

@@ -268,6 +268,8 @@ class FoundByTheMatrix(unittest.TestCase):
         self.assertIn("P3-ROT", plan.items[0].content)
 
     def test_f2_a_correction_comes_before_an_older_restatement(self) -> None:
+        # Restatements left active, to test the builder's order on its own.
+        self.f.contest_restatements = False
         fact = self.f.remember("ops", "Pump P1-ROT pressurised to 40 bar.", scope="team")
         self.f.remember("crew", "Measured again on the night shift: P1-ROT pressurised to 40 bar.",
                         scope="team")

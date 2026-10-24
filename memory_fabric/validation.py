@@ -87,6 +87,44 @@ def _same_parameter(a: tuple, b: tuple) -> bool:
     return bool(ids_a) and bool(ids_b) and ids_a != ids_b and len(words_a & words_b) >= 2
 
 
+def restatements(fabric: "MemoryFabric", memory: Any) -> list[str]:
+    """Usable memories elsewhere that state this version's claim with the same value.
+
+    Called before a version is corrected or withdrawn: those are the notes the
+    correction leaves behind. Nothing links a note that merely repeats a value
+    ("measured again: P7 at 41 bar") to the fact it repeats, so without this a
+    correction never reaches it and retrieval keeps serving the old value (GME
+    matrix, research/results/gme-matrix.md). Same tenant, same claim
+    (`_same_claim`), identical values; the memory itself and its own
+    descendants excluded, since lineage already handles those.
+    """
+    from .model import EXPOSABLE_STATES
+
+    mine = claim(memory.content)
+    ids, _, values = mine
+    if not ids or not values:
+        return []
+    index = _index(fabric)
+    memories = fabric.state.memories
+    own = {memory.id}
+    frontier = [memory.id]
+    while frontier:
+        for child in fabric.state.children.get(frontier.pop(), ()):
+            if child not in own:
+                own.add(child)
+                frontier.append(child)
+    out = []
+    for oid in sorted(set().union(*(index.by_ident.get(i, set()) for i in ids)) - own):
+        other = memories.get(oid)
+        if (other is None or other.tenant_id != memory.tenant_id
+                or other.lifecycle_state not in EXPOSABLE_STATES):
+            continue
+        theirs = index.claim_of(oid)
+        if theirs[2] == values and _same_claim(mine, theirs):
+            out.append(oid)
+    return out
+
+
 def assess(fabric: "MemoryFabric", memory_id: str) -> Assessment:
     """Check one memory's claim against the store. Reads only; never changes state."""
     return _assess(fabric, fabric.state.memories[memory_id], with_authority=True)

@@ -95,3 +95,30 @@ These were run on the seeds the repairs were made from and confirm nothing.
 - A governed merge beat a naive one on every confirmatory seed, and the
   invariants (no resurrection, no lost update) held on all ten seeds.
 - Synthetic world, rule reader. No claim about language-model task success.
+
+## v2: repaired metrics and restatement contesting (seeds 11–15)
+
+Pre-registration: [gme-matrix-v2.md](../prereg/gme-matrix-v2.md). Raw:
+`gme-matrix-v2-b60.json`, `gme-matrix-v2-b400.json`.
+`any_arm_beats_oracle` empty at both budgets.
+
+| hypothesis | criterion | result |
+|---|---|---|
+| **H1′** governance (budget 60) | C share ≥ 0.50; stale leak ≤ 0.02 and branch leak 0 on every seed | **not supported**: share 1.00 on every seed and branch leak 0, but stale leak 0.028–0.056 (v1: 0.083–0.111) |
+| **H2′** compression (budget 400) | E tokens ≤ 0.80 × C; share within 0.05 of C | **not supported**: E used 0.81–0.95 × C's tokens; share 1.00 on four seeds, 0.94 on one |
+| **H3′** merge (budget 60) | G share over F ≥ 0.50; no resurrection, no lost update | **supported**: share 1.00 on every seed; invariants held |
+
+- **Where the remaining leak is.** Broken down by role (seed 11), every
+  remaining stale value belongs to a **withdrawn** fact. The harness
+  withdraws with a reason and no basis, and restatement contesting runs only
+  for a withdrawal recorded as `contradicted` — a rule fixed before this run
+  so that a withdrawal for, say, a secret does not contest honest notes.
+  Corrections (revisions) no longer leak. A deployment that records the
+  basis of its withdrawals gets the full effect; one that does not, does not.
+- **Compression now shows, but below the bar.** With a budget that does not
+  bind, the Governed Context Map delivers 5–19% fewer tokens than canonical
+  records at the same accuracy. extractive-v2 compresses only restatements,
+  and those are now mostly contested; distinct facts are kept verbatim.
+- **The governed merge** captured all of the headroom over a naive merge on
+  all five fresh seeds, and across v1 confirmatory and v2 (ten fresh seeds)
+  no withdrawn memory came back and no update was lost.

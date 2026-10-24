@@ -70,8 +70,9 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 
 - **Surfaces:** sdk: `MemoryFabric.request_retraction`, cli: `correct`, dashboard: `propagation`
 - **Code:** `memory_fabric/lineage.py`, `memory_fabric/justification.py`, `memory_fabric/outbox.py`, `memory_fabric/transport.py`
-- **Tests:** `tests/test_retraction.py`, `tests/test_transitive_retraction.py`, `tests/test_retraction_protocol.py`, `tests/test_multihop_http.py`
+- **Tests:** `tests/test_retraction.py`, `tests/test_transitive_retraction.py`, `tests/test_retraction_protocol.py`, `tests/test_multihop_http.py`, `tests/test_restatements.py`
 - **Limitation:** A peer that never acknowledges stays pending; it is shown, not forced.
+- **Limitation:** Restatements of a value (notes not linked by lineage) are contested only on a revision or a withdrawal recorded as contradicted.
 
 ### Status labels with stated limits
 

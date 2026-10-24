@@ -334,6 +334,11 @@ class WritesMixin(FabricCore):
         # injection into a memory that was already active and retrievable.
         ruling = self.firewall.screen_ingest(
             _screened_text(content, current.context, current.structured))
+        from .. import validation
+
+        left_behind = (validation.restatements(cast("MemoryFabric", self), current) if self.contest_restatements
+                       and validation.claim(content)[2] != validation.claim(current.content)[2]
+                       else [])
         now = self.now()
         revised = current.evolve(
             version=current.version + 1,
@@ -373,6 +378,8 @@ class WritesMixin(FabricCore):
         # under the current version. Found by tests/test_catch_up.py.
         current = self.state.memories[memory_id]
         self._index(memory_id, self._index_text(current))
+        self._contest(left_behind, f"restates the value {memory_id} v{current.version - 1} "
+                                   f"had before it was corrected", agent_id)
         return current
 
     @_fresh

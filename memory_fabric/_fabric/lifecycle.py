@@ -101,10 +101,18 @@ class LifecycleMixin(FabricCore):
 
         Returns the ids marked contested.
         """
-        self._require(memory_id)
+        target = self._require(memory_id)
         basis_value = (
             basis.value if isinstance(basis, WithdrawalBasis) else basis
         ) or WithdrawalBasis.UNSTATED.value
+        # Only on a finding that the *value* is wrong: notes repeating a value
+        # withdrawn for containing a secret, say, say nothing wrong.
+        from .. import validation
+
+        left_behind = (validation.restatements(cast("MemoryFabric", self), target)
+                       if propagate and self.contest_restatements
+                       and basis_value == WithdrawalBasis.CONTRADICTED.value
+                       and target.lifecycle_state is LifecycleState.ACTIVE else [])
         emitted = [
             self._transition(
                 memory_id, LifecycleState.QUARANTINED, reason, actor, basis_value
@@ -237,7 +245,11 @@ class LifecycleMixin(FabricCore):
                         ))
                         contested.append(verdict.memory_id)
         self._emit(*emitted)
-        return contested
+        before = {m for m in left_behind
+                  if self.state.memories[m].lifecycle_state is LifecycleState.ACTIVE}
+        self._contest(sorted(before), f"restates the value of {memory_id}, withdrawn as "
+                                      "contradicted", actor)
+        return contested + sorted(before)
 
     def _copy_closure(self, memory_id: str) -> list[str]:
         """Every other memory that is the same document as this one.

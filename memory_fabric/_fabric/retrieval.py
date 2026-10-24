@@ -41,6 +41,13 @@ from .core import FabricCore
 from .common import PolicyViolation, RetrievalResult, _fresh
 
 
+# `retrieve`'s defaults, for telling a profile setting from an explicit argument.
+_RETRIEVE_DEFAULTS: dict[str, Any] = {
+    "k": 5, "include_contested": False, "expand_lineage": 1, "follow_relations": False,
+    "group_by_source_root": True, "min_relevance": MIN_RELEVANCE,
+}
+
+
 class RetrievalMixin(FabricCore):
 
     # --- the three mechanisms the store had and retrieval did not use -----
@@ -256,8 +263,9 @@ class RetrievalMixin(FabricCore):
         k: int,
         eligible: set[str],
         min_relevance: float,
+        method: str | None = None,
     ) -> list[tuple[str, float]]:
-        """Candidate discovery, by configured mode.
+        """Candidate discovery, by configured mode (or `method` for this call).
 
         **`lexical` is the default, and it was `hybrid` until an external
         benchmark said otherwise.**
@@ -288,7 +296,7 @@ class RetrievalMixin(FabricCore):
         Numbers: `research/results/scifact-external.md` and
         `research/results/relevance-v1-real-embedder.md`.
         """
-        mode = self.retrieval_mode
+        mode = method or self.retrieval_mode
         if mode == "vector":
             return self.index.search(
                 query, k=k, restrict_to=eligible, min_relevance=min_relevance
@@ -377,8 +385,15 @@ class RetrievalMixin(FabricCore):
         entities: Sequence[str] = (),
         use_extraction: bool = False,
         objective: Any = None,
+        profile: str | None = None,
+        method: str | None = None,
     ) -> RetrievalResult:
         """Retrieve, decide exposure, log both, return what was exposed.
+
+        `profile` names a workload setting (`retrieval_profiles.PROFILES`:
+        `precise`, `conversational`, `semantic`, `multi_hop`, `audit`), and
+        `method` picks the ranking for this call only (`lexical`, `hybrid`,
+        `vector`). An argument passed explicitly wins over the profile.
 
         `objective` (an `objective.MemoryObjective`) narrows the eligible set to
         what the session said is relevant, before ranking (M1).
@@ -424,6 +439,25 @@ class RetrievalMixin(FabricCore):
         * **what did we know through T**, including claims since superseded — `until=T`. Half-open upper bounds are ignored.
         * **when did things happen** — neither. An ordering question needs the whole history, and filtering it is how 19 points go missing.
         """
+        if profile is not None:
+            from ..retrieval_profiles import resolve
+
+            chosen = resolve(profile, getattr(self, "retrieval_profiles", None))
+            defaults = _RETRIEVE_DEFAULTS
+            given = {"k": k, "include_contested": include_contested,
+                     "expand_lineage": expand_lineage, "follow_relations": follow_relations,
+                     "group_by_source_root": group_by_source_root, "min_relevance": min_relevance}
+            for key, value in chosen.settings.items():
+                if key in given and given[key] == defaults[key]:
+                    given[key] = value
+            k = given["k"]
+            include_contested = given["include_contested"]
+            expand_lineage = given["expand_lineage"]
+            follow_relations = given["follow_relations"]
+            group_by_source_root = given["group_by_source_root"]
+            min_relevance = given["min_relevance"]
+            if method is None:
+                method = chosen.method
         eligible = self._eligible_ids(
             include_contested=include_contested, tenant_id=tenant_id,
             agent_id=agent_id,
@@ -441,7 +475,7 @@ class RetrievalMixin(FabricCore):
             # is never ranked, exposed, or logged as a withheld candidate.
             eligible = {m for m in eligible
                         if objective.admits(self.state.memories[m].context)}
-        hits = self._search(query, pool_size, eligible, min_relevance)
+        hits = self._search(query, pool_size, eligible, min_relevance, method=method)
         if objective is not None and hasattr(objective, "rank"):
             # V2: evidence-aware ranking within what is eligible. It can only
             # re-order or drop, never add (`objective_v2.py`).

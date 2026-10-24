@@ -17,6 +17,12 @@ Global options go **before** the command: `memory-fabric --db store.db --json ov
 
 ## Commands
 
+### `access-log-verify`
+
+Check the dashboard access log's hash chain (exit 0 intact, 5 broken)
+
+- `path`: the access log file (JSON lines)
+
 ### `agent-api`
 
 WRITES: serve agents over authenticated HTTP (recall, fetch, verify, remember), each request verified from a signed, expiring credential
@@ -147,6 +153,8 @@ WRITES: seed a demonstration store
 
 Whether this installation's answers can be believed (exit 0/1/5)
 
+- `--webhook`: POST a JSON alert here when the store is not sound
+- `--webhook-on`: alert on failures only (default), or on warnings too
 
 ### `episodes`
 

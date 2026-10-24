@@ -1084,6 +1084,21 @@ def cmd_posture(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_access_log_verify(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Check the dashboard access log's hash chain. Exit 0 intact, 5 broken."""
+    from .observability.server import verify_access_log
+
+    ok, line, detail = verify_access_log(args.path)
+    if args.json:
+        print(json.dumps({"path": args.path, "intact": ok, "broken_at_line": line,
+                          "detail": detail}))
+    elif ok:
+        print(f"{args.path}: {detail}")
+    else:
+        print(f"{args.path}: BROKEN at line {line}: {detail}")
+    return 0 if ok else 5
+
+
 def cmd_audit_export(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Write decisions, changes, access events and deletion receipts, without content."""
     from .posture import export_audit
@@ -2320,6 +2335,43 @@ DOCTOR_CHECKS = (
 )
 
 
+def _doctor_alert(fabric: MemoryFabric, args: argparse.Namespace,
+                  failures: list[Finding], warnings: list[Finding]) -> None:
+    """POST the non-ok findings to `--webhook` when they warrant it.
+
+    The store had no alerting: `doctor` exiting non-zero was the whole signal,
+    and wiring it to a pager was left to every operator. This sends one JSON
+    document (store, sound, failing and warning checks) to any endpoint that
+    takes a POST, such as a chat webhook or an incident tool's events URL. A
+    delivery that fails is reported on stderr and never hidden.
+    """
+    import urllib.error
+    import urllib.request
+
+    due = failures or (args.webhook_on == "warn" and warnings)
+    if not due:
+        return
+    body = json.dumps({
+        "source": "memory-fabric doctor",
+        "store": str(fabric.log.path),
+        "store_id": fabric.store_id,
+        "sound": not failures,
+        "severity": "fail" if failures else "warn",
+        "findings": [f.to_json() for f in failures + warnings],
+        "text": (f"memory-fabric: store {fabric.store_id} is "
+                 + (f"NOT SOUND ({len(failures)} failing)" if failures
+                    else f"sound with {len(warnings)} warning(s)")
+                 + ": " + ", ".join(f.name for f in failures + warnings)),
+    }).encode()
+    request = urllib.request.Request(args.webhook, data=body, method="POST",
+                                     headers={"Content-Type": "application/json"})
+    try:
+        with urllib.request.urlopen(request, timeout=10) as response:
+            response.read()
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        print(f"doctor: alert to the webhook was not delivered: {exc}", file=sys.stderr)
+
+
 def cmd_doctor(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Is this installation sound enough that its answers can be believed?
 
@@ -2343,6 +2395,8 @@ def cmd_doctor(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 
     failures = [f for f in findings if f.status == "fail"]
     warnings = [f for f in findings if f.status == "warn"]
+    if getattr(args, "webhook", None):
+        _doctor_alert(fabric, args, failures, warnings)
 
     if args.json:
         print(json.dumps(
@@ -2448,8 +2502,12 @@ def build_parser() -> argparse.ArgumentParser:
             "Print an integrity checkpoint, or verify against a saved one")
     p.add_argument("--verify", metavar="FILE",
                    help="a checkpoint JSON file saved earlier, elsewhere")
-    add("doctor", cmd_doctor,
-        "Whether this installation's answers can be believed (exit 0/1/5)")
+    p = add("doctor", cmd_doctor,
+            "Whether this installation's answers can be believed (exit 0/1/5)")
+    p.add_argument("--webhook", metavar="URL",
+                   help="POST a JSON alert here when the store is not sound")
+    p.add_argument("--webhook-on", choices=["fail", "warn"], default="fail",
+                   help="alert on failures only (default), or on warnings too")
 
     p = add("attention", cmd_attention, "Triage list: what needs a human, worst first")
     p.add_argument("--severity", choices=["high", "medium", "low"])
@@ -2702,6 +2760,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("posture", cmd_posture,
         "Which security controls are on in this store, and the accepted gaps")
+    p = add("access-log-verify", cmd_access_log_verify,
+            "Check the dashboard access log's hash chain (exit 0 intact, 5 broken)")
+    p.add_argument("path", help="the access log file (JSON lines)")
+
     p = add("audit-export", cmd_audit_export,
             "Export decisions, changes, access events and deletion receipts as JSONL, "
             "without memory content, ending with a hash-chain checkpoint")
@@ -2986,6 +3048,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "access-log-verify":  # reads a file; opens no --db
+        return cmd_access_log_verify(None, args)  # type: ignore[arg-type]
 
     # Opening a store creates it, so a typo in --db would otherwise produce an
     # empty store and a confident report of nothing wrong. For an inspection

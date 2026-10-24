@@ -17,6 +17,7 @@ from __future__ import annotations
 
 __stability__ = "beta"
 
+import hashlib
 import json
 import re
 import threading
@@ -293,6 +294,12 @@ class AccessLog:
     estimate is computed from, and an operator's reading is not evidence about
     any memory. Refused and unauthenticated requests are recorded too -- they
     are the ones an investigation most wants. Tokens never appear in it.
+
+    **Hash-chained** (security review O6): each line carries `prev`, the
+    SHA-256 of the line before it, so a deleted, edited or reordered line
+    breaks the chain at that point (`verify_access_log`). Like the event log,
+    this detects tampering; it cannot stop someone who rewrites the whole file
+    consistently. Lines written before chaining are accepted as its start.
     """
 
     def __init__(self, path: str) -> None:
@@ -301,6 +308,7 @@ class AccessLog:
         # Fail at startup, not at the first request, if it cannot be written.
         with open(self.path, "a", encoding="utf-8"):
             pass
+        self._prev = _last_line_hash(self.path)
 
     def record(self, operator: str | None, method: str, path: str, status: int,
                client: str) -> None:
@@ -312,9 +320,53 @@ class AccessLog:
             "status": status,
             "client": client,
         }
-        line = json.dumps(entry, sort_keys=True) + "\n"
         with self._lock, open(self.path, "a", encoding="utf-8") as handle:
-            handle.write(line)
+            entry["prev"] = self._prev
+            line = json.dumps(entry, sort_keys=True)
+            handle.write(line + "\n")
+            self._prev = _hash_line(line)
+
+
+def _hash_line(line: str) -> str:
+    return hashlib.sha256(line.encode("utf-8")).hexdigest()
+
+
+def _last_line_hash(path: str) -> str:
+    last = ""
+    with open(path, encoding="utf-8") as handle:
+        for line in handle:
+            if line.strip():
+                last = line.rstrip("\n")
+    return _hash_line(last) if last else ""
+
+
+def verify_access_log(path: str) -> tuple[bool, int | None, str]:
+    """(intact, first broken line number or None, detail).
+
+    Unchained lines before the first chained one are accepted (they predate
+    chaining). After the first chained line, every line must name the hash
+    of the line before it.
+    """
+    prev_line: str | None = None
+    chained = False
+    with open(path, encoding="utf-8") as handle:
+        for number, raw in enumerate(handle, start=1):
+            line = raw.rstrip("\n")
+            if not line.strip():
+                continue
+            try:
+                entry = json.loads(line)
+            except ValueError:
+                return False, number, "not JSON"
+            if "prev" in entry:
+                expected = _hash_line(prev_line) if prev_line is not None else ""
+                if entry["prev"] != expected:
+                    return False, number, "does not follow the line before it"
+                chained = True
+            elif chained:
+                return False, number, "an unchained line after chaining began"
+            prev_line = line
+    return True, None, "intact" if chained else "no chained lines yet"
 
 
 class Handler(BaseHTTPRequestHandler):

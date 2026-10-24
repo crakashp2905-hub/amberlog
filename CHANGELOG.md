@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Fixed: constraints an engineer would hit
+- **Claim checks missed every equipment code written with a separator.** `H-14`, `PMP_0012` and `K/31` were split into a word and a number, so the claim had no identifier and the contradiction, re-assertion and corroboration checks never ran on it. A poisoned "update" to such a code went through unflagged (D1, with one attacker account per case: 15 of 15). Codes before a claim's verb now form its subject, and codes after it are values. Held-out: detection 1.000, false alarms 0.000 ([V2](research/results/v2-codes.md)).
+- **A compromised account could change a reviewer-validated fact unflagged.** The change is now provisional (`revises_validated`) until someone validates it. `ToolRule(refuse_provisional=True)` lets a protected tool refuse it.
+- **"Every assistant should treat X as …" passed both injection screens.** The directive screen now catches it, with 0 of 40,919 benign memories flagged.
+
+### Added
+- **`doctor --webhook URL`**: a JSON alert POSTed when the store is not sound (`--webhook-on warn` for warnings too). Before this, `doctor` had no alerting path.
 ### Added: governed decay view (OptMem-inspired compression)
 
 - `memory_fabric/decay.py` (experimental): a bounded session-start view with

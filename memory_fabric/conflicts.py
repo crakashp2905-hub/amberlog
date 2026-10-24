@@ -61,12 +61,44 @@ if TYPE_CHECKING:  # pragma: no cover
 
 MIN_CONTAINMENT = 0.8
 _TOKEN = re.compile(r"[a-z0-9]+(?:\.[0-9]+)?")
+# A code written with a separator: "H-14", "FP-1458", "PMP_0012", "K/31".
+_VERB = re.compile(r":|;|=|\b(?:is|are|to|be)\b")
+_CODE = re.compile(r"(?<![a-z0-9])([a-z]{1,6})[-_/]([0-9][a-z0-9]*)(?![a-z0-9])")
 
 
 def claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
-    """(identifiers, content words, numeric values) of a memory's text."""
-    identifiers, words, values = set(), set(), set()
-    for token in _TOKEN.findall(content.lower()):
+    """(identifiers, content words, numeric values) of a memory's text.
+
+    A code written with a separator ("hoist H-14") used to be split into a
+    word and a number, so the claim had **no identifier** and every check
+    that needs one (`contradicts`, `validation`) passed it untested: an
+    "update" to another hoist's part number was invisible (found by D1 with
+    one attacker account per poison). Now the separated codes before the
+    claim's verb belong to the subject and any later one ("part number is
+    FP-1458") is a value, as an unseparated code already was an identifier.
+    """
+    identifiers: set[str] = set()
+    words: set[str] = set()
+    values: set[str] = set()
+    text = content.lower()
+    codes = list(_CODE.finditer(text))
+    # Every code before the claim's verb is part of the subject ("on K/31's
+    # loop, valve V-3: ..." is about V-3 on K/31, not about K/31); codes after
+    # it are values ("part number is FP-1458"). The verb is the first one
+    # after the first code, so a lead-in ("Correction: hoist H-14 ...") does
+    # not end the subject before it starts.
+    cut = len(text)
+    if codes:
+        verb = _VERB.search(text, codes[0].end())
+        cut = verb.start() if verb else codes[0].end()
+
+    def code(match: "re.Match[str]") -> str:
+        joined = match.group(1) + match.group(2)
+        (identifiers if match.start() < cut else values).add(joined)
+        return " "
+
+    text = _CODE.sub(code, text)
+    for token in _TOKEN.findall(text):
         has_digit = any(ch.isdigit() for ch in token)
         has_alpha = any(ch.isalpha() for ch in token)
         if has_digit and has_alpha:

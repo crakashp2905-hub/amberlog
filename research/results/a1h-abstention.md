@@ -1,4 +1,4 @@
-# A1 — answerability verdicts and abstention policies
+# A1-h — answerability and abstention policies, with haiku (A1 Amendment 1)
 
 Registered in [a1-answerability-abstention.md](../prereg/a1-answerability-abstention.md)
 before the harness existed. Produced by `python -m experiments.a1_abstention` at commit
@@ -37,3 +37,26 @@ Structural verdict `insufficient` rate by family (before any model call): answer
 - **A1a (`structural_gate`): ABANDONED (headroom <= 0.05)**
 - **A1b (`structural_then_judge`): ABANDONED (headroom <= 0.05)**
 - Arms above the oracle: none.
+
+## Reading (written after the run)
+
+**ABANDONED again, for the same reason: no headroom.** `instructed` scored
+0.993, which the oracle matches. The weaker model also applies the
+abstention instruction reliably on this world. So the registration's
+question (does a separate verdict improve on instructing the model?) has the
+same answer for both models: here, no.
+
+**One new finding: a separate model judge is worse than letting the model
+abstain inside its answer.** As a YES/NO judge, `haiku` refused 72% of
+answerable questions (`judge_gate` false abstention 0.722), while the same
+model, asked to answer or say UNKNOWN, refused 1%. `sonnet` as a judge
+refused 7%. The judge prompt asks a different question ("does the evidence
+state the value?"), and a smaller model reads it strictly. **An answerability
+judge should be the strongest model available, or not used.** That is the
+practical advice in `answerability.py`.
+
+**The structural verdict, again:** zero wrong answers in every seed, no model
+call, and a false-abstention cost confined to paraphrases (0.07 correct
+there). It is the right tool where the model does not follow instructions (it
+lifts `answer_always` from 0.587 to 0.907), and the wrong tool to put in
+front of a model that does.

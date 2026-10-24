@@ -33,6 +33,16 @@ is `undetermined`, or on every call with `judge_always=True`. The product
 makes no model call itself (AGENTS.md: model calls go through the caller's
 client wrapper).
 
+**When to gate on it, measured (A1, A1-h).** With a capable model told to
+answer or say UNKNOWN, the model alone abstained correctly on every
+near-miss family (`sonnet` 1.000, `haiku` 0.993), and gating on this verdict
+only added false abstentions on paraphrases. Gating helped where the model
+was *not* told to abstain: 0.587 → 0.907 correct, with zero wrong answers.
+A separate model judge was worse than the model abstaining inside its own
+answer: `haiku` as a judge refused 72% of answerable questions. So: report
+the verdict always, gate on it only for models or hosts that do not follow
+an abstention instruction, and use the strongest model available as a judge.
+
 **What it cannot see, stated.** It reads identifiers and words, not meaning.
 If a parameter is paraphrased with no shared word ("overcurrent setting"
 against "trip current") the memory does not count as cover, and the verdict

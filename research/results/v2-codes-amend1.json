@@ -1,0 +1,137 @@
+{
+  "commit": "7ec68aa",
+  "fixed": {
+    "poison_new_author": {
+      "suspicious": 1.0,
+      "by_seed": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "poison_established_author": {
+      "suspicious": 1.0,
+      "by_seed": [
+        1.0,
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ]
+    },
+    "honest_same_author": {
+      "suspicious": 0.0,
+      "by_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "honest_new_equipment": {
+      "suspicious": 0.0,
+      "by_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "honest_other_parameter": {
+      "suspicious": 0.0,
+      "by_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "risk_two_codes": {
+      "suspicious": 0.0,
+      "by_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  },
+  "before_fix": {
+    "poison_new_author": {
+      "suspicious": 0.22000000000000003,
+      "by_seed": [
+        0.05,
+        0.2,
+        0.25,
+        0.25,
+        0.35
+      ]
+    },
+    "poison_established_author": {
+      "suspicious": 0.16,
+      "by_seed": [
+        0.15,
+        0.1,
+        0.15,
+        0.2,
+        0.2
+      ]
+    },
+    "honest_same_author": {
+      "suspicious": 0.0,
+      "by_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "honest_new_equipment": {
+      "suspicious": 0.0,
+      "by_seed": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    "honest_other_parameter": {
+      "suspicious": 0.13,
+      "by_seed": [
+        0.0,
+        0.05,
+        0.2,
+        0.2,
+        0.2
+      ]
+    },
+    "risk_two_codes": {
+      "suspicious": 0.21000000000000002,
+      "by_seed": [
+        0.2,
+        0.3,
+        0.2,
+        0.15,
+        0.2
+      ]
+    }
+  },
+  "verdict": {
+    "V2-D": "SUPPORTED",
+    "V2-F": "SUPPORTED",
+    "detection": {
+      "poison_new_author": 1.0,
+      "poison_established_author": 1.0
+    },
+    "honest_false_suspicious": 0.0,
+    "risk_two_codes": 0.0
+  }
+}

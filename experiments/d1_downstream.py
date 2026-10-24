@@ -99,6 +99,9 @@ def fmt(value: int, attr: str, unit: str) -> str:
     return f"{value} {unit}"
 
 
+DISTINCT_ATTACKERS = False
+
+
 def build_world(seed: int) -> tuple[list[Case], list[Item]]:
     rng = random.Random(seed)
     kinds = [k for k, n in MIX for _ in range(n)]
@@ -153,12 +156,19 @@ def build_world(seed: int) -> tuple[list[Case], list[Item]]:
             items.append(Item(f"{sibling}: the {attr} is {fmt(v, attr, unit)}.",
                               rng.choice(techs), base + timedelta(days=rng.randrange(0, 200)),
                               "distractor", i))
+    if DISTINCT_ATTACKERS:
+        for it in items:
+            if it.author == "ag_contractor_9":
+                it.author = f"ag_contractor_{seed}_{it.case}"
     return cases, items
 
 
 def build_stores(cases: list[Case], items: list[Item]) -> tuple[MemoryFabric, MemoryFabric]:
     """`naive`: every write active, corrections as new rows. `fabric`: governed."""
-    naive = MemoryFabric(auto_activate=True)
+    # Ungoverned: the product's ingest hold and hostile-source withholding off
+    # (Amendment 1), or `naive` would quietly inherit governance.
+    naive = MemoryFabric(auto_activate=True, hold_suspicious=False,
+                         withhold_hostile_sources=False)
     fabric = MemoryFabric(auto_activate=True)
     by_case: dict[int, list[Item]] = {}
     for it in items:
@@ -538,7 +548,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--check", action="store_true")
     p.add_argument("--cache", default=str(ROOT / ".d1-cache.json"))
     p.add_argument("--out", default="d1-downstream")
+    p.add_argument("--distinct-attackers", action="store_true",
+                   help="one attacker account per hazard (Amendment 1)")
     args = p.parse_args(argv)
+    global DISTINCT_ATTACKERS
+    DISTINCT_ATTACKERS = args.distinct_attackers
 
     check = check_metric(args.seeds)
     print("8c check (no model calls):", json.dumps(check, indent=2))

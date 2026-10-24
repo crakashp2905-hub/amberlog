@@ -13,6 +13,7 @@ its identifiers, content words and values) against the store:
 | `outlier` | its value is far outside what the store holds for this kind of parameter on other equipment: robust z > 3.5 **and** beyond twice the largest or half the smallest of at least 5 comparable claims | suspicious |
 | `new_source` | its author has no validated memory older than this one | provisional |
 | `untrusted_origin` | its origin-bound authority is untrusted (tool output, import, web) | provisional |
+| `revises_validated` | its own author restates a fact **someone else validated** with another value, and nobody has validated the new one | provisional |
 | `corroborated` | another independent source (a different source root) states the same claim and value | supporting |
 
 `level` is the summary: `suspicious` if any suspicious signal holds;
@@ -42,7 +43,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
 
 SUSPICIOUS = ("reasserts_corrected", "contradicts_established", "outlier")
-PROVISIONAL = ("new_source", "untrusted_origin")
+PROVISIONAL = ("new_source", "untrusted_origin", "revises_validated")
 OUTLIER_Z = 3.5
 MIN_COMPARABLE = 5
 
@@ -158,6 +159,8 @@ class _ClaimIndex:
         self.by_ident: dict[str, set[str]] = {}
         self.by_word: dict[str, set[str]] = {}
         self.by_author: dict[tuple[str, str], set[str]] = {}
+        self.vouched: dict[str, set[str]] = {}
+        """memory id -> actors who validated it, from the log, kept incrementally."""
         self.seq: int | None = None
 
     def _drop(self, mid: str) -> None:
@@ -194,6 +197,8 @@ class _ClaimIndex:
         if self.seq is None:
             for mid in fabric.state.memories:
                 self._index_one(fabric, mid)
+            for event in fabric.log.read():
+                self._note_validation(event)
             self.seq = head
             return
         if head == self.seq:
@@ -206,9 +211,18 @@ class _ClaimIndex:
                     changed.add(str(body["id"]))
             elif event.type == EventType.CONTENT_ERASED and event.payload.get("memory_id"):
                 changed.add(str(event.payload["memory_id"]))
+            self._note_validation(event)
         for mid in changed:
             self._index_one(fabric, mid)
         self.seq = head
+
+    def _note_validation(self, event: Any) -> None:
+        from .events import EventType
+
+        p = event.payload
+        if (event.type == EventType.LIFECYCLE_CHANGED and p.get("to") == "active"
+                and p.get("reason") == "validated" and p.get("actor") and p.get("memory_id")):
+            self.vouched.setdefault(str(p["memory_id"]), set()).add(str(p["actor"]))
 
     def claim_of(self, mid: str) -> tuple:
         return self.seen[mid][1]
@@ -221,6 +235,17 @@ def _index(fabric: "MemoryFabric") -> _ClaimIndex:
         fabric._claim_index = index  # type: ignore[attr-defined]
     index.refresh(fabric)
     return index
+
+
+def _validated_by_other(index: "_ClaimIndex", memory_id: str, who: str) -> str | None:
+    """An actor, other than `who`, who validated this memory, if any.
+
+    Read from the claim index, which follows the log incrementally. Reading
+    each memory's audit trail instead scanned the whole log per check, and
+    the full suite went from 6 to over 20 minutes.
+    """
+    others = sorted(index.vouched.get(memory_id, set()) - {who}) if memory_id else []
+    return others[0] if others else None
 
 
 def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assessment:
@@ -252,6 +277,16 @@ def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assess
         if other.lifecycle_state in WITHDRAWN_STATES and theirs[2] == values:
             signals.setdefault("reasserts_corrected", oid)
         elif other.lifecycle_state in EXPOSABLE_STATES and theirs[2] and theirs[2] != values:
+            # An author changing its own fact is an update, not a conflict, but
+            # if a reviewer had vouched for the old value, the new one has not
+            # been vouched for. A compromised established account is exactly
+            # this case (LIMITATIONS: "can change its own facts"), so it is
+            # marked provisional until someone validates it, and a gate rule
+            # can refuse it (`ToolRule.refuse_provisional`).
+            if (author(other) == me and other.created_at <= memory.created_at
+                    and (vouched := _validated_by_other(index, oid, me))
+                    and not _validated_by_other(index, memory_id, me)):
+                signals.setdefault("revises_validated", f"{oid} validated by {vouched}")
             # Established means older *and* by an author with a track record
             # (another usable memory) by now. Without the second condition an
             # earlier poison counted as established, and an honest author

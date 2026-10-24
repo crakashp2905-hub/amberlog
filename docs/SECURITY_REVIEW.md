@@ -87,7 +87,7 @@ critical or high.
 | O3 | A writer with full database access can rewrite the log and chain consistently | Medium | Detected against an independently stored checkpoint (`--checkpoint-dir`); see `test_checkpoint_rewrite.py` | Inherent to a log the attacker can write; detection, not prevention, is what is claimed | 2027-01-31 |
 | O4 | Tenancy within one store is an authorisation boundary only | Medium | Physical isolation available: `tenancy.TenantRouter`, one store and key directory per tenant | Documented; the physical option exists | 2027-01-31 |
 | O5 | Federation keys rotate manually | Low | Overlap window implemented and drilled (`test_key_rotation_drill.py`) | Manual but rehearsed; no automatic rotation | 2027-03-31 |
-| O6 | The dashboard access log is a plain append-only file, not chained | Low | Unchanged | It records who looked, not what changed | 2027-03-31 |
+| O6 | The dashboard access log is a plain append-only file, not chained | Low | **Closed 2026-10-24**: each line carries the SHA-256 of the one before it; `memory-fabric access-log-verify PATH` names the first edited, deleted or reordered line (`test_access_log_chain.py`). A consistent rewrite of the whole file is still only detectable against a copy kept elsewhere | — | — |
 | O7 | No external audit, penetration test or independent cryptographic review | — | Unchanged; the brief for one is [INDEPENDENT_EVALUATION.md](INDEPENDENT_EVALUATION.md) and the cryptographic decisions are written down for it in [CRYPTOGRAPHY.md](CRYPTOGRAPHY.md) | Cannot be closed internally. **Blocks a production (1.0) release**, not an alpha | Before 1.0 |
 
 ## 4. Release-blocker criteria
@@ -96,5 +96,6 @@ A finding blocks a release if it is critical or high and not fixed, or if it is
 medium and makes a documented guarantee false without the documentation saying
 so. By those criteria nothing open blocks: every medium item above is a
 documented limit, not a false claim. The release gate G6 additionally requires
-a green CI run, which is blocked by the account's billing (WORKPLAN X-CI), so
-**this review clears G5 and does not by itself clear a release**.
+a green CI run. CI ran again on 2026-10-24 and every job passed (PR #6), so the
+billing blocker (WORKPLAN X-CI) no longer holds. **This review clears G5. The
+independent review (O7) still blocks a 1.0 release.**

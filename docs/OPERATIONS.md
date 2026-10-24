@@ -233,12 +233,15 @@ Measured on one 4-CPU Linux machine with SQLite, 20 mixed operations per agent:
 
 | deployment | agents | ops/s total | p99 latency | status |
 |---|---|---|---|---|
-| one `agent-api` process serving the agents | 1 → 100 | 159–195 | 7 ms → 1.2 s | **supported** up to 100 concurrent agents |
+| one `agent-api` process serving the agents | 1 → 100 | 159–195 | 7 ms → 1.2 s | **supported** |
+| one `agent-api` process serving the agents | 200 / 400 | 198 / 166 | 1.4 s / 3.1 s | **supported**, if your agents tolerate the latency |
 | one process per agent, all opening the store | 10 / 100 | 31 / 4 | 0.7 s / 56 s | **not supported** beyond a few writers |
 
 The store serialises writes (one lock, a gapless hash-chained log), so latency
-grows with the number of agents waiting on it. Above 100 concurrent agents per
-store is unmeasured. Postgres was slower than SQLite at every point measured.
+grows with the number of agents waiting on it. Throughput stays flat as agents are added; latency grows by about 7 ms per
+agent waiting. Above 400 concurrent agents per store is unmeasured. For more,
+split agents across stores (`tenancy.TenantRouter`) rather than queueing more
+agents on one. Postgres was slower than SQLite at every point measured.
 
 **Rate limits** (`agent-api`): each agent gets a token bucket, by default 20
 requests a second with a burst of 40 (`--rate-limit`, `--burst`;
@@ -261,7 +264,7 @@ Said plainly rather than left for an incident to discover.
 - **No concurrency beyond serialised single-writer.** Measured, not assumed: 4 processes × 20 appends land all 80 with a gapless sequence and a verifying chain. Throughput is bounded by that one writer (§4a).
 - **No multi-host story.** Distribution was declined on measurement — 25× the memories cost 1.7× the latency.
 - **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those — `erasure_scope` reports them as unknown rather than pretending otherwise, which is the most a store can honestly do.
-- **No alerting.** `doctor` and `attention` exit non-zero; wiring that to a pager is yours.
+- **Alerting is one webhook.** `memory-fabric doctor --webhook URL` POSTs a JSON alert when the store is not sound (`--webhook-on warn` for warnings too). Run it from cron or a systemd timer. Escalation, deduplication and paging rules are still yours.
 - **Revocation durability depends on which surface you use.** A `MemoryService` writes revocations to the database; a bare `PrincipalRegistry` keeps them in memory. `service.revocations_are_durable` answers it rather than leaving it to be inferred.
 - **Untested here:** restore onto a different OS, stores above a few hundred thousand events, and recovery from filesystem-level corruption rather than logical tampering.
 

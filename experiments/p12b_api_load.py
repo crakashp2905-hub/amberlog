@@ -194,8 +194,10 @@ store: 214 → 31 → 9 → 4 ops/s at 1, 10, 50 and 100 agents on SQLite.
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--quick", action="store_true")
+    p.add_argument("--agents", type=int, nargs="+", help="agent counts to run instead")
+    p.add_argument("--out", default="p12b-api-load")
     args = p.parse_args(argv)
-    counts = (10,) if args.quick else AGENT_COUNTS
+    counts = (10,) if args.quick else tuple(args.agents or AGENT_COUNTS)
     results = []
     for n in counts:
         r = run_one(n)
@@ -209,9 +211,9 @@ def main(argv: list[str] | None = None) -> int:
                             text=True, cwd=ROOT).stdout.strip()
     machine = f"{platform.system()} {platform.machine()}, {os.cpu_count()} CPUs, Python {platform.python_version()}"
     out = ROOT / "research" / "results"
-    (out / "p12b-api-load.json").write_text(json.dumps(
+    (out / f"{args.out}.json").write_text(json.dumps(
         {"commit": commit, "machine": machine, "results": results}, indent=2) + "\n")
-    (out / "p12b-api-load.md").write_text(to_markdown(results, commit, machine))
+    (out / f"{args.out}.md").write_text(to_markdown(results, commit, machine))
     return 0
 
 

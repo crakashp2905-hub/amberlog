@@ -61,12 +61,37 @@ if TYPE_CHECKING:  # pragma: no cover
 
 MIN_CONTAINMENT = 0.8
 _TOKEN = re.compile(r"[a-z0-9]+(?:\.[0-9]+)?")
+# A code written with a separator: "H-14", "FP-1458", "PMP_0012", "K/31".
+_CODE = re.compile(r"(?<![a-z0-9])([a-z]{1,6})[-_/]([0-9][a-z0-9]*)(?![a-z0-9])")
 
 
 def claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
-    """(identifiers, content words, numeric values) of a memory's text."""
+    """(identifiers, content words, numeric values) of a memory's text.
+
+    A code written with a separator ("hoist H-14") used to be split into a
+    word and a number, so the claim had **no identifier** and every check
+    that needs one (`contradicts`, `validation`) passed it untested: an
+    "update" to another hoist's part number was invisible (found by D1 with
+    one attacker account per poison). Now the first separated code in a
+    sentence is the subject's identifier and any later one ("part number
+    FP-1458") is a value, as an unseparated code already was an identifier.
+    """
     identifiers, words, values = set(), set(), set()
-    for token in _TOKEN.findall(content.lower()):
+    text = content.lower()
+    seen_code = False
+
+    def code(match: "re.Match[str]") -> str:
+        nonlocal seen_code
+        token = match.group(1) + match.group(2)
+        if seen_code:
+            values.add(token)
+        else:
+            identifiers.add(token)
+            seen_code = True
+        return " "
+
+    text = _CODE.sub(code, text)
+    for token in _TOKEN.findall(text):
         has_digit = any(ch.isdigit() for ch in token)
         has_alpha = any(ch.isalpha() for ch in token)
         if has_digit and has_alpha:

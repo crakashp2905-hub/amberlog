@@ -1,0 +1,24 @@
+{
+  "commit": "aafc559",
+  "machine": "Linux x86_64, 4 CPUs, Python 3.13.16",
+  "results": [
+    {
+      "memories": 2000,
+      "queries": 300,
+      "ms_per_retrieve": 27.721107496666566,
+      "events_per_retrieve": 21.0,
+      "share_recording": 0.12716537501270783,
+      "share_ranking": 0.7190107917014789,
+      "ms_recording": 3.500983143333334
+    },
+    {
+      "memories": 10000,
+      "queries": 300,
+      "ms_per_retrieve": 137.92682741333314,
+      "events_per_retrieve": 21.0,
+      "share_recording": 0.026280304989512428,
+      "share_ranking": 0.8410570917133546,
+      "ms_recording": 3.5968566866666665
+    }
+  ]
+}

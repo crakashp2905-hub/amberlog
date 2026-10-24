@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
+from ..identity import DEFAULT_TENANT
 from . import report
 from .auth import (
     AuthConfig,
@@ -61,6 +62,8 @@ STATIC_ROUTES: dict[str, tuple[str, str]] = {
 }
 
 _ULID = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
+_BRANCH = re.compile(r"^[a-z0-9][a-z0-9._-]{0,62}$")
+_RECEIPT = re.compile(r"^ctx_[0-9A-HJKMNP-TV-Z]{26}$")
 
 
 class ApiError(Exception):
@@ -211,6 +214,60 @@ class Api:
 
             case ["episodes"]:
                 return report.episode_rows(f, limit=_int(params, "limit", 200))
+
+            case ["capabilities"]:
+                return json.loads((Path(__file__).parent / "static" / "capabilities.json")
+                                  .read_text(encoding="utf-8"))
+
+            case ["memories", raw, "correction"]:
+                from ..correction import preview
+
+                try:
+                    return preview(f, _memory_id(raw)).to_json()
+                except KeyError as exc:
+                    raise ApiError(HTTPStatus.NOT_FOUND, "no such memory") from exc
+
+            case ["branches"]:
+                from ..branching import Branches
+
+                return [b.to_json() for b in Branches(f).list_branches(
+                    tenant_id=_one(params, "tenant") or DEFAULT_TENANT)]
+
+            case ["branches", name] | ["branches", name, "preview"]:
+                from ..branching import Branches
+
+                if not _BRANCH.match(name):
+                    raise ApiError(HTTPStatus.BAD_REQUEST, "malformed branch name")
+                b = Branches(f)
+                tenant = _one(params, "tenant") or DEFAULT_TENANT
+                try:
+                    branch = b.get(name, tenant)
+                except KeyError as exc:
+                    raise ApiError(HTTPStatus.NOT_FOUND, "no such branch") from exc
+                if rest[-1] == "preview":
+                    if branch.closed:
+                        return {"branch": name, "closed": True, "changes": []}
+                    # The operator's view, read-only: computed as the owner would see it.
+                    return b.preview_merge(name, branch.owner, tenant).to_json()
+                return {**branch.to_json(), "history": b.history(name, tenant),
+                        "diff": b.diff(name, tenant)}
+
+            case ["receipts"]:
+                from ..context_receipt import receipts
+
+                found = receipts(f, tenant_id=_one(params, "tenant"),
+                                 agent_id=_one(params, "agent"))
+                return found[-(_int(params, "limit", 200) or 200):]
+
+            case ["receipts", rid]:
+                from ..context_receipt import explain_receipt
+
+                if not _RECEIPT.match(rid):
+                    raise ApiError(HTTPStatus.BAD_REQUEST, "malformed receipt id")
+                try:
+                    return explain_receipt(f, rid, tenant_id=_one(params, "tenant"))
+                except KeyError as exc:
+                    raise ApiError(HTTPStatus.NOT_FOUND, "no such receipt") from exc
 
             case ["search"]:
                 query = _one(params, "q")

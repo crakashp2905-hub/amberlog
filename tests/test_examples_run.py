@@ -8,7 +8,7 @@ import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-OFFLINE = ["quickstart", "reference_agent", "poisoning_and_rollback", "action_gate",
+OFFLINE = ["quickstart", "wrong_memory_demo", "reference_agent", "poisoning_and_rollback", "action_gate",
            "agent_on_the_fabric"]
 
 

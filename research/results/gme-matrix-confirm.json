@@ -1,0 +1,968 @@
+{
+  "experiment": "gme-matrix",
+  "prereg": "research/prereg/gme-matrix.md",
+  "budget_tokens": 60,
+  "k": 20,
+  "seeds": [
+    6,
+    7,
+    8,
+    9,
+    10
+  ],
+  "arms": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "oracle"
+  ],
+  "python": "3.13.5",
+  "runs": [
+    {
+      "seed": 6,
+      "world": {
+        "assets": 36,
+        "proposals": 10,
+        "roles": {
+          "plain": 20,
+          "withdrawn": 4,
+          "corrected": 8,
+          "disputed": 4
+        }
+      },
+      "phases": {
+        "1": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 56.17,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "C": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.11,
+            "stale_leak_rate": 0.0833,
+            "branch_leak_rate": 0.0278
+          },
+          "D": {
+            "accuracy": 0.6667,
+            "tokens_per_task": 54.61,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "E": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.78,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0278
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.78,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0278
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.67,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        },
+        "2": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 56.17,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "C": {
+            "accuracy": 0.8333,
+            "tokens_per_task": 56.11,
+            "stale_leak_rate": 0.0833,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6667,
+            "tokens_per_task": 54.61,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "E": {
+            "accuracy": 0.8333,
+            "tokens_per_task": 55.92,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "F": {
+            "accuracy": 0.8889,
+            "tokens_per_task": 55.83,
+            "stale_leak_rate": 0.25,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.92,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.67,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        }
+      },
+      "merge_summary": {
+        "allow": 6,
+        "allow_with_warning": 0,
+        "preserve_conflict": 0,
+        "require_review": 2,
+        "reject": 2,
+        "cannot_determine": 0
+      },
+      "version_control": {
+        "resurrected": 0,
+        "lost_updates": 0
+      }
+    },
+    {
+      "seed": 7,
+      "world": {
+        "assets": 36,
+        "proposals": 10,
+        "roles": {
+          "withdrawn": 4,
+          "corrected": 8,
+          "disputed": 4,
+          "plain": 20
+        }
+      },
+      "phases": {
+        "1": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 56.22,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "C": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.22,
+            "stale_leak_rate": 0.1111,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6944,
+            "tokens_per_task": 55.33,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "E": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.94,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.94,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.75,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        },
+        "2": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 56.22,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "C": {
+            "accuracy": 0.8889,
+            "tokens_per_task": 56.22,
+            "stale_leak_rate": 0.1111,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6944,
+            "tokens_per_task": 55.33,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "E": {
+            "accuracy": 0.8889,
+            "tokens_per_task": 56.11,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "F": {
+            "accuracy": 0.8333,
+            "tokens_per_task": 56.11,
+            "stale_leak_rate": 0.2778,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.11,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.75,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        }
+      },
+      "merge_summary": {
+        "allow": 4,
+        "allow_with_warning": 0,
+        "preserve_conflict": 0,
+        "require_review": 5,
+        "reject": 1,
+        "cannot_determine": 0
+      },
+      "version_control": {
+        "resurrected": 0,
+        "lost_updates": 0
+      }
+    },
+    {
+      "seed": 8,
+      "world": {
+        "assets": 36,
+        "proposals": 10,
+        "roles": {
+          "withdrawn": 4,
+          "corrected": 8,
+          "disputed": 4,
+          "plain": 20
+        }
+      },
+      "phases": {
+        "1": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 55.78,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "C": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.72,
+            "stale_leak_rate": 0.1111,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6389,
+            "tokens_per_task": 54.89,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "E": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.31,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.31,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.67,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        },
+        "2": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 55.78,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "C": {
+            "accuracy": 0.8056,
+            "tokens_per_task": 55.72,
+            "stale_leak_rate": 0.1111,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6389,
+            "tokens_per_task": 54.89,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "E": {
+            "accuracy": 0.8056,
+            "tokens_per_task": 55.56,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "F": {
+            "accuracy": 0.9167,
+            "tokens_per_task": 55.5,
+            "stale_leak_rate": 0.2778,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 55.56,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.67,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        }
+      },
+      "merge_summary": {
+        "allow": 7,
+        "allow_with_warning": 0,
+        "preserve_conflict": 0,
+        "require_review": 2,
+        "reject": 1,
+        "cannot_determine": 0
+      },
+      "version_control": {
+        "resurrected": 0,
+        "lost_updates": 0
+      }
+    },
+    {
+      "seed": 9,
+      "world": {
+        "assets": 36,
+        "proposals": 10,
+        "roles": {
+          "withdrawn": 4,
+          "corrected": 8,
+          "disputed": 4,
+          "plain": 20
+        }
+      },
+      "phases": {
+        "1": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 56.89,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "C": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.5,
+            "stale_leak_rate": 0.0833,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6667,
+            "tokens_per_task": 55.53,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "E": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.17,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.17,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.56,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        },
+        "2": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 56.89,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "C": {
+            "accuracy": 0.8333,
+            "tokens_per_task": 56.5,
+            "stale_leak_rate": 0.0833,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6667,
+            "tokens_per_task": 55.53,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "E": {
+            "accuracy": 0.8333,
+            "tokens_per_task": 56.36,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "F": {
+            "accuracy": 0.8889,
+            "tokens_per_task": 56.25,
+            "stale_leak_rate": 0.2778,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.36,
+            "stale_leak_rate": 0.3056,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.56,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        }
+      },
+      "merge_summary": {
+        "allow": 6,
+        "allow_with_warning": 0,
+        "preserve_conflict": 0,
+        "require_review": 3,
+        "reject": 1,
+        "cannot_determine": 0
+      },
+      "version_control": {
+        "resurrected": 0,
+        "lost_updates": 0
+      }
+    },
+    {
+      "seed": 10,
+      "world": {
+        "assets": 36,
+        "proposals": 10,
+        "roles": {
+          "withdrawn": 4,
+          "corrected": 8,
+          "disputed": 4,
+          "plain": 20
+        }
+      },
+      "phases": {
+        "1": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 56.89,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "C": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.89,
+            "stale_leak_rate": 0.0833,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6389,
+            "tokens_per_task": 56.67,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.2778
+          },
+          "E": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.81,
+            "stale_leak_rate": 0.2778,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.81,
+            "stale_leak_rate": 0.2778,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.67,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        },
+        "2": {
+          "A": {
+            "accuracy": 0.0,
+            "tokens_per_task": 0.0,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          },
+          "B": {
+            "accuracy": 0.5556,
+            "tokens_per_task": 56.89,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "C": {
+            "accuracy": 0.8333,
+            "tokens_per_task": 56.89,
+            "stale_leak_rate": 0.0833,
+            "branch_leak_rate": 0.0
+          },
+          "D": {
+            "accuracy": 0.6389,
+            "tokens_per_task": 56.67,
+            "stale_leak_rate": 0.3333,
+            "branch_leak_rate": 0.0
+          },
+          "E": {
+            "accuracy": 0.8333,
+            "tokens_per_task": 56.92,
+            "stale_leak_rate": 0.2778,
+            "branch_leak_rate": 0.0
+          },
+          "F": {
+            "accuracy": 0.8889,
+            "tokens_per_task": 56.92,
+            "stale_leak_rate": 0.2778,
+            "branch_leak_rate": 0.0
+          },
+          "G": {
+            "accuracy": 1.0,
+            "tokens_per_task": 56.92,
+            "stale_leak_rate": 0.2778,
+            "branch_leak_rate": 0.0
+          },
+          "oracle": {
+            "accuracy": 1.0,
+            "tokens_per_task": 13.67,
+            "stale_leak_rate": 0.0,
+            "branch_leak_rate": 0.0
+          }
+        }
+      },
+      "merge_summary": {
+        "allow": 6,
+        "allow_with_warning": 0,
+        "preserve_conflict": 0,
+        "require_review": 4,
+        "reject": 0,
+        "cannot_determine": 0
+      },
+      "version_control": {
+        "resurrected": 0,
+        "lost_updates": 0
+      }
+    }
+  ],
+  "summary": {
+    "1": {
+      "A": {
+        "accuracy": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "B": {
+        "accuracy": {
+          "mean": 0.5556,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.39,
+          "sd": 0.4872,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.3333,
+          "sd": 0.0,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.2778,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "C": {
+        "accuracy": {
+          "mean": 1.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.288,
+          "sd": 0.4377,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.0944,
+          "sd": 0.0152,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0056,
+          "sd": 0.0124,
+          "n": 5
+        }
+      },
+      "D": {
+        "accuracy": {
+          "mean": 0.6611,
+          "sd": 0.0232,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 55.406,
+          "sd": 0.7935,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.3333,
+          "sd": 0.0,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.2778,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "E": {
+        "accuracy": {
+          "mean": 1.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.002,
+          "sd": 0.5507,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.3,
+          "sd": 0.0124,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0056,
+          "sd": 0.0124,
+          "n": 5
+        }
+      },
+      "G": {
+        "accuracy": {
+          "mean": 1.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.002,
+          "sd": 0.5507,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.3,
+          "sd": 0.0124,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0056,
+          "sd": 0.0124,
+          "n": 5
+        }
+      },
+      "oracle": {
+        "accuracy": {
+          "mean": 1.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 13.664,
+          "sd": 0.0677,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      }
+    },
+    "2": {
+      "A": {
+        "accuracy": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "B": {
+        "accuracy": {
+          "mean": 0.5556,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.39,
+          "sd": 0.4872,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.3333,
+          "sd": 0.0,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "C": {
+        "accuracy": {
+          "mean": 0.8389,
+          "sd": 0.0304,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.288,
+          "sd": 0.4377,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.0944,
+          "sd": 0.0152,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "D": {
+        "accuracy": {
+          "mean": 0.6611,
+          "sd": 0.0232,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 55.406,
+          "sd": 0.7935,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.3333,
+          "sd": 0.0,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "E": {
+        "accuracy": {
+          "mean": 0.8389,
+          "sd": 0.0304,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.174,
+          "sd": 0.5091,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.3,
+          "sd": 0.0124,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "F": {
+        "accuracy": {
+          "mean": 0.8833,
+          "sd": 0.0305,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.122,
+          "sd": 0.5304,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.2722,
+          "sd": 0.0124,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "G": {
+        "accuracy": {
+          "mean": 1.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 56.174,
+          "sd": 0.5091,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.3,
+          "sd": 0.0124,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      },
+      "oracle": {
+        "accuracy": {
+          "mean": 1.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "tokens_per_task": {
+          "mean": 13.664,
+          "sd": 0.0677,
+          "n": 5
+        },
+        "stale_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        },
+        "branch_leak_rate": {
+          "mean": 0.0,
+          "sd": 0.0,
+          "n": 5
+        }
+      }
+    },
+    "any_arm_beats_oracle": []
+  }
+}

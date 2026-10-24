@@ -18,6 +18,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "product" / "capabilities.json"
 PAGE = ROOT / "docs" / "product" / "CAPABILITY_REGISTRY.md"
+# The dashboard's status badges read this copy, shipped as package data.
+BADGES = ROOT / "memory_fabric" / "observability" / "static" / "capabilities.json"
 ORDER = ("available", "experimental", "planned", "unsupported")
 
 
@@ -50,15 +52,16 @@ def render() -> str:
 
 
 def main(argv: list[str]) -> int:
-    page = render()
+    outputs = {PAGE: render(), BADGES: SOURCE.read_text(encoding="utf-8").replace("\r\n", "\n")}
     if "--check" in argv:
-        current = PAGE.read_text(encoding="utf-8") if PAGE.exists() else ""
-        if current.replace("\r\n", "\n") != page:
-            print(f"{PAGE.relative_to(ROOT)} is stale: run python tools/gen_capabilities.py")
-            return 1
-        return 0
-    PAGE.parent.mkdir(parents=True, exist_ok=True)
-    PAGE.write_text(page, encoding="utf-8", newline="\n")
+        stale = [p for p, text in outputs.items()
+                 if not p.exists() or p.read_text(encoding="utf-8").replace("\r\n", "\n") != text]
+        for p in stale:
+            print(f"{p.relative_to(ROOT)} is stale: run python tools/gen_capabilities.py")
+        return 1 if stale else 0
+    for p, text in outputs.items():
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(text, encoding="utf-8", newline="\n")
     return 0
 
 

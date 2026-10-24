@@ -218,6 +218,9 @@
       <button data-tab="search" aria-selected="false">Search</button>
       <button data-tab="lifecycle" aria-selected="false">Lifecycle</button>
       <button data-tab="posture" aria-selected="false">Posture</button>
+      <button data-tab="changes" aria-selected="false">Changes<span class="count" id="c-changes"></span></button>
+      <button data-tab="context" aria-selected="false">Agent context</button>
+      <button data-tab="capabilities" aria-selected="false">Capabilities</button>
     </nav>
   </div>
 </header>
@@ -253,6 +256,35 @@
       </select>
     </div>
     <div id="memories-table"></div>
+  </section>
+
+  <section id="tab-changes" hidden>
+    <h2>Branches</h2>
+    <div class="note">A branch holds proposed memory changes that nothing outside it can
+      retrieve until they are merged into main. A merge preview classifies every change and
+      says what would be applied, kept as a conflict, or refused, and why. This page only
+      reads; merges are applied from the command line with the preview's digest.</div>
+    <div id="changes-list"></div>
+    <div id="changes-detail"></div>
+  </section>
+
+  <section id="tab-context" hidden>
+    <h2>What agents were given</h2>
+    <div class="note">Each context receipt records the exact memory versions and summaries an
+      agent received, what was left out and why, and the budget it was built under. Receipts
+      hold ids and digests only: never the query, never memory text. "Admissible now" is
+      today's governance, not the receipt's.</div>
+    <div id="context-list"></div>
+    <div id="context-detail"></div>
+  </section>
+
+  <section id="tab-capabilities" hidden>
+    <h2>What this release does</h2>
+    <div class="note">Generated from the capability registry, which is checked against the
+      code and tests. <b>Available</b>: implemented, tested and supported.
+      <b>Experimental</b>: implemented, with known limits. <b>Planned</b>: not implemented.
+      <b>Unsupported</b>: not offered.</div>
+    <div id="capabilities-list"></div>
   </section>
 
   <section id="tab-episodes" hidden>
@@ -623,7 +655,7 @@ async function openDetail(id) {
         ? detail.correction.stores.map((s) => `<span class="id">${esc(s.store_id)}</span>`).join(", ")
         : '<span class="sub">none</span>'}</dd>
     </dl>
-    ${actionBlock(`memory-fabric --db <store> correct ${r.id} --apply --reason "<why>" --actor <you>`)}
+    ${actionBlock(`memory-fabric --db <store> correct ${r.id} --apply --reason "<why>" --actor <you> --preview ${(detail.correction.digest || "").slice(0, 16)}`)}
 
     <h3>Why the system remembers this</h3>
     <dl class="kv">
@@ -670,9 +702,107 @@ async function openDetail(id) {
 
 function closeDetail() { $("drawer-bg").hidden = true; }
 
+/* ---------- changes, context, capabilities ---------- */
+
+const DECISION_BADGE = {allow: "low", allow_with_warning: "medium", preserve_conflict: "medium",
+  require_review: "medium", reject: "high", cannot_determine: "high"};
+
+function onActivate(el, fn) {
+  el.addEventListener("click", fn);
+  el.addEventListener("keydown", (ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); fn(); } });
+}
+
+async function loadChanges() {
+  const rows = await api("/api/branches");
+  $("c-changes").textContent = rows.length ? `(${rows.length})` : "";
+  $("changes-detail").innerHTML = "";
+  if (!rows.length) {
+    $("changes-list").innerHTML = `<div class="sub">No branches. Create one with
+      <span class="mono">memory-fabric --db &lt;store&gt; branch create NAME --actor YOU</span>.</div>`;
+    return;
+  }
+  $("changes-list").innerHTML = `<table><thead><tr><th>Branch</th><th>State</th><th>Commits</th>
+    <th>Owner</th><th>Base</th></tr></thead><tbody>${rows.map((b) => `<tr>
+    <td><span class="link branch-link" role="button" tabindex="0" data-branch="${esc(b.name)}">${esc(b.name)}</span></td>
+    <td>${b.closed ? "closed" : "open"}</td><td>${b.commits}</td><td>${esc(b.owner)}</td>
+    <td class="mono">#${b.base_seq}</td></tr>`).join("")}</tbody></table>`;
+  for (const el of $("changes-list").querySelectorAll(".branch-link")) {
+    onActivate(el, () => showBranch(el.dataset.branch).catch(showError));
+  }
+}
+
+async function showBranch(name) {
+  const [b, preview] = await Promise.all([
+    api(`/api/branches/${encodeURIComponent(name)}`),
+    api(`/api/branches/${encodeURIComponent(name)}/preview`)]);
+  $("changes-detail").innerHTML = `<h3>${esc(name)}: merge preview</h3>
+    ${preview.changes.length ? `<table><thead><tr><th>Decision</th><th>Change</th><th>Memory</th>
+      <th>Why</th></tr></thead><tbody>${preview.changes.map((c) => `<tr>
+      <td><span class="badge ${DECISION_BADGE[c.decision] || "high"}">${esc(c.decision.replaceAll("_", " "))}</span></td>
+      <td>${esc(c.op)}</td>
+      <td>${c.memory_id ? `<div><span class="sub">main</span> <span class="link link-id" data-id="${esc(c.memory_id)}">${esc(c.memory_id)}</span></div>` : ""}
+        ${c.candidate_id ? `<div><span class="sub">proposed</span> <span class="link link-id" data-id="${esc(c.candidate_id)}">${esc(c.candidate_id)}</span></div>` : ""}</td>
+      <td>${esc(c.class.replaceAll("_", " "))}: ${esc(c.reason)}${c.warnings.map((w) =>
+        `<div class="sub">${esc(w)}</div>`).join("")}</td></tr>`).join("")}</tbody></table>
+      ${actionBlock(`memory-fabric --db <store> merge apply ${name} --actor <you> --preview ${preview.digest} --key <one-time-key>`)}`
+      : '<div class="sub">Nothing left to merge.</div>'}
+    <h3>History</h3>
+    <pre class="audit">${b.history.map((c) => esc(`${c.commit_id.slice(0, 14)}  ${c.author.padEnd(12)} ${c.message}  (${c.changes.length} changes)`)).join("\n") || "no commits"}</pre>`;
+}
+
+async function loadContext() {
+  const rows = (await api("/api/receipts?limit=100")).reverse();
+  $("context-detail").innerHTML = "";
+  if (!rows.length) {
+    $("context-list").innerHTML = `<div class="sub">No receipts yet. Build one with
+      <span class="mono">memory-fabric --db &lt;store&gt; context build --agent A --query "..."</span>.</div>`;
+    return;
+  }
+  $("context-list").innerHTML = `<table><thead><tr><th>Receipt</th><th>Agent</th><th>Mode</th>
+    <th>Selected</th><th>Excluded</th><th>Tokens (est.)</th></tr></thead><tbody>${rows.map((r) => `<tr>
+    <td><span class="link receipt-link mono" role="button" tabindex="0" data-receipt="${esc(r.receipt_id)}">${esc(r.receipt_id)}</span></td>
+    <td>${esc(r.agent_id)}</td><td>${esc(r.mode)}</td><td>${r.selected.length}</td>
+    <td>${r.excluded.length}</td><td>${r.tokens_estimated} / ${r.token_budget}</td></tr>`).join("")}</tbody></table>`;
+  for (const el of $("context-list").querySelectorAll(".receipt-link")) {
+    onActivate(el, () => showReceipt(el.dataset.receipt).catch(showError));
+  }
+}
+
+async function showReceipt(id) {
+  const r = await api(`/api/receipts/${encodeURIComponent(id)}`);
+  $("context-detail").innerHTML = `<h3>${esc(id)}</h3>
+    <dl class="kv"><dt>Agent</dt><dd>${esc(r.agent_id)} · ${esc(r.tenant_id)}</dd>
+    <dt>Built at</dt><dd class="mono">log #${r.log_head} · policy ${esc(r.policy_id)}</dd>
+    <dt>Not reproducible</dt><dd>${esc(r.nondeterminism)}</dd></dl>
+    <table><thead><tr><th>Delivered</th><th>Version or sources</th><th>Now</th></tr></thead><tbody>
+    ${r.selected.map((s) => `<tr><td>${esc(s.kind)} <span class="${s.kind === "memory" ? "link link-id" : "mono"}"
+      ${s.kind === "memory" ? `data-id="${esc(s.id)}"` : ""}>${esc(s.id)}</span></td>
+      <td class="mono">${s.kind === "memory" ? "v" + s.version : esc((s.expanded_sources || []).join(", "))}</td>
+      <td>${s.admissible_now ? '<span class="badge low">admissible</span>'
+        : `<span class="badge high">changed</span> ${s.changes.map(esc).join("; ")}`}</td></tr>`).join("")}
+    </tbody></table>
+    ${r.excluded.length ? `<h3>Left out</h3><table><tbody>${r.excluded.map((x) =>
+      `<tr><td class="mono">${esc(x.id)}</td><td>${esc(x.reason_code)}</td></tr>`).join("")}</tbody></table>` : ""}`;
+}
+
+async function loadCapabilities() {
+  const data = await api("/api/capabilities");
+  const order = ["available", "experimental", "planned", "unsupported"];
+  const badge = {available: "low", experimental: "medium", planned: "", unsupported: "high"};
+  $("capabilities-list").innerHTML = order.map((s) => {
+    const caps = data.capabilities.filter((c) => c.status === s);
+    return caps.length ? `<h3>${s[0].toUpperCase() + s.slice(1)}</h3><table><tbody>${caps.map((c) => `<tr>
+      <td><span class="badge ${badge[s]}">${esc(s)}</span></td>
+      <td><b>${esc(c.title)}</b><div class="sub">${esc(c.user_problem)}</div>
+      ${c.limitations.map((l) => `<div class="sub">Limit: ${esc(l)}</div>`).join("")}</td></tr>`).join("")}
+      </tbody></table>` : "";
+  }).join("");
+}
+
 /* ---------- wiring ---------- */
 
-const TABS = ["attention", "review", "memories", "episodes", "search", "lifecycle", "posture"];
+const TABS = ["attention", "review", "memories", "episodes", "search", "lifecycle", "posture",
+  "changes", "context", "capabilities"];
 const LOADERS = {
   attention: loadAttention,
   review: loadReview,
@@ -681,6 +811,9 @@ const LOADERS = {
   memories: loadMemories,
   episodes: loadEpisodes,
   search: async () => {},
+  changes: loadChanges,
+  context: loadContext,
+  capabilities: loadCapabilities,
 };
 
 function showTab(name) {

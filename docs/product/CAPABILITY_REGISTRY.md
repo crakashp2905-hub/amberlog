@@ -33,7 +33,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 
 `memory.provenance.inspect` — I need to know why the system remembers this.
 
-- **Surfaces:** sdk: `MemoryFabric.explain`, cli: `show`, dashboard: `memories/{id}`
+- **Surfaces:** sdk: `MemoryFabric.explain`, mcp: `trace_provenance`, cli: `show`, dashboard: `memories/{id}`
 - **Code:** `memory_fabric/explain.py`, `memory_fabric/lineage.py`
 - **Tests:** `tests/test_observability.py`, `tests/test_transitive_retraction.py`
 - **Limitation:** Only provenance the system recorded can be shown.
@@ -59,7 +59,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 
 `governance.correction.preview` — Before withdrawing a memory I need to see what it touches, and the preview must still hold when applied.
 
-- **Surfaces:** sdk: `correction.preview`, cli: `correct`
+- **Surfaces:** sdk: `correction.preview`, mcp: `preview_correction`, cli: `correct`, dashboard: `memories/{id}/correction`
 - **Code:** `memory_fabric/correction.py`, `memory_fabric/incident.py`
 - **Tests:** `tests/test_correction.py`
 - **Limitation:** Recipients outside this store report on themselves; delivery is verified only by their acknowledgement.
@@ -169,9 +169,9 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 
 `context.receipt` — I need to reproduce and explain exactly what context an agent received.
 
-- **Surfaces:** sdk: `context_receipt.build_context`
+- **Surfaces:** sdk: `context_receipt.build_context`, mcp: `build_context`, cli: `context`, dashboard: `receipts`
 - **Code:** `memory_fabric/context_receipt.py`
-- **Tests:** `tests/test_context_map.py`
+- **Tests:** `tests/test_cli_versioning.py`, `tests/test_context_map.py`, `tests/test_dashboard_versioning.py`, `tests/test_mcp_extended.py`
 - **Limitation:** Token counts are estimates (characters / 4), not a tokenizer.
 - **Limitation:** Exclusions list candidates retrieval returned; memories below the relevance floor are not listed.
 
@@ -189,9 +189,9 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 
 `versioning.branches` — I need to try memory changes in isolation and merge them with conflicts surfaced.
 
-- **Surfaces:** sdk: `branching.Branches`
+- **Surfaces:** sdk: `branching.Branches`, mcp: `branch_create`, cli: `branch`, dashboard: `branches`
 - **Code:** `memory_fabric/branching.py`
-- **Tests:** `tests/test_branching.py`
+- **Tests:** `tests/test_branching.py`, `tests/test_cli_versioning.py`, `tests/test_dashboard_versioning.py`, `tests/test_mcp_extended.py`
 - **Limitation:** No branch of a branch; merges go into main only.
 - **Limitation:** Branch retrieval is the overlay view; it is not ranked by the store's retrieval arms.
 

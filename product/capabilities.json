@@ -71,7 +71,7 @@
       ],
       "surfaces": {
         "sdk": "MemoryFabric.explain",
-        "mcp": null,
+        "mcp": "trace_provenance",
         "cli": "show",
         "dashboard": "memories/{id}"
       },
@@ -136,9 +136,9 @@
       ],
       "surfaces": {
         "sdk": "correction.preview",
-        "mcp": null,
+        "mcp": "preview_correction",
         "cli": "correct",
-        "dashboard": null
+        "dashboard": "memories/{id}/correction"
       },
       "limitations": [
         "Recipients outside this store report on themselves; delivery is verified only by their acknowledgement."
@@ -294,13 +294,16 @@
         "memory_fabric/context_receipt.py"
       ],
       "tests": [
-        "tests/test_context_map.py"
+        "tests/test_cli_versioning.py",
+        "tests/test_context_map.py",
+        "tests/test_dashboard_versioning.py",
+        "tests/test_mcp_extended.py"
       ],
       "surfaces": {
         "sdk": "context_receipt.build_context",
-        "mcp": null,
-        "cli": null,
-        "dashboard": null
+        "mcp": "build_context",
+        "cli": "context",
+        "dashboard": "receipts"
       },
       "limitations": [
         "Token counts are estimates (characters / 4), not a tokenizer.",
@@ -338,13 +341,16 @@
         "memory_fabric/branching.py"
       ],
       "tests": [
-        "tests/test_branching.py"
+        "tests/test_branching.py",
+        "tests/test_cli_versioning.py",
+        "tests/test_dashboard_versioning.py",
+        "tests/test_mcp_extended.py"
       ],
       "surfaces": {
         "sdk": "branching.Branches",
-        "mcp": null,
-        "cli": null,
-        "dashboard": null
+        "mcp": "branch_create",
+        "cli": "branch",
+        "dashboard": "branches"
       },
       "limitations": [
         "No branch of a branch; merges go into main only.",

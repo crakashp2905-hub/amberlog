@@ -5,6 +5,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: surfaces and evaluation for receipts, the context map and branches
+
+- CLI `branch`, `merge` and `context`; dashboard tabs Changes, Agent context
+  and Capabilities (read-only; badges from the capability registry); MCP
+  `--extended-tools` (`build_context`, `explain_context`, `trace_provenance`,
+  `preview_correction`, `branch_create`, `branch_propose`, `merge_preview`),
+  off by default, none of which applies a merge or a correction.
+- `examples/wrong_memory_demo.py`: the blueprint's flagship story.
+- GME matrix (`experiments/gme_matrix.py`, pre-registered): the registered
+  run supported none of H1-H3 and found four defects in the context map
+  (F1-F4 below). A pre-registered replication of the repaired code on fresh
+  seeds supported H3 (governed merge over naive, no resurrection, no lost
+  update) and failed H1's leak criterion and H2, as predicted.
+  `research/results/gme-matrix.md`.
+
+### Fixed (found by the GME matrix)
+
+- F1: compact planning let summaries of other subjects displace the record
+  that answered the question. Relevance now comes first.
+- F2: summaries listed an old restatement before the correction that replaced
+  it. `extractive-v2` lists the most recent first.
+- F3: the receipt renderer dropped the `[DISPUTED]` flag.
+- F4: the flag, once restored, was not paid for out of the token budget.
+
 ### Added (schema 0.13.0): context receipts, the Governed Context Map and memory branches
 
 Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a

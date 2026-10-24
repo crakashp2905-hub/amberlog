@@ -8,7 +8,7 @@ an authority** (docs/architecture/ADR-002-governed-context-map.md):
   one subject (the claim's identifier, else the structured subject, else the
   first content word). **L2** nodes are an index of L1 nodes for one topic
   (the memory's `topic` context, else its episode), pointers only.
-- The builder is extractive and deterministic (`extractive-v1`): a memory
+- The builder is extractive and deterministic (`extractive-v2`): a memory
   that states an identifier, a number, a date or a negation is kept
   verbatim; restatements of one claim keep the shortest wording; memories
   that disagree are kept as a dispute line naming every value and author.
@@ -43,7 +43,7 @@ estimated token. Modes:
 
 Token costs are estimates (⌈characters / 4⌉), reported as such.
 
-**What extractive-v1 saves, and what it does not.** It keeps every distinct
+**What extractive-v2 saves, and what it does not.** It keeps every distinct
 fact verbatim, so it compresses only restatements (one claim said several
 ways keeps its shortest wording) and chatter with no fact in it. A bundle of
 distinct facts costs about what its records cost; `balanced` mode then
@@ -62,14 +62,14 @@ import re
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Iterable, Sequence
 
-from .conflicts import author, claim, find_conflicts
+from .conflicts import DISPUTED, author, claim, find_conflicts
 from .identity import DEFAULT_TENANT
 
 if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
     from .model import Memory
 
-BUILDER_ID = "extractive-v1"
+BUILDER_ID = "extractive-v2"  # v2: most recent first (v1 was creation order)
 MAX_BUNDLE = 8
 MODES = ("compact", "balanced", "evidence-first", "exact", "auto")
 NEGATIONS = frozenset({"not", "no", "never", "none", "cannot", "without", "disabled",
@@ -161,8 +161,15 @@ class SummaryNode:
 
 def build_l1(memories: Sequence["Memory"], key: str, tenant_id: str,
              branch: str = "main") -> SummaryNode:
-    """One L1 node over memories about one subject. Refused if it would lose a fact."""
-    memories = sorted(memories, key=lambda m: (m.created_at, m.id))
+    """One L1 node over memories about one subject. Refused if it would lose a fact.
+
+    Most recently recorded first: a revised version carries its revision
+    time, so a correction comes before an older note that restated the
+    value it replaced. Creation order put the stale restatement first, and
+    a reader taking the first value took the wrong one (GME matrix, F2 in
+    research/results/gme-matrix.md).
+    """
+    memories = sorted(memories, key=lambda m: (-m.created_at, m.id))
     disputes = find_conflicts(memories)
     disputed = {m.id for g in disputes for m in g}
     best: dict[Any, str] = {}
@@ -341,7 +348,15 @@ class ContextMap:
                 "CONTESTED" if m.lifecycle_state.value == "contested" else "WITHHELD_BY_POLICY")})
         candidates = list(result.exposed)
         score = {m.id: result.scores.get(m.id, 1.0) for m in candidates}
-        records = [PlannedItem("memory", m.id, m.version, estimate_tokens(m.content), m.content)
+        # Disagreements are flagged here, in the planned text, so the flag is
+        # paid for out of the budget. Added at rendering (the first version),
+        # it pushed bundles past the budget they were planned under.
+        disputed = {m.id for g in find_conflicts(candidates) for m in g}
+
+        def shown(m: "Memory") -> str:
+            return f"{DISPUTED} {m.content}" if m.id in disputed else m.content
+
+        records = [PlannedItem("memory", m.id, m.version, estimate_tokens(shown(m)), shown(m))
                    for m in candidates]
         options: list[tuple[float, PlannedItem, set[str]]] = []
         if mode != "exact":
@@ -368,23 +383,32 @@ class ContextMap:
         for record in records:
             options.append((score[record.id], record, {record.id}))
 
-        def rank(option: tuple[float, PlannedItem, set[str]]) -> tuple[int, float]:
-            utility, item, _ = option
-            first = {"compact": item.kind == "summary", "evidence-first": item.kind == "memory",
-                     "balanced": True, "exact": True}[mode]
-            return (0 if first else 1, -utility / item.tokens)
+        # Relevance first. Candidates are taken in retrieval order; for each one
+        # not yet covered, the mode chooses among the options that cover it.
+        # Ranking every summary ahead of every record (the first version) let
+        # summaries of *other* subjects fill the budget and push out the
+        # record that answered the question (GME matrix, F1).
+        def preference(item: PlannedItem) -> int:
+            if mode == "compact":
+                return 0 if item.kind == "summary" else 1
+            if mode == "evidence-first":
+                return 0 if item.kind == "memory" else 1
+            return 0  # balanced: cheapest first, below
 
         covered: set[str] = set()
-        for utility, item, covers in sorted(options, key=rank):
-            if covers <= covered:
+        for m in candidates:
+            if m.id in covered:
                 continue
-            if plan.tokens + item.tokens > budget:
-                plan.excluded.append({"id": item.id, "reason_code": "OVER_BUDGET"})
-                continue
-            if item.kind == "memory" and item.id in covered:
-                continue
-            plan.items.append(item)
-            covered |= covers
+            covering = sorted((o for o in options if m.id in o[2]),
+                              key=lambda o: (preference(o[1]), o[1].tokens))
+            for _, item, covers in covering:
+                if plan.tokens + item.tokens > budget:
+                    plan.excluded.append({"id": item.id, "reason_code": "OVER_BUDGET"})
+                    continue
+                if not any(i.id == item.id for i in plan.items):
+                    plan.items.append(item)
+                covered |= covers
+                break
         chosen = {i.id for i in plan.items}
         plan.excluded = [e for e in plan.excluded if not (
             e["reason_code"] == "OVER_BUDGET" and (e["id"] in covered or e["id"] in chosen))]

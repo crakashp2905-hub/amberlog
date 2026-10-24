@@ -57,10 +57,22 @@ def retrieval_config(fabric: "MemoryFabric") -> str:
                             "context_map": CONFIG_DIGEST}, sort_keys=True))
 
 
+def rendered_items(plan: ContextPlan) -> list[str]:
+    """Each planned item as the agent sees it, sanitised.
+
+    Disagreeing memories already carry `[DISPUTED ...]` from the planner, which
+    pays for the flag out of the budget. The first version of this renderer
+    dropped the flag (GME matrix, F3); the second added it after planning and
+    so overran the budget.
+    """
+    return [_sanitise(i.content) for i in plan.items]
+
+
 def render(plan: ContextPlan) -> str:
+    """The bundle as untrusted evidence, delimited, with the injection preamble."""
     if not plan.items:
         return ""
-    body = "\n\n".join(_sanitise(i.content) for i in plan.items)
+    body = "\n\n".join(rendered_items(plan))
     return f"{COMPACT_PREAMBLE}\n\n{OPEN}\n{body}\n{CLOSE}"
 
 

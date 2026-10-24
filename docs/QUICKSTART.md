@@ -53,3 +53,25 @@ python -m examples.quickstart
 If something fails, `memory-fabric --db ./memory/store.db doctor` names the
 failing check and the next command, and [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 lists every error message. Add `--log-format json` for structured logs.
+
+## 4. See what an agent was given, and try changes on a branch (optional)
+
+```bash
+python examples/wrong_memory_demo.py
+```
+
+It walks one story: a policy stored and used, a corrected source, a preview
+of what the correction touches (applied only if nothing changed since the
+preview), the next context leaving the stale rule out, and an alternative
+proposed on a branch that main never sees until a reviewer merges it. From
+the command line:
+
+```bash
+memory-fabric --db demo.db context build --agent support-bot --query "refund window"
+memory-fabric --db demo.db branch create trial --actor you --reviewer lead
+memory-fabric --db demo.db merge preview trial --actor lead
+```
+
+Context receipts, the context planner and branches are **experimental**; the
+dashboard's Capabilities tab lists what is available, experimental or not
+offered, and why.

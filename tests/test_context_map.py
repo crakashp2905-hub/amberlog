@@ -248,3 +248,54 @@ class Receipts(unittest.TestCase):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class FoundByTheMatrix(unittest.TestCase):
+    """Regressions for F1-F3 in research/results/gme-matrix.md."""
+
+    def setUp(self) -> None:
+        self.f = fabric()
+        self.addCleanup(self.f.close)
+
+    def test_f1_summaries_of_other_subjects_do_not_displace_the_answer(self) -> None:
+        for n in range(8):
+            for t in (f"Pump P{n}-ROT pressurised to {n + 20} bar.",
+                      f"Measured again: pump P{n}-ROT pressurised to {n + 20} bar today."):
+                self.f.remember("a", t, scope="team")
+        plan = ContextMap(self.f).plan("a", "what pressure for pump P3-ROT", budget=40,
+                                       mode="compact")
+        self.assertTrue(plan.items)
+        self.assertIn("P3-ROT", plan.items[0].content)
+
+    def test_f2_a_correction_comes_before_an_older_restatement(self) -> None:
+        fact = self.f.remember("ops", "Pump P1-ROT pressurised to 40 bar.", scope="team")
+        self.f.remember("crew", "Measured again on the night shift: P1-ROT pressurised to 40 bar.",
+                        scope="team")
+        self.f.revise(fact, "Pump P1-ROT pressurised to 44 bar.", agent_id="ops",
+                      reason="recalibrated")
+        node = next(n for n in ContextMap(self.f).build("a") if n.level == 1)
+        self.assertLess(node.content.index("44 bar"), node.content.index("40 bar"))
+
+    def test_f3_disagreeing_records_are_flagged_in_the_rendering(self) -> None:
+        self.f.remember("ops", "Boiler B2-LYO runs at 67 C at the Lyon plant.", scope="team")
+        self.f.remember("vendor", "Boiler B2-LYO runs at 76 C at the Lyon plant.", scope="team")
+        bundle = build_context(self.f, "a", "boiler b2-lyo", mode="evidence-first")
+        self.assertEqual(bundle.text.count("[DISPUTED"), 2)
+
+
+class BudgetIncludesFlags(unittest.TestCase):
+    def test_a_disputed_bundle_stays_within_its_budget(self) -> None:
+        f = fabric()
+        self.addCleanup(f.close)
+        for n in range(6):
+            f.remember("ops", f"Boiler B{n}-LYO runs at {60 + n} C at the Lyon plant.", scope="team")
+            f.remember("vendor", f"Boiler B{n}-LYO runs at {70 + n} C at the Lyon plant.",
+                       scope="team")
+        for mode in ("compact", "balanced", "evidence-first", "exact"):
+            bundle = build_context(f, "a", "boiler lyon plant", budget=45, mode=mode)
+            from memory_fabric.context_map import estimate_tokens
+            from memory_fabric.context_receipt import rendered_items
+
+            used = sum(estimate_tokens(t) for t in rendered_items(bundle.plan))
+            self.assertLessEqual(used, 45, mode)
+            self.assertEqual(used, bundle.receipt["tokens_estimated"], mode)

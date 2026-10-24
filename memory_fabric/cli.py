@@ -755,7 +755,8 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         )
     manager = _start_manager(fabric, args)
     try:
-        return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local))
+        return serve_stdio(McpServer(client, fabric, trusted_local=args.trusted_local,
+                                     extended=args.extended_tools))
     finally:
         # Stopped before the interpreter finalises: a manager thread inside a
         # SQLite call at exit crashed the process (CI, exit -11).
@@ -1214,6 +1215,168 @@ def cmd_correct(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     print(f"  preview        {p.digest[:16]}")
     print(f"\n{C.DIM}Apply: memory-fabric --db {_shown(args.db)} correct {args.id} --apply "
           f"--reason WHY --actor YOU --preview {p.digest[:16]}{C.RESET}")
+    return 0
+
+
+def _branch_error(exc: Exception) -> int:
+    code = getattr(exc, "code", type(exc).__name__)
+    print(f"{C.RED}{code}: {exc}{C.RESET}", file=sys.stderr)
+    return 5 if code in ("STALE_PREVIEW", "HEAD_MOVED", "IDEMPOTENCY_CONFLICT") else 4
+
+
+def cmd_branch(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Memory branches: list and inspect, or WRITES a one-change commit. See `branching.py`."""
+    from .branching import BranchError, Branches
+
+    b, tenant = Branches(fabric), args.tenant or DEFAULT_TENANT
+    try:
+        if args.action == "list":
+            rows = [x.to_json() for x in b.list_branches(tenant_id=tenant)]
+            if args.json:
+                print(json.dumps(rows, indent=2))
+                return 0
+            heading(f"Branches ({len(rows)})")
+            for r in rows:
+                state = "closed" if r["closed"] else "open"
+                print(f"  {r['name']:<24} {state:<7} {r['commits']} commits  owner {r['owner']}"
+                      f"  base #{r['base_seq']}")
+            return 0
+        if not args.name:
+            print(f"{C.RED}name the branch{C.RESET}", file=sys.stderr)
+            return 2
+        if args.action == "create":
+            branch = b.create(args.name, owner=args.actor or "", tenant_id=tenant,
+                              members=tuple(args.member or ()),
+                              reviewers=tuple(args.reviewer or ()))
+            print(json.dumps(branch.to_json(), indent=2) if args.json
+                  else f"created {branch.name} at #{branch.base_seq}")
+            return 0
+        if args.action in ("show", "diff"):
+            data = (b.history(args.name, tenant) if args.action == "show"
+                    else b.diff(args.name, tenant))
+            if args.json:
+                print(json.dumps(data, indent=2))
+                return 0
+            heading(f"{args.name}: {args.action}")
+            for row in data:
+                if args.action == "show":
+                    print(f"  {row['commit_id'][:14]}  {row['author']:<12} {row['message']}"
+                          f"  ({len(row['changes'])} changes)")
+                else:
+                    print(f"  {row['op']:<9} {row.get('memory_id') or row.get('candidate_id')}"
+                          f"  {row['commit_id'][:14]}")
+            return 0
+        if args.action == "close":
+            n = b.close(args.name, actor=args.actor or "", tenant_id=tenant)
+            print(f"closed {args.name}; {n} unmerged candidates deprecated")
+            return 0
+        message = args.message or args.action
+        with b.commit(args.name, args.actor or "", message, tenant_id=tenant) as c:
+            if args.action == "add":
+                if not args.text:
+                    raise BranchError("--text is required")
+                c.add(args.text)
+            elif args.action == "revise":
+                if not (args.memory and args.text):
+                    raise BranchError("--memory and --text are required")
+                c.revise(args.memory, args.text)
+            elif args.action == "withdraw":
+                if not (args.memory and args.reason):
+                    raise BranchError("--memory and --reason are required")
+                c.withdraw(args.memory, args.reason)
+        print(f"committed {b.get(args.name, tenant).head} on {args.name}")
+        return 0
+    except (BranchError, KeyError, ValueError) as exc:
+        return _branch_error(exc)
+
+
+def cmd_merge(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Preview a branch's merge into main; with --apply, WRITES what the preview allowed."""
+    from .branching import BranchError, Branches
+
+    b, tenant = Branches(fabric), args.tenant or DEFAULT_TENANT
+    try:
+        if args.action == "revert":
+            out = b.revert(args.name, actor=args.actor or "", tenant_id=tenant)
+            print(json.dumps(out, indent=2))
+            return 0
+        if args.action == "apply":
+            if not (args.preview and args.key):
+                print(f"{C.RED}--preview DIGEST and --key are required{C.RESET}", file=sys.stderr)
+                return 2
+            receipt = b.apply_merge(args.name, args.actor or "", args.preview, args.key,
+                                    tenant_id=tenant)
+            if args.json:
+                print(json.dumps(receipt, indent=2))
+                return 0
+            print(f"merged {args.name}: {receipt['merge_id']}  "
+                  + ", ".join(f"{k} {v}" for k, v in receipt["summary"].items() if v))
+            return 0
+        preview = b.preview_merge(args.name, args.actor or "", tenant_id=tenant)
+        if args.json:
+            print(json.dumps(preview.to_json(), indent=2))
+            return 0
+        heading(f"Merging {args.name} into main would")
+        for ch in preview.changes:
+            print(f"  {ch.decision:<18} {ch.op:<9} {ch.memory_id or ch.candidate_id}  "
+                  f"{C.DIM}{ch.klass}: {ch.reason}{C.RESET}")
+            for w in ch.warnings:
+                print(f"  {'':<18} {C.YELLOW}{w}{C.RESET}")
+        print(f"\n  preview {preview.digest[:16]}")
+        print(f"{C.DIM}Apply: memory-fabric --db {_shown(args.db)} merge apply {args.name} "
+              f"--actor YOU --preview {preview.digest} --key ONE-TIME-KEY{C.RESET}")
+        return 0
+    except (BranchError, KeyError, ValueError) as exc:
+        return _branch_error(exc)
+
+
+def cmd_context(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Build a context bundle with its receipt (WRITES the receipt), or read receipts back."""
+    from . import context_receipt as cr
+
+    tenant = args.tenant or DEFAULT_TENANT
+    if args.action == "build":
+        if not (args.agent and args.query):
+            print(f"{C.RED}--agent and --query are required{C.RESET}", file=sys.stderr)
+            return 2
+        bundle = cr.build_context(fabric, args.agent, args.query, budget=args.budget,
+                                  mode=args.mode, tenant_id=tenant)
+        if args.json:
+            print(json.dumps({"text": bundle.text, "receipt": bundle.receipt}, indent=2))
+            return 0
+        print(bundle.text or "(nothing admissible to show)")
+        r = bundle.receipt
+        print(f"\n{C.DIM}receipt {r['receipt_id']}: {len(r['selected'])} selected, "
+              f"{len(r['excluded'])} excluded, ~{r['tokens_estimated']}/{r['token_budget']} "
+              f"tokens ({r['mode']}){C.RESET}")
+        return 0
+    if args.action == "receipts":
+        rows = cr.receipts(fabric, tenant_id=tenant, agent_id=args.agent)
+        if args.json:
+            print(json.dumps(rows, indent=2))
+            return 0
+        heading(f"Context receipts ({len(rows)})")
+        for r in rows[-args.limit:]:
+            print(f"  {r['receipt_id']}  {r['agent_id']:<12} {r['mode']:<14} "
+                  f"{len(r['selected'])} selected  {len(r['excluded'])} excluded")
+        return 0
+    if not args.receipt:
+        print(f"{C.RED}name the receipt{C.RESET}", file=sys.stderr)
+        return 2
+    try:
+        data = cr.explain_receipt(fabric, args.receipt, tenant_id=tenant)
+    except KeyError:
+        print(f"{C.RED}no receipt {args.receipt} in {tenant}{C.RESET}", file=sys.stderr)
+        return 4
+    if args.json:
+        print(json.dumps(data, indent=2))
+        return 0
+    heading(f"Receipt {args.receipt}")
+    for item in data["selected"]:
+        state = "admissible now" if item["admissible_now"] else "; ".join(item["changes"])
+        print(f"  {item['kind']:<8} {item['id']}  {state}")
+    for item in data["excluded"]:
+        print(f"  {C.DIM}excluded {item['id']}  {item['reason_code']}{C.RESET}")
     return 0
 
 
@@ -2393,6 +2556,10 @@ def build_parser() -> argparse.ArgumentParser:
         help="the agent's clean writes become active without review (marked "
         "in provenance). For one person's local assistant only.",
     )
+    p.add_argument("--extended-tools", action="store_true",
+                   help="also offer build_context, explain_context, trace_provenance, "
+                   "preview_correction, branch_create, branch_propose and merge_preview. "
+                   "None applies a merge or a correction.")
 
     p.add_argument("--no-maintain", action="store_true",
                    help="do not run the background memory manager in this process")
@@ -2521,6 +2688,44 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--actor", help="who is changing this; required for a change")
     p.add_argument("--tenant")
 
+    p = add("branch", cmd_branch,
+            "Memory branches: list, show, diff, or WRITES: create, add, revise, withdraw "
+            "(each a one-change commit), close")
+    p.add_argument("action", choices=["list", "create", "show", "diff", "add", "revise",
+                                      "withdraw", "close"])
+    p.add_argument("name", nargs="?")
+    p.add_argument("--actor")
+    p.add_argument("--text")
+    p.add_argument("--memory")
+    p.add_argument("--reason")
+    p.add_argument("--message")
+    p.add_argument("--member", action="append")
+    p.add_argument("--reviewer", action="append")
+    p.add_argument("--tenant")
+
+    p = add("merge", cmd_merge,
+            "Preview merging a branch into main; WRITES with apply (needs the preview's "
+            "digest and an idempotency key), or revert a merge")
+    p.add_argument("action", choices=["preview", "apply", "revert"])
+    p.add_argument("name", help="the branch (or, for revert, the merge id)")
+    p.add_argument("--actor")
+    p.add_argument("--preview")
+    p.add_argument("--key")
+    p.add_argument("--tenant")
+
+    p = add("context", cmd_context,
+            "Build an agent's context bundle under a token budget and record its receipt "
+            "(WRITES the receipt), list receipts, or explain one")
+    p.add_argument("action", choices=["build", "receipts", "explain"])
+    p.add_argument("receipt", nargs="?")
+    p.add_argument("--agent")
+    p.add_argument("--query")
+    p.add_argument("--budget", type=int, default=2000)
+    p.add_argument("--mode", default="auto",
+                   choices=["auto", "compact", "balanced", "evidence-first", "exact"])
+    p.add_argument("--limit", type=int, default=50)
+    p.add_argument("--tenant")
+
     p = add("correct", cmd_correct,
             "Preview what withdrawing a memory would touch; with --apply, WRITES it and "
             "owes the retraction to every store that received it")
@@ -2631,6 +2836,26 @@ HELP: dict[tuple[str | None, str], str] = {
     ("collection", "name"): "the collection's name", ("collection", "--memory"): "memory id to add or remove",
     ("collection", "--agent"): "agent to grant or revoke",
     ("correct", "--apply"): "withdraw it and owe retractions (without this, only preview)",
+    ("branch", "action"): "list, show (history), diff; or create, add, revise, withdraw, close",
+    ("merge", "action"): "preview, apply (needs --preview and --key) or revert (a merge id)",
+    ("context", "action"): "build a bundle and its receipt, list receipts, or explain one",
+    ("branch", "--actor"): "who is acting; the owner for create and close",
+    ("branch", "--text"): "the memory text to add or the revised text",
+    ("branch", "--memory"): "the main memory to revise or withdraw",
+    ("branch", "--reason"): "why it is withdrawn",
+    ("branch", "--message"): "the commit message",
+    ("branch", "--member"): "repeatable: an agent who may write to the branch",
+    ("branch", "--reviewer"): "repeatable: an agent who may merge it into main",
+    ("branch", "name"): "the branch",
+    ("merge", "--actor"): "who is merging (the owner or a reviewer); audited",
+    ("merge", "--preview"): "the full digest the preview printed",
+    ("merge", "--key"): "an idempotency key: a retry with it replays, never applies twice",
+    ("context", "receipt"): "a receipt id, for explain",
+    ("context", "--agent"): "the agent the context is for",
+    ("context", "--query"): "what the agent is working on (stored only as a digest)",
+    ("context", "--budget"): "token budget (estimated as characters / 4)",
+    ("context", "--mode"): "auto picks exact for numbers, ids and dates, else balanced",
+    ("context", "--limit"): "how many receipts to list",
     ("correct", "--preview"): "the preview's digest: refuse to apply if anything it showed changed",
     ("correct", "--basis"): "the evidence for withdrawing it (contradicted, sensitive_data, ...)",
     ("review", "id"): "the candidate to decide on; omit to list the queue",

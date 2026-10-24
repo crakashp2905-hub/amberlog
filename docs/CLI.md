@@ -78,6 +78,21 @@ Consistent snapshot of the event log, verified by replaying it
 - `--with-keys`: also copy the key directory named by --keys, beside the copy (<path>.keys/). Keep that copy as protected as the original
 - `--include`: a config file or directory to keep with the backup (<path>.config/): agents.txt, a peers file, a checkpoint directory. Repeatable
 
+### `branch`
+
+Memory branches: list, show, diff, or WRITES: create, add, revise, withdraw (each a one-change commit), close
+
+- `action`: list, show (history), diff; or create, add, revise, withdraw, close
+- `name`: the branch
+- `--actor`: who is acting; the owner for create and close
+- `--text`: the memory text to add or the revised text
+- `--memory`: the main memory to revise or withdraw
+- `--reason`: why it is withdrawn
+- `--message`: the commit message
+- `--member`: repeatable: an agent who may write to the branch
+- `--reviewer`: repeatable: an agent who may merge it into main
+- `--tenant`: tenant id to act within
+
 ### `checkpoint`
 
 Print an integrity checkpoint, or verify against a saved one
@@ -94,6 +109,19 @@ Collections: named sets of memories agents can be attached to. list, or WRITES: 
 - `--agent`: agent to grant or revoke
 - `--permission`: repeatable; attach means read
 - `--actor`: who is changing this; required for a change
+- `--tenant`: tenant id to act within
+
+### `context`
+
+Build an agent's context bundle under a token budget and record its receipt (WRITES the receipt), list receipts, or explain one
+
+- `action`: build a bundle and its receipt, list receipts, or explain one
+- `receipt`: a receipt id, for explain
+- `--agent`: the agent the context is for
+- `--query`: what the agent is working on (stored only as a digest)
+- `--budget`: token budget (estimated as characters / 4)
+- `--mode`: auto picks exact for numbers, ids and dates, else balanced
+- `--limit`: how many receipts to list
 - `--tenant`: tenant id to act within
 
 ### `correct`
@@ -241,11 +269,23 @@ WRITES: serve this store to one agent over MCP (stdio). The agent can recall, fe
 - `--agent`: the agent id every call is attributed to
 - `--tenant`: tenant (default tn_default)
 - `--trusted-local`: the agent's clean writes become active without review (marked in provenance). For one person's local assistant only.
+- `--extended-tools`: also offer build_context, explain_context, trace_provenance, preview_correction, branch_create, branch_propose and merge_preview. None applies a merge or a correction.
 - `--no-maintain`: do not run the background memory manager in this process
 - `--maintain-interval`: seconds between background maintenance cycles
 - `--peers`: JSON peer list for retraction delivery (or $MEMORY_FABRIC_PEERS)
 - `--checkpoint-dir`: write integrity checkpoints here, off the store's disk (or $MEMORY_FABRIC_CHECKPOINT_DIR)
 - `--retention-delete`: let the manager apply retention deletions (terminal); off by default
+
+### `merge`
+
+Preview merging a branch into main; WRITES with apply (needs the preview's digest and an idempotency key), or revert a merge
+
+- `action`: preview, apply (needs --preview and --key) or revert (a merge id)
+- `name`: the branch (or, for revert, the merge id)
+- `--actor`: who is merging (the owner or a reviewer); audited
+- `--preview`: the full digest the preview printed
+- `--key`: an idempotency key: a retry with it replays, never applies twice
+- `--tenant`: tenant id to act within
 
 ### `migrate-keys`
 

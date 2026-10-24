@@ -151,19 +151,26 @@ def verdict(r: dict[str, Any]) -> dict[str, Any]:
 
 
 def main() -> int:
+    global SEEDS
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--seeds", type=int, nargs=2, default=(600, 605))
+    ap.add_argument("--out", default="v2-codes")
+    a = ap.parse_args()
+    SEEDS = range(*a.seeds)
     fixed, before = run(), run(old_claim)
     v = verdict(fixed)
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
                             text=True, cwd=ROOT).stdout.strip()
     rows = "\n".join(f"| `{f}` | {before[f]['suspicious']:.3f} | **{fixed[f]['suspicious']:.3f}** |"
                      for f in FAMILIES)
-    (ROOT / "research" / "results" / "v2-codes.json").write_text(json.dumps(
+    (ROOT / "research" / "results" / f"{a.out}.json").write_text(json.dumps(
         {"commit": commit, "fixed": fixed, "before_fix": before, "verdict": v}, indent=2) + "\n")
-    (ROOT / "research" / "results" / "v2-codes.md").write_text(f"""# V2 — claim checks on separated equipment codes
+    (ROOT / "research" / "results" / f"{a.out}.md").write_text(f"""# V2 — claim checks on separated equipment codes
 
 Registered in [v2-separated-codes.md](../prereg/v2-separated-codes.md) before this
-world existed. Produced by `python -m experiments.v2_codes` at commit `{commit}`;
-raw numbers in [v2-codes.json](v2-codes.json). Seeds 600–604, {PER_FAMILY} cases per
+world existed. Produced by `python -m experiments.v2_codes --seeds {SEEDS.start} {SEEDS.stop}` at commit `{commit}`;
+raw numbers in [{a.out}.json]({a.out}.json). Seeds {SEEDS.start}–{SEEDS.stop - 1}, {PER_FAMILY} cases per
 family per seed, deterministic, no model.
 
 **V2-D {v['V2-D']}. V2-F {v['V2-F']}.** False-alarm rate on honest writes:

@@ -201,10 +201,40 @@ Migrations run on open, are idempotent, and need no command:
 | 0.5.0 | tenant identity | additive; absent means `tn_default` |
 | 0.6.0 | authenticated content | additive; `enc:v1` stays readable, never rewritten |
 | 0.7.0 | bitemporal validity | additive; absent means open-ended |
+| 0.8.0 | copy recognition | additive; one event type, two projection maps |
+| 0.9.0 | action gating | additive; one event type (`ActionGated`) |
+
+`tests/test_version_skew.py::EveryShippedVersionUpgradesThenBacksUp` runs the
+whole sequence for each version from 0.2.0 to 0.8.0: build a store at that
+version, open it with current code, write current-version events (including a
+retraction and an `ActionGated`), back it up with the CLI, and open the copy to
+the same states.
 
 **There is no bulk re-encryption and there will not be.** Revising a memory
 re-seals it under the current suite; `doctor` counts what remains. Rewriting
 the log is the one thing this design forbids.
+
+## 4a. Supported scale and rate limits
+
+Measured on one 4-CPU Linux machine with SQLite ([P12](../research/results/p12-load.md),
+[P12b](../research/results/p12b-api-load.md)):
+
+| deployment | agents | ops/s total | p99 latency | status |
+|---|---|---|---|---|
+| one `agent-api` process serving the agents | 1 → 100 | 159–195 | 7 ms → 1.2 s | **supported** up to 100 concurrent agents |
+| one process per agent, all opening the store | 10 / 100 | 31 / 4 | 0.7 s / 56 s | **not supported** beyond a few writers |
+
+The store serialises writes (one lock, a gapless hash-chained log), so latency
+grows with the number of agents waiting on it. Above 100 concurrent agents per
+store is unmeasured. Postgres is slower than SQLite at every measured point
+in P12.
+
+**Rate limits** (`agent-api`): each agent gets a token bucket, by default 20
+requests a second with a burst of 40 (`--rate-limit`, `--burst`;
+`--rate-limit 0` turns it off). Failed authentications are limited per remote
+address. A refused request gets `429` with `Retry-After`. Size the per-agent
+rate so that agents × rate stays below the measured total. Otherwise requests
+queue on the lock rather than being refused.
 
 ## 5. Rollback
 
@@ -217,7 +247,7 @@ the log is the one thing this design forbids.
 
 Said plainly rather than left for an incident to discover.
 
-- **No concurrency beyond serialised single-writer.** Measured, not assumed: 4 processes × 20 appends land all 80 with a gapless sequence and a verifying chain.
+- **No concurrency beyond serialised single-writer.** Measured, not assumed: 4 processes × 20 appends land all 80 with a gapless sequence and a verifying chain. Throughput is bounded by that one writer (§4a).
 - **No multi-host story.** P9 declined distribution on measurement — 25× the memories cost 1.7× the latency.
 - **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those — `erasure_scope` reports them as unknown rather than pretending otherwise, which is the most a store can honestly do.
 - **No alerting.** `doctor` and `attention` exit non-zero; wiring that to a pager is yours.

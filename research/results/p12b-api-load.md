@@ -21,7 +21,7 @@ Compare [P12](p12-load.md), where each agent was its own process opening the
 store: 214 → 31 → 9 → 4 ops/s at 1, 10, 50 and 100 agents on SQLite.
 
 **What this shows.** Serving agents from one process keeps throughput flat,
-about 150–180 ops/s from 1 to 100 agents. With one process per agent it fell
+between 159 and 195 ops/s from 1 to 100 agents. With one process per agent it fell
 to 4 ops/s. Latency grows linearly with the number of agents waiting on the
 one store lock: p50 is about 5 ms per agent ahead in the queue, which is the
 expected cost of a serialised store. It does not collapse. At 100 concurrent

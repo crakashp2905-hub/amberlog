@@ -268,6 +268,25 @@ address. A refused request gets `429` with `Retry-After`. Size the per-agent
 rate so that agents × rate stays below the measured total. Otherwise requests
 queue on the lock rather than being refused.
 
+## 4b. PostgreSQL failover
+
+Measured with a real primary and streaming replica, primary killed
+mid-write: every acknowledged write survived, the chain verified with no
+sequence gap, and the client resumed in about 0.1 s. Steps:
+
+1. **Connect through a multi-host URL** so the driver finds the new primary itself:
+   `postgresql://user@db1:5432,db2:5432/fabric?target_session_attrs=read-write`.
+2. **Promote the replica** (`pg_ctl promote` or your orchestrator).
+3. **If you ran synchronous replication, clear it on the new primary before
+   anything writes:** `ALTER SYSTEM SET synchronous_standby_names = ''; SELECT pg_reload_conf();`
+   (or attach a new standby). The setting is copied by `pg_basebackup`, and
+   without a standby every commit waits forever, with no error.
+4. **Check:** `memory-fabric --db <new primary URL> doctor`, then
+   `anchor --verify` against your anchors.
+
+Asynchronous replication can lose the last acknowledged commits on failover
+under load; use `synchronous_commit = on` with a standby where that matters.
+
 ## 5. Rollback
 
 - **Code only, same schema:** reinstall the previous wheel. Safe.

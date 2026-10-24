@@ -17,6 +17,12 @@ Global options go **before** the command: `memory-fabric --db store.db --json ov
 
 ## Commands
 
+### `access-log-verify`
+
+Check the dashboard access log's hash chain (exit 0 intact, 5 broken)
+
+- `path`: the access log file (JSON lines)
+
 ### `agent-api`
 
 WRITES: serve agents over authenticated HTTP (recall, fetch, verify, remember), each request verified from a signed, expiring credential

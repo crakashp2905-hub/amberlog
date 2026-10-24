@@ -1084,6 +1084,21 @@ def cmd_posture(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_access_log_verify(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Check the dashboard access log's hash chain. Exit 0 intact, 5 broken."""
+    from .observability.server import verify_access_log
+
+    ok, line, detail = verify_access_log(args.path)
+    if args.json:
+        print(json.dumps({"path": args.path, "intact": ok, "broken_at_line": line,
+                          "detail": detail}))
+    elif ok:
+        print(f"{args.path}: {detail}")
+    else:
+        print(f"{args.path}: BROKEN at line {line}: {detail}")
+    return 0 if ok else 5
+
+
 def cmd_audit_export(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Write decisions, changes, access events and deletion receipts, without content."""
     from .posture import export_audit
@@ -2703,6 +2718,10 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("posture", cmd_posture,
         "Which security controls are on in this store, and the accepted gaps")
+    p = add("access-log-verify", cmd_access_log_verify,
+            "Check the dashboard access log's hash chain (exit 0 intact, 5 broken)")
+    p.add_argument("path", help="the access log file (JSON lines)")
+
     p = add("audit-export", cmd_audit_export,
             "Export decisions, changes, access events and deletion receipts as JSONL, "
             "without memory content, ending with a hash-chain checkpoint")
@@ -2981,6 +3000,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "access-log-verify":  # reads a file; opens no --db
+        return cmd_access_log_verify(None, args)  # type: ignore[arg-type]
 
     # Opening a store creates it, so a typo in --db would otherwise produce an
     # empty store and a confident report of nothing wrong. For an inspection

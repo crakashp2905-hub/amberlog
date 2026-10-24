@@ -106,6 +106,7 @@ class FabricCore:
         withhold_hostile_sources: bool = True,
         hold_suspicious: bool = True,
         crypto_profile: str | None = None,
+        contest_restatements: bool = True,
     ) -> None:
         # Off by default to keep the documented reason code. On, a request
         # from another tenant is refused exactly as a missing id is, so the
@@ -124,6 +125,11 @@ class FabricCore:
         # as a candidate even where clean writes activate at once (V1:
         # detection 1.00 on three poison families, 0 of 450 honest writes held).
         self.hold_suspicious = hold_suspicious
+        # On by default: correcting or withdrawing a fact contests the other
+        # notes that repeat its old value (validation.restatements). Contested
+        # is withheld from retrieval and visible to an operator; nothing is
+        # deleted, and a reviewer can resolve it.
+        self.contest_restatements = contest_restatements
         # Checked at open, not at the first write: a production deployment
         # without the maintained library must fail to start, not fall back.
         from ..governance import cipher
@@ -511,6 +517,12 @@ class FabricCore:
         # the next `refresh` rather than counted as seen and never folded.
         self._seen_seq = head
         self._estimator_dirty = True
+
+    def _contest(self, memory_ids: list[str], reason: str, actor: str) -> None:
+        """Contest stale restatements of a corrected or withdrawn fact (validation.restatements)."""
+        for mid in memory_ids:
+            if self.state.memories[mid].lifecycle_state is LifecycleState.ACTIVE:
+                self._emit(self._transition(mid, LifecycleState.CONTESTED, reason, actor))
 
     def _require(self, memory_id: str) -> Memory:
         memory = self.state.memories.get(memory_id)

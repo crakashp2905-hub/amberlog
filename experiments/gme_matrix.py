@@ -115,7 +115,8 @@ def read(items: list[str], a: Asset) -> str:
     return "none"
 
 
-def within_budget(texts: list[str], budget: int = BUDGET) -> list[str]:
+def within_budget(texts: list[str], budget: int | None = None) -> list[str]:
+    budget = BUDGET if budget is None else budget
     out, used = [], 0
     for t in texts:
         cost = estimate_tokens(t)
@@ -295,11 +296,15 @@ def leakage(items: list[str], a: Asset, w: World, phase: int) -> dict[str, int]:
     """Withdrawn or superseded values, and branch-only values before a merge, in context."""
     text = " ".join(items)
     leaked = branch = 0
+    # Metric v2: a value counts only as a stated quantity (number, then unit).
+    # v1 matched any number after the tag, so "store room 14" counted as a
+    # leak of a proposal of 14 (research/results/gme-matrix.md).
+    unit = re.escape(a.unit)
     for v in set(getattr(a, "stale_values", ())):
-        if re.search(rf"{re.escape(a.tag)}[^.]*\b{v}\b", text):
+        if re.search(rf"{re.escape(a.tag)}[^.]*\b{v}\s*{unit}(?![\w/])", text):
             leaked = 1
     if phase == 1 and a.proposal is not None and str(a.proposal) != a.truth:
-        if re.search(rf"{re.escape(a.tag)}[^.]*\b{a.proposal}\b", text):
+        if re.search(rf"{re.escape(a.tag)}[^.]*\b{a.proposal}\s*{unit}(?![\w/])", text):
             branch = 1
     return {"leak": leaked, "branch_leak": branch}
 
@@ -377,11 +382,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--pilot", action="store_true", help="seed 0: A, B and the oracle only")
     parser.add_argument("--seeds", type=int, nargs="*", default=[1, 2, 3, 4, 5])
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--budget", type=int, default=BUDGET,
+                        help="token budget per question (v2 registers 60 and 400)")
     args = parser.parse_args(argv)
+    globals()["BUDGET"] = args.budget
     seeds = [0] if args.pilot else args.seeds
     arms = ("A", "B", "oracle") if args.pilot else ARMS
     runs = [run_seed(s, arms) for s in seeds]
-    result = {"experiment": "gme-matrix", "prereg": "research/prereg/gme-matrix.md",
+    result = {"experiment": "gme-matrix", "metric_version": 2,
+              "prereg": "research/prereg/gme-matrix.md, gme-matrix-v2.md",
               "budget_tokens": BUDGET, "k": K, "seeds": seeds, "arms": list(arms),
               "python": platform.python_version(), "runs": runs, "summary": summarise(runs)}
     print(json.dumps(result["summary"], indent=1))

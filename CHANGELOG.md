@@ -5,6 +5,18 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Changed: a correction reaches the notes that repeat the old value
+
+- Revising a fact, or withdrawing it with basis `contradicted`, now contests
+  other usable notes in the tenant that state the same claim with the old
+  value (`validation.restatements`). They are withheld from retrieval and
+  stay visible for review; nothing is deleted. `MemoryFabric(...,
+  contest_restatements=False)` turns it off.
+- GME matrix v2 (pre-registered, fresh seeds): stale leakage halved; the
+  remainder is withdrawals recorded without a basis. Compression saves 5-19%
+  tokens when the budget does not bind (bar was 20%). The governed merge
+  again captured all headroom over a naive merge.
+
 ### Added: surfaces and evaluation for receipts, the context map and branches
 
 - CLI `branch`, `merge` and `context`; dashboard tabs Changes, Agent context

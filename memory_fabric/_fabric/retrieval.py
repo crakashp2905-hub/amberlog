@@ -444,7 +444,7 @@ class RetrievalMixin(FabricCore):
 
             chosen = resolve(profile, getattr(self, "retrieval_profiles", None))
             defaults = _RETRIEVE_DEFAULTS
-            given = {"k": k, "include_contested": include_contested,
+            given: dict[str, Any] = {"k": k, "include_contested": include_contested,
                      "expand_lineage": expand_lineage, "follow_relations": follow_relations,
                      "group_by_source_root": group_by_source_root, "min_relevance": min_relevance}
             for key, value in chosen.settings.items():

@@ -261,6 +261,12 @@ agent waiting. Above 400 concurrent agents per store is unmeasured. For more,
 split agents across stores (`tenancy.TenantRouter`) rather than queueing more
 agents on one. Postgres was slower than SQLite at every point measured.
 
+**Teams of agents need a reviewer who validates *and* shares.** A memory written
+through `agent-api` is private to the agent that wrote it, and `validate` does not
+widen that. Until `share <id> team` (or a reviewer's equivalent), teammates recall
+nothing from it. A multi-agent pilot hit exactly this: the planner found no memories
+the inspector had written and validated.
+
 **Rate limits** (`agent-api`): each agent gets a token bucket, by default 20
 requests a second with a burst of 40 (`--rate-limit`, `--burst`;
 `--rate-limit 0` turns it off). Failed authentications are limited per remote

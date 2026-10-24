@@ -8,6 +8,24 @@ and did not.
 
 ## Current baseline
 
+**2026-10-24, branch at `62a6ca1`**, Linux, Python 3.13. Full report:
+[ACCEPTANCE.md](ACCEPTANCE.md).
+
+| Check | Result |
+|---|---|
+| Unit, integration, property | **1318 OK, 27 skipped** |
+| Fault matrix | **17/17** |
+| End-to-end, real processes | **22/22** |
+| Secret scan | 97 high-severity findings, **0 unexpected** |
+| Compile, offline examples | clean; 3/3 exit 0 |
+| Package and installed copy | build OK; `doctor` **sound** |
+| Upgrade from 0.2.0–0.8.0, then backup/restore | passes |
+| API load, 1–100 agents ([P12b](../research/results/p12b-api-load.md)) | 0 errors, 159–195 ops/s |
+| Real model downstream ([D1](../research/results/d1-downstream.md)) | D1a/b/c supported |
+| CI | **not run on these commits** (CI runs on pull requests) |
+
+## Previous baseline
+
 **2026-10-16, `main` at `1978d2b`** (after PR #4), Linux, Python 3.13.16. The
 README cites the numbers here, not its own.
 

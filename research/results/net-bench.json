@@ -1,0 +1,69 @@
+{
+  "commit": "259eb33",
+  "machine": "Linux-6.18.44-fc-v153-x86_64-with-glibc2.39",
+  "results": [
+    {
+      "latency_ms_per_hop": 0,
+      "stores": 3,
+      "share_chain_s": 0.12,
+      "correction_reached_last_store_s": 1.29,
+      "states_after_correction": {
+        "a": "quarantined",
+        "b": "quarantined",
+        "c": "quarantined"
+      },
+      "last_store_while_offline": "active",
+      "converged_after_restart_s": 0.92,
+      "partition_mid_withdrawn": true,
+      "partition_last_while_cut": "active",
+      "partition_converged_after_heal_s": 1.02,
+      "concurrent_converged_s": 1.06,
+      "concurrent_origin_y_still_active": true,
+      "chain_verifies_a": true,
+      "chain_verifies_b": true,
+      "chain_verifies_c": true
+    },
+    {
+      "latency_ms_per_hop": 50,
+      "stores": 3,
+      "share_chain_s": 0.28,
+      "correction_reached_last_store_s": 1.28,
+      "states_after_correction": {
+        "a": "quarantined",
+        "b": "quarantined",
+        "c": "quarantined"
+      },
+      "last_store_while_offline": "active",
+      "converged_after_restart_s": 0.92,
+      "partition_mid_withdrawn": true,
+      "partition_last_while_cut": "active",
+      "partition_converged_after_heal_s": 1.03,
+      "concurrent_converged_s": 1.61,
+      "concurrent_origin_y_still_active": true,
+      "chain_verifies_a": true,
+      "chain_verifies_b": true,
+      "chain_verifies_c": true
+    },
+    {
+      "latency_ms_per_hop": 200,
+      "stores": 3,
+      "share_chain_s": 0.87,
+      "correction_reached_last_store_s": 1.03,
+      "states_after_correction": {
+        "a": "quarantined",
+        "b": "quarantined",
+        "c": "quarantined"
+      },
+      "last_store_while_offline": "active",
+      "converged_after_restart_s": 1.68,
+      "partition_mid_withdrawn": true,
+      "partition_last_while_cut": "active",
+      "partition_converged_after_heal_s": 1.53,
+      "concurrent_converged_s": 2.08,
+      "concurrent_origin_y_still_active": true,
+      "chain_verifies_a": true,
+      "chain_verifies_b": true,
+      "chain_verifies_c": true
+    }
+  ]
+}

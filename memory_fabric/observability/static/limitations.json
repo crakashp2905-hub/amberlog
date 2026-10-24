@@ -1,0 +1,87 @@
+[
+ {
+  "area": "Security",
+  "limitation": "A plausible false claim about something the store has never seen, from a source with a clean record, looks like a true one. Claims that restate a corrected value, are far out of range, or contradict an established fact *are* caught and held for review; a claim from a new source is marked provisional.",
+  "what_to_do": "memory-fabric suspicious lists held claims. Require independent sources for consequential actions (ToolRule(min_independent_sources=2))."
+ },
+ {
+  "area": "Security",
+  "limitation": "Claim checks read numbers and identifiers (P7, and since 0.12.x codes with separators: H-14, PMP_0012, K/31). A free-text claim with no equipment id or value (\"the east wing is safe\") is not checked.",
+  "what_to_do": "Review free-text memories that matter before validating them."
+ },
+ {
+  "area": "Security",
+  "limitation": "A compromised established account can change its own facts. If a reviewer had validated the old value, the change is marked provisional (revises_validated) until someone validates it; a fact nobody else vouched for still changes freely, as an honest update would.",
+  "what_to_do": "Set ToolRule(refuse_provisional=True) on tools a compromised account must not drive. Revoke the credential (RUNBOOKS §1); incident shows what it wrote."
+ },
+ {
+  "area": "Security",
+  "limitation": "The injection screens are text screens. They catch common injection patterns and instructions addressed to the reader, not every paraphrase.",
+  "what_to_do": "Treat them as a filter, not a guarantee. Review imports from untrusted sources (review). Untrusted content still cannot authorise an action at the gate."
+ },
+ {
+  "area": "Security",
+  "limitation": "A source caught injecting is withheld everywhere its memories went, which can also hide a correct note it wrote. Only an injection finding triggers it, never an ordinary correction.",
+  "what_to_do": "MemoryFabric(withhold_hostile_sources=False) to turn it off; review the source's other memories with incident."
+ },
+ {
+  "area": "Security",
+  "limitation": "An offline peer serves withdrawn knowledge until it reconnects. A store cannot see through a partition.",
+  "what_to_do": "For consequential tools, ToolRule(require_fresh=True) with a LeaseBook: imported evidence needs a signed, unexpired lease from its origin, so no action relies on a withdrawal more than one lease lifetime old (freshness.py). Watch doctor and maintain --status for pending deliveries."
+ },
+ {
+  "area": "Security",
+  "limitation": "Tenancy within one store is an authorisation boundary. Someone holding the database file or the process can read every tenant.",
+  "what_to_do": "Pick an isolation pattern (DEPLOYMENT.md, tenant isolation patterns): store, process or host per tenant."
+ },
+ {
+  "area": "Security",
+  "limitation": "A database administrator can rewrite the log and its hash chain together. Tampering is detected only against a checkpoint kept elsewhere.",
+  "what_to_do": "Anchor checkpoints off the host: memory-fabric anchor --to git:... --to https://... from cron, then anchor --verify."
+ },
+ {
+  "area": "Security",
+  "limitation": "The action fence covers only tools run through ActionGate.execute. authorize followed by acting separately leaves a window, and a crash mid-action records nothing.",
+  "what_to_do": "Run protected tools through execute, and give them idempotency keys."
+ },
+ {
+  "area": "Security",
+  "limitation": "Writers wait while a fenced action or a maintenance cycle holds the store, up to about 2 seconds.",
+  "what_to_do": "Keep tool calls short. Put agents behind one agent-api per store."
+ },
+ {
+  "area": "Security",
+  "limitation": "Strict evidence independence blocks some genuinely independent evidence along with false corroboration.",
+  "what_to_do": "Off by default; turn it on only where corroboration is the main risk."
+ },
+ {
+  "area": "Security",
+  "limitation": "No independent security review has taken place.",
+  "what_to_do": "Treat security properties as tested, not certified."
+ },
+ {
+  "area": "Retrieval and memory quality",
+  "limitation": "It does not make answers more accurate than a good retriever. It governs what is remembered; it does not find better memories.",
+  "what_to_do": "Pair it with the best retriever you have (Embedder, rerankers)."
+ },
+ {
+  "area": "Retrieval and memory quality",
+  "limitation": "It rarely says \"I don't know\". If nothing relevant is stored, retrieval returns the closest memories.",
+  "what_to_do": "Use min_relevance, or check the scores before acting."
+ },
+ {
+  "area": "Retrieval and memory quality",
+  "limitation": "The built-in hashing embedder is weak on real text.",
+  "what_to_do": "Plug in a real embedding model through the Embedder protocol."
+ },
+ {
+  "area": "Retrieval and memory quality",
+  "limitation": "Model-compiled objectives can drop alternatives a session needed.",
+  "what_to_do": "State the objective in the agent's prompt; use compiled filters only after review."
+ },
+ {
+  "area": "Retrieval and memory quality",
+  "limitation": "A session summary larger than the context budget is skipped, not shortened.",
+  "what_to_do": "Give handoffs a budget of at least ~80 words, or retrieve the session's notes directly."
+ }
+]

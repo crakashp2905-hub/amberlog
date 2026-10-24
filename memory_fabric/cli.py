@@ -14,6 +14,7 @@ __stability__ = "stable"
 import argparse
 import json
 import os
+import subprocess
 import time
 import pathlib
 import platform
@@ -289,6 +290,80 @@ def cmd_attention(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         print(f"  {C.DIM}$ {item.action}{C.RESET}")
     # A non-zero exit lets this run as a health check in a script.
     return 1 if any(i.severity == "high" for i in items) else 0
+
+
+def cmd_anchor(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Anchor the current checkpoint somewhere the store's writer cannot rewrite.
+
+    A checkpoint only detects a rewritten log if it is kept beyond the reach
+    of whoever can rewrite it (security review O3). This makes that one
+    command, run from cron or a timer, to any mix of:
+
+    * `dir:/path`: append to `<path>/<store_id>.anchors.jsonl` (other storage);
+    * `git:/repo`: append there and commit (a repository the writer cannot push to);
+    * `http(s)://...`: POST the checkpoint as JSON (an audit service or chat hook).
+
+    `--verify PATH` checks the store against every anchor in a file or a
+    `dir:` directory and names the first one that no longer holds.
+    """
+    import urllib.request
+
+    from .integrity import Checkpoint
+
+    chain = fabric.log.chain
+    if args.verify:
+        path = pathlib.Path(args.verify.removeprefix("dir:").removeprefix("git:"))
+        if path.is_dir():
+            path = path / f"{fabric.store_id}.anchors.jsonl"
+        payloads = [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines()
+                    if line.strip()]
+        mine = [p for p in payloads if p.get("store_id") in (None, fabric.store_id)]
+        if not mine:
+            print(f"no anchors for store {fabric.store_id} in {path}", file=sys.stderr)
+            return 5
+        for payload in mine:
+            result = chain.verify_against(Checkpoint.from_json(payload))
+            if not result.ok:
+                print(f"{C.RED}anchor at seq {payload.get('seq')} no longer holds: "
+                      f"{result.detail}{C.RESET}", file=sys.stderr)
+                return 5
+        print(f"{C.GREEN}{len(mine)} anchor(s) hold{C.RESET}")
+        return 0
+
+    if not args.to:
+        print("give at least one --to dir:PATH | git:REPO | https://URL", file=sys.stderr)
+        return 2
+    record = {**chain.checkpoint().to_json(), "store_id": fabric.store_id,
+              "anchored_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}
+    line = json.dumps(record, sort_keys=True)
+    failed = 0
+    for target in args.to:
+        try:
+            if target.startswith(("http://", "https://")):
+                request = urllib.request.Request(target, data=line.encode(), method="POST",
+                                                 headers={"Content-Type": "application/json"})
+                with urllib.request.urlopen(request, timeout=10) as response:
+                    response.read()
+            elif target.startswith(("dir:", "git:")):
+                folder = pathlib.Path(target[4:])
+                folder.mkdir(parents=True, exist_ok=True)
+                name = f"{fabric.store_id}.anchors.jsonl"
+                with open(folder / name, "a", encoding="utf-8") as handle:
+                    handle.write(line + "\n")
+                if target.startswith("git:"):
+                    for cmd in (["add", name],
+                                ["-c", "user.name=memory-fabric", "-c",
+                                 "user.email=anchor@memory-fabric.invalid", "commit", "-q",
+                                 "-m", f"anchor {fabric.store_id} seq {record.get('seq')}"]):
+                        subprocess.run(["git", "-C", str(folder), *cmd], check=True,
+                                       capture_output=True)
+            else:
+                raise ValueError(f"unknown anchor target {target!r}")
+            print(f"anchored seq {record.get('seq')} to {target}")
+        except Exception as exc:  # noqa: BLE001 - each target reports separately
+            failed += 1
+            print(f"{C.RED}anchor to {target} failed: {exc}{C.RESET}", file=sys.stderr)
+    return 5 if failed else 0
 
 
 def cmd_checkpoint(fabric: MemoryFabric, args: argparse.Namespace) -> int:
@@ -1084,6 +1159,28 @@ def cmd_posture(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_receipt_verify(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Verify an action receipt's signature with a trusted public key. Needs no store."""
+    import base64
+
+    from .action_receipt import ReceiptInvalid, verify_receipt
+
+    doc = json.loads(pathlib.Path(args.path).read_text(encoding="utf-8"))
+    key = base64.b64decode(args.public_key) if args.public_key else None
+    try:
+        verify_receipt(doc, key)
+    except ReceiptInvalid as exc:
+        print(f"{C.RED}INVALID: {exc}{C.RESET}")
+        return 5
+    action, decision = doc["action"], doc["decision"]
+    trust = "trusted key" if key else "embedded key only (integrity, not identity)"
+    print(f"valid ({trust}): {action['agent_id']} -> {action['tool']}: "
+          f"{'ALLOWED' if decision['allowed'] else 'REFUSED'} "
+          f"({', '.join(decision['reason_codes'])}), {len(doc['evidence'])} evidence item(s), "
+          f"log seq {doc['log']['seq']}")
+    return 0
+
+
 def cmd_access_log_verify(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Check the dashboard access log's hash chain. Exit 0 intact, 5 broken."""
     from .observability.server import verify_access_log
@@ -1811,6 +1908,32 @@ def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
     return 0 if ok else 5
 
 
+def cmd_sandbox(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """A throwaway store full of deliberately wrong memories, opened in the dashboard.
+
+    Nothing touches `--db`: the store is created in a temporary directory, seeded
+    (`demo.seed_sandbox`: a poisoning and its retraction, a disagreement, a
+    leaked secret, a held contradicting claim, and gated actions, one of which
+    rested on evidence withdrawn afterwards), and served on localhost.
+    """
+    import tempfile
+
+    from .demo import seed_sandbox
+
+    folder = pathlib.Path(args.dir) if args.dir else pathlib.Path(tempfile.mkdtemp(prefix="mf-sandbox-"))
+    folder.mkdir(parents=True, exist_ok=True)
+    db = folder / "sandbox.db"
+    store = MemoryFabric(str(db), auto_activate=True)
+    try:
+        seed_sandbox(store)
+    finally:
+        store.close()
+    print(f"sandbox store: {db}  (delete the folder when done)")
+    if args.no_serve:
+        return 0
+    return main(["--db", str(db), "serve", "--port", str(args.port), "--no-maintain"])
+
+
 def cmd_demo(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Seed a store that exercises every panel, so the surfaces can be looked at."""
     from .demo import seed
@@ -2498,6 +2621,12 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("overview", cmd_overview, "Store health and what it can and cannot tell you")
     add("tenants", cmd_tenants, "Which tenants this store holds")
+    p = add("anchor", cmd_anchor,
+            "Anchor the integrity checkpoint off the store (dir:, git:, https://), or verify anchors")
+    p.add_argument("--to", action="append", metavar="TARGET",
+                   help="dir:PATH, git:REPO or an http(s) URL; repeat for several")
+    p.add_argument("--verify", metavar="PATH",
+                   help="an anchors file or dir: directory to check this store against")
     p = add("checkpoint", cmd_checkpoint,
             "Print an integrity checkpoint, or verify against a saved one")
     p.add_argument("--verify", metavar="FILE",
@@ -2760,6 +2889,11 @@ def build_parser() -> argparse.ArgumentParser:
 
     add("posture", cmd_posture,
         "Which security controls are on in this store, and the accepted gaps")
+    p = add("receipt-verify", cmd_receipt_verify,
+            "Verify a signed action receipt (exit 0 valid, 5 invalid); needs no store")
+    p.add_argument("path", help="the receipt JSON file")
+    p.add_argument("--public-key", help="the signer's Ed25519 public key, base64, obtained independently")
+
     p = add("access-log-verify", cmd_access_log_verify,
             "Check the dashboard access log's hash chain (exit 0 intact, 5 broken)")
     p.add_argument("path", help="the access log file (JSON lines)")
@@ -2908,6 +3042,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("dest", help="directory to restore into; must not exist")
 
     add("demo", cmd_demo, "WRITES: seed a demonstration store")
+    p = add("sandbox", cmd_sandbox,
+            "A throwaway store with deliberately wrong memories, opened in the dashboard")
+    p.add_argument("--port", type=int, default=8765)
+    p.add_argument("--dir", help="where to create it (default: a new temporary folder)")
+    p.add_argument("--no-serve", action="store_true", help="seed only; print the path")
     _fill_help(sub)
     return parser
 
@@ -3048,6 +3187,10 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "sandbox":  # creates its own store; opens no --db
+        return cmd_sandbox(None, args)  # type: ignore[arg-type]
+    if args.command == "receipt-verify":  # reads a file; opens no --db
+        return cmd_receipt_verify(None, args)  # type: ignore[arg-type]
     if args.command == "access-log-verify":  # reads a file; opens no --db
         return cmd_access_log_verify(None, args)  # type: ignore[arg-type]
 

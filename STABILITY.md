@@ -75,21 +75,26 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.txn`
 - `memory_fabric.vectors`
 
-## Beta (35)
+## Beta (42)
 
+- `memory_fabric.action_receipt`
 - `memory_fabric.actions`
 - `memory_fabric.adapters.claude`
 - `memory_fabric.adapters.claude_chat`
 - `memory_fabric.adapters.ollama`
 - `memory_fabric.agent_api`
+- `memory_fabric.answerability`
 - `memory_fabric.auditor`
 - `memory_fabric.authority`
 - `memory_fabric.branching`
 - `memory_fabric.chains`
 - `memory_fabric.conflicts`
+- `memory_fabric.consensus`
 - `memory_fabric.context_receipt`
 - `memory_fabric.correction`
+- `memory_fabric.dependence`
 - `memory_fabric.extraction`
+- `memory_fabric.freshness`
 - `memory_fabric.governance.directive`
 - `memory_fabric.hindsight`
 - `memory_fabric.incident`
@@ -101,6 +106,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.limits`
 - `memory_fabric.manager`
 - `memory_fabric.migrate`
+- `memory_fabric.observability.control`
 - `memory_fabric.observability.logs`
 - `memory_fabric.observability.server`
 - `memory_fabric.posture`
@@ -108,6 +114,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.relations`
 - `memory_fabric.rerank`
 - `memory_fabric.response`
+- `memory_fabric.retrieval_profiles`
 - `memory_fabric.review`
 - `memory_fabric.status`
 - `memory_fabric.tenancy`

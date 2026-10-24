@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<link rel="icon" href="data:,">
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Memory Fabric</title>
@@ -197,6 +198,11 @@
   .val-neg { color: var(--high); }
   .val-none { color: var(--faint); }
   footer { color: var(--faint); font-size: 12px; padding: 0 0 30px; }
+.guide { padding-left: 0; list-style: none; }
+.guide li { margin: 0 0 12px; }
+.guide button.link { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; color: inherit; }
+.why-form { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
+.why-form input { flex: 1 1 140px; min-width: 0; }
 </style>
 </head>
 <body>
@@ -211,7 +217,8 @@
     </div>
     <div class="tiles" id="tiles"></div>
     <nav id="nav">
-      <button data-tab="attention" aria-selected="true">Needs attention<span class="count" id="c-attention"></span></button>
+      <button data-tab="start" aria-selected="true">Start here</button>
+      <button data-tab="attention" aria-selected="false">Needs attention<span class="count" id="c-attention"></span></button>
       <button data-tab="review" aria-selected="false">Review<span class="count" id="c-review"></span></button>
       <button data-tab="memories" aria-selected="false">Memories<span class="count" id="c-memories"></span></button>
       <button data-tab="episodes" aria-selected="false">Episodes<span class="count" id="c-episodes"></span></button>
@@ -220,14 +227,32 @@
       <button data-tab="posture" aria-selected="false">Posture</button>
       <button data-tab="changes" aria-selected="false">Changes<span class="count" id="c-changes"></span></button>
       <button data-tab="context" aria-selected="false">Agent context</button>
-      <button data-tab="capabilities" aria-selected="false">Capabilities</button>
+      <button data-tab="actions" aria-selected="false">Actions<span class="count" id="c-actions"></span></button>
+      <button data-tab="capabilities" aria-selected="false">Capabilities &amp; limits</button>
     </nav>
   </div>
 </header>
 
 <main class="wrap">
 
-  <section id="tab-attention">
+  <section id="tab-start">
+    <h2>Memory Control Center</h2>
+    <div class="note">What your agents remember, where it came from, what it was used for, and what
+      changed. This page only reads. Every change is a command it shows you, so nothing happens
+      by a stray click.</div>
+    <ol class="guide" id="guide"></ol>
+  </section>
+
+  <section id="tab-actions" hidden>
+    <h2>Agent actions and their evidence</h2>
+    <div class="note">Every request to run a protected tool, with what the gate decided and the
+      memories it rested on. Open one to see each piece of evidence as it was then and as it is
+      now: an action whose evidence has since been withdrawn or revised is marked.</div>
+    <div id="actions-list"></div>
+    <div id="action-detail"></div>
+  </section>
+
+  <section id="tab-attention" hidden>
     <div id="diagnostics"></div>
     <h2>Needs attention</h2>
     <div id="attention-list"></div>
@@ -657,6 +682,17 @@ async function openDetail(id) {
     </dl>
     ${actionBlock(`memory-fabric --db <store> correct ${r.id} --apply --reason "<why>" --actor <you> --preview ${(detail.correction.digest || "").slice(0, 16)}`)}
 
+    <h3>Would retrieval show this?</h3>
+    <div class="sub">Re-traces retrieval's filters for one agent and question, without retrieving
+      (which would log an exposure).</div>
+    <div class="why-form"><input id="why-agent" placeholder="agent id (optional)">
+      <input id="why-q" placeholder="the agent's question (optional)">
+      <button id="why-go">Check</button></div>
+    <div id="why-out"></div>
+
+    <h3>Decisions that depended on this</h3>
+    <div id="dep-out" class="sub">Loading…</div>
+
     <h3>Why the system remembers this</h3>
     <dl class="kv">
       <dt>Created by</dt><dd>${esc(r.created_by)} <span class="id">(${esc(r.method)})</span></dd>
@@ -698,6 +734,31 @@ async function openDetail(id) {
     }).join("\n") || "no events"}</pre>`;
 
   $("drawer-close").addEventListener("click", closeDetail);
+  $("why-go").addEventListener("click", () => runWhy(r.id).catch(showError));
+  loadDependence(r.id).catch((err) => { $("dep-out").textContent = err.message; });
+}
+
+async function runWhy(id) {
+  const q = new URLSearchParams({agent: $("why-agent").value, q: $("why-q").value});
+  const w = await api(`/api/memories/${encodeURIComponent(id)}/why?${q}`);
+  $("why-out").innerHTML = `<p>${w.eligible
+      ? '<span class="badge active">would be eligible</span>'
+      : `<span class="badge high">excluded</span> first blocker: <b>${esc(w.first_blocker?.check)}</b>`}
+    ${w.rank ? ` · ranks ${w.rank} of ${w.eligible_pool}${w.within_default_k ? " (within the default k)" : " (beyond the default k = 5)"}` : ""}</p>
+    <table><tbody>${w.checks.map((c) => `<tr><td>${c.passed ? "✓" : "✗"}</td>
+      <td><b>${esc(c.check)}</b></td><td class="sub">${esc(c.detail)}</td></tr>`).join("")}</tbody></table>`;
+}
+
+async function loadDependence(id) {
+  const d = await api(`/api/memories/${encodeURIComponent(id)}/dependence`);
+  const row = (x) => `<li>#${x.seq} ${esc(x.agent_id)} → <b>${esc(x.tool)}</b>
+    <span class="id">${esc(x.claim_id || "")}</span></li>`;
+  $("dep-out").innerHTML = (!d.depended.length && !d.would_stand.length)
+    ? "No recorded action rested on this memory or anything derived from it."
+    : `${d.depended.length ? `<div><span class="badge high">review</span> these would not have
+        been allowed without it:</div><ul>${d.depended.map(row).join("")}</ul>` : ""}
+       ${d.would_stand.length ? `<div><span class="badge low">would stand</span> independent
+        evidence remains:</div><ul>${d.would_stand.map(row).join("")}</ul>` : ""}`;
 }
 
 function closeDetail() { $("drawer-bg").hidden = true; }
@@ -785,6 +846,60 @@ async function showReceipt(id) {
       `<tr><td class="mono">${esc(x.id)}</td><td>${esc(x.reason_code)}</td></tr>`).join("")}</tbody></table>` : ""}`;
 }
 
+async function loadStart() {
+  const o = OVERVIEW || await api("/api/overview");
+  const [att, rev, acts] = await Promise.all([api("/api/attention"), api("/api/review"),
+                                              api("/api/actions?limit=1000")]);
+  const changed = acts.filter((a) => a.allowed).length;
+  const steps = [
+    ["attention", `Check what needs a person`, `${att.length} item(s): withdrawn knowledge still in
+      use, held claims, owed retractions.`],
+    ["review", `Review new memories`, `${rev.length} candidate(s) waiting. Nothing reaches an agent
+      until it is validated.`],
+    ["memories", `Inspect any memory`, `Open one to see where it came from, who has seen it, what
+      depends on it, whether retrieval would show it, and which actions rested on it.`],
+    ["actions", `Audit what agents did`, `${acts.length} gated request(s), ${changed} allowed. Each shows
+      the evidence then and now.`],
+    ["capabilities", `Know the limits`, `What this store does not protect against, and what to do
+      about each.`],
+  ];
+  $("guide").innerHTML = steps.map(([tab, title, text], i) => `<li><button class="link" data-goto="${tab}">
+    ${i + 1}. ${esc(title)}</button><div class="sub">${text}</div></li>`).join("");
+  for (const b of $("guide").querySelectorAll("[data-goto]")) {
+    b.addEventListener("click", () => showTab(b.dataset.goto));
+  }
+  void o;
+}
+
+async function loadActions() {
+  const rows = await api("/api/actions");
+  $("c-actions").textContent = rows.length ? `(${rows.length})` : "";
+  $("action-detail").innerHTML = "";
+  $("actions-list").innerHTML = rows.length ? `<table><thead><tr><th>#</th><th>agent</th>
+    <th>tool</th><th>decision</th><th>evidence</th></tr></thead><tbody>${rows.map((a) => `
+    <tr class="link" data-seq="${a.seq}"><td>${a.seq}</td><td>${esc(a.agent_id)}</td>
+    <td><b>${esc(a.tool)}</b></td><td>${a.allowed ? badge("allowed", "low") : badge("refused", "high")}
+    <span class="sub">${esc(a.reason_codes.join(", "))}</span></td><td>${a.evidence}</td></tr>`).join("")}
+    </tbody></table>` : `<div class="sub">No gated actions yet. Protected tools run through
+    <code>ActionGate</code> appear here.</div>`;
+  for (const tr of $("actions-list").querySelectorAll("[data-seq]")) {
+    onActivate(tr, () => showAction(tr.dataset.seq).catch(showError));
+  }
+}
+
+async function showAction(seq) {
+  const a = await api(`/api/actions/${seq}`);
+  $("action-detail").innerHTML = `<h3>Action #${a.seq}: ${esc(a.decision.tool)} by ${esc(a.agent_id)}</h3>
+    <p>${a.decision.allowed ? badge("allowed", "low") : badge("refused", "high")}
+      ${esc((a.decision.reason_codes || []).join(", "))}
+      ${a.still_holds === false ? badge("evidence changed since", "high") : ""}</p>
+    <table><thead><tr><th>memory</th><th>then</th><th>now</th><th>claim check</th></tr></thead>
+    <tbody>${a.evidence.map((x) => `<tr><td><span class="link link-id" data-id="${esc(x.memory_id)}">
+      ${esc(x.memory_id)}</span><div class="sub">${esc(x.content_now || "")}</div></td>
+      <td>v${x.version_then}</td><td>${x.version_now ? "v" + x.version_now : ""} ${badge(x.state_now)}</td>
+      <td>${esc(x.claim_check_now || "")}</td></tr>`).join("")}</tbody></table>`;
+}
+
 async function loadCapabilities() {
   const data = await api("/api/capabilities");
   const order = ["available", "experimental", "planned", "unsupported"];
@@ -797,13 +912,19 @@ async function loadCapabilities() {
       ${c.limitations.map((l) => `<div class="sub">Limit: ${esc(l)}</div>`).join("")}</td></tr>`).join("")}
       </tbody></table>` : "";
   }).join("");
+  const lims = await api("/api/limitations");
+  $("capabilities-list").innerHTML += `<h3>Known limitations</h3><table><tbody>${lims.map((l) => `<tr>
+    <td><span class="badge medium">${esc(l.area)}</span></td><td>${esc(l.limitation)}
+    <div class="sub">What to do: ${esc(l.what_to_do)}</div></td></tr>`).join("")}</tbody></table>`;
 }
 
 /* ---------- wiring ---------- */
 
-const TABS = ["attention", "review", "memories", "episodes", "search", "lifecycle", "posture",
-  "changes", "context", "capabilities"];
+const TABS = ["start", "attention", "review", "memories", "episodes", "search", "lifecycle", "posture",
+  "changes", "context", "actions", "capabilities"];
 const LOADERS = {
+  start: loadStart,
+  actions: loadActions,
   attention: loadAttention,
   review: loadReview,
   posture: loadPosture,
@@ -898,9 +1019,9 @@ async function fillEnums() {
   } catch (err) {
     showError(err);
   }
-  let tab = "attention";
+  let tab = "start";
   try { tab = localStorage.getItem("mf.tab") || tab; } catch (_) {}
-  showTab(TABS.includes(tab) ? tab : "attention");
+  showTab(TABS.includes(tab) ? tab : "start");
   // Counts for the unvisited tabs, so the nav is informative on arrival.
   api("/api/memories?limit=1000").then((r) => { $("c-memories").textContent = `(${r.length})`; }).catch(() => {});
   api("/api/episodes?limit=1000").then((r) => { $("c-episodes").textContent = `(${r.length})`; }).catch(() => {});

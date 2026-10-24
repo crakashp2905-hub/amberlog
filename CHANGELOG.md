@@ -5,6 +5,21 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Fixed
+- **`min_independent_sources` above one was not enforced** unless `independent_support` was also listed among the required checks. `ToolRule(min_independent_sources=2)` let a single-source certificate through, so the corroboration defence recommended for consequential tools did nothing. Asking for more than one source now implies the check. Found by C2.
+- **Agent API `verify` on a withdrawn memory the agent never recalled** answered "recall or fetch first" instead of "not usable", because withdrawn memories no longer come back from recall. It now fetches under the agent's own permission check and answers directly; unknown and other-tenant ids stay opaque. Found by the multi-agent pilot.
+
+### Added: operating modes, guarantees and the Control Center
+- **Answerability** (`answerability.py`): a verdict on the evidence (answerable, conflicting, insufficient, undetermined), separate from retrieval scores. `RetrievalResult.answerability()`; the agent API's `recall` returns it. Evaluated with real models (A1, A1-h): an instructed model already abstains perfectly on this world, so the verdict ships as a reported signal and an optional gate.
+- **Retrieval profiles** (`retrieve(profile=..., method=...)`): `precise`, `conversational`, `semantic`, `multi_hop` and `audit`, each citing its measurement, plus a per-call ranking method.
+- **Strict freshness** (`freshness.py`, `ToolRule(require_fresh=True)`): imported evidence needs a signed, unexpired lease from its origin, so no protected action relies on a withdrawal at an offline peer for more than one lease lifetime.
+- **`memory-fabric anchor`**: checkpoint anchoring in one command to `dir:`, `git:` or `https://` targets, with `--verify`.
+- **Signed action receipts** (`action_receipt.py`, `mf-action-receipt/1`): Ed25519, verifiable with the public key alone, and carrying hashes, never content. `memory-fabric receipt-verify`.
+- **Decision dependence** (`dependence.py`): which recorded decisions depended on a corrected memory, by counterfactual through the product's own verifier.
+- **Consensus by independent source** (`consensus.py`): repetition is not corroboration, and artificial consensus is flagged.
+- **Memory Control Center** (dashboard): a guided start page, agent actions with their evidence then and now, a "would retrieval show this?" trace, decision dependence and known limitations. `memory-fabric sandbox` seeds a store with deliberately wrong memories and opens it in the dashboard.
+- **Tenant isolation patterns** (DEPLOYMENT.md), **PostgreSQL failover runbook** (OPERATIONS §4b), and the team review flow (validate *and* share).
+
 ### Added: staging run, real-model summaries, related work, review kits
 
 - `experiments/staging_run.py`: the production deployment end to end on

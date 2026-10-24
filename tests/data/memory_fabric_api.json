@@ -54,7 +54,7 @@
   "request_retraction": "self, memory_id: str, reason: str, recipients: Sequence[str], actor: str='operator', basis: str | WithdrawalBasis | None=None",
   "resolve": "self, hypothesis_set: str, winner_id: str | None, design: Mapping[str, Any], results: Mapping[str, Any], actor: str='operator'",
   "retractions_since": "self, sequence: int",
-  "retrieve": "self, agent_id: str, query: str, context: Mapping[str, Any] | None=None, k: int=5, episode_id: str | None=None, pool: int | None=None, include_contested: bool=False, step: int=0, min_relevance: float=MIN_RELEVANCE, tenant_id: str | None=None, as_of: int | None=None, until: int | None=None, group_by_source_root: bool=True, expand_lineage: int=1, follow_relations: bool=False, entities: Sequence[str]=(), use_extraction: bool=False, objective: Any=None",
+  "retrieve": "self, agent_id: str, query: str, context: Mapping[str, Any] | None=None, k: int=5, episode_id: str | None=None, pool: int | None=None, include_contested: bool=False, step: int=0, min_relevance: float=MIN_RELEVANCE, tenant_id: str | None=None, as_of: int | None=None, until: int | None=None, group_by_source_root: bool=True, expand_lineage: int=1, follow_relations: bool=False, entities: Sequence[str]=(), use_extraction: bool=False, objective: Any=None, profile: str | None=None, method: str | None=None",
   "revise": "self, memory_id: str, content: str, agent_id: str, reason: str, method: str | ProvenanceMethod=ProvenanceMethod.CONSOLIDATED",
   "session": "self, agent_id: str, task_id: str, context: Mapping[str, Any] | None=None, seed: int | None=None",
   "share": "self, memory_id: str, scope: str | Scope, actor: str='operator', granted_capabilities: Iterable[str]=()",

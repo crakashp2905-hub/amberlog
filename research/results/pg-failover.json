@@ -1,0 +1,35 @@
+{
+  "commit": "bea61a0",
+  "results": [
+    {
+      "mode": "sync",
+      "promotion_s": 0.11,
+      "writes_block_after_promotion": true,
+      "reconnect_s": 0.11,
+      "writes_attempted": 120,
+      "acknowledged": 120,
+      "failed_writes": 0,
+      "acknowledged_lost": 0,
+      "acknowledged_lost_before_kill": 0,
+      "chain_verifies": true,
+      "seq_gapless": true,
+      "writes_after_failover": 60,
+      "doctor_sound": true
+    },
+    {
+      "mode": "async",
+      "promotion_s": 0.11,
+      "writes_block_after_promotion": false,
+      "reconnect_s": 0.11,
+      "writes_attempted": 120,
+      "acknowledged": 120,
+      "failed_writes": 0,
+      "acknowledged_lost": 0,
+      "acknowledged_lost_before_kill": 0,
+      "chain_verifies": true,
+      "seq_gapless": true,
+      "writes_after_failover": 60,
+      "doctor_sound": true
+    }
+  ]
+}

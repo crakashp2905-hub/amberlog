@@ -1,0 +1,112 @@
+{
+  "commit": "0bdb2c3",
+  "rows": [
+    {
+      "seed": 1,
+      "affected": 6,
+      "depended_truth": 3,
+      "graph": {
+        "flagged": 6,
+        "recall": 1.0,
+        "precision": 0.5
+      },
+      "counterfactual": {
+        "flagged": 1,
+        "recall": 0.3333333333333333,
+        "precision": 1.0
+      },
+      "oracle": {
+        "flagged": 3,
+        "recall": 1.0,
+        "precision": 1.0
+      }
+    },
+    {
+      "seed": 2,
+      "affected": 7,
+      "depended_truth": 3,
+      "graph": {
+        "flagged": 7,
+        "recall": 1.0,
+        "precision": 0.42857142857142855
+      },
+      "counterfactual": {
+        "flagged": 3,
+        "recall": 1.0,
+        "precision": 1.0
+      },
+      "oracle": {
+        "flagged": 3,
+        "recall": 1.0,
+        "precision": 1.0
+      }
+    },
+    {
+      "seed": 3,
+      "affected": 8,
+      "depended_truth": 5,
+      "graph": {
+        "flagged": 8,
+        "recall": 1.0,
+        "precision": 0.625
+      },
+      "counterfactual": {
+        "flagged": 2,
+        "recall": 0.4,
+        "precision": 1.0
+      },
+      "oracle": {
+        "flagged": 5,
+        "recall": 1.0,
+        "precision": 1.0
+      }
+    },
+    {
+      "seed": 4,
+      "affected": 10,
+      "depended_truth": 2,
+      "graph": {
+        "flagged": 10,
+        "recall": 1.0,
+        "precision": 0.2
+      },
+      "counterfactual": {
+        "flagged": 1,
+        "recall": 0.5,
+        "precision": 1.0
+      },
+      "oracle": {
+        "flagged": 2,
+        "recall": 1.0,
+        "precision": 1.0
+      }
+    },
+    {
+      "seed": 5,
+      "affected": 8,
+      "depended_truth": 3,
+      "graph": {
+        "flagged": 8,
+        "recall": 1.0,
+        "precision": 0.375
+      },
+      "counterfactual": {
+        "flagged": 2,
+        "recall": 0.6666666666666666,
+        "precision": 1.0
+      },
+      "oracle": {
+        "flagged": 3,
+        "recall": 1.0,
+        "precision": 1.0
+      }
+    }
+  ],
+  "verdict": {
+    "C2a": "NOT SUPPORTED",
+    "C2b": "SUPPORTED",
+    "graph_precision": 0.4257142857142857,
+    "counterfactual_precision": 1.0,
+    "bar": 0.6554285714285715
+  }
+}

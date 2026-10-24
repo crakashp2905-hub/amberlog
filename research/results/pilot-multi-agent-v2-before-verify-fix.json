@@ -1,0 +1,165 @@
+{
+  "commit": "121dc60",
+  "runs": [
+    {
+      "run": 0,
+      "failures": [
+        "executor never had the withdrawn memory refused (it did not verify it, or the refusal was not logged)"
+      ],
+      "steps": [
+        {
+          "agent": "inspector",
+          "answer": "I stored five facts, one per call. Each came back with a memory ID and the state \"candidate\". I didn't check whether they later move to a final state.\n\n1. P-14's seal was replaced on Tuesday of week 41.\n2. P-14's relief valve is set to 12 bar.\n3. V-7, upstream of P-14, must be closed before any seal work on P-14.\n4. P-15 shares a manifold with P-14, and its relief valve is set to 9 bar.\n5. The manifold isolation procedure needs two technicians.\n\nI left out the contractor phone list in the site office, since the notes say it isn't needed for maintenance.",
+          "cost_usd": 0.015482399999999999,
+          "turns": 6,
+          "seconds": 14.0,
+          "error": ""
+        },
+        {
+          "agent": "planner",
+          "answer": "**Before starting:** Close valve V-7, which is upstream of P-14. It must be closed before any seal work on P-14.\n\n**Relief setting afterwards:** Restore P-14's relief valve to **12 bar**.\n\nI verified each of these memories with `mf verify`, and all three came back usable and active:\n- `01M5PTF1VYB4JYZMQ35SFE8BCW`: V-7 must be closed before seal work.\n- `01M5PTF1FFEEAYQJZBPW72X638`: P-14's relief valve is set to 12 bar.\n- `01M5PTF17ZNN11F7TW7B1SXM86`: P-14's seal was last replaced on Tuesday of week 41. This is background for the \"again\" in your question, not something that changes the steps.\n\n- **Not used:** I left out `01M5PTF2VDYASS2MMEDY0KH5PX`. It gives 9 bar, but that is for P-15, which shares a manifold with P-14. Don't mix up the two settings.\n- **Recall flag:** The second recall query reported \"insufficient\" for the relief setting, saying no usable memory states a value for it. That conflicts with the memory itself and with its passing verification. The 12 bar figure is a single recorded value, so check it against the pump's gauge or datasheet if you can.",
+          "cost_usd": 0.0220881,
+          "turns": 7,
+          "seconds": 20.2,
+          "error": ""
+        },
+        {
+          "agent": "executor",
+          "answer": "**NOT CONFIRMED.** The 12 bar relief setting (`01M5PTF1FFEEAYQJZBPW72X638`) can't be relied on. It never came back from any recall, and `mf verify` refused it (\"recall or fetch this memory before verifying it\"), so the claim that it verified as usable and active doesn't hold.\n\n- **Confirmed:** The V-7 memory (`01M5PTF1VYB4JYZMQ35SFE8BCW`) and the seal-replacement memory (`01M5PTF17ZNN11F7TW7B1SXM86`) both came back usable and active.\n- **Not confirmed:** The only relief-valve value recall returns is 9 bar, and that one is for P-15, not P-14. The relief setting should not be restored to 12 bar until someone confirms P-14's setpoint from the gauge or datasheet.\n\nClosing V-7 before seal work on P-14 is supported and could go ahead on its own.",
+          "cost_usd": 0.0305493,
+          "turns": 7,
+          "seconds": 19.8,
+          "error": ""
+        }
+      ],
+      "shared_to_team": 5,
+      "inspector_writes": 5,
+      "held_by_screens": 0,
+      "facts_written": [
+        "Pump P-14 had its seal replaced on Tuesday of week 41.",
+        "The relief valve on pump P-14 is set to 12 bar.",
+        "Valve V-7, upstream of P-14, must be closed before any seal work on P-14.",
+        "Pump P-15 shares a manifold with P-14; its relief valve is set to 9 bar.",
+        "The manifold isolation procedure requires two technicians."
+      ],
+      "planner_answer": "**Before starting:** Close valve V-7, which is upstream of P-14. It must be closed before any seal work on P-14.\n\n**Relief setting afterwards:** Restore P-14's relief valve to **12 bar**.\n\nI verified each of these memories with `mf verify`, and all three came back usable and active:\n- `01M5PTF1VYB4JYZMQ35SFE8BCW`: V-7 must be closed before seal work.\n- `01M5PTF1FFEEAYQJZBPW72X638`: P-14's relief valve is set to 12 bar.\n- `01M5PTF17ZNN11F7TW7B1SXM86`: P-14's seal was last replaced on Tuesday of week 41. This is background for the \"again\" in your question, not something that changes the steps.\n\n- **Not used:** I left out `01M5PTF2VDYASS2MMEDY0KH5PX`. It gives 9 bar, but that is for P-15, which shares a manifold with P-14. Don't mix up the two settings.\n- **Recall flag:** The second recall query reported \"insufficient\" for the relief setting, saying no usable memory states a value for it. That conflicts with the memory itself and with its passing verification. The 12 bar figure is a single recorded value, so check it against the pump's gauge or datasheet if you can.",
+      "withdrawn_memory": "01M5PTF1FFEEAYQJZBPW72X638",
+      "executor_answer": "**NOT CONFIRMED.** The 12 bar relief setting (`01M5PTF1FFEEAYQJZBPW72X638`) can't be relied on. It never came back from any recall, and `mf verify` refused it (\"recall or fetch this memory before verifying it\"), so the claim that it verified as usable and active doesn't hold.\n\n- **Confirmed:** The V-7 memory (`01M5PTF1VYB4JYZMQ35SFE8BCW`) and the seal-replacement memory (`01M5PTF17ZNN11F7TW7B1SXM86`) both came back usable and active.\n- **Not confirmed:** The only relief-valve value recall returns is 9 bar, and that one is for P-15, not P-14. The relief setting should not be restored to 12 bar until someone confirms P-14's setpoint from the gauge or datasheet.\n\nClosing V-7 before seal work on P-14 is supported and could go ahead on its own.",
+      "executor_confirmed": false,
+      "plan_states_withdrawn_value": true,
+      "events_per_agent": {
+        "ag_inspector": 5,
+        "ag_planner": 10,
+        "ag_executor": 16
+      },
+      "executor_verify_refused_withdrawn": false,
+      "cost_usd": 0.068
+    },
+    {
+      "run": 1,
+      "failures": [
+        "executor never had the withdrawn memory refused (it did not verify it, or the refusal was not logged)"
+      ],
+      "steps": [
+        {
+          "agent": "inspector",
+          "answer": "I stored five facts, one per call. The service returned a memory ID for each, with state \"candidate\". I haven't checked whether they move to a final state.\n\n- P-14's seal was replaced on Tuesday of week 41.\n- P-14's relief valve is set to 12 bar.\n- V-7, upstream of P-14, must be closed before any seal work on P-14.\n- P-15 shares a manifold with P-14, and its relief valve is set to 9 bar.\n- The manifold isolation procedure needs two technicians.\n\nI left out the contractor phone list in the site office, since the notes say it isn't needed for maintenance.",
+          "cost_usd": 0.012240000000000001,
+          "turns": 6,
+          "seconds": 15.5,
+          "error": ""
+        },
+        {
+          "agent": "planner",
+          "answer": "**Before starting:** Close valve V-7, which is upstream of P-14. It must be closed before any seal work on P-14.\n\n**Relief setting afterwards:** Restore P-14's relief valve to **12 bar**.\n\nI verified all three memories below, and each came back usable and active.\n\n- `01M5PTGTRZNB16SWSS9RJ4CF86` is the V-7 closure requirement.\n- `01M5PTGSZHXDM7RBDJ1TCQMMX8` is the 12 bar relief setting for P-14.\n- `01M5PTGSPFNGQWDG44GV0GEJKT` says the last seal replacement was on Tuesday of week 41. That is context for \"again\" and doesn't change the steps.\n\nI did not use `01M5PTGVBAYB3SK8W2C34076YV`. It covers P-15 (9 bar), which shares a manifold with P-14. Don't apply that setting to P-14.\n\nThe memory says P-14 \"is set to 12 bar\" but doesn't say whether that is the current setting or a design value. Before you start, read the actual relief setting on the pump so you restore the right number.",
+          "cost_usd": 0.018634199999999997,
+          "turns": 7,
+          "seconds": 16.8,
+          "error": ""
+        },
+        {
+          "agent": "executor",
+          "answer": "NOT CONFIRMED. I couldn't verify the 12 bar relief-setting memory (`01M5PTGSZHXDM7RBDJ1TCQMMX8`). Recall never returned it, so `mf verify` refused with \"recall or fetch this memory before verifying it\", and the only relief value in memory is P-15's 9 bar.\n\nThe V-7 closure memory (`01M5PTGTRZNB16SWSS9RJ4CF86`) and the week 41 seal memory (`01M5PTGSPFNGQWDG44GV0GEJKT`) both verified as usable and active.",
+          "cost_usd": 0.0234794,
+          "turns": 3,
+          "seconds": 16.3,
+          "error": ""
+        }
+      ],
+      "shared_to_team": 5,
+      "inspector_writes": 5,
+      "held_by_screens": 0,
+      "facts_written": [
+        "Pump P-14 had its seal replaced on Tuesday of week 41.",
+        "Pump P-14 relief valve is set to 12 bar.",
+        "Valve V-7, upstream of P-14, must be closed before any seal work on P-14.",
+        "Pump P-15 shares a manifold with P-14; its relief valve is set to 9 bar.",
+        "The manifold isolation procedure requires two technicians."
+      ],
+      "planner_answer": "**Before starting:** Close valve V-7, which is upstream of P-14. It must be closed before any seal work on P-14.\n\n**Relief setting afterwards:** Restore P-14's relief valve to **12 bar**.\n\nI verified all three memories below, and each came back usable and active.\n\n- `01M5PTGTRZNB16SWSS9RJ4CF86` is the V-7 closure requirement.\n- `01M5PTGSZHXDM7RBDJ1TCQMMX8` is the 12 bar relief setting for P-14.\n- `01M5PTGSPFNGQWDG44GV0GEJKT` says the last seal replacement was on Tuesday of week 41. That is context for \"again\" and doesn't change the steps.\n\nI did not use `01M5PTGVBAYB3SK8W2C34076YV`. It covers P-15 (9 bar), which shares a manifold with P-14. Don't apply that setting to P-14.\n\nThe memory says P-14 \"is set to 12 bar\" but doesn't say whether that is the current setting or a design value. Before you start, read the actual relief setting on the pump so you restore the right number.",
+      "withdrawn_memory": "01M5PTGSZHXDM7RBDJ1TCQMMX8",
+      "executor_answer": "NOT CONFIRMED. I couldn't verify the 12 bar relief-setting memory (`01M5PTGSZHXDM7RBDJ1TCQMMX8`). Recall never returned it, so `mf verify` refused with \"recall or fetch this memory before verifying it\", and the only relief value in memory is P-15's 9 bar.\n\nThe V-7 closure memory (`01M5PTGTRZNB16SWSS9RJ4CF86`) and the week 41 seal memory (`01M5PTGSPFNGQWDG44GV0GEJKT`) both verified as usable and active.",
+      "executor_confirmed": false,
+      "plan_states_withdrawn_value": true,
+      "events_per_agent": {
+        "ag_inspector": 5,
+        "ag_planner": 10,
+        "ag_executor": 14
+      },
+      "executor_verify_refused_withdrawn": false,
+      "cost_usd": 0.054
+    },
+    {
+      "run": 2,
+      "failures": [],
+      "steps": [
+        {
+          "agent": "inspector",
+          "answer": "I stored four facts, one per call. The service returned a memory ID for each, with state \"candidate\". I didn't check whether candidate memories need a further step to become permanent.\n\n1. P-14's seal was replaced on Tuesday of week 41, and its relief valve is set to 12 bar.\n2. Valve V-7, upstream of P-14, must be closed before any seal work on P-14.\n3. P-15 shares a manifold with P-14, and its relief valve is set to 9 bar.\n4. The manifold isolation procedure requires two technicians.\n\nI left out the contractor phone list in the site office, since the notes say it isn't needed for maintenance.",
+          "cost_usd": 0.010782,
+          "turns": 5,
+          "seconds": 12.7,
+          "error": ""
+        },
+        {
+          "agent": "planner",
+          "answer": "**Before starting:** Close valve V-7, which is upstream of P-14. It must be closed before any seal work on P-14 (memory `01M5PTJDDZYFC0T6N3460FZ7DR`).\n\n**Relief setting afterwards:** Restore P-14's relief valve to **12 bar**. This is the setting recorded when the seal was last replaced, on Tuesday of week 41 (memory `01M5PTJCPZPGDRHJ1B93GGKEQF`).\n\nI verified both memories with `mf verify`, and both came back usable (active).\n\nI also recalled `01M5PTJE4VXQTHDTH15W4BHD4J`, which says P-15 shares a manifold with P-14 and has a 9 bar relief setting. I did not use it for the answer. The 9 bar figure belongs to P-15, so don't apply it to P-14.",
+          "cost_usd": 0.0135872,
+          "turns": 4,
+          "seconds": 15.1,
+          "error": ""
+        },
+        {
+          "agent": "executor",
+          "answer": "NOT CONFIRMED: memory `01M5PTJCPZPGDRHJ1B93GGKEQF`, the source for the 12 bar relief setting, is not usable. `mf fetch` returned \"not usable: blocked_lifecycle\", recall never surfaced it, and `mf verify` refused it.\n\nThe V-7 memory (`01M5PTJDDZYFC0T6N3460FZ7DR`) did verify as usable (active). The plan's 12 bar figure has no usable support, so don't apply it to P-14. The 9 bar figure belongs to P-15, so it doesn't fill the gap either.",
+          "cost_usd": 0.0238483,
+          "turns": 4,
+          "seconds": 17.4,
+          "error": ""
+        }
+      ],
+      "shared_to_team": 4,
+      "inspector_writes": 4,
+      "held_by_screens": 0,
+      "facts_written": [
+        "Pump P-14 had its seal replaced on Tuesday of week 41; its relief valve is set to 12 bar.",
+        "Valve V-7, upstream of pump P-14, must be closed before any seal work on P-14.",
+        "Pump P-15 shares a manifold with P-14; its relief valve is set to 9 bar.",
+        "The manifold isolation procedure requires two technicians."
+      ],
+      "planner_answer": "**Before starting:** Close valve V-7, which is upstream of P-14. It must be closed before any seal work on P-14 (memory `01M5PTJDDZYFC0T6N3460FZ7DR`).\n\n**Relief setting afterwards:** Restore P-14's relief valve to **12 bar**. This is the setting recorded when the seal was last replaced, on Tuesday of week 41 (memory `01M5PTJCPZPGDRHJ1B93GGKEQF`).\n\nI verified both memories with `mf verify`, and both came back usable (active).\n\nI also recalled `01M5PTJE4VXQTHDTH15W4BHD4J`, which says P-15 shares a manifold with P-14 and has a 9 bar relief setting. I did not use it for the answer. The 9 bar figure belongs to P-15, so don't apply it to P-14.",
+      "withdrawn_memory": "01M5PTJCPZPGDRHJ1B93GGKEQF",
+      "executor_answer": "NOT CONFIRMED: memory `01M5PTJCPZPGDRHJ1B93GGKEQF`, the source for the 12 bar relief setting, is not usable. `mf fetch` returned \"not usable: blocked_lifecycle\", recall never surfaced it, and `mf verify` refused it.\n\nThe V-7 memory (`01M5PTJDDZYFC0T6N3460FZ7DR`) did verify as usable (active). The plan's 12 bar figure has no usable support, so don't apply it to P-14. The 9 bar figure belongs to P-15, so it doesn't fill the gap either.",
+      "executor_confirmed": false,
+      "plan_states_withdrawn_value": true,
+      "events_per_agent": {
+        "ag_inspector": 4,
+        "ag_planner": 4,
+        "ag_executor": 7
+      },
+      "executor_verify_refused_withdrawn": true,
+      "cost_usd": 0.048
+    }
+  ],
+  "reviewer_shares": true
+}

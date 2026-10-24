@@ -168,3 +168,35 @@ def seed(fabric: MemoryFabric) -> dict[str, Any]:
     finally:
         fabric._clock = original_clock
         fabric.policy = original_policy
+
+
+def seed_sandbox(fabric: MemoryFabric) -> dict[str, Any]:
+    """`seed`, plus what the Control Center's newer views need: gated actions and a held claim.
+
+    - an action allowed on evidence that is withdrawn afterwards (the Actions view marks it);
+    - an action with a second, independent source (a correction leaves it standing);
+    - a refused action;
+    - a contradicting "update" from a new account, held as suspicious.
+    """
+    from .actions import ActionGate, ActionPolicy, ToolRule
+
+    out = seed(fabric)
+    gauge = fabric.remember("ag_field", "Valve V-7 pressure reads 4 bar at the coastal pump.",
+                            scope="team")
+    fabric.validate(gauge, actor="supervisor")
+    second = fabric.remember("ag_field_2", "Gauge G-2 shows valve V-7 holding 4 bar.", scope="team")
+    fabric.validate(second, actor="supervisor")
+    gate = ActionGate(fabric, ActionPolicy(
+        tools={"open_valve": ToolRule("open_valve"),
+               "drain_tank": ToolRule("drain_tank", min_independent_sources=2)},
+        grants={"ag_ops": frozenset({"open_valve", "drain_tank"})}))
+    gate.authorize("open_valve", "ag_ops", fabric.certify("open-valve-7", [gauge], "ag_ops"))
+    gate.authorize("open_valve", "ag_ops",
+                   fabric.certify("open-valve-7-checked", [gauge, second], "ag_ops"))
+    gate.authorize("drain_tank", "ag_ops", fabric.certify("drain-tank-3", [gauge], "ag_ops"))
+    fabric.remember("ag_new_contractor", "Update for valve V-7: pressure changed to 9 bar.",
+                    scope="team")
+    fabric.quarantine(gauge, reason="the gauge was miscalibrated", actor="safety",
+                      basis="contradicted")
+    out.update({"sandbox_gauge": gauge, "sandbox_second": second})
+    return out

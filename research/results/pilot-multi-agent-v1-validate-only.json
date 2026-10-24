@@ -1,0 +1,162 @@
+{
+  "commit": "e27e219",
+  "runs": [
+    {
+      "run": 0,
+      "failures": [
+        "executor never had the withdrawn memory refused (it did not verify it, or the refusal was not logged)",
+        "executor CONFIRMED a plan resting on a withdrawn fact"
+      ],
+      "steps": [
+        {
+          "agent": "inspector",
+          "answer": "I stored five facts, one per call. The service accepted all five, but each came back with state \"candidate\" rather than a final state. I haven't checked whether they get promoted later.\n\n1. P-14's seal was replaced on Tuesday of week 41.\n2. P-14's relief valve is set to 12 bar.\n3. V-7, upstream of P-14, must be closed before any seal work on P-14.\n4. P-15 is on the same manifold as P-14, and its relief valve is set to 9 bar.\n5. The manifold isolation procedure takes two technicians.\n\nI left out the contractor phone list in the site office, since the notes say it isn't needed for maintenance.",
+          "cost_usd": 0.022122499999999996,
+          "turns": 6,
+          "seconds": 13.9,
+          "error": ""
+        },
+        {
+          "agent": "planner",
+          "answer": "I can't answer this from memory. Every recall returned no memories, so I have no memory ids to cite and nothing to verify.\n\nI ran five queries: \"pump P-14 seal replacement\", \"P-14 relief valve setting\", \"P-14\", \"pump seal lockout isolation procedure\" and \"relief setting restore after maintenance\". The service said no usable memory states a value for P-14 or for a relief setting. For the two generic procedure queries it said the question names no identifier to check cover for.\n\nI won't guess a relief setting or a pre-work checklist, because a wrong pressure value could be unsafe. Before tomorrow's job:\n- **Relief setting:** Get the P-14 setting from the equipment datasheet, the P&ID, or the record of the previous seal replacement (\"again\" suggests there is one). If you can, check the valve's tag and nameplate too.\n- **Pre-work steps:** Follow your site's lockout/tagout and isolation procedure for P-14, and the permit-to-work requirements.\n\nIf you have a memory id for the earlier P-14 job, give it to me and I'll run `mf verify` on it. I can also re-run recall with different wording.",
+          "cost_usd": 0.0168208,
+          "turns": 4,
+          "seconds": 15.8,
+          "error": ""
+        },
+        {
+          "agent": "executor",
+          "answer": "CONFIRMED: my own recalls for \"P-14 relief valve setting seal replacement\" and \"P-14\" returned no memories, so the plan relies on no memory ids and there is nothing to verify. Declining to give a relief setting and pointing to the datasheet, P&ID and site procedures is the right call.",
+          "cost_usd": 0.014261300000000001,
+          "turns": 3,
+          "seconds": 12.8,
+          "error": ""
+        }
+      ],
+      "inspector_writes": 5,
+      "held_by_screens": 0,
+      "facts_written": [
+        "Pump P-14 (coastal pumping station): seal was replaced on Tuesday of week 41.",
+        "Pump P-14 relief valve is set to 12 bar.",
+        "Valve V-7, upstream of pump P-14, must be closed before any seal work on P-14.",
+        "Pump P-15 is on the same manifold as P-14; its relief valve is set to 9 bar.",
+        "The manifold isolation procedure requires two technicians."
+      ],
+      "planner_answer": "I can't answer this from memory. Every recall returned no memories, so I have no memory ids to cite and nothing to verify.\n\nI ran five queries: \"pump P-14 seal replacement\", \"P-14 relief valve setting\", \"P-14\", \"pump seal lockout isolation procedure\" and \"relief setting restore after maintenance\". The service said no usable memory states a value for P-14 or for a relief setting. For the two generic procedure queries it said the question names no identifier to check cover for.\n\nI won't guess a relief setting or a pre-work checklist, because a wrong pressure value could be unsafe. Before tomorrow's job:\n- **Relief setting:** Get the P-14 setting from the equipment datasheet, the P&ID, or the record of the previous seal replacement (\"again\" suggests there is one). If you can, check the valve's tag and nameplate too.\n- **Pre-work steps:** Follow your site's lockout/tagout and isolation procedure for P-14, and the permit-to-work requirements.\n\nIf you have a memory id for the earlier P-14 job, give it to me and I'll run `mf verify` on it. I can also re-run recall with different wording.",
+      "withdrawn_memory": "01M5PT84GW222N0V6Z0BCMF5X7",
+      "executor_answer": "CONFIRMED: my own recalls for \"P-14 relief valve setting seal replacement\" and \"P-14\" returned no memories, so the plan relies on no memory ids and there is nothing to verify. Declining to give a relief setting and pointing to the datasheet, P&ID and site procedures is the right call.",
+      "executor_confirmed": true,
+      "events_per_agent": {
+        "ag_inspector": 5,
+        "ag_planner": 5,
+        "ag_executor": 2
+      },
+      "executor_verify_refused_withdrawn": false,
+      "cost_usd": 0.053
+    },
+    {
+      "run": 1,
+      "failures": [
+        "executor never had the withdrawn memory refused (it did not verify it, or the refusal was not logged)"
+      ],
+      "steps": [
+        {
+          "agent": "inspector",
+          "answer": "I stored five facts, one per call. The service returned a memory ID for each, with state \"candidate\".\n\n1. P-14's seal was replaced on Tuesday of week 41.\n2. P-14's relief valve is set to 12 bar.\n3. V-7, upstream of P-14, must be closed before any seal work on P-14.\n4. P-15 shares a manifold with P-14, and its relief valve is set to 9 bar.\n5. The manifold isolation procedure takes two technicians.\n\nI left out the contractor phone list in the site office, since the notes say maintenance doesn't need it.",
+          "cost_usd": 0.0121788,
+          "turns": 6,
+          "seconds": 14.2,
+          "error": ""
+        },
+        {
+          "agent": "planner",
+          "answer": "I can't answer this from memory. Every recall returned no memories, so I have no memory ids to name and nothing to verify.\n\nI ran five queries: \"pump P-14 seal replacement\", \"P-14 relief valve setting\", \"P-14\", \"pump seal lockout isolation procedure\" and \"relief setting after seal replacement\". The service reported \"insufficient\" for the P-14 queries. For the two general queries it reported \"undetermined\" because they named no identifier.\n\nI won't guess a relief setting or a pre-work checklist for P-14. A wrong relief value could be a safety problem.\n\nBefore tomorrow, check these sources directly:\n- **Relief setting:** the P-14 data sheet, the relief valve tag or test record, or the record from the last seal replacement.\n- **Pre-work steps:** your site's lockout/tagout and isolation procedure for P-14, the work permit, and the last work order for this seal.\n\nIf you can give me a memory id, or a different search term the previous job might have been filed under, I'll recall and verify it.",
+          "cost_usd": 0.0089361,
+          "turns": 4,
+          "seconds": 15.9,
+          "error": ""
+        },
+        {
+          "agent": "executor",
+          "answer": "NOT CONFIRMED. My own recalls for P-14 returned no memories and an \"insufficient\" verdict, so the plan has no memory ids to verify and no stored relief setting or pre-work checklist to rely on.",
+          "cost_usd": 0.0127487,
+          "turns": 2,
+          "seconds": 14.0,
+          "error": ""
+        }
+      ],
+      "inspector_writes": 5,
+      "held_by_screens": 0,
+      "facts_written": [
+        "Pump P-14 (coastal pumping station): seal was replaced on Tuesday of week 41.",
+        "Pump P-14 relief valve is set to 12 bar.",
+        "Valve V-7, upstream of pump P-14, must be closed before any seal work on P-14.",
+        "Pump P-15 shares a manifold with P-14; its relief valve is set to 9 bar.",
+        "The manifold isolation procedure requires two technicians."
+      ],
+      "planner_answer": "I can't answer this from memory. Every recall returned no memories, so I have no memory ids to name and nothing to verify.\n\nI ran five queries: \"pump P-14 seal replacement\", \"P-14 relief valve setting\", \"P-14\", \"pump seal lockout isolation procedure\" and \"relief setting after seal replacement\". The service reported \"insufficient\" for the P-14 queries. For the two general queries it reported \"undetermined\" because they named no identifier.\n\nI won't guess a relief setting or a pre-work checklist for P-14. A wrong relief value could be a safety problem.\n\nBefore tomorrow, check these sources directly:\n- **Relief setting:** the P-14 data sheet, the relief valve tag or test record, or the record from the last seal replacement.\n- **Pre-work steps:** your site's lockout/tagout and isolation procedure for P-14, the work permit, and the last work order for this seal.\n\nIf you can give me a memory id, or a different search term the previous job might have been filed under, I'll recall and verify it.",
+      "withdrawn_memory": "01M5PT9JHFV5FDCXRS59ZXCC2Z",
+      "executor_answer": "NOT CONFIRMED. My own recalls for P-14 returned no memories and an \"insufficient\" verdict, so the plan has no memory ids to verify and no stored relief setting or pre-work checklist to rely on.",
+      "executor_confirmed": false,
+      "events_per_agent": {
+        "ag_inspector": 5,
+        "ag_planner": 5,
+        "ag_executor": 2
+      },
+      "executor_verify_refused_withdrawn": false,
+      "cost_usd": 0.034
+    },
+    {
+      "run": 2,
+      "failures": [
+        "executor never had the withdrawn memory refused (it did not verify it, or the refusal was not logged)"
+      ],
+      "steps": [
+        {
+          "agent": "inspector",
+          "answer": "I stored five facts, one per call. Each came back with the state \"candidate\", so I can't confirm they're fully saved.\n\n- P-14's seal was replaced on Tuesday of week 41.\n- P-14's relief valve is set to 12 bar.\n- V-7, upstream of P-14, must be closed before any seal work on P-14.\n- P-15 shares a manifold with P-14, and its relief valve is set to 9 bar.\n- The manifold isolation procedure takes two technicians.\n\nI left out the contractor phone list, since the notes say it isn't needed for maintenance.",
+          "cost_usd": 0.0123108,
+          "turns": 6,
+          "seconds": 13.7,
+          "error": ""
+        },
+        {
+          "agent": "planner",
+          "answer": "I can't answer this from memory. Every recall returned no memories, so there were no memory ids to verify or rely on.\n\nI ran five queries: \"pump P-14 seal replacement\", \"P-14 relief valve setting\", \"P-14\", \"pump seal lockout isolation procedure\", and \"relief setting restore after maintenance\". The service said it has no usable memory stating a value for P-14. For the two generic queries it said it couldn't tell what to check because they named no identifier.\n\nI don't know what has to be done before starting the seal replacement on P-14. I also don't know what relief setting to restore afterwards. Any number or checklist I gave you would be a guess, and a wrong relief setting is a safety risk.\n\nBefore tomorrow, I'd suggest these steps:\n- Pull the previous P-14 seal replacement work order or maintenance record. You said \"again\", so one should exist.\n- Check the P-14 relief valve tag, datasheet, or P&ID for the set pressure.\n- Follow the site's standard lockout/tagout, isolation, depressurize and drain procedure for the pump.\n- If someone recorded these details elsewhere, tell me where and I'll recall and verify them. Or give me the values and I'll note them as unverified.",
+          "cost_usd": 0.0097741,
+          "turns": 4,
+          "seconds": 17.3,
+          "error": ""
+        },
+        {
+          "agent": "executor",
+          "answer": "NOT CONFIRMED: my own recalls for P-14 returned no memories, so there are no ids to verify. The plan's claim that nothing is known is correct, but it gives no sourced seal-replacement steps or relief setting, so I can't confirm any of those from memory.",
+          "cost_usd": 0.0130954,
+          "turns": 2,
+          "seconds": 14.1,
+          "error": ""
+        }
+      ],
+      "inspector_writes": 5,
+      "held_by_screens": 0,
+      "facts_written": [
+        "Pump P-14 (coastal pumping station): seal was replaced on Tuesday of week 41.",
+        "Pump P-14 relief valve is set to 12 bar.",
+        "Valve V-7, upstream of pump P-14, must be closed before any seal work on P-14.",
+        "Pump P-15 shares a manifold with P-14; its relief valve is set to 9 bar.",
+        "The manifold isolation procedure requires two technicians."
+      ],
+      "planner_answer": "I can't answer this from memory. Every recall returned no memories, so there were no memory ids to verify or rely on.\n\nI ran five queries: \"pump P-14 seal replacement\", \"P-14 relief valve setting\", \"P-14\", \"pump seal lockout isolation procedure\", and \"relief setting restore after maintenance\". The service said it has no usable memory stating a value for P-14. For the two generic queries it said it couldn't tell what to check because they named no identifier.\n\nI don't know what has to be done before starting the seal replacement on P-14. I also don't know what relief setting to restore afterwards. Any number or checklist I gave you would be a guess, and a wrong relief setting is a safety risk.\n\nBefore tomorrow, I'd suggest these steps:\n- Pull the previous P-14 seal replacement work order or maintenance record. You said \"again\", so one should exist.\n- Check the P-14 relief valve tag, datasheet, or P&ID for the set pressure.\n- Follow the site's standard lockout/tagout, isolation, depressurize and drain procedure for the pump.\n- If someone recorded these details elsewhere, tell me where and I'll recall and verify them. Or give me the values and I'll note them as unverified.",
+      "withdrawn_memory": "01M5PTB0XQZJ4343G9X9AVCW68",
+      "executor_answer": "NOT CONFIRMED: my own recalls for P-14 returned no memories, so there are no ids to verify. The plan's claim that nothing is known is correct, but it gives no sourced seal-replacement steps or relief setting, so I can't confirm any of those from memory.",
+      "executor_confirmed": false,
+      "events_per_agent": {
+        "ag_inspector": 5,
+        "ag_planner": 5,
+        "ag_executor": 2
+      },
+      "executor_verify_refused_withdrawn": false,
+      "cost_usd": 0.035
+    }
+  ]
+}

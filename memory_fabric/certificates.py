@@ -601,7 +601,13 @@ class CertificateVerifier:
         possible = _possible_copies(fabric, usable_ids)
         for a, b in possible:
             notes.append(f"possible_copy:{a}:{b}")
-        if CHECK_INDEPENDENT_SUPPORT in cert.required_checks:
+        # Asking for more than one independent source *is* asking for this
+        # check. It used to run only when `independent_support` was also
+        # listed, so `ToolRule(min_independent_sources=2)` let a single-source
+        # certificate through: the documented corroboration defence did
+        # nothing (found by C2, research/results/c2-dependence.md).
+        if (CHECK_INDEPENDENT_SUPPORT in cert.required_checks
+                or cert.min_independent_sources > 1):
             independent_ok = len(roots) >= cert.min_independent_sources
             checks[CHECK_INDEPENDENT_SUPPORT] = independent_ok
             if not independent_ok:

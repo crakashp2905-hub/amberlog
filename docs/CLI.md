@@ -55,6 +55,13 @@ WRITES: revoke a leaked credential, or all of one agent's; a running agent-api o
 - `--agent`: revoke every credential this agent holds
 - `--token`: the leaked credential, or - to read it from stdin
 
+### `anchor`
+
+Anchor the integrity checkpoint off the store (dir:, git:, https://), or verify anchors
+
+- `--to`: dir:PATH, git:REPO or an http(s) URL; repeat for several
+- `--verify`: an anchors file or dir: directory to check this store against
+
 ### `attention`
 
 Triage list: what needs a human, worst first
@@ -332,6 +339,13 @@ WRITES: quarantine a memory and contest its descendants. Quarantine on evidence 
 - `--basis`: what kind of evidence this rests on. Omitted is recorded as 'unstated', which the attention list then flags - as it does 'co_occurrence', because being present when something failed is agreement, not causation.
 - `--no-propagate`: leave descendants alone (they keep a retracted justification)
 
+### `receipt-verify`
+
+Verify a signed action receipt (exit 0 valid, 5 invalid); needs no store
+
+- `path`: the receipt JSON file
+- `--public-key`: the signer's Ed25519 public key, base64, obtained independently
+
 ### `release`
 
 WRITES: return a quarantined memory to candidate
@@ -366,6 +380,14 @@ The review queue. With an id and a decision, WRITES it: approve (usable by the t
 - `--actor`: the reviewer; required for a decision
 - `--override-screen`: approve a memory an ingest screen quarantined
 - `--tenant`: only this tenant's queue
+
+### `sandbox`
+
+A throwaway store with deliberately wrong memories, opened in the dashboard
+
+- `--port`: TCP port to listen on
+- `--dir`: where to create it (default: a new temporary folder)
+- `--no-serve`: seed only; print the path
 
 ### `search`
 

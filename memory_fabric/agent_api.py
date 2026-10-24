@@ -63,6 +63,7 @@ from typing import Any, Callable, Mapping
 from .limits import LimitExceeded
 from .enforcement import ExposureToken, RiskLevel
 from .identity import Credential, IdentityError, ROLE_AGENT
+from ._fabric.common import FabricError
 from .sdk import AgentClient, NotUsable, UsableMemory, public_error
 from .service import MemoryService
 
@@ -77,6 +78,8 @@ MAX_DRAIN = 1024 * 1024
 LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
 MIN_KEY_BYTES = 32
 MAX_TOKENS_PER_AGENT = 4096
+# Reasons that would reveal whether an id exists where the caller cannot see it.
+_OPAQUE = frozenset({"not_found", "wrong_tenant", "not_visible"})
 
 
 class ConfigurationError(Exception):
@@ -303,7 +306,14 @@ class AgentApi:
         if not isinstance(include, bool):
             raise _ApiError(HTTPStatus.BAD_REQUEST, "include_contested must be a boolean")
         hits = client.recall(query, k=k, include_contested=include)
-        return {"memories": [self._present(client, m) for m in hits]}
+        # A verdict on the evidence, separate from how well it ranked: an
+        # unanswerable question still gets its nearest neighbours back.
+        from .answerability import assess
+
+        shown = [self._fabric.state.memories[m.memory_id] for m in hits
+                 if m.memory_id in self._fabric.state.memories]
+        return {"memories": [self._present(client, m) for m in hits],
+                "answerability": assess(query, shown).to_json()}
 
     def _fetch(self, client: AgentClient, body: Mapping[str, Any]) -> dict[str, Any]:
         memory_id = _string(body, "memory_id")
@@ -317,8 +327,25 @@ class AgentApi:
         memory_id = _string(body, "memory_id")
         issued = self._issued.get(client.agent_id, OrderedDict()).get(memory_id)
         if issued is None:
-            raise _ApiError(HTTPStatus.CONFLICT,
-                            "recall or fetch this memory before verifying it")
+            # Not recalled or fetched by this agent: fetch it now, through the
+            # same permission check. A withdrawn memory no longer comes back
+            # from recall, so before this an agent asking "is this still
+            # usable?" about a memory a teammate cited got "recall or fetch it
+            # first" instead of "withdrawn" (multi-agent pilot). Ids this agent
+            # may not know about keep the same opaque answer as before.
+            try:
+                self._present(client, client.fetch(memory_id))
+            except NotUsable as exc:
+                code = exc.decision.reason_code
+                if code in _OPAQUE:
+                    raise _ApiError(HTTPStatus.CONFLICT,
+                                    "recall or fetch this memory before verifying it") from None
+                return {"memory_id": memory_id, "usable": False,
+                        "verdict": exc.decision.verdict.value, "reason": code}
+            except (KeyError, FabricError):
+                raise _ApiError(HTTPStatus.CONFLICT,
+                                "recall or fetch this memory before verifying it") from None
+            issued = self._issued[client.agent_id][memory_id]
         decision = self._fabric.verify_before_action(issued, client.agent_id,
                                                      risk=RiskLevel.HIGH)
         return {"memory_id": memory_id, "usable": decision.usable,

@@ -74,6 +74,24 @@ A checkpoint kept beside the database buys nothing.
 Suggested cadence: one per deploy, and one per backup, committed alongside the
 backup's checksum.
 
+**Anchoring, in one command.** `anchor` appends the checkpoint to places the
+store's writer cannot rewrite, and `--verify` checks the store against all of
+them:
+
+```bash
+memory-fabric --db store.db anchor --to dir:/mnt/other-disk/anchors \
+                                   --to git:/srv/anchors-repo \
+                                   --to https://audit.example/anchors
+memory-fabric --db store.db anchor --verify dir:/mnt/other-disk/anchors   # exit 0 or 5
+```
+
+Run it from cron or a systemd timer, for example every 15 minutes:
+`*/15 * * * * memory-fabric --db /srv/store.db anchor --to git:/srv/anchors-repo`.
+Choose a git repository the database host can commit to but not rewrite (a
+pushed-to remote with protected history), or an HTTP endpoint that keeps what
+it receives. Each target reports separately, so one failing target does not
+hide the others, and any failure makes the exit code non-zero.
+
 ### Draining retractions
 
 A retraction is owed until delivered. After an outage:
@@ -243,12 +261,37 @@ agent waiting. Above 400 concurrent agents per store is unmeasured. For more,
 split agents across stores (`tenancy.TenantRouter`) rather than queueing more
 agents on one. Postgres was slower than SQLite at every point measured.
 
+**Teams of agents need a reviewer who validates *and* shares.** A memory written
+through `agent-api` is private to the agent that wrote it, and `validate` does not
+widen that. Until `share <id> team` (or a reviewer's equivalent), teammates recall
+nothing from it. A multi-agent pilot hit exactly this: the planner found no memories
+the inspector had written and validated.
+
 **Rate limits** (`agent-api`): each agent gets a token bucket, by default 20
 requests a second with a burst of 40 (`--rate-limit`, `--burst`;
 `--rate-limit 0` turns it off). Failed authentications are limited per remote
 address. A refused request gets `429` with `Retry-After`. Size the per-agent
 rate so that agents × rate stays below the measured total. Otherwise requests
 queue on the lock rather than being refused.
+
+## 4b. PostgreSQL failover
+
+Measured with a real primary and streaming replica, primary killed
+mid-write: every acknowledged write survived, the chain verified with no
+sequence gap, and the client resumed in about 0.1 s. Steps:
+
+1. **Connect through a multi-host URL** so the driver finds the new primary itself:
+   `postgresql://user@db1:5432,db2:5432/fabric?target_session_attrs=read-write`.
+2. **Promote the replica** (`pg_ctl promote` or your orchestrator).
+3. **If you ran synchronous replication, clear it on the new primary before
+   anything writes:** `ALTER SYSTEM SET synchronous_standby_names = ''; SELECT pg_reload_conf();`
+   (or attach a new standby). The setting is copied by `pg_basebackup`, and
+   without a standby every commit waits forever, with no error.
+4. **Check:** `memory-fabric --db <new primary URL> doctor`, then
+   `anchor --verify` against your anchors.
+
+Asynchronous replication can lose the last acknowledged commits on failover
+under load; use `synchronous_commit = on` with a standby where that matters.
 
 ## 5. Rollback
 

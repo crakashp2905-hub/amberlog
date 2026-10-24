@@ -63,6 +63,7 @@ Every document in the repository, by what you are trying to do.
 | document | for |
 |---|---|
 | [../CHANGELOG.md](../CHANGELOG.md) | Every change |
+| [RELEASE_NOTES_0.13.0.md](RELEASE_NOTES_0.13.0.md) | 0.13.0, in qualification |
 | [RELEASE_NOTES_0.12.0.md](RELEASE_NOTES_0.12.0.md) | 0.12.0, in qualification |
 | [RELEASE_NOTES_0.11.0.md](RELEASE_NOTES_0.11.0.md) | 0.11.0 |
 | [RELEASE_EVALUATION.md](RELEASE_EVALUATION.md) | The release gate's evidence, per release |

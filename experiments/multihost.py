@@ -52,6 +52,8 @@ class LatencyProxy:
 
     def __init__(self, target_port: int, delay_s: float) -> None:
         self.target_port, self.delay_s = target_port, delay_s
+        self.blocked = False
+        """A partition: while set, new connections are refused and traffic is dropped."""
         self.sock = socket.socket()
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.sock.bind(("127.0.0.1", 0))
@@ -63,7 +65,7 @@ class LatencyProxy:
         try:
             while True:
                 data = src.recv(65536)
-                if not data:
+                if not data or self.blocked:
                     break
                 time.sleep(self.delay_s)
                 dst.sendall(data)
@@ -82,6 +84,9 @@ class LatencyProxy:
                 client, _ = self.sock.accept()
             except OSError:
                 return
+            if self.blocked:
+                client.close()
+                continue
             try:
                 upstream = socket.create_connection(("127.0.0.1", self.target_port), timeout=5)
             except OSError:
@@ -322,7 +327,72 @@ def scenario(topo: Any) -> dict[str, Any]:
             "converged_after_restart_s": None if recovered_s is None else round(recovered_s, 2)}
 
 
-def run(stores: int, latency_ms: float) -> dict[str, Any]:
+def partition(topo: Topology, a: str, b: str, blocked: bool) -> None:
+    """Cut (or heal) the link between two stores in both directions; both stay up."""
+    topo.proxy[(a, b)].blocked = blocked
+    topo.proxy[(b, a)].blocked = blocked
+
+
+def network_scenarios(topo: Topology) -> dict[str, Any]:
+    """A partition with both servers up, and two corrections at once at different stores."""
+    from memory_fabric import correction
+
+    names = topo.names
+    first, mid, last = names[0], names[1], names[-1]
+    out: dict[str, Any] = {}
+
+    ids = share_chain(topo, "Line 5 conveyor belt speed is 35 m/min.")
+    partition(topo, mid, last, True)
+    a = open_store(topo.db[first])
+    correction.apply(a, ids[first], reason="re-measured", actor="lead")
+    a.close()
+    time.sleep(4)
+    out["partition_mid_withdrawn"] = state_of(topo, mid, ids[mid]) != "active"
+    out["partition_last_while_cut"] = state_of(topo, last, ids[last])
+    healed = time.perf_counter()
+    partition(topo, mid, last, False)
+    out["partition_converged_after_heal_s"] = None
+    while time.perf_counter() - healed < 90:
+        if state_of(topo, last, ids[last]) != "active":
+            out["partition_converged_after_heal_s"] = round(time.perf_counter() - healed, 2)
+            break
+        time.sleep(0.25)
+
+    x = share_chain(topo, "Line 6 conveyor belt speed is 45 m/min.")
+    y = share_chain(topo, "Line 7 conveyor belt speed is 50 m/min.")
+    started = time.perf_counter()
+
+    def withdraw(store: str, memory_id: str) -> None:
+        f = open_store(topo.db[store])
+        try:
+            correction.apply(f, memory_id, reason="re-measured", actor="lead")
+        finally:
+            f.close()
+
+    threads = [threading.Thread(target=withdraw, args=(first, x[first])),
+               threading.Thread(target=withdraw, args=(mid, y[mid]))]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    out["concurrent_converged_s"] = None
+    while time.perf_counter() - started < 90:
+        if (state_of(topo, last, x[last]) != "active"
+                and state_of(topo, last, y[last]) != "active"):
+            out["concurrent_converged_s"] = round(time.perf_counter() - started, 2)
+            break
+        time.sleep(0.25)
+    out["concurrent_origin_y_still_active"] = state_of(topo, first, y[first]) == "active"
+    for n in names:
+        f = open_store(topo.db[n])
+        try:
+            out[f"chain_verifies_{n}"] = f.log.chain.verify(list(f.log.read())).ok
+        finally:
+            f.close()
+    return out
+
+
+def run(stores: int, latency_ms: float, network: bool = False) -> dict[str, Any]:
     names = [chr(ord("a") + i) for i in range(stores)]
     with tempfile.TemporaryDirectory() as tmp:
         topo = Topology(names, latency_ms, Path(tmp))
@@ -330,6 +400,8 @@ def run(stores: int, latency_ms: float) -> dict[str, Any]:
             for n in names:
                 topo.start(n)
             result = scenario(topo)
+            if network:
+                result.update(network_scenarios(topo))
         finally:
             topo.stop_all()
     return {"latency_ms_per_hop": latency_ms, **result}

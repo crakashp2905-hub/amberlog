@@ -308,7 +308,7 @@ def build_context(case: Mapping[str, Any]) -> Context:
             agent_id=case["task"]["agent_id"], content=memory["content"],
             tenant_id=memory.get("tenant_id", "tn_default"), parents=parents,
             method="consolidated" if parents else "observed",
-            valid_from=memory.get("valid_from"), valid_to=memory.get("valid_to"),
+            valid_from=memory.get("valid_from"), valid_to=memory.get("valid_to"), scope="team",
         )
         store_id[memory["id"]] = stored
         bench_id[stored] = memory["id"]

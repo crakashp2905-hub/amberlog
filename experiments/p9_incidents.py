@@ -55,11 +55,11 @@ def build(seed: int, withdraw: str | None = None) -> tuple[MemoryFabric, dict[st
     for i in range(n_roots):
         noun = rng.choice(NOUNS)
         put(f"root{i}", fabric.remember(
-            rng.choice(WRITERS), f"{noun} {i} reading {rng.randint(1, 99)} logged at bay {seed}-{i}"))
+            rng.choice(WRITERS), f"{noun} {i} reading {rng.randint(1, 99)} logged at bay {seed}-{i}", scope="team"))
     if rng.random() < 0.4:  # a verbatim forward of a root: a recognised copy
         src = rng.choice([n for n in order if n.startswith("root")])
         text = fabric.get(label[src]).content
-        put("forward", fabric.remember(rng.choice(WRITERS), text))
+        put("forward", fabric.remember(rng.choice(WRITERS), text, scope="team"))
 
     for j in range(rng.randint(1, 4)):
         pool = list(order)
@@ -73,10 +73,10 @@ def build(seed: int, withdraw: str | None = None) -> tuple[MemoryFabric, dict[st
         ids = [label[p] for p in parents]
         put(f"derived{j}", fabric.derive(
             rng.choice(WRITERS), f"conclusion {seed}-{j} from {len(ids)} inputs",
-            parents=ids, context=justification_context(list(zip(ids, kinds)))))
+            parents=ids, context=justification_context(list(zip(ids, kinds))), scope="team"))
 
     for d in range(3):  # decoys: unrelated, retrieved alongside
-        put(f"decoy{d}", fabric.remember("eve", f"canteen notice {seed}-{d} reopening hours"))
+        put(f"decoy{d}", fabric.remember("eve", f"canteen notice {seed}-{d} reopening hours", scope="team"))
     fabric.retrieve("actor", f"canteen notice {seed} conclusion", k=5)
 
     derived = [n for n in order if n.startswith("derived")]

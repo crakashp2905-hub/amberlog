@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "memeval"
+version = "0.1.0"
+description = "An evaluation harness for agent memory that refuses to give a verdict when the run made one of the usual mistakes."
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = []
+# The repository's LICENSE (all rights reserved) covers this package too. It
+# is a separate distribution for packaging, not a separate licence: nothing
+# here grants rights the root LICENSE withholds.
+license = "LicenseRef-Proprietary"
+# A copy of the root LICENSE, because a distribution cannot ship a file from
+# outside its own directory. tests/test_memeval.py fails if the two differ.
+license-files = ["LICENSE"]
+
+[tool.setuptools]
+# The package is this directory; it lives inside the Memory Fabric repository
+# but is built and installed on its own, with no dependency on it.
+package-dir = { "memeval" = "." }
+packages = ["memeval"]

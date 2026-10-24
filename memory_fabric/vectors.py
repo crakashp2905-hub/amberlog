@@ -8,6 +8,8 @@ implementing `Embedder` can replace it without touching the rest of the system.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 import math
 import re

@@ -1,0 +1,54 @@
+name: frontier-eval
+
+# The model-in-the-loop checks on a frontier model: poison ranking with
+# contradiction surfacing (G4b), the cross-store hostile-source notice (T2b)
+# and the model injection screen on the third-party set, on Claude.
+#
+# Needs the repository secret ANTHROPIC_API_KEY (Settings -> Secrets and
+# variables -> Actions). Without it the job stops at the first step and says
+# so. Run on demand: each run costs API calls.
+
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Claude model id"
+        default: "claude-sonnet-5-5"
+
+jobs:
+  frontier:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    env:
+      MODEL: ${{ github.event.inputs.model || 'claude-sonnet-5-5' }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+    steps:
+      - name: Needs the API key secret
+        run: |
+          if [ -z "$ANTHROPIC_API_KEY" ]; then
+            echo "Set the ANTHROPIC_API_KEY repository secret to run this workflow." >&2
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install ".[claude]"
+      - run: python -m experiments.g4b_conflicts --split dev --model "$MODEL" --out g4b.json
+      - run: python -m experiments.t2b_notice --split dev --model "$MODEL" --out t2b.json
+      - run: python tools/model_attack_check.py g4b.json t2b.json
+      - name: Third-party injection set, with the model screen
+        run: |
+          mkdir -p /tmp/deepset
+          for split in train test; do for off in 0 100 200 300 400 500; do
+            curl -s -m 30 "https://datasets-server.huggingface.co/rows?dataset=deepset%2Fprompt-injections&config=default&split=$split&offset=$off&length=100" -o /tmp/deepset/$split-$off.json
+          done; done
+          python -m experiments.injection_thirdparty /tmp/deepset "$MODEL"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: frontier-eval
+          path: |
+            g4b.json
+            t2b.json
+            research/results/injection-thirdparty-*.json

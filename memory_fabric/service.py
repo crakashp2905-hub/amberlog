@@ -41,12 +41,20 @@ rather than at the next restart.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Sequence
 
 from .enforcement import AccessDecision, RiskLevel
 from .fabric import MemoryFabric, TenantView
 from .identity import (
+    PERM_ADMINISTER,
+    PERM_CORRECT,
+    PERM_DELETE,
+    PERM_EXPORT,
+    PERM_READ,
+    PERM_WRITE,
     ROLE_AGENT,
     ROLE_OPERATOR,
     Credential,
@@ -87,16 +95,30 @@ class Session:
     def tenant_id(self) -> str:
         return self.credential.tenant_id
 
-    def _view(self) -> TenantView:
-        return TenantView(self.service._fabric, self.principal(), verified=True)
+    def _view(self, permission: str = PERM_READ) -> TenantView:
+        principal = self.principal()
+        principal.require_permission(permission)
+        return TenantView(self.service._fabric, principal, verified=True)
 
     # --- agent operations ------------------------------------------------
 
-    def remember(self, content: str, **kwargs: Any) -> str:
-        return self._view().remember(content, **kwargs)
+    def remember(self, content: str, collection: str | None = None, **kwargs: Any) -> str:
+        """Write as this agent; with `collection`, also add it there (needs `write`)."""
+        if collection is not None:
+            principal = self.principal()
+            held = self.service._fabric.state.collections.get((principal.tenant_id, collection))
+            if held is None or "write" not in held.grants.get(principal.agent_id, ()):
+                raise IdentityError(f"{principal.agent_id} may not write to {collection}")
+            memory_id = self._remember(content, **kwargs)
+            self.service._fabric.collection_add(collection, memory_id, actor=principal.agent_id)
+            return memory_id
+        return self._remember(content, **kwargs)
+
+    def _remember(self, content: str, **kwargs: Any) -> str:
+        return self._view(PERM_WRITE).remember(content, **kwargs)
 
     def derive(self, content: str, parents: Sequence[str], **kwargs: Any) -> str:
-        return self._view().derive(content, parents, **kwargs)
+        return self._view(PERM_WRITE).derive(content, parents, **kwargs)
 
     def retrieve(self, query: str, **kwargs: Any):
         return self._view().retrieve(query, **kwargs)
@@ -127,13 +149,14 @@ class Session:
         service does not offer a convenience that would tempt a caller to pass
         their own id.
         """
-        self.principal()
+        self.principal().require_permission(PERM_WRITE)
         self.service._fabric.record_outcome(
             episode_id, outcome=outcome, verifier_id=verifier_id
         )
 
     def start_episode(self, task_id: str, context: Mapping[str, Any] | None = None):
         principal = self.principal()
+        principal.require_permission(PERM_WRITE)
         return self.service._fabric.start_episode(
             principal.agent_id, task_id=task_id, context=dict(context or {})
         )
@@ -145,21 +168,21 @@ class Session:
     # the withdrawal was justified, which is exactly what an agent must not do.
 
     def quarantine(self, memory_id: str, reason: str, basis: str | None = None):
-        principal = self._require_operator()
+        principal = self._require_operator_or("retract", memory_id)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.quarantine(
             memory_id, reason=reason, actor=principal.agent_id, basis=basis
         )
 
     def release(self, memory_id: str, reason: str = "released"):
-        principal = self._require_operator()
+        principal = self._require_operator(PERM_CORRECT)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.release(
             memory_id, actor=principal.agent_id, reason=reason
         )
 
     def validate(self, memory_id: str, reason: str = "validated"):
-        principal = self._require_operator()
+        principal = self._require_operator_or("approve", memory_id)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.validate(
             memory_id, actor=principal.agent_id, reason=reason
@@ -173,12 +196,12 @@ class Session:
         still scoped to the session's tenant, so "may see withdrawn memories"
         never becomes "may see every tenant's memories".
         """
-        principal = self._require_operator()
+        principal = self._require_operator(PERM_ADMINISTER)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.get(memory_id)
 
     def explain(self, memory_id: str):
-        principal = self._require_operator()
+        principal = self._require_operator(PERM_ADMINISTER)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.explain(memory_id)
 
@@ -189,7 +212,7 @@ class Session:
         recipients: Sequence[str],
         basis: str | None = None,
     ):
-        principal = self._require_operator()
+        principal = self._require_operator_or("retract", memory_id)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.request_retraction(
             memory_id,
@@ -200,16 +223,58 @@ class Session:
         )
 
     def erase_content(self, memory_id: str, reason: str) -> bool:
-        principal = self._require_operator()
+        principal = self._require_operator(PERM_DELETE)
         self.service._require_tenant(memory_id, principal)
         return self.service._fabric.erase_content(
             memory_id, reason=reason, actor=principal.agent_id
         )
 
-    def _require_operator(self) -> Principal:
+    def _require_operator_or(self, permission: str, memory_id: str) -> Principal:
+        """The operator role, or `permission` on a collection holding the memory.
+
+        Checked on the verified principal, so a collection grant is as real as
+        a role: it is what lets a team lead approve their team's collection
+        without being an operator of the whole store.
+        """
+        from .model import granted
+
+        principal = self.service._verify(self.credential)
+        if principal.may(ROLE_OPERATOR) and principal.can(PERM_CORRECT):
+            return principal
+        memory = self.service._fabric.state.memories.get(memory_id)
+        if memory is not None and granted(self.service._fabric.state, principal.tenant_id,
+                                          principal.agent_id, memory_id, permission):
+            return principal
+        principal.require(ROLE_OPERATOR)  # raises, naming the role it lacks
+        return principal
+
+    def _require_operator(self, permission: str = PERM_ADMINISTER) -> Principal:
         principal = self.principal()
         principal.require(ROLE_OPERATOR)
+        principal.require_permission(permission)
         return principal
+
+    def export_audit(self) -> list[dict[str, Any]]:
+        """The content-free audit trail of this tenant's memories: ids, types, actors, times.
+
+        Needs `export` (operators and auditors). Never content.
+        """
+        principal = self.principal()
+        principal.require_permission(PERM_EXPORT)
+        fabric = self.service._fabric
+        mine = {m for m, mem in fabric.state.memories.items()
+                if mem.tenant_id == principal.tenant_id}
+        out = []
+        for event in fabric.log.read():
+            payload = event.payload if isinstance(event.payload, Mapping) else {}
+            nested = payload.get("memory")
+            memory_id = payload.get("memory_id") or (
+                nested.get("id") if isinstance(nested, Mapping) else None)
+            if memory_id in mine:
+                out.append({"seq": event.seq, "type": event.type.value
+                            if hasattr(event.type, "value") else str(event.type),
+                            "actor": event.agent_id, "ts": event.ts, "memory_id": memory_id})
+        return out
 
 
 class MemoryService:
@@ -260,14 +325,16 @@ class MemoryService:
         tenant_id: str,
         roles: Iterable[str] = (ROLE_AGENT,),
     ) -> Principal:
-        return self._principals.register(
-            agent_id, key=key, tenant_id=tenant_id, roles=roles
-        )
+        with self._fabric.lock:
+            return self._principals.register(
+                agent_id, key=key, tenant_id=tenant_id, roles=roles
+            )
 
     def issue(self, agent_id: str, ttl_seconds: int = 3600, **kwargs: Any) -> Credential:
-        return self._principals.issue(
-            agent_id, now=self._fabric.now(), ttl_seconds=ttl_seconds, **kwargs
-        )
+        with self._fabric.lock:
+            return self._principals.issue(
+                agent_id, now=self._fabric.now(), ttl_seconds=ttl_seconds, **kwargs
+            )
 
     @property
     def revocations_are_durable(self) -> bool:
@@ -279,10 +346,12 @@ class MemoryService:
         return bool(getattr(self._principals.revocations, "durable", False))
 
     def revoke(self, credential: Credential | str) -> bool:
-        return self._principals.revoke(credential)
+        with self._fabric.lock:
+            return self._principals.revoke(credential)
 
     def revoke_agent(self, agent_id: str) -> None:
-        self._principals.revoke_agent(agent_id)
+        with self._fabric.lock:
+            self._principals.revoke_agent(agent_id)
 
     # --- the only way in ------------------------------------------------
 
@@ -307,8 +376,20 @@ class MemoryService:
 
     # --- internals -------------------------------------------------------
 
+    def precheck(self, credential: Credential) -> str:
+        """Signature and expiry only, without the store. See `authenticate`.
+
+        For a server that must refuse before queuing on the store. It is not
+        authorisation: `session` still verifies everything, revocation
+        included, before anything is served.
+        """
+        return self._principals.authenticate(credential, self._fabric.now())
+
     def _verify(self, credential: Credential) -> Principal:
-        return self._principals.verify(credential, self._fabric.now())
+        # Revocations are rows on the store's connection, so verifying one
+        # is a read that must not interleave with another thread's statement.
+        with self._fabric.lock:
+            return self._principals.verify(credential, self._fabric.now())
 
     def _require_tenant(self, memory_id: str, principal: Principal) -> None:
         """An operator's reach stops at their own tenant.

@@ -1,84 +1,100 @@
-"""Source lineage and independent support (plan Task 6).
-
-Acceptance, from the plan: copies are not counted as independent just because
-their ids differ; similar independent reports are not automatically collapsed;
-defaults change only with frozen evidence. The last is why the strict check is
-opt-in and the near-copy signal is reported rather than acted on.
-"""
+"""Evidence independence from exposure (S2): a paraphrase of what you were shown is not a second source."""
 
 from __future__ import annotations
 
 import unittest
 
 from memory_fabric import MemoryFabric
-from memory_fabric import certificates as C
-from memory_fabric.duplicates import containment, terms
-
-ORIGINAL = "Crane 5 at the harbour lifts 12 tonnes at most, per the load chart."
-VERBATIM = ORIGINAL
-# Independent: another observer, other words, same fact.
-INDEPENDENT = "Load test by the yard team: harbour crane 5 held 12 tonnes, no more."
-# Near-copy: the original lightly edited -- uncertain, neither copy nor independent.
-NEAR_COPY = "Crane 5 at the harbour lifts 12 tonnes at most, per the revised chart."
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+                                               rule_must_be_active, rule_restricted_stays_private)
+from memory_fabric.independence import Independence, global_ref, independent_sources
+from memory_fabric.model import Scope
 
 
-class Fixture(unittest.TestCase):
+def store() -> MemoryFabric:
+    return MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=(
+        rule_restricted_stays_private, rule_must_be_active, rule_capabilities_must_be_granted)))
+
+
+REPORT = "Pump P4 at the north site is leaking oil from its seal."
+PARAPHRASE = "There is an oil leak at the north site: the seal on pump P4 has failed."
+OWN = "North site walk-round: pump P4 seal weeping oil, about a cup an hour."
+
+
+class InOneStore(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(auto_activate=True, seed=0)
-        self.addCleanup(self.fabric.close)
+        self.f = store()
+        self.addCleanup(self.f.close)
+        self.a = self.f.remember("ana", REPORT, scope="team")
 
-    def support(self, *contents: str, strict: bool = False):
-        ids = [self.fabric.remember(f"ag{i}", text) for i, text in enumerate(contents)]
-        checks = [C.CHECK_STRICT_INDEPENDENCE if strict else C.CHECK_INDEPENDENT_SUPPORT]
-        cert = self.fabric.certify("claim", ids, "ag9", required_checks=checks,
-                                   min_independent_sources=2)
-        return ids, self.fabric.verify_certificate(cert, "ag9")
+    def test_a_paraphrase_by_someone_shown_the_report_is_not_independent(self) -> None:
+        shown = self.f.retrieve("ben", "pump P4 north site leak", k=3)
+        self.assertIn(self.a, [m.id for m in shown.exposed])
+        b = self.f.remember("ben", PARAPHRASE, scope="team")
+        self.assertEqual(independent_sources(self.f, [self.a, b]), 1)
+        self.assertIn(global_ref(self.f, self.a), Independence(self.f).informed_by(b))
 
+    def test_the_same_words_from_someone_never_shown_it_are_independent(self) -> None:
+        b = self.f.remember("cara", PARAPHRASE, scope="team")
+        self.assertEqual(independent_sources(self.f, [self.a, b]), 2)
 
-class TestCopies(Fixture):
-    def test_a_verbatim_reingestion_by_another_agent_is_one_source(self) -> None:
-        ids, result = self.support(ORIGINAL, VERBATIM)
-        self.assertNotEqual(ids[0], ids[1])
-        self.assertEqual(result.independent_sources, 1)
-        self.assertIn(C.INSUFFICIENT_INDEPENDENT_SUPPORT, result.reason_codes)
+    def test_being_shown_it_afterwards_does_not_reach_back(self) -> None:
+        b = self.f.remember("cara", OWN, scope="team")
+        self.f.retrieve("cara", "pump P4 north site leak", k=3)
+        self.assertEqual(independent_sources(self.f, [self.a, b]), 2)
 
-    def test_a_summary_is_not_independent_of_its_source(self) -> None:
-        source = self.fabric.remember("ag1", ORIGINAL)
-        summary = self.fabric.derive("ag2", "Harbour crane 5 max 12 t.", parents=[source])
-        self.assertEqual(self.fabric.source_root(summary), self.fabric.source_root(source))
+    def test_a_summary_of_two_real_reports_does_not_merge_them(self) -> None:
+        b = self.f.remember("cara", OWN, scope="team")
+        self.f.retrieve("dev", "pump P4 north site seal oil", k=5, group_by_source_root=False)
+        summary = self.f.remember("dev", "P4 north: seal leaking (two reports).", scope="team")
+        self.assertEqual(independent_sources(self.f, [self.a, b, summary]), 2)
 
-
-class TestIndependentReports(Fixture):
-    def test_similar_independent_reports_are_not_collapsed(self) -> None:
-        self.assertLess(containment(terms(ORIGINAL), terms(INDEPENDENT)),
-                        C.NEAR_COPY_CONTAINMENT)
-        _, result = self.support(ORIGINAL, INDEPENDENT)
-        self.assertTrue(result.ok, result)
-        self.assertEqual(result.independent_sources, 2)
-        self.assertFalse(any(n.startswith("possible_copy") for n in result.notes))
-
-
-class TestUncertainSimilarity(Fixture):
-    """The band between "copy" and "independent" is reported, not decided."""
-
-    def test_a_near_copy_is_reported_but_counted_by_default(self) -> None:
-        self.assertGreaterEqual(containment(terms(ORIGINAL), terms(NEAR_COPY)),
-                                C.NEAR_COPY_CONTAINMENT)
-        _, result = self.support(ORIGINAL, NEAR_COPY)
-        self.assertTrue(result.ok, result)
-        self.assertEqual(result.independent_sources, 2)
-        self.assertTrue(any(n.startswith("possible_copy") for n in result.notes))
-
-    def test_the_strict_check_counts_a_near_copy_as_one(self) -> None:
-        _, result = self.support(ORIGINAL, NEAR_COPY, strict=True)
-        self.assertFalse(result.ok)
-        self.assertEqual(result.checks[C.CHECK_STRICT_INDEPENDENCE], False)
-        self.assertIn(C.INSUFFICIENT_INDEPENDENT_SUPPORT, result.reason_codes)
-
-    def test_the_strict_check_still_counts_genuinely_independent_reports(self) -> None:
-        _, result = self.support(ORIGINAL, INDEPENDENT, strict=True)
-        self.assertTrue(result.ok, result)
+    def test_it_is_transitive(self) -> None:
+        self.f.retrieve("ben", "pump P4 north site leak", k=3)
+        b = self.f.remember("ben", PARAPHRASE, scope="team")
+        # dev is shown only ben's paraphrase: ana's report is withdrawn first,
+        # so retrieval cannot show it (independence does not look at lifecycle)
+        self.f.quarantine(self.a, reason="test", actor="op")
+        result = self.f.retrieve("dev", "oil leak seal failed", k=5, group_by_source_root=False)
+        self.assertIn(b, [m.id for m in result.exposed])
+        self.f.retrieve("dev", "nothing about pumps at all", k=1)
+        seen = {r.memory_id for r in self.f.state.exposures if r.agent_id == "dev" and r.exposed}
+        c = self.f.remember("dev", "P4's seal has gone at north; oil on the floor.", scope="team")
+        self.assertNotIn(self.a, seen)
+        self.assertTrue(Independence(self.f).dependent(self.a, c))
+        self.assertEqual(independent_sources(self.f, [self.a, b, c]), 1)
 
 
-if __name__ == "__main__":
+class AcrossStores(unittest.TestCase):
+    def test_laundering_through_a_second_store_is_still_one_source(self) -> None:
+        s0, s1, s2 = store(), store(), store()
+        for s in (s0, s1, s2):
+            self.addCleanup(s.close)
+        a = s0.remember("ana", REPORT, scope="team")
+        s0.share(a, Scope.FEDERATED, actor="op")
+        a_at_1 = offer(s0, a, s1, recipient_agent="ben", activate=True).imported_memory_id
+        a_at_2 = offer(s0, a, s2, recipient_agent="x", activate=True).imported_memory_id
+        s1.retrieve("ben", "pump P4 north site leak", k=3)
+        p = s1.remember("ben", PARAPHRASE, scope="team")
+        s1.share(p, Scope.FEDERATED, actor="op")
+        p_at_2 = offer(s1, p, s2, recipient_agent="x", activate=True).imported_memory_id
+        self.assertEqual(global_ref(s1, a_at_1), (s0.store_id, a))
+        self.assertEqual(global_ref(s2, a_at_2), (s0.store_id, a))
+        self.assertEqual(independent_sources(s2, [a_at_2, p_at_2]), 1)
+
+    def test_an_independent_report_from_another_store_still_counts(self) -> None:
+        s0, s1, s2 = store(), store(), store()
+        for s in (s0, s1, s2):
+            self.addCleanup(s.close)
+        a = s0.remember("ana", REPORT, scope="team")
+        s0.share(a, Scope.FEDERATED, actor="op")
+        a_at_2 = offer(s0, a, s2, recipient_agent="x", activate=True).imported_memory_id
+        own = s1.remember("ben", OWN, scope="team")
+        s1.share(own, Scope.FEDERATED, actor="op")
+        own_at_2 = offer(s1, own, s2, recipient_agent="x", activate=True).imported_memory_id
+        self.assertEqual(independent_sources(s2, [a_at_2, own_at_2]), 2)
+
+
+if __name__ == "__main__":  # pragma: no cover
     unittest.main()

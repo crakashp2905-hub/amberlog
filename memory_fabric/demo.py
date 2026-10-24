@@ -9,6 +9,8 @@ give one memory a real comparison group.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import random
 from typing import Any
 
@@ -43,12 +45,14 @@ def seed(fabric: MemoryFabric) -> dict[str, Any]:
             "Retry a failed deploy once after 30s; a second retry has never helped.",
             type=MemoryType.PROCEDURAL,
             context={"domain": "deploy", "tags": ["runbook"]},
-            capabilities=["shell"],
+            capabilities=["shell"], scope="team",
         )
-        distractor = fabric.remember(
+        # Written for its effect on the store: a nearby memory the demo's
+        # queries must not surface. Nothing reads the id.
+        fabric.remember(
             "ops-agent",
             "The staging cluster runs in eu-west-2.",
-            context={"domain": "deploy"},
+            context={"domain": "deploy"}, scope="team",
         )
 
         for index in range(40):
@@ -75,20 +79,20 @@ def seed(fabric: MemoryFabric) -> dict[str, Any]:
             "diagnostic-agent",
             "The battery temperature threshold is 45 degrees C.",
             context={"domain": "ev", "vehicle": "model-x"},
-            source_episodes=[rig_episode.id],
+            source_episodes=[rig_episode.id], scope="team",
         )
         fabric.record_outcome(rig_episode.id, 1.0, verifier_id="test-rig")
 
         belief = fabric.derive(
             "diagnostic-agent",
             "Warn the operator whenever the pack exceeds 45 degrees C.",
-            parents=[observation],
+            parents=[observation], scope="team",
         )
         procedure = fabric.derive(
             "ops-agent",
             "Procedure: poll pack temperature every 5s, warn above 45, shut down above 60.",
             parents=[belief],
-            type=MemoryType.PROCEDURAL,
+            type=MemoryType.PROCEDURAL, scope="team",
         )
         # Someone tried to share it and was refused: the attempt is on record.
         fabric.share(procedure, "team", granted_capabilities=["telemetry"])
@@ -110,12 +114,12 @@ def seed(fabric: MemoryFabric) -> dict[str, Any]:
         cache_a = fabric.remember(
             "search-agent",
             "Cache embeddings for 24h; recomputing them is the main latency cost.",
-            context={"domain": "search"},
+            context={"domain": "search"}, scope="team",
         )
         cache_b = fabric.remember(
             "eval-agent",
             "Never cache embeddings beyond an hour; stale vectors cause silent recall drops.",
-            context={"domain": "search"},
+            context={"domain": "search"}, scope="team",
         )
         fabric.challenge(
             [cache_a, cache_b],
@@ -129,7 +133,7 @@ def seed(fabric: MemoryFabric) -> dict[str, Any]:
         fabric.remember(
             "onboarding-agent",
             "To deploy, export AWS_ACCESS_KEY_ID=AKIAIOSFODNN7EXAMPLE and run make ship.",
-            context={"domain": "deploy"},
+            context={"domain": "deploy"}, scope="team",
         )
 
         # --- a rare, high-impact memory retention must not delete -----------
@@ -138,14 +142,14 @@ def seed(fabric: MemoryFabric) -> dict[str, Any]:
             "If the primary database corrupts, restore from the 03:00 snapshot before "
             "failing over; failing over first overwrites the good replica.",
             type=MemoryType.PROCEDURAL,
-            context={"domain": "db", "tags": ["critical", "rare"], "impact": 0.95},
+            context={"domain": "db", "tags": ["critical", "rare"], "impact": 0.95}, scope="team",
         )
 
         # --- an aging unused candidate for retention to catch ---------------
         stale = fabric.remember(
             "research-agent",
             "The vendor's 2024 pricing page listed tier 3 at $400/month.",
-            context={"domain": "vendor"},
+            context={"domain": "vendor"}, scope="team",
         )
         fabric.forget(stale, reason="pricing superseded", actor="research-agent")
 

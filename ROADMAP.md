@@ -168,14 +168,25 @@ size, because `_bridge_terms` ran ~35,000 times a query with a regex per shared
 term. My first guess at the cause — per-candidate component recomputation —
 was worth 11 ms of the 193; the regex in the inner loop was worth 88.
 
-**Abstention is not a retrieval problem**
-([result](research/results/abstention-signals.md)). Four signal families
-eliminated with numbers: term absence sits at the base rate, chain coverage is
-1.000 on every instance, absolute match quality is right in **4 of 4 question
-types** and collapses to **AUC 0.319** when pooled because between-type spread
-is 2–10× the within-type gap, and three calibrations all made it worse. A
-global threshold's best achievable F1 is 0.206. I nearly published d = 0.68
-from a confounded sample and the full-population AUC caught it.
+**Abstention is not a retrieval problem at any operating point worth having**
+([result](research/results/abstention-signals.md)). Three signal families
+eliminated with numbers — term absence sits at the base rate, chain coverage is
+1.000 on every instance, and three calibrations all made the score worse — and
+a fourth, absolute match quality, rejected on its operating point: a global
+threshold's best achievable F1 is 0.206, abstaining on 23% of answerable
+questions to catch 53% of unanswerable ones.
+
+**Corrected 2026-10-13.** That result reported absolute match quality
+collapsing to **AUC 0.319** when pooled, and said I had nearly published
+d = 0.68 from a confounded sample which the full-population AUC caught. Both
+statements are wrong and in the same way: the pooled AUC is **0.682**, the
+published figure being its own complement, and the sample agreed with the full
+population all along. Every other figure in that result reproduces exactly, so
+the F1 and the verdict stand — the right call was made on the strength of an
+upside-down number ([abstention-signals.md §7](research/results/abstention-signals.md),
+[x1-extraction.md §5](research/results/x1-extraction.md)).
+
+**A model can extract the declarations, and the mechanism still scores 0.000** ([result](research/results/x1-extraction.md)). X1 put one model call on every write and measured the registered primary at **0.000 against a bar of 0.400**, proposing **zero** relations out of three. `gemma2` extracted both sides correctly; `infer_relations` matches `modifies` against `predicate` by string containment, and an *axle-set figure* and a *tyre pressure* do not contain one another. Zero of seven models form the edge. The matcher's own unit test supplied both strings. Extraction is also a batch job and not an ingest-path step: no discrete GPU here, so 10,000 memories cost 26 to 151 hours depending on the model.
 
 **A feature reranker does make fusion safe, and that is not worth having**
 ([result](research/results/r2a-feature-reranker.md)). On four benchmarks it
@@ -344,7 +355,7 @@ contract with no producer anywhere in the codebase since R0.
 
 Three things it does not do, all measured:
 
-- **`multi_hop_4` fails for an instructive reason.** Its missing memory says *"add 0.35 bar as a salt-corrosion margin"*: it supplies no query term and links nothing, so a chain that is already complete and connected has no reason to want it. It **modifies** the answer. The mechanism solves distributed evidence needing a connector and not evidence that qualifies a conclusion — and `implied_by_default`, still 0.000 for every arm, is the same gap from another angle.
+- **`multi_hop_4` fails for an instructive reason.** Its missing memory says *"add 0.35 bar as a salt-corrosion margin"*: it supplies no query term and links nothing, so a chain that is already complete and connected has no reason to want it. It **modifies** the answer. The mechanism solves distributed evidence needing a connector and not evidence that qualifies a conclusion — and `implied_by_default` was read as the same gap from another angle — **wrongly**, as it turns out: that family's 0.000 was a k=3 result and plain lexical solves it on dev at k=5 ([x1-extraction.md §1](research/results/x1-extraction.md)). `multi_hop_4` is 0.000 at k=3, 5 and 10 on both splits and stands on its own.
 - **Abstention is still unsolved**: 1 of 9 dev cases, 0 of 9 on test, and it reports `complete` on `unanswerable` cases because token coverage can be completed from memories that are not about the question.
 - **It is not a default.** `reconstruct` is opt-in, beside `retrieve`, because a mechanism that misses its registered bar does not become the default and chain reconstruction is a different operation from ranking.
 
@@ -378,7 +389,7 @@ easy or the whole benchmark was.
 
 Two findings beyond the separation:
 
-- **`implied_by_default` is 0.000 for every arm on both splits**, trained embedder included. The answer — "all yard vehicles run 3.9 bar in winter, except at the harbour and quarry sites" — names neither the unit nor the site, so it is not similar to the query and no similarity measure can rank it. Reaching it means knowing a default applies unless an exception says otherwise.
+- **`implied_by_default` is 0.000 for every arm on both splits** at **k=3**, trained embedder included. The answer — "all yard vehicles run 3.9 bar in winter, except at the harbour and quarry sites" — names neither the unit nor the site, so it ranks below four distractors that name both. **Corrected 2026-10-13:** at k=5 it ranks 4th and plain `lexical` reaches 1.000 sufficiency on dev (0.000 on test), so the claim that no similarity measure can rank it is withdrawn, and the family is abandoned as an X1 target ([facet-v1-implied.md §11](research/results/facet-v1-implied.md), [x1-extraction.md §1](research/results/x1-extraction.md)).
 - **A trained embedder refutes a prediction written into the generator.** It was expected to close `implied_by_paraphrase` and not the others; it does the opposite, recovering `implied_by_exclusion` (0.250 dev, 0.816 test) and leaving the paraphrase family near zero.
 
 Taken with relevance_v2's headroom sitting in multi-hop chains, the shape of

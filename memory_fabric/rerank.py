@@ -44,6 +44,8 @@ recorded in advance.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 from dataclasses import dataclass
 from typing import Mapping, Sequence
 

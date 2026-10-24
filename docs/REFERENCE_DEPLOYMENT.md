@@ -148,7 +148,43 @@ Four things are enforced rather than advised, and each has a test:
 A signature proves who sent a retraction and that it was unmodified. It proves
 **nothing** about whether the retracted claim was false.
 
-## 5. Operating it
+
+## 5. Across machines, from the command line
+
+Each store runs its own federation server. On each machine:
+
+```bash
+memory-fabric --db store.db --share-policy reviewed federate --peers peers.json \
+  --host 0.0.0.0 --port 8767 --behind-tls
+```
+
+`peers.json` lists the stores it talks to, each with the key shared with
+that store (32 random bytes, hex) and its address:
+
+```json
+[{"store_id": "st_...", "endpoint": "https://plant-b.example:8767",
+  "key_id": "k1", "key_hex": "<64 hex characters>"}]
+```
+
+Share a memory from one store to another:
+
+```bash
+memory-fabric --db store.db --share-policy reviewed offer <memory-id> --to st_... --peers peers.json
+```
+
+- It lands at the recipient as a **candidate**, recorded as
+  `peer:<sending store>`. A remote sender cannot activate its memory or
+  file it under a local agent's name. Validate it there to use it.
+- `--share-policy reviewed` lets a validated memory leave. The default
+  (`value`) also requires value evidence from verified outcomes, which a
+  new store does not have.
+- A correction at the origin follows the copy: the servers' background
+  managers deliver it, and a store that re-shared it forwards it on.
+- `--behind-tls` when TLS terminates in front; `--allow-plain-http` only on
+  a private network. Messages are signed and replay-checked, not encrypted.
+- Rotating a shared key: [RUNBOOKS.md §3](RUNBOOKS.md).
+
+## 6. Operating it
 
 ```bash
 memory-fabric --db origin.db attention      # what needs a human, worst first
@@ -170,7 +206,7 @@ estimate is computed from.
 See [DEPLOYMENT.md](../DEPLOYMENT.md) for backup, capacity, upgrades and the
 list of unsupported modes.
 
-## 6. Troubleshooting
+## 7. Troubleshooting
 
 | Symptom | Cause |
 |---|---|
@@ -182,9 +218,9 @@ list of unsupported modes.
 | Recipient reports `superseded` | The retraction's `origin_sequence` is below the recipient's cursor for that origin: a delayed older correction, correctly not applied. |
 | `PolicyViolation: ... has been content-erased` | Erasure is terminal for a memory's content. Record new information as a new memory. |
 | A memory is `contested` and you expected `active` | Support was recomputed after a premise was withdrawn. `operator.support(id).reason` says which premise and why. |
-| `NotUsable: ... withdrawn_on_weak_evidence` | It was withdrawn on co-occurrence with a failure or with no stated basis. Phase A measured that policy destroying more correct memory than wrong; consider releasing it. |
+| `NotUsable: ... withdrawn_on_weak_evidence` | It was withdrawn on co-occurrence with a failure or with no stated basis. That policy removes more correct memory than wrong; consider releasing it. |
 
-## 7. What this deployment is not
+## 8. What this deployment is not
 
 Stated here because a working demo invites the wrong conclusion. From
 [docs/AUDIT.md](AUDIT.md):
@@ -194,7 +230,7 @@ Stated here because a working demo invites the wrong conclusion. From
 - **No TLS.** Use a reverse proxy or a private network.
 - **No encryption at rest** for the database as a whole. Content is sealed per memory and a single memory's key can be destroyed, but the keys sit beside the ciphertext.
 - **No transitive re-sharing.** An importer may not re-share onward, so an origin always knows its recipients. Lifting that is what would force a peer-to-peer substrate, and it is deliberately out of scope.
-- **Value-ranked exposure is not recommended.** Three live attempts lost to cheap baselines, and the ranking has a [known defect](../research/decisions/2026-10-10-value-ranking-ignores-uncertainty.md).
+- **Value-ranked exposure is not recommended.** It did not beat simple relevance ranking with live agents, and it does not yet account for the uncertainty in each estimate.
 
 On the readiness ladder in the product roadmap this is **step 5 of 7** — a
 fault-tested reference system. Step 6 needs agent and tenant identity, TLS and

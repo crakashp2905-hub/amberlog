@@ -6,6 +6,7 @@ import json
 import os
 import tempfile
 import threading
+import time
 import unittest
 import urllib.error
 import urllib.request
@@ -72,6 +73,7 @@ class ApiCase(unittest.TestCase):
         self.mid = agent(self.fabric, "ag_seed", "tn_acme").remember(
             "E01 at coastal sites: swap the pilot cable.")
         operator(self.fabric, "op").validate(self.mid)
+        operator(self.fabric, "op").share(self.mid, "team")
         self.service = MemoryService(fabric=self.fabric)
         register_all(self.service, load_agents(path))
         self.clock = Clock()
@@ -120,25 +122,45 @@ class TestApiLimits(ApiCase):
                 self.api.handle("recall", None, {"query": "x"}, remote="10.0.0.9")
         self.api.handle("recall", self.bearer(), {"query": "E01"}, remote="10.0.0.9")
 
-    def test_concurrent_agents_do_not_share_the_connection_unlocked(self) -> None:
-        """P12b found authentication reading SQLite outside the store lock."""
-        api = AgentApi(self.service, RateLimit(rate=0.0))
-        bearers = [self.bearer("ag_a"), self.bearer("ag_b")] * 8
-        errors: list[BaseException] = []
+    def _with_store_lock_held_elsewhere(self, request) -> tuple[_ApiError, float]:
+        """Run `request` while another thread holds the fabric's lock.
 
-        def hammer(bearer: str) -> None:
-            try:
-                for _ in range(25):
-                    api.handle("recall", bearer, {"query": "E01 coastal"})
-            except BaseException as exc:  # noqa: BLE001 - collected for the assertion
-                errors.append(exc)
+        The lock is re-entrant, so holding it in this thread would prove
+        nothing: the request would re-acquire it without waiting.
+        """
+        held, release = threading.Event(), threading.Event()
 
-        threads = [threading.Thread(target=hammer, args=(b,)) for b in bearers]
-        for t in threads:
-            t.start()
-        for t in threads:
-            t.join()
-        self.assertEqual(errors, [])
+        def hold() -> None:
+            with self.fabric.lock:
+                held.set()
+                release.wait(10)
+
+        holder = threading.Thread(target=hold)
+        holder.start()
+        self.assertTrue(held.wait(5))
+        try:
+            started = time.monotonic()
+            with self.assertRaises(_ApiError) as caught:
+                request()
+            return caught.exception, time.monotonic() - started
+        finally:
+            release.set()
+            holder.join()
+
+    def test_a_refused_request_never_takes_the_store_lock(self) -> None:
+        a = self.bearer()
+        for _ in range(2):
+            self.api.handle("recall", a, {"query": "E01"})
+        error, waited = self._with_store_lock_held_elsewhere(
+            lambda: self.api.handle("recall", a, {"query": "E01"}))
+        self.assertEqual(error.status, 429)
+        self.assertLess(waited, 1.0, "a limited request queued on the store")
+
+    def test_a_forged_credential_never_takes_the_store_lock(self) -> None:
+        error, waited = self._with_store_lock_held_elsewhere(
+            lambda: self.api.handle("recall", "garbage", {"query": "E01"}, remote="10.0.0.7"))
+        self.assertEqual(error.status, 401)
+        self.assertLess(waited, 1.0, "an unauthenticated request queued on the store")
 
 
 class TestBoundedTokens(ApiCase):
@@ -151,6 +173,7 @@ class TestBoundedTokens(ApiCase):
             other = agent(self.fabric, "ag_seed", "tn_acme").remember(
                 "E02 at inland sites: check the float switch.")
             operator(self.fabric, "op").validate(other)
+            operator(self.fabric, "op").share(other, "team")
             self.api.handle("fetch", a, {"memory_id": other})
             self.assertEqual(list(self.api._issued["ag_a"]), [other])
             with self.assertRaises(_ApiError) as caught:

@@ -9,6 +9,8 @@ is a security requirement rather than a convenience.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from collections import deque
 from dataclasses import dataclass, field
 from typing import Iterable

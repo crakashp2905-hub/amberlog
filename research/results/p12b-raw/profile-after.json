@@ -1,0 +1,267 @@
+{
+  "experiment": "p12-profile",
+  "agents": 10,
+  "ops": 20,
+  "profiled_op_ms_total": 540.5,
+  "records": [
+    [
+      "retrieve",
+      53.85079997358844,
+      ""
+    ],
+    [
+      "remember",
+      361.7073000059463,
+      ""
+    ],
+    [
+      "retrieve",
+      6.781900010537356,
+      ""
+    ],
+    [
+      "gated_action",
+      6.602599984034896,
+      ""
+    ],
+    [
+      "retrieve",
+      6.6068999585695565,
+      ""
+    ],
+    [
+      "retrieve",
+      5.155599967110902,
+      ""
+    ],
+    [
+      "retrieve",
+      5.419099994469434,
+      ""
+    ],
+    [
+      "gated_action",
+      7.724600029177964,
+      ""
+    ],
+    [
+      "retrieve",
+      5.707999982405454,
+      ""
+    ],
+    [
+      "remember",
+      11.234300036448985,
+      ""
+    ],
+    [
+      "retrieve",
+      5.977099994197488,
+      ""
+    ],
+    [
+      "remember",
+      10.252300009597093,
+      ""
+    ],
+    [
+      "retrieve",
+      10.416000033728778,
+      ""
+    ],
+    [
+      "gated_action",
+      9.232699987478554,
+      ""
+    ],
+    [
+      "retrieve",
+      5.03439997555688,
+      ""
+    ],
+    [
+      "retrieve",
+      4.833599959965795,
+      ""
+    ],
+    [
+      "retrieve",
+      6.967499968595803,
+      ""
+    ],
+    [
+      "retrieve",
+      4.980499972589314,
+      ""
+    ],
+    [
+      "gated_action",
+      6.39320001937449,
+      ""
+    ],
+    [
+      "retrieve",
+      5.614799971226603,
+      ""
+    ]
+  ],
+  "counters": {
+    "replays": 1,
+    "replay_events": 202,
+    "catch_ups": 2,
+    "catch_up_events": 676
+  },
+  "wall_s": 0.7056822000304237,
+  "top": [
+    {
+      "function": "fabric.py:211:wrapper",
+      "calls": 24,
+      "cumulative_s": 0.5301,
+      "own_s": 0.0003
+    },
+    {
+      "function": "fabric.py:973:_emit",
+      "calls": 24,
+      "cumulative_s": 0.4777,
+      "own_s": 0.0006
+    },
+    {
+      "function": "eventlog.py:134:append_many",
+      "calls": 24,
+      "cumulative_s": 0.4504,
+      "own_s": 0.001
+    },
+    {
+      "function": "txn.py:80:transaction",
+      "calls": 48,
+      "cumulative_s": 0.4334,
+      "own_s": 0.0003
+    },
+    {
+      "function": "fabric.py:1536:remember",
+      "calls": 3,
+      "cumulative_s": 0.383,
+      "own_s": 0.0002
+    },
+    {
+      "function": "fabric.py:222:__init__",
+      "calls": 1,
+      "cumulative_s": 0.1458,
+      "own_s": 0.0001
+    },
+    {
+      "function": "fabric.py:1872:retrieve",
+      "calls": 17,
+      "cumulative_s": 0.1453,
+      "own_s": 0.0014
+    },
+    {
+      "function": "fabric.py:1126:_replay",
+      "calls": 1,
+      "cumulative_s": 0.1422,
+      "own_s": 0.0003
+    },
+    {
+      "function": "projections.py:182:apply_all",
+      "calls": 3,
+      "cumulative_s": 0.099,
+      "own_s": 0.0005
+    },
+    {
+      "function": "projections.py:158:apply",
+      "calls": 1155,
+      "cumulative_s": 0.0966,
+      "own_s": 0.0022
+    },
+    {
+      "function": "projections.py:186:rebuild",
+      "calls": 1,
+      "cumulative_s": 0.0932,
+      "own_s": 0.0
+    },
+    {
+      "function": "fabric.py:333:_unseal_content",
+      "calls": 222,
+      "cumulative_s": 0.0816,
+      "own_s": 0.0005
+    },
+    {
+      "function": "erasure.py:463:unseal",
+      "calls": 222,
+      "cumulative_s": 0.0766,
+      "own_s": 0.0004
+    },
+    {
+      "function": "cipher.py:341:suite_for",
+      "calls": 222,
+      "cumulative_s": 0.0729,
+      "own_s": 0.0003
+    },
+    {
+      "function": "cipher.py:291:_probe_aead",
+      "calls": 1,
+      "cumulative_s": 0.0724,
+      "own_s": 0.0
+    },
+    {
+      "function": "cipher.py:259:aead_status",
+      "calls": 225,
+      "cumulative_s": 0.0724,
+      "own_s": 0.0
+    },
+    {
+      "function": "fabric.py:1409:_index",
+      "calls": 225,
+      "cumulative_s": 0.0554,
+      "own_s": 0.0011
+    },
+    {
+      "function": "vectors.py:245:add",
+      "calls": 225,
+      "cumulative_s": 0.0381,
+      "own_s": 0.0038
+    },
+    {
+      "function": "vectors.py:160:embed",
+      "calls": 225,
+      "cumulative_s": 0.0228,
+      "own_s": 0.0076
+    },
+    {
+      "function": "fabric.py:1015:_catch_up",
+      "calls": 2,
+      "cumulative_s": 0.0219,
+      "own_s": 0.0002
+    },
+    {
+      "function": "fabric.py:1347:_search",
+      "calls": 17,
+      "cumulative_s": 0.0212,
+      "own_s": 0.0002
+    },
+    {
+      "function": "vectors.py:95:search",
+      "calls": 17,
+      "cumulative_s": 0.0209,
+      "own_s": 0.0067
+    },
+    {
+      "function": "actions.py:1:<module>",
+      "calls": 1,
+      "cumulative_s": 0.0174,
+      "own_s": 0.0001
+    },
+    {
+      "function": "erasure.py:350:key_for",
+      "calls": 225,
+      "cumulative_s": 0.0156,
+      "own_s": 0.0004
+    },
+    {
+      "function": "eventlog.py:167:read",
+      "calls": 881,
+      "cumulative_s": 0.0137,
+      "own_s": 0.0028
+    }
+  ]
+}

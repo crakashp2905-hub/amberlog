@@ -203,7 +203,7 @@ def _write_history(fabric, instance: Mapping[str, Any]) -> dict[str, tuple[str, 
             stored = fabric.remember(
                 agent_id="lme",
                 content=f"{turn.get('role', 'user')}: {content}",
-                valid_from=when,
+                valid_from=when, scope="team",
             )
             mapping[stored] = (session_id, position)
     return mapping

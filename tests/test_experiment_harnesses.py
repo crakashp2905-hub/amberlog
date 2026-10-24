@@ -556,3 +556,17 @@ class TestCeilingCheckIsMechanical(unittest.TestCase):
             source = inspect.getsource(module.verdict)
             self.assertIn("report_ceiling", source, module.__name__)
             self.assertIn(ceiling, source, module.__name__)
+
+
+class GmeMatrixHarness(unittest.TestCase):
+    """The GME matrix runs, its oracle is never beaten, and the merge invariants hold."""
+
+    def test_one_small_seed(self) -> None:
+        from experiments import gme_matrix as g
+
+        run = g.run_seed(11, g.ARMS)
+        summary = g.summarise([run])
+        self.assertEqual(summary["any_arm_beats_oracle"], [])
+        self.assertEqual(run["version_control"], {"resurrected": 0, "lost_updates": 0})
+        self.assertEqual(run["phases"]["1"]["A"]["accuracy"], 0.0)
+        self.assertEqual(run["phases"]["1"]["C"]["branch_leak_rate"] <= 0.03, True)

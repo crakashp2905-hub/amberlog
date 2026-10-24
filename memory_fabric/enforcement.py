@@ -24,6 +24,10 @@ restricted memory content").
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
+from .model import visible_to
+
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any
@@ -158,6 +162,7 @@ INTEGRITY_MOVED = "integrity_moved"
 WRONG_AGENT = "wrong_agent"
 WRONG_STORE = "wrong_store"
 WRONG_TENANT = "wrong_tenant"
+NOT_VISIBLE = "not_visible"
 
 
 class Enforcer:
@@ -175,8 +180,9 @@ class Enforcer:
         risk: RiskLevel = RiskLevel.LOW,
         include_contested: bool = False,
         tenant_id: str | None = None,
+        agent_id: str | None = None,
     ) -> AccessDecision:
-        """Resolve tenant, then lifecycle, then decide by risk.
+        """Resolve tenant, then scope, then lifecycle, then decide by risk.
 
         The order is deliberate: establish what is *known* about the memory
         before asking what the caller intends to do with it, so the same facts
@@ -217,6 +223,14 @@ class Enforcer:
             return AccessDecision(
                 memory_id=memory_id, version=0, verdict=Verdict.DENY,
                 reason_code=WRONG_TENANT, risk=risk, integrity_revision=revision,
+            )
+        if not visible_to(memory, agent_id, state):
+            # Another agent's private memory: refused before lifecycle, with
+            # version 0, for the reason the tenant check is -- "not yours" is
+            # all the caller may learn about it.
+            return AccessDecision(
+                memory_id=memory_id, version=0, verdict=Verdict.DENY,
+                reason_code=NOT_VISIBLE, risk=risk, integrity_revision=revision,
             )
 
         lifecycle = memory.lifecycle_state
@@ -344,8 +358,14 @@ class Enforcer:
                 detail="exposure token has expired; retrieve again",
             )
 
-        decision = self.check(token.memory_id, risk=risk, tenant_id=token.tenant_id)
-        if decision.reason_code == WRONG_TENANT:
+        # With the agent: scope is re-checked at action time, not only at
+        # retrieval. Without it `visible_to` took the operator's view, and a
+        # token stayed usable after the agent lost access to the memory (a
+        # collection grant revoked, the memory removed from the collection):
+        # tests/test_visibility_at_action.py.
+        decision = self.check(token.memory_id, risk=risk, tenant_id=token.tenant_id,
+                              agent_id=agent_id)
+        if decision.reason_code in (WRONG_TENANT, NOT_VISIBLE):
             # Return the tenant refusal as it stands. The version comparison
             # below would otherwise fire first and report `version_moved`,
             # because a cross-tenant check deliberately reports version 0 — so

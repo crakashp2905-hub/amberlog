@@ -29,7 +29,7 @@ class TestObservationOnly(unittest.TestCase):
     def setUp(self) -> None:
         f = self.fabric = MemoryFabric(auto_activate=True)
         self.addCleanup(f.close)
-        a, b = f.remember("ana", "gauge A 4 bar"), f.remember("ben", "gauge B 4 bar")
+        a, b = f.remember("ana", "gauge A 4 bar", scope="team"), f.remember("ben", "gauge B 4 bar", scope="team")
         gate = ActionGate(f, ActionPolicy(
             tools={"override": ToolRule("override", min_independent_sources=2,
                                         required_checks=(CHECK_INDEPENDENT_SUPPORT,))},
@@ -38,9 +38,9 @@ class TestObservationOnly(unittest.TestCase):
         self.cert = f.certify("c", [a, b], "ops")
         gate.authorize("override", "ops", self.cert)
         for i in range(12):
-            f.remember("mallory", f"bulletin {i}: clearance 9.9 m")
+            f.remember("mallory", f"bulletin {i}: clearance 9.9 m", scope="team")
         f.quarantine(a, reason="gauge A miscalibrated", basis="contradicted")
-        x, y = f.remember("ana", "crane 2 max 10 t"), f.remember("ben", "crane 2 max 14 t")
+        x, y = f.remember("ana", "crane 2 max 10 t", scope="team"), f.remember("ben", "crane 2 max 14 t", scope="team")
         f.challenge([x, y], evidence="conflict")
 
     def test_every_trigger_kind_fires_on_its_signal(self) -> None:

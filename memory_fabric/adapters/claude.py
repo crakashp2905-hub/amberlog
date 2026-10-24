@@ -23,6 +23,8 @@ through Claude Code over MCP is measured in research/results/live-claude-mcp.md.
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 

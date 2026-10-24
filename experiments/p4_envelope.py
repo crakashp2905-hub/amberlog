@@ -174,7 +174,7 @@ def retrieval_latency(env: Envelope, sizes: Sequence[int], queries: int = 40,
                 fabric.remember(
                     agent_id=f"ag-{index % 50:02d}",
                     content=(f"unit-{index % 97} requires {1 + index % 9}.{index % 10} m "
-                             f"of clearance at the site-{index % 31} depot"))
+                             f"of clearance at the site-{index % 31} depot"), scope="team")
             write_ms = (time.perf_counter() - write_started) * 1000 / max(1, size)
 
             read_started = time.perf_counter()
@@ -218,7 +218,7 @@ def authorisation_under_load(env: Envelope, agents: Sequence[int]) -> None:
                     agent_id=f"ag-{index % count:03d}",
                     tenant_id=tenant,
                     content=(f"tenant {tenant} unit-{index % 23} requires "
-                             f"{1 + index % 9}.0 m of clearance at the depot"))
+                             f"{1 + index % 9}.0 m of clearance at the depot"), scope="team")
                 owner[mid] = tenant
 
             leaks = 0
@@ -292,7 +292,7 @@ def recovery_under_contention(env: Envelope, writers: int, appends: int) -> None
             gaps = sequences != list(range(1, len(sequences) + 1))
             stored = len(reopened.state.memories)
             # Still writable after the kill.
-            reopened.remember(agent_id="after", content="a write after recovery")
+            reopened.remember(agent_id="after", content="a write after recovery", scope="team")
             usable = len(reopened.state.memories) == stored + 1
         finally:
             reopened.close()

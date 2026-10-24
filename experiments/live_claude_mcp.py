@@ -90,8 +90,11 @@ def _seed_store(db: str) -> str:
         op = operator(fabric, "supervisor")
         seed = writer.remember(SEED)
         op.validate(seed)
+        op.share(seed, "team")  # the model on MCP is another agent
         for text in DISTRACTORS:
-            op.validate(writer.remember(text))
+            mid = writer.remember(text)
+            op.validate(mid)
+            op.share(mid, "team")
         return seed
     finally:
         fabric.close()

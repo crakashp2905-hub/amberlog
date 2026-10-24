@@ -273,3 +273,26 @@ def _event(type_name: str):
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
+
+
+class RolledBackWritesLeaveNoIndexEntry(unittest.TestCase):
+    """A write rolled back with its transaction must not stay in the copy index.
+
+    It did: the replay after a rollback re-indexed what the log held but never
+    unindexed what it no longer held, so the next similar write "recognised"
+    a copy of a memory that did not exist and failed with a KeyError. Found
+    by concurrent branch commits (tests/test_branching.py).
+    """
+
+    def test_a_similar_write_after_a_rollback_succeeds(self) -> None:
+        f = MemoryFabric(":memory:", auto_activate=True)
+        try:
+            with self.assertRaises(RuntimeError):
+                with f._transaction():
+                    f.remember("a", "Pump P1 checked at 4 bar on the night shift.")
+                    raise RuntimeError("roll back")
+            mid = f.remember("a", "Pump P1 checked at 4 bar on the night shift, again.")
+            self.assertIn(mid, f.state.memories)
+            self.assertEqual(len(f.state.memories), 1)
+        finally:
+            f.close()

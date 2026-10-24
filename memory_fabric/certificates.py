@@ -38,6 +38,8 @@ docs/SAFETY_AND_SECURITY.md (S14), not solved.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 import json
 from dataclasses import dataclass, field
@@ -547,7 +549,8 @@ class CertificateVerifier:
             reasons.append(NO_SUPPORTING_EVIDENCE)
         usable_ids: list[str] = []
         for ref in supporting:
-            decision = fabric.enforcer.check(ref.memory_id, risk=risk, tenant_id=tenant_id)
+            decision = fabric.enforcer.check(ref.memory_id, risk=risk, tenant_id=tenant_id,
+                                             agent_id=agent_id)
             code = ""
             if decision.reason_code == "not_found":
                 code = EVIDENCE_NOT_FOUND

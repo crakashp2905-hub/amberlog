@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.9.0`
+- **Schema version:** `0.12.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,131 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.13.0 — context receipts and memory branches
+
+Additive: six event types, no projection change. A 0.12.0 log replays
+unchanged, and a 0.12.0 reader skips all six. None carries memory content or
+query text: ids, versions, digests and reason codes only.
+
+- **`ContextBuilt`**, payload `{receipt_id, tenant_id, agent_id, branch,
+  commit_id, request_digest, selected, excluded, token_budget,
+  tokens_estimated, mode, policy_id, retrieval_config, log_head,
+  nondeterminism}`. What one context bundle delivered: each memory as id and
+  version, each summary node with its exact source versions, and each
+  excluded candidate with a reason code (`context_receipt.py`,
+  docs/architecture/ADR-003-context-receipts.md).
+- **`BranchCreated`**, payload `{branch, tenant_id, owner, members,
+  reviewers, base_seq}`.
+- **`BranchCommitted`**, payload `{branch, tenant_id, commit}`. The commit
+  is `{commit_id, branch, tenant_id, parents, base_seq, changes, author,
+  message, created_at, schema_version}`; `commit_id` is `c_` + SHA-256 of the
+  canonical JSON of everything but itself, `created_at` and
+  `schema_version`. A change is `{op: add|revise|withdraw, memory_id?,
+  base_version?, candidate_id?, digest}`.
+- **`BranchHeadMoved`**, payload `{branch, tenant_id, from, to}`. Appended in
+  the same transaction as the commit, after a compare-and-swap check of
+  `from` under the write lock.
+- **`MergeApplied`**, payload `{merge_id, branch, tenant_id, branch_head,
+  preview_digest, idempotency_key, actor, policy_version, results, summary}`,
+  each result a change with its `class`, `decision` and what was `applied`;
+  a revert has `reverts` and `reverted` instead
+  (docs/architecture/ADR-001-branch-commit-model.md).
+- **`BranchClosed`**, payload `{branch, tenant_id}`.
+
+Behaviour: a branch's changes are ordinary memories written as candidates
+with `context.branch`, so they are screened, sealed and erasable, and are
+never served outside their branch until merged.
+
+### 0.12.0 — the background memory manager, source notices, origin-bound authority, objectives
+
+Additive: seven event types, no projection change. A 0.11.0 log replays
+unchanged, and a 0.11.0 reader skips all seven.
+
+- **`ManagerLease`**, payload `{holder, expires_ms}`. Taken and renewed inside
+  a write transaction, so at most one manager maintains a store at a time.
+- **`MaintenanceRan`**, payload `{since_seq, until_seq, tasks}`. One cycle:
+  for each task, what it did or the error. The tasks are sources, dispatch, retention,
+  audit, conflicts, compaction, checkpoint and health. Ids and counts only, never
+  content.
+- **`SourceDiscredited`**, payload `{author_ref, signal, origin_store_id,
+  notice_id, reason_code, authorised}`. A source here was caught by an ingest
+  screen, or a peer said so in a signed `SourceNotice`. Unauthenticated
+  notices are recorded with `authorised: false` and change nothing.
+- **`AuthorityElevated`**, payload `{memory_id, version, approver, policy,
+  reason, revoked}`. An approver who is not the memory's author or source
+  lifted its *soft* authority reasons (tool output, import), for that version
+  only (`authority.py`). Hard reasons cannot be elevated.
+- **`GrantIssued`**, payload `{grant_id, tool, agent, binding, expires_ms,
+  revoked}`. A short-lived grant for one exact action: `binding` digests the
+  tool, agent, tenant, target, parameters and evidence versions. Consumed by
+  its first allowed use.
+- **`ObjectiveChanged`**, payload `{digest, status, proposer, evaluation,
+  reason, objective}`. A `MemoryObjectiveV2` proposed, adopted (by a
+  reviewer who is not the proposer, with no registered metric worse than its
+  baseline) or rejected. Rules over metadata only, never content.
+- **`ActionAttempted`**, payload `{key, tool, tenant_id}`. Committed *before*
+  the action fence opens, so a crash that rolls the fence back still leaves
+  it. An attempt with no `ActionExecuted` after it is **uncertain**: the
+  next call with the same key is refused until `retry=True`.
+- `ActionExecuted` gains the outcome `refused`, which settles an attempt
+  that the gate refused under the fence (nothing ran).
+- `ActionGated` gains `grant_id` and `binding` (null when absent).
+- `context.federation` on an import gains `authority` `{kind, trust,
+  reasons, origins}`: the origin's verdict, applied as a floor at the
+  recipient.
+
+Behaviour: `serve`, `agent-api` and `mcp` start the manager unless
+`--no-maintain` is given. `memory-fabric maintain` runs it on its own.
+Retention deletions are applied only with `--retention-delete`.
+
+### 0.11.0 — the action fence, exposure records and the provenance chain
+
+Additive: one event type and three projection fields. A 0.10.0 log replays
+unchanged. A 0.10.0 reader skips the new event, as it skips any type it does
+not model, so it does not know which actions ran under the fence.
+
+**`ActionExecuted`**, payload `{key, tool, outcome, fenced, watermark,
+lease_ms, elapsed_ms, evidence: [[memory_id, version]], tenant_id}`. Emitted
+by `ActionGate.execute`, inside the same write transaction as the
+verification it follows (S6). `outcome` is `executed` / `failed` /
+`timed_out`, and `fenced: false` marks a run whose lease expired. `key` is the
+caller's idempotency key. Ids only, never content.
+
+Projection, with no new event behind it:
+
+- an exposure record carries `agent_id` and the log `seq` it came from;
+- `created_seq[memory_id]` is the sequence of a memory's `MemoryCreated`;
+- `independence.py` (S2) reads all three.
+
+An import's `context.federation` gains three fields:
+
+- `chain`: every store the memory passed through, oldest first. An offer into
+  a store on the chain is refused (F12);
+- `root`: the original's `{store, memory_id}`;
+- `informed_by`: the originals its author had been shown before writing it.
+
+Imports recorded earlier have none of the three. Their immediate origin is
+used instead, which is all that can be recovered for them.
+
+### 0.10.0 — collections, and scope enforced on reads
+
+Additive: one event type and one projection field. A 0.9.0 log replays
+unchanged; a 0.9.0 reader skips the new event, as it skips any type it does not
+model, and so does not know who a collection admits.
+
+**`CollectionChanged`**, payload `{tenant_id, collection, action, agent_id?,
+memory_id?, permissions?}`, `agent_id` on the event is the actor. `action` is
+`add` / `remove` (a memory) or `grant` / `revoke` (an agent's permissions:
+`read`, `write`, `approve`, `retract`; a revoke naming none removes all).
+Projected into `collections[(tenant, name)] = {members, grants}`.
+
+**Behaviour, not schema: scope is enforced on reads.** A `private` memory is
+readable by the agent that wrote it and by agents holding `read` on a
+collection that contains it; `team` and `federated` by every agent in the
+tenant. Before 0.10.0 retrieval checked only lifecycle and tenant. Restricted
+memories cannot be written wider than private or join a collection. The
+firewall's value rule applies to promotion to `federated` only.
 
 ### 0.9.0 — action gating
 

@@ -13,6 +13,7 @@ import sqlite3
 import subprocess
 import sys
 import unittest
+import time
 import uuid
 
 URL = os.environ.get("MF_TEST_POSTGRES_URL")
@@ -124,8 +125,11 @@ class TestOperations(PostgresCase):
 
         secret = "s3cr3t-" + uuid.uuid4().hex
         self.assertNotIn(secret, redact(f"postgresql://user:{secret}@db.example:5432/mf"))
+        started = time.monotonic()
         done = self.cli(f"postgresql://postgres:{secret}@127.0.0.1:1/nope", "overview")
         self.assertNotEqual(done.returncode, 0)
+        self.assertLess(time.monotonic() - started, 60,
+                        "a bad URL must fail promptly, not on the OS's TCP retry schedule")
         self.assertNotIn(secret, done.stdout + done.stderr)
 
 

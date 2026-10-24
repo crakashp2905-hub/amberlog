@@ -190,6 +190,121 @@ jobs:
           python-version: "3.13"
       - run: python -m experiments.faultsim
 
+  mutation:
+    # Curated mutants of the security guards (tenant, visibility, signature,
+    # grant, replay, hop limit, payload limit). Each must be killed by its
+    # named tests; a survivor is an untested guard and fails the build.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install -e .
+      - run: python tools/mutation_check.py
+
+  fresh-machine:
+    # Install the wheel into a new venv outside the repo, run the quickstart
+    # and the reference agent against the installed package, init + doctor,
+    # then uninstall and check nothing is left (tools/fresh_machine.py).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m pip install --upgrade build
+      - run: python -m build --wheel --outdir dist
+      - shell: bash
+        run: python tools/fresh_machine.py dist/*.whl
+
+  release-evidence:
+    # The evidence bundle for this exact commit: SHA, SBOM, secret scan,
+    # adversarial gate, test counts, wheel hash (tools/release_bundle.py).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade build
+      - run: python -m build --wheel --outdir dist
+      - run: python tools/release_bundle.py --out release-evidence --wheel dist/*.whl --bench full
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: release-evidence
+          path: release-evidence
+
+  multihost:
+    # Separate store server processes, real HTTP between them through a
+    # latency proxy (50 ms a hop): share A -> B -> C by signed offers, correct
+    # at A, and the correction must reach C; then again with C down during
+    # the correction, converging after it restarts (experiments/multihost.py).
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python -m experiments.multihost --latency-ms 50 --out multihost.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: multihost-${{ matrix.os }}
+          path: multihost.json
+
+  multihost-compose:
+    # The same scenario with each store in its own container and network
+    # stack, federating over the Docker network by service name. One
+    # physical machine, several network hosts.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      # The image seals content with AES-GCM (production profile), so the
+      # driver on the host needs the same library to read those stores.
+      - run: python -m pip install "cryptography>=42"
+      - run: python -m experiments.multihost --mode prepare
+      - run: HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose -f deploy/multihost/docker-compose.yml up -d --build
+      - run: python -m experiments.multihost --mode compose --out multihost-compose.json
+      - if: failure()
+        run: docker compose -f deploy/multihost/docker-compose.yml logs
+      - if: always()
+        run: docker compose -f deploy/multihost/docker-compose.yml down
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: multihost-compose
+          path: multihost-compose.json
+
+  adversarial-gate:
+    # Every attack family's invariants, by name (tools/adversarial_gate.py).
+    # A family that fails, errors or loses all its tests fails the gate, and
+    # a release needs it green on the exact commit.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python tools/adversarial_gate.py --report adversarial-gate.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: adversarial-gate
+          path: adversarial-gate.json
+
   e2e:
     # Real process boundaries the unit suite cannot cross: an agent-api server
     # in its own process, a CLI process that retracts, an action gate in a
@@ -204,6 +319,21 @@ jobs:
       - run: pip install -e .
       - run: python -m experiments.e2e_validation --quick
 
+  rollback:
+    # Upgrade-and-rollback with real older code: back up on the last release,
+    # upgrade and write with this commit, check the old code refuses the
+    # upgraded store, restore the backup, and check both versions call it
+    # sound (experiments/rollback_drill.py; docs/OPERATIONS.md §4-5).
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m experiments.rollback_drill --old-ref v0.11.0
+
   claude-contract:
     # The Claude adapter through the real anthropic SDK, HTTP stubbed: the SDK
     # must accept every argument the adapter sends and the adapter must read
@@ -216,6 +346,31 @@ jobs:
           python-version: "3.13"
       - run: pip install anthropic
       - run: python -m unittest tests.test_claude_contract -v
+
+  lint:
+    # ruff and mypy as configured in pyproject.toml. Enforced, not
+    # informational: both were clean when this job was added.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install "ruff==0.15.13" "mypy==2.1.0"
+      - run: python -m ruff check
+      - run: python -m mypy
+
+  langchain-contract:
+    # The LangChain retriever against the real library; the main jobs install
+    # nothing, so there it is skipped.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install "langchain-core>=0.3"
+      - run: python -m unittest tests.test_integrations -v
 
   secrets:
     # The project ships a sensitive-data detector. Pointing it at the repo is

@@ -42,6 +42,9 @@ class ApiCase(unittest.TestCase):
         writer = agent(self.fabric, "ag_seed", "tn_acme")
         self.mid = writer.remember("E01 at coastal sites: swap the pilot cable.")
         operator(self.fabric, "op").validate(self.mid)
+        # An agent's write is private to it until shared; the other agents here
+        # read it, so the operator shares it to the team.
+        operator(self.fabric, "op").share(self.mid, "team")
         self.service = MemoryService(fabric=self.fabric)
         register_all(self.service, load_agents(self.agents_file))
         self.server = build_agent_server(AgentApi(self.service), port=0)

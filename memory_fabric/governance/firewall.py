@@ -7,8 +7,10 @@ carries the full list of reasons for the audit trail.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field
-from typing import Callable, Iterable, Sequence
+from typing import Any, Callable, Iterable, Sequence
 
 from ..model import (
     FirewallDecision,
@@ -92,8 +94,17 @@ def rule_value_must_show_benefit(request: FirewallRequest) -> tuple[FirewallDeci
     episodes where a memory happened to be retrieved is the exact confusion
     between value and relevance that this system exists to avoid, so it is
     reported as insufficient rather than silently accepted.
+
+    **Federated only.** It applied to `team` as well, which did nothing while
+    retrieval ignored scope. Once scope is enforced on reads, a value gate on
+    `team` means a newly validated memory can never reach its own teammates in
+    a deployment with no outcome signal -- the common case. Promotion to
+    `team` stays gated by the other rules (active, not restricted, capabilities
+    granted) and by an actor who decided it; leaving the store keeps this one.
+    Phase B also measured the gate at the store boundary costing more than it
+    protected (README, consequence 3); it is kept there pending that question.
     """
-    if request.target_scope.rank <= Scope.PRIVATE.rank:
+    if request.target_scope is not Scope.FEDERATED:
         return None
     value = request.value
     if value is None or value.n_eff <= 0.0:
@@ -156,6 +167,21 @@ DEFAULT_RULES: tuple[Rule, ...] = (
 )
 
 
+REVIEWED_RULES: tuple[Rule, ...] = (
+    rule_restricted_stays_private,
+    rule_must_be_active,
+    rule_open_hypothesis_warns,
+    rule_capabilities_must_be_granted,
+    rule_evidence_independence,
+)
+"""The `reviewed` share policy: a memory may leave once it is active, which on a
+store that does not auto-activate means a reviewer validated it. The default
+policy also requires value evidence from outcomes, which a new deployment
+never has, so it shares nothing until episodes with verified outcomes exist."""
+
+SHARE_POLICIES = {"value": DEFAULT_RULES, "reviewed": REVIEWED_RULES}
+
+
 class Firewall:
     """Rule-based, deterministic, and explainable. A learned policy could
     replace it later, but the audit trail requires stated reasons either way."""
@@ -167,10 +193,22 @@ class Firewall:
         rules: Sequence[Rule] | None = None,
         detector: SensitiveDataDetector | None = None,
         injection: InjectionDetector | None = None,
+        directive_screen: bool = True,
+        model_screen: Any = None,
     ) -> None:
         self.rules = tuple(rules) if rules is not None else DEFAULT_RULES
         self.detector = detector or SensitiveDataDetector()
         self.injection = injection or InjectionDetector()
+        # Paraphrased injection, detected by what it does rather than its
+        # wording (`directive.py`): 10/12 held-out paraphrases, 0/16 benign hard
+        # negatives, where the pattern screen caught 0/12. On by default since
+        # 0.12.0, the owner's decision. A false alarm costs one review
+        # (`review --approve --override-screen`).
+        self.directive_screen = directive_screen
+        # Optional, off by default (`model_screen.py`): asks a model whether
+        # the text tries to instruct its reader. Runs only when the text
+        # screens found nothing, so it adds a call only where they are silent.
+        self.model_screen = model_screen
 
     def evaluate(self, request: FirewallRequest) -> FirewallRuling:
         decisions: list[FirewallDecision] = [FirewallDecision.ALLOW]
@@ -196,9 +234,16 @@ class Firewall:
         if injected:
             decisions.append(FirewallDecision.QUARANTINE)
             reasons.append(f"prompt injection detected: {summarise(injected)}")
+        directive = self._directive(request.memory.content)
+        if directive:
+            decisions.append(FirewallDecision.QUARANTINE)
+            reasons.append(f"prompt injection detected (directive): {directive}")
 
         governing = max(decisions, key=_SEVERITY.index)
         return FirewallRuling(decision=governing, reasons=reasons)
+
+    def _directive(self, content: str) -> str:
+        return _directive_summary(content) if self.directive_screen else ""
 
     def screen_ingest(self, content: str) -> FirewallRuling:
         """Cheaper check for the write path: content only, no scope decision."""
@@ -209,6 +254,13 @@ class Firewall:
             reasons.append(f"sensitive data detected on ingest: {summarise(findings)}")
         if any(f.severity == "high" for f in injected):
             reasons.append(f"prompt injection detected on ingest: {summarise(injected)}")
+        directive = self._directive(content)
+        if directive:
+            reasons.append(f"prompt injection detected on ingest (directive): {directive}")
+        if not reasons and not injected and self.model_screen is not None:
+            verdict = self.model_screen.assess(content)
+            if verdict.flagged:
+                reasons.append(f"prompt injection detected on ingest (model): {verdict.reason}")
         if reasons:
             return FirewallRuling(FirewallDecision.QUARANTINE, reasons)
         if findings:
@@ -218,6 +270,13 @@ class Firewall:
         if reasons:
             return FirewallRuling(FirewallDecision.ALLOW_WITH_WARNING, reasons)
         return FirewallRuling(FirewallDecision.ALLOW, [])
+
+
+def _directive_summary(content: str) -> str:
+    from .directive import assess
+
+    result = assess(content)
+    return "; ".join(result.signals[:2]) if result.flagged else ""
 
 
 def strictest(decisions: Iterable[FirewallDecision]) -> FirewallDecision:

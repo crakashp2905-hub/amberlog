@@ -95,7 +95,7 @@ class TestEmbedder(unittest.TestCase):
     def test_plugs_into_the_fabric(self) -> None:
         fabric = MemoryFabric(auto_activate=True, embedder=OllamaEmbedder(StubClient()))
         try:
-            mid = fabric.remember("a", "Use ripgrep for large trees.")
+            mid = fabric.remember("a", "Use ripgrep for large trees.", scope="team")
             found = fabric.retrieve("a", "Use ripgrep for large trees.", k=1)
             self.assertEqual([m.id for m in found.exposed], [mid])
         finally:
@@ -121,7 +121,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(run.turns, 1)
 
     def test_memories_are_injected_into_the_user_turn(self) -> None:
-        mid = self.fabric.remember("agent-z", "Use ripgrep to search large repositories.")
+        mid = self.fabric.remember("agent-z", "Use ripgrep to search large repositories.", scope="team")
         agent = self.agent([text_reply("ok")])
         run = agent.run("t1", "Use ripgrep to search large repositories.")
         self.assertIn(mid, run.recalled)
@@ -132,7 +132,7 @@ class TestAgent(unittest.TestCase):
         self.assertNotIn("ripgrep", self.client.calls[0]["messages"][0]["content"])
 
     def test_recall_can_be_skipped(self) -> None:
-        self.fabric.remember("agent-z", "Something retrievable.")
+        self.fabric.remember("agent-z", "Something retrievable.", scope="team")
         agent = self.agent([text_reply("ok")])
         run = agent.run("t1", "Something retrievable.", recall=False)
         self.assertEqual(run.recalled, [])

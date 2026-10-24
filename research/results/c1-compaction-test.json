@@ -1,0 +1,273 @@
+{
+  "single_fact": {
+    "raw": {
+      "40": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 36.9
+      },
+      "80": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 76.1
+      },
+      "160": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 142.9
+      },
+      "320": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 155.1
+      }
+    },
+    "raw_episode": {
+      "40": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 36.6
+      },
+      "80": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 76.7
+      },
+      "160": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 150.4
+      },
+      "320": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 162.7
+      }
+    },
+    "compacted": {
+      "40": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 36.8
+      },
+      "80": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 77.2
+      },
+      "160": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 155.7
+      },
+      "320": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.2,
+        "dispute_shown": 1.0,
+        "mean_words": 195.3
+      }
+    },
+    "naive_summary": {
+      "40": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 36.6
+      },
+      "80": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 76.9
+      },
+      "160": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.3,
+        "dispute_shown": 1.0,
+        "mean_words": 154.9
+      },
+      "320": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.8,
+        "dispute_shown": 1.0,
+        "mean_words": 203.1
+      }
+    },
+    "full_context": {
+      "40": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 352.3
+      },
+      "80": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 352.3
+      },
+      "160": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 352.3
+      },
+      "320": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.1,
+        "dispute_shown": 1.0,
+        "mean_words": 352.3
+      }
+    },
+    "oracle": {
+      "40": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.0,
+        "dispute_shown": 1.0,
+        "mean_words": 13.1
+      },
+      "80": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.0,
+        "dispute_shown": 1.0,
+        "mean_words": 15.4
+      },
+      "160": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.0,
+        "dispute_shown": 1.0,
+        "mean_words": 15.4
+      },
+      "320": {
+        "sufficiency": 1.0,
+        "stale_after_correction": 0.0,
+        "dispute_shown": 1.0,
+        "mean_words": 15.4
+      }
+    }
+  },
+  "handoff": {
+    "raw": {
+      "40": {
+        "coverage": 0.0042,
+        "stale_after_correction": 0.0
+      },
+      "80": {
+        "coverage": 0.0042,
+        "stale_after_correction": 0.0
+      },
+      "160": {
+        "coverage": 0.0042,
+        "stale_after_correction": 0.0
+      },
+      "320": {
+        "coverage": 0.0042,
+        "stale_after_correction": 0.0
+      }
+    },
+    "raw_episode": {
+      "40": {
+        "coverage": 0.6625,
+        "stale_after_correction": 0.0
+      },
+      "80": {
+        "coverage": 0.9437,
+        "stale_after_correction": 0.0
+      },
+      "160": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      },
+      "320": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      }
+    },
+    "compacted": {
+      "40": {
+        "coverage": 0.3583,
+        "stale_after_correction": 0.0
+      },
+      "80": {
+        "coverage": 0.9563,
+        "stale_after_correction": 0.0
+      },
+      "160": {
+        "coverage": 0.9792,
+        "stale_after_correction": 0.0
+      },
+      "320": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      }
+    },
+    "naive_summary": {
+      "40": {
+        "coverage": 0.6771,
+        "stale_after_correction": 0.0
+      },
+      "80": {
+        "coverage": 0.9875,
+        "stale_after_correction": 1.0
+      },
+      "160": {
+        "coverage": 0.9979,
+        "stale_after_correction": 1.0
+      },
+      "320": {
+        "coverage": 1.0,
+        "stale_after_correction": 1.0
+      }
+    },
+    "full_context": {
+      "40": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      },
+      "80": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      },
+      "160": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      },
+      "320": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      }
+    },
+    "oracle": {
+      "40": {
+        "coverage": 0.7271,
+        "stale_after_correction": 0.0
+      },
+      "80": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      },
+      "160": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      },
+      "320": {
+        "coverage": 1.0,
+        "stale_after_correction": 0.0
+      }
+    }
+  },
+  "rows": 13440,
+  "split": "test",
+  "commit": "77ae651"
+}

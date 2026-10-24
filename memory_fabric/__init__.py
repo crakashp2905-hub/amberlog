@@ -15,6 +15,8 @@ ones due at P4.
     print(fabric.explain(mid).narrative())
 """
 
+__stability__ = "stable"
+
 from .estimators import IPSEstimator, NaiveUsageEstimator, ValueEstimator
 from .eventlog import EventLog
 from .events import Event, EventType
@@ -92,7 +94,7 @@ from .service import MemoryService, Session
 from .session import AgentSession, SessionClosed
 from .vectors import Embedder, HashingEmbedder, VectorIndex
 
-__version__ = "0.9.0"
+__version__ = "0.13.0"
 
 __all__ = [
     "RevocationStore",

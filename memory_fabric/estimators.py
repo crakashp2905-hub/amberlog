@@ -12,6 +12,8 @@ pre-registered margin then the causal machinery is not justified
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import math
 from collections import defaultdict
 from dataclasses import dataclass
@@ -80,6 +82,7 @@ def _outcomes_by_episode(state: ProjectionState) -> dict[str, float]:
         episode_id: episode.outcome
         for episode_id, episode in state.episodes.items()
         if episode.has_outcome and episode.verifier_id is not None
+        and episode.outcome is not None
     }
 
 

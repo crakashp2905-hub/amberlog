@@ -235,7 +235,7 @@ def run_trial(
                                   firewall=federating_firewall())
             try:
                 mid = source.remember(
-                    f"observer-{lead}", content, context={"fault": fault}
+                    f"observer-{lead}", content, context={"fault": fault}, scope="team"
                 )
                 source.validate(mid, actor="observer")
                 result = offer(source, mid, consolidator,

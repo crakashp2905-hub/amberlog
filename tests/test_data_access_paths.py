@@ -58,6 +58,9 @@ ENFORCED = {
 }
 
 METADATA = {
+    "authority": "origin-bound trust, kind and source ids of a memory; no content",
+    "hostile_authors": "author ids caught injecting, here or by a peer's notice; no content",
+    "notice_recipients": "store ids holding an author's shared memories; no content",
     "lifecycle_of": "one memory's state, and no content — the safe way to ask",
     "relations_of": (
         "the memories one memory stands in a typed relation to, and no "
@@ -97,10 +100,16 @@ INSPECTION = {
     "enforcer": "the enforcement layer itself",
     "principals": "the agent registry",
     "store_id": "this store's identity",
+    "collections": "collection members and grants; ids and agent names, no content",
 }
 
 MUTATION = {
     "remember": "write a new memory",
+    "index_extraction": (
+        "record the structure extracted from a memory's content. A mutation "
+        "because it populates an index; deliberately not on the write path, "
+        "since extraction is a model call per memory"
+    ),
     "relate": (
         "declare a typed non-derivation relation between two memories. A "
         "mutation because it appends an event the relation index projects from"
@@ -121,9 +130,17 @@ MUTATION = {
     "end_episode": "close one",
     "sweep_retention": "apply the retention policy",
     "request_retraction": "withdraw locally and owe every recipient, atomically",
+    "supersede_copies": "owe holders of an older version's copy a retraction of that version",
+    "discredit_source": "record that a local source was caught being hostile; the notice for peers",
+    "elevate": "record an approver lifting a memory version's soft authority reasons",
+    "receive_notice": "record a peer's signed hostile-source notice (ids only)",
     "receive_retraction": "apply one arriving from another store",
     "erase_content": "destroy a content key. Irreversible",
     "rebuild": "replay the projection from the log",
+    "collection_add": "put a memory in a collection, widening who reads it; audited",
+    "collection_remove": "take one out; audited",
+    "collection_grant": "attach an agent to a collection, or grant it more; audited",
+    "collection_revoke": "detach an agent, or take permissions back; audited",
 }
 
 PLUMBING = {

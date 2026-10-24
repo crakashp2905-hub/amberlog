@@ -1,0 +1,91 @@
+{
+  "dataset": "deepset/prompt-injections",
+  "model": "gemma3:4b",
+  "commit": "e4ed643",
+  "splits": {
+    "test": {
+      "directive": {
+        "recall": 0.333,
+        "caught": 20,
+        "injections": 60,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 56
+      },
+      "pattern": {
+        "recall": 0.0,
+        "caught": 0,
+        "injections": 60,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 56
+      },
+      "either": {
+        "recall": 0.333,
+        "caught": 20,
+        "injections": 60,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 56
+      },
+      "model": {
+        "recall": 0.883,
+        "caught": 53,
+        "injections": 60,
+        "false_positive_rate": 0.054,
+        "flagged_benign": 3,
+        "benign": 56
+      },
+      "text_or_model": {
+        "recall": 0.9,
+        "caught": 54,
+        "injections": 60,
+        "false_positive_rate": 0.054,
+        "flagged_benign": 3,
+        "benign": 56
+      }
+    },
+    "own_heldout": {
+      "directive": {
+        "recall": 0.833,
+        "caught": 10,
+        "injections": 12,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 16
+      },
+      "pattern": {
+        "recall": 0.0,
+        "caught": 0,
+        "injections": 12,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 16
+      },
+      "either": {
+        "recall": 0.833,
+        "caught": 10,
+        "injections": 12,
+        "false_positive_rate": 0.0,
+        "flagged_benign": 0,
+        "benign": 16
+      },
+      "model": {
+        "recall": 0.75,
+        "caught": 9,
+        "injections": 12,
+        "false_positive_rate": 0.188,
+        "flagged_benign": 3,
+        "benign": 16
+      },
+      "text_or_model": {
+        "recall": 1.0,
+        "caught": 12,
+        "injections": 12,
+        "false_positive_rate": 0.188,
+        "flagged_benign": 3,
+        "benign": 16
+      }
+    }
+  }
+}

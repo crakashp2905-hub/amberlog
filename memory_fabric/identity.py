@@ -36,10 +36,12 @@ credential is usable until it expires, and there is no revocation list.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 import hmac
 import json
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Protocol
 
 from .ids import new_ulid
@@ -59,6 +61,28 @@ that forgot would be a cross-tenant read.
 ROLE_AGENT = "agent"
 ROLE_OPERATOR = "operator"
 ROLE_AUDITOR = "auditor"
+
+# Seven separate permissions. A role is a bundle of them; a principal can also
+# hold one directly as the role `perm:<name>`, so a deployment can grant
+# exactly `execute` to an agent without making it anything else.
+PERM_READ = "read"
+PERM_WRITE = "write"
+PERM_DELETE = "delete"
+PERM_CORRECT = "correct"
+PERM_EXPORT = "export"
+PERM_ADMINISTER = "administer"
+PERM_EXECUTE = "execute"
+PERMISSIONS = (PERM_READ, PERM_WRITE, PERM_DELETE, PERM_CORRECT, PERM_EXPORT,
+               PERM_ADMINISTER, PERM_EXECUTE)
+ROLE_PERMISSIONS: dict[str, frozenset[str]] = {
+    ROLE_AGENT: frozenset({PERM_READ, PERM_WRITE, PERM_EXECUTE}),
+    # No `execute`: the role that can correct, delete and administer memory
+    # cannot also act on it. Separation of duties, so one stolen operator
+    # credential cannot both plant evidence and act on it.
+    ROLE_OPERATOR: frozenset({PERM_READ, PERM_WRITE, PERM_DELETE, PERM_CORRECT, PERM_EXPORT,
+                              PERM_ADMINISTER}),
+    ROLE_AUDITOR: frozenset({PERM_READ, PERM_EXPORT}),
+}
 
 DEFAULT_TTL_SECONDS = 3600
 
@@ -88,6 +112,25 @@ class Principal:
 
     def may(self, role: str) -> bool:
         return role in self.roles
+
+    def permissions(self) -> frozenset[str]:
+        out: set[str] = set()
+        for role in self.roles:
+            out |= ROLE_PERMISSIONS.get(role, frozenset())
+            if role.startswith("perm:") and role[5:] in PERMISSIONS:
+                out.add(role[5:])
+        return frozenset(out)
+
+    def can(self, permission: str) -> bool:
+        if permission not in PERMISSIONS:
+            raise ValueError(f"unknown permission {permission!r}; known: {PERMISSIONS}")
+        return permission in self.permissions()
+
+    def require_permission(self, permission: str) -> None:
+        if not self.can(permission):
+            raise IdentityError(
+                f"{self.agent_id} lacks the {permission!r} permission "
+                f"(roles {sorted(self.roles)})")
 
     def require(self, role: str) -> None:
         if not self.may(role):
@@ -458,13 +501,14 @@ class PrincipalRegistry:
             credential.agent_id, credential.credential_id
         )
 
-    def verify(self, credential: Credential, now: int) -> Principal:
-        """Establish a principal, or raise.
+    def authenticate(self, credential: Credential, now: int) -> str:
+        """The checks that need no store: registration, key, signature, expiry.
 
-        The order matters and is the same reasoning as the retraction protocol's:
-        resolve *who this claims to be* and whether the claim is authentic before
-        looking at anything the claim says. An expiry check on an unverified body
-        is a check on attacker-controlled data.
+        Returns the agent id the credential authentically names. `verify` is
+        this plus revocation, tenant and role -- revocation is the one that
+        reads the store, so a caller that must decide something *before*
+        taking the store's lock (the agent API's rate limit) can use this and
+        then call `verify` under the lock. Never a substitute for `verify`.
         """
         registration = self._agents.get(credential.agent_id)
         if registration is None:
@@ -480,6 +524,18 @@ class PrincipalRegistry:
             raise IdentityError(
                 f"{credential.agent_id}: credential expired at {credential.expires_at}"
             )
+        return credential.agent_id
+
+    def verify(self, credential: Credential, now: int) -> Principal:
+        """Establish a principal, or raise.
+
+        The order matters and is the same reasoning as the retraction protocol's:
+        resolve *who this claims to be* and whether the claim is authentic before
+        looking at anything the claim says. An expiry check on an unverified body
+        is a check on attacker-controlled data.
+        """
+        self.authenticate(credential, now)
+        registration = self._agents[credential.agent_id]
         # After the signature, so a revocation check never runs on an
         # unverified id — and before the tenant and role checks, because a
         # revoked credential should not be told *why else* it would have failed.

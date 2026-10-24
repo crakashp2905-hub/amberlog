@@ -1,3 +1,64 @@
+# Release evaluation
+
+**After 0.12.0, the evidence for a release is generated, not written.** CI's
+`release-evidence` job builds the bundle for every commit on main
+(`tools/release_bundle.py --bench full`): manifest with file hashes, SBOM,
+secret scan, adversarial gate, test counts, wheel hash, the product benchmark,
+and `RELEASE_REPORT.md` rendered from those files by `tools/release_report.py`.
+A release's evaluation is the report from the tagged commit's run, attached to
+the release; the sections below are the hand-written evaluations of earlier
+releases.
+
+---
+
+# Release evaluation: 0.11.0 (release gate G6)
+
+**Tagged as `v0.11.0` from `rc/0.11.0`.** The code under test is `7d3fc25`. The
+only commit after it is this document, and CI is required to pass on the
+tagged commit itself (the release workflow refuses otherwise). Release note:
+[RELEASE_NOTES_0.11.0.md](RELEASE_NOTES_0.11.0.md).
+
+## Acceptance at `7d3fc25ea582`
+
+| suite | where | result |
+|---|---|---|
+| CI, 18 jobs | GitHub Actions | **green**: 9 OS × Python test jobs (Windows, macOS and Linux; 3.11–3.13), Postgres, **Docker container smoke test** (builds, serves the dashboard on the published port, runs as uid 10001, keys on the key volume), package, lint, e2e, faults, secrets, LangChain contract, **Claude contract** |
+| Unit and integration, SQLite | Windows 11, Python 3.13, benchmark fixtures built | **1,637 OK**, 15 skipped (Postgres-only 6, anthropic SDK 5, POSIX entrypoint 3, one more) |
+| New and changed modules on Postgres 16.2 | 25 modules, the adapters included | **268 OK** |
+| Fault matrix | `experiments.faultsim` | **17/17** |
+| Live integration path | `experiments.live_ollama --quick`, qwen2.5:3b, through `session.recall` → `build_context` → model → verified outcome (at `22a7d30`; only tests changed since) | no memory 0%, correct memory **100%**, wrong memory 0% (misled every time), contested **67%** |
+
+**Found by acceptance and fixed before the tag:**
+
+- the Claude contract fixture predated F10 (scope enforced on reads);
+- a Postgres connect had no timeout (a 131 s hang);
+- the fence tests compared clock ticks, not log order;
+- a concurrency test lost worker errors with the thread;
+- two tests were still asserting behaviour that F12 and the 0.11.0 bump had
+  changed.
+
+**Not validated:** the live Claude API. There is no credential or CLI in this
+environment, so it is covered only by the SDK contract test (WORKPLAN X-API).
+
+## Gates
+
+| gate | status |
+|---|---|
+| G1 | ✅ CI green on `main` (`12f0fd1`) and on this RC |
+| G2 | ✅ except the live Claude call (X-API) |
+| G3 | ✅ |
+| G4 | ✅ run and published; **not supported** on qwen2.5:3b |
+| G5 | ✅ 13 findings, 0 open critical or high |
+| G6 | ✅ this document |
+
+## Rollback
+
+The schema is additive. Rolling back to 0.9.x is a code rollback; a store
+upgraded with `share --all-private-active` stays shared, which is the
+intended direction.
+
+---
+
 # Release evaluation: 0.9.0 (plan Task 13)
 
 Covers the work from the [safety plan](AI_SAFETY_CYBER_RESEARCH_IMPLEMENTATION_PLAN.md),

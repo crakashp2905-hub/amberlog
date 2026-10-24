@@ -8,33 +8,19 @@ and did not.
 
 ## Current baseline
 
-**2026-10-24, branch at `62a6ca1`**, Linux, Python 3.13. Full report:
-[ACCEPTANCE.md](ACCEPTANCE.md).
-
-| Check | Result |
-|---|---|
-| Unit, integration, property | **1318 OK, 27 skipped** |
-| Fault matrix | **17/17** |
-| End-to-end, real processes | **22/22** |
-| Secret scan | 97 high-severity findings, **0 unexpected** |
-| Compile, offline examples | clean; 3/3 exit 0 |
-| Package and installed copy | build OK; `doctor` **sound** |
-| Upgrade from 0.2.0–0.8.0, then backup/restore | passes |
-| API load, 1–100 agents ([P12b](../research/results/p12b-api-load.md)) | 0 errors, 159–195 ops/s |
-| Real model downstream ([D1](../research/results/d1-downstream.md)) | D1a/b/c supported |
-| CI | **not run on these commits** (CI runs on pull requests) |
-
-## Previous baseline
-
-**2026-10-16, `main` at `1978d2b`** (after PR #4), Linux, Python 3.13.16. The
-README cites the numbers here, not its own.
+**2026-10-18, branch `claude/workplan`** (on top of PR #5), Windows 11,
+Python 3.13.5. The README cites the numbers here, not its own. The test count
+is checked against the suite on every run; the other rows are as of this date.
+Linux and macOS are covered by CI, which has not run since 2026-10-16 (account
+billing; see [WORKPLAN.md](WORKPLAN.md), X-CI).
 
 | Check | Command | Result |
 |---|---|---|
-| Unit, integration, property | `python -m unittest discover -s tests -t .` | **1281 OK, 36 skipped** (Postgres-only file without a server; live-model arms without Ollama or an API key) |
+| Unit, integration, property | `python -m unittest discover -s tests -t .` | **1895 tests**, OK, 15 skipped (Postgres-only file without a server; live-model arms without Ollama or an API key). The count is checked against the suite by `tests/test_suite_hygiene.py`; `python tools/count_tests.py --write` updates it |
 | Fault matrix | `python -m experiments.faultsim` | **17/17** |
-| Secret scan | `python tools/scan_secrets.py` | 95 high-severity findings, **0 unexpected** |
+| Secret scan | `python tools/scan_secrets.py` | 103 high-severity findings, **0 unexpected** |
 | Compile | `python -m compileall -q memory_fabric experiments tests examples tools` | clean |
+| Lint and types | `python -m ruff check` and `python -m mypy`, as configured in `pyproject.toml` (CI job `lint`) | **clean**: 0 findings, 0 errors in 66 files |
 | Package | `python -m build`, then CI's wheel-content checks | wheel and sdist build; dashboard, `py.typed`, LICENSE and the new modules present; experiments and tests excluded |
 | Installed copy | venv outside the tree: `memory-fabric demo`, then `doctor` | **sound**, no warnings |
 | Examples | each of `examples/*.py` | `action_gate`, `agent_on_the_fabric`, `poisoning_and_rollback` exit 0. `live_memory_os` exits 2: it needs a running Ollama server, which this host does not have |

@@ -244,7 +244,7 @@ def main() -> int:
         # failed" cutting the rate at which a correct memory reached the prompt
         # from 60% of episodes to 18%. The store cannot refuse the rule, but it
         # refuses to present it as evidence.
-        weak = depot.remember("depot-agent", "Chargers at bay 4 trip more often.")
+        weak = depot.remember("depot-agent", "Chargers at bay 4 trip more often.", scope="team")
         depot.validate(weak, actor="supervisor")
         depot.quarantine(weak, reason="was in context when an episode failed",
                          actor="automation", basis=WithdrawalBasis.CO_OCCURRENCE)
@@ -274,11 +274,11 @@ def main() -> int:
         )
         try:
             for i in range(4):
-                old_id = fresh.remember("fresh-agent", f"Unrelated note number {i}.")
+                old_id = fresh.remember("fresh-agent", f"Unrelated note number {i}.", scope="team")
                 fresh.validate(old_id, actor="supervisor")
             donor = depot.remember(
                 "depot-agent",
-                "Tyre pressure on the yard tug should be 3.5 bar in winter.",
+                "Tyre pressure on the yard tug should be 3.5 bar in winter.", scope="team",
             )
             depot.validate(donor, actor="supervisor")
             handed = offer(depot, donor, fresh, recipient_agent="fresh-agent")
@@ -318,7 +318,7 @@ def main() -> int:
             on_disk = MemoryFabric(on_disk_path)
             try:
                 seeded = on_disk.remember(
-                    "ag-n", "Oil change every 250 hours on the yard tug."
+                    "ag-n", "Oil change every 250 hours on the yard tug.", scope="team"
                 )
                 on_disk.validate(seeded, actor="supervisor")
                 on_disk.quarantine(

@@ -41,8 +41,11 @@ The cipher itself is in `cipher.py`, including why `enc:v1` was replaced.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
+from ..dbtypes import Connection
+
 import secrets
-import sqlite3
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Protocol
@@ -128,7 +131,7 @@ class SqliteKeyProvider:
 
     supports_destroy = True
 
-    def __init__(self, conn: sqlite3.Connection, now_ms: Callable[[], int]) -> None:
+    def __init__(self, conn: Connection, now_ms: Callable[[], int]) -> None:
         self._conn = conn
         self._now_ms = now_ms
 
@@ -221,7 +224,7 @@ class DirectoryKeyProvider:
         return True
 
 
-def copy_keys_to_directory(conn: sqlite3.Connection, directory: str | Path) -> list[str]:
+def copy_keys_to_directory(conn: Connection, directory: str | Path) -> list[str]:
     """Copy every live in-database content key into a key directory.
 
     Step one of moving a store from the default custody (keys beside the
@@ -268,7 +271,7 @@ def copy_keys_to_directory(conn: sqlite3.Connection, directory: str | Path) -> l
     return copied
 
 
-def clear_database_keys(conn: sqlite3.Connection) -> int:
+def clear_database_keys(conn: Connection) -> int:
     """Remove key material from the database, keeping every audit row.
 
     Step two, and only after a verified replay with the external keys: from
@@ -328,7 +331,7 @@ class ContentVault:
 
     def __init__(
         self,
-        conn: sqlite3.Connection,
+        conn: Connection,
         keys: "KeyProvider | None" = None,
         now_ms: Callable[[], int] | None = None,
     ) -> None:

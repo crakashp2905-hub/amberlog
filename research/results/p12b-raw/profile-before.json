@@ -1,0 +1,267 @@
+{
+  "experiment": "p12-profile",
+  "agents": 10,
+  "ops": 20,
+  "profiled_op_ms_total": 7012.4,
+  "records": [
+    [
+      "retrieve",
+      117.85540002165362,
+      ""
+    ],
+    [
+      "remember",
+      332.1639999630861,
+      ""
+    ],
+    [
+      "retrieve",
+      393.1987000396475,
+      ""
+    ],
+    [
+      "gated_action",
+      1120.6181999878027,
+      ""
+    ],
+    [
+      "retrieve",
+      461.7011999944225,
+      ""
+    ],
+    [
+      "retrieve",
+      470.1494000037201,
+      ""
+    ],
+    [
+      "retrieve",
+      608.5852000396699,
+      ""
+    ],
+    [
+      "gated_action",
+      1663.2591999950819,
+      ""
+    ],
+    [
+      "retrieve",
+      580.6902999756858,
+      ""
+    ],
+    [
+      "remember",
+      557.83419997897,
+      ""
+    ],
+    [
+      "retrieve",
+      401.24049998121336,
+      ""
+    ],
+    [
+      "remember",
+      254.07090003136545,
+      ""
+    ],
+    [
+      "retrieve",
+      7.540700025856495,
+      ""
+    ],
+    [
+      "gated_action",
+      7.57399998838082,
+      ""
+    ],
+    [
+      "retrieve",
+      4.824699950404465,
+      ""
+    ],
+    [
+      "retrieve",
+      5.025100021157414,
+      ""
+    ],
+    [
+      "retrieve",
+      6.592800025828183,
+      ""
+    ],
+    [
+      "retrieve",
+      5.769199982751161,
+      ""
+    ],
+    [
+      "gated_action",
+      7.679899979848415,
+      ""
+    ],
+    [
+      "retrieve",
+      6.013300037011504,
+      ""
+    ]
+  ],
+  "counters": {
+    "replays": 30,
+    "replay_events": 38529,
+    "catch_ups": 0,
+    "catch_up_events": 0
+  },
+  "wall_s": 7.175573299988173,
+  "top": [
+    {
+      "function": "fabric.py:1046:_replay",
+      "calls": 30,
+      "cumulative_s": 6.8554,
+      "own_s": 0.0275
+    },
+    {
+      "function": "fabric.py:211:wrapper",
+      "calls": 24,
+      "cumulative_s": 5.8104,
+      "own_s": 0.0009
+    },
+    {
+      "function": "fabric.py:1329:_index",
+      "calls": 7017,
+      "cumulative_s": 3.6813,
+      "own_s": 0.065
+    },
+    {
+      "function": "fabric.py:973:_emit",
+      "calls": 24,
+      "cumulative_s": 3.5212,
+      "own_s": 0.0003
+    },
+    {
+      "function": "fabric.py:988:refresh",
+      "calls": 28,
+      "cumulative_s": 3.3926,
+      "own_s": 0.0002
+    },
+    {
+      "function": "projections.py:186:rebuild",
+      "calls": 30,
+      "cumulative_s": 3.1177,
+      "own_s": 0.0003
+    },
+    {
+      "function": "projections.py:182:apply_all",
+      "calls": 30,
+      "cumulative_s": 3.1164,
+      "own_s": 0.0623
+    },
+    {
+      "function": "vectors.py:245:add",
+      "calls": 7017,
+      "cumulative_s": 2.5449,
+      "own_s": 0.2715
+    },
+    {
+      "function": "fabric.py:1786:retrieve",
+      "calls": 17,
+      "cumulative_s": 2.3048,
+      "own_s": 0.002
+    },
+    {
+      "function": "projections.py:158:apply",
+      "calls": 38667,
+      "cumulative_s": 1.6198,
+      "own_s": 0.2111
+    },
+    {
+      "function": "vectors.py:160:embed",
+      "calls": 7017,
+      "cumulative_s": 1.5183,
+      "own_s": 0.5031
+    },
+    {
+      "function": "eventlog.py:167:read",
+      "calls": 38559,
+      "cumulative_s": 1.4353,
+      "own_s": 0.3541
+    },
+    {
+      "function": "actions.py:117:authorize",
+      "calls": 4,
+      "cumulative_s": 1.2011,
+      "own_s": 0.0001
+    },
+    {
+      "function": "eventlog.py:224:_row_to_event",
+      "calls": 38530,
+      "cumulative_s": 1.0804,
+      "own_s": 0.2545
+    },
+    {
+      "function": "duplicates.py:271:add",
+      "calls": 7017,
+      "cumulative_s": 0.8224,
+      "own_s": 0.148
+    },
+    {
+      "function": "actions.py:185:_decide",
+      "calls": 4,
+      "cumulative_s": 0.7103,
+      "own_s": 0.0001
+    },
+    {
+      "function": "fabric.py:1456:remember",
+      "calls": 3,
+      "cumulative_s": 0.6005,
+      "own_s": 0.0002
+    },
+    {
+      "function": "projections.py:236:_on_memory_created",
+      "calls": 7014,
+      "cumulative_s": 0.505,
+      "own_s": 0.0166
+    },
+    {
+      "function": "duplicates.py:125:terms",
+      "calls": 7241,
+      "cumulative_s": 0.5002,
+      "own_s": 0.0416
+    },
+    {
+      "function": "fabric.py:333:_unseal_content",
+      "calls": 7014,
+      "cumulative_s": 0.4991,
+      "own_s": 0.0271
+    },
+    {
+      "function": "certificates.py:472:verify",
+      "calls": 4,
+      "cumulative_s": 0.4905,
+      "own_s": 0.0001
+    },
+    {
+      "function": "model.py:278:from_json",
+      "calls": 7014,
+      "cumulative_s": 0.4224,
+      "own_s": 0.1272
+    },
+    {
+      "function": "duplicates.py:106:canonical",
+      "calls": 7241,
+      "cumulative_s": 0.4048,
+      "own_s": 0.0144
+    },
+    {
+      "function": "vectors.py:175:<genexpr>",
+      "calls": 1803369,
+      "cumulative_s": 0.3733,
+      "own_s": 0.3733
+    },
+    {
+      "function": "vectors.py:247:<genexpr>",
+      "calls": 1803369,
+      "cumulative_s": 0.3258,
+      "own_s": 0.3258
+    }
+  ]
+}

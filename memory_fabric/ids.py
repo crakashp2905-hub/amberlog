@@ -6,6 +6,8 @@ stable even when many events are appended in the same tick.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import os
 import threading
 import time

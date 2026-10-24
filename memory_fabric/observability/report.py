@@ -9,10 +9,12 @@ browses would contaminate the very data the value estimates are computed from.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import math
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any, Mapping
 
 from ..governance.sensitive import scrub, scrub_tree, secret_values
 from ..model import (
@@ -264,10 +266,16 @@ def memory_rows(
     limit: int | None = None,
     sort: str = "created",
     tenant: str | None = None,
+    agent: str | None = None,
 ) -> list[MemoryRow]:
     """Filtered listing. `query` is a substring match on content, not retrieval:
     listing must never depend on the embedder or touch the exposure log."""
-    rows = [_row(fabric, memory_id) for memory_id in fabric.state.memories]
+    ids = list(fabric.state.memories)
+    if agent:
+        # Who wrote it, from provenance: the first question after a credential
+        # leaks (docs/RUNBOOKS.md §1). Filtered before rows are built.
+        ids = [i for i in ids if fabric.state.memories[i].provenance.created_by == agent]
+    rows = [_row(fabric, memory_id) for memory_id in ids]
 
     if state:
         rows = [r for r in rows if r.lifecycle_state == state]
@@ -430,8 +438,8 @@ def _diagnostics(report: Overview) -> list[str]:
 
     if report.contrastive_evidence == 0 and report.total_memories > 0:
         notes.append(
-            "No memory has contrastive value evidence, so none can be promoted beyond "
-            "private scope by the firewall."
+            "No memory has contrastive value evidence, so the firewall will not let any "
+            "leave this store (federated). Sharing with the team does not need it."
         )
     return notes
 
@@ -645,8 +653,19 @@ def memory_detail(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
     # `full_content` would leave the secret sitting in the response.
     found = secret_values(fabric.firewall.detector, memory.content)
     redacted = sorted({kind for _, kind in found})
+    from ..correction import preview as correction_preview
+    from ..reach import reach
+    from ..status import labels as status_labels
+
     return {
         "row": _row(fabric, memory_id).to_json(),
+        # Four facts, each with what it does not establish (status.py).
+        "status": [label.to_json() for label in status_labels(fabric, memory_id)],
+        # Who may read it, who has, and which stores hold a copy (reach.py).
+        "reach": reach(fabric, memory_id).to_json(),
+        # What withdrawing it would touch, computed by the rules quarantine
+        # uses (correction.py), so the page cannot promise a smaller blast radius.
+        "correction": correction_preview(fabric, memory_id).to_json(),
         "explanation": scrub_tree(explanation.to_json(), found),
         "narrative": scrub(explanation.narrative(), found),
         "descendants": lineage_tree(fabric, memory_id, "descendants").to_json(),
@@ -676,7 +695,7 @@ def memory_detail(fabric: "MemoryFabric", memory_id: str) -> dict[str, Any]:
     }
 
 
-def _audit_payload(payload: dict[str, Any]) -> dict[str, Any]:
+def _audit_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
     """Drop the embedded memory snapshot from audit rows.
 
     A `MemoryCreated` payload contains the whole memory, which would repeat the

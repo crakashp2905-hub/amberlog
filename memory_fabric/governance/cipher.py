@@ -59,6 +59,8 @@ between memories, between versions, or between stores fails authentication.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 import hmac
 import os
@@ -215,7 +217,7 @@ class AesGcm:
             raise IntegrityError(f"malformed v3 envelope: {exc}") from None
         try:
             return self._aesgcm(key).decrypt(nonce, ciphertext, aad)
-        except Exception as exc:  # InvalidTag, and anything else it raises
+        except Exception:  # InvalidTag, and anything else it raises
             raise IntegrityError(
                 "content failed authentication (AES-GCM): the ciphertext, its "
                 "nonce, or the memory it is bound to has been altered"
@@ -318,6 +320,46 @@ def _reset_aead_status() -> None:
     _aead_state = None
 
 
+PROFILES = ("compatible", "production")
+_profile: str | None = None
+
+
+def set_profile(profile: str) -> None:
+    """Choose the cryptography profile for this process (`PROFILES`).
+
+    `compatible` (the default): AES-256-GCM from `cryptography` when it works,
+    otherwise the zero-dependency encrypt-then-MAC suite.
+    `production`: AES-256-GCM from the maintained library **only**. Nothing is
+    written with the in-house composition, and a store will not open where
+    the library is missing or broken (`require_profile`).
+    """
+    global _profile
+    if profile not in PROFILES:
+        raise ValueError(f"crypto profile must be one of {PROFILES}")
+    _profile = profile
+
+
+def profile() -> str:
+    """The active profile: `set_profile`, else $MEMORY_FABRIC_CRYPTO_PROFILE, else compatible."""
+    import os
+
+    chosen = _profile or os.environ.get("MEMORY_FABRIC_CRYPTO_PROFILE") or "compatible"
+    if chosen not in PROFILES:
+        raise ValueError(f"MEMORY_FABRIC_CRYPTO_PROFILE must be one of {PROFILES}, not {chosen!r}")
+    return chosen
+
+
+def require_profile() -> None:
+    """Refuse to proceed when the production profile cannot be honoured here."""
+    if profile() == "production":
+        available, reason = aead_status()
+        if not available:
+            raise IntegrityError(
+                "the production cryptography profile needs AES-GCM from the maintained "
+                f"`cryptography` library, which is {reason} here. Install it "
+                "(pip install \"memory-fabric[crypto]\") or choose the compatible profile.")
+
+
 def default_suite() -> CipherSuite:
     """AES-GCM when `cryptography` works here, otherwise encrypt-then-MAC.
 
@@ -329,6 +371,9 @@ def default_suite() -> CipherSuite:
     Falling back is never silent when the library is installed but broken:
     `aead_status` warns once and `memory-fabric doctor` names the reason.
     """
+    if profile() == "production":
+        require_profile()
+        return AesGcm()
     return AesGcm() if aead_available() else EncryptThenMac()
 
 

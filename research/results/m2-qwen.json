@@ -1,0 +1,2347 @@
+{
+ "experiment": "m2-rulebook",
+ "model": "qwen2.5:3b",
+ "split": "test",
+ "commit": "5d79e4f",
+ "seeds": 5,
+ "wall_s": 13334.6,
+ "model_calls": 1749,
+ "arms": {
+  "no_rulebook": {
+   "final_test_accuracy": 0.5,
+   "trajectory": [
+    0.5,
+    0.5,
+    0.5,
+    0.5,
+    0.5
+   ],
+   "test_regressions": 0
+  },
+  "reflexion_append": {
+   "final_test_accuracy": 0.5455,
+   "trajectory": [
+    0.5,
+    0.5273,
+    0.4909,
+    0.5273,
+    0.5455
+   ],
+   "test_regressions": 8
+  },
+  "ungated_rewrite": {
+   "final_test_accuracy": 0.4455,
+   "trajectory": [
+    0.5,
+    0.3727,
+    0.4727,
+    0.3636,
+    0.4455
+   ],
+   "test_regressions": 3
+  },
+  "gated_rewrite": {
+   "final_test_accuracy": 0.6637,
+   "trajectory": [
+    0.5,
+    0.4637,
+    0.6455,
+    0.6637,
+    0.6637
+   ],
+   "test_regressions": 1
+  },
+  "oracle_rulebook": {
+   "final_test_accuracy": 1.0,
+   "trajectory": [
+    1.0,
+    1.0,
+    1.0,
+    1.0,
+    1.0
+   ],
+   "test_regressions": 0
+  }
+ },
+ "verdict": {
+  "outcome": "NOT SUPPORTED",
+  "reasons": [],
+  "baseline": 0.5455,
+  "ceiling": 1.0,
+  "headroom": 0.4545,
+  "bar": 0.7273,
+  "mechanism": 0.6637,
+  "share_of_headroom": 0.260066,
+  "realised_mde": null
+ },
+ "no_arm_beats_the_oracle": true,
+ "gated_adoptions": "6/20",
+ "per_seed": [
+  {
+   "seed": 200,
+   "plant": "ashby",
+   "rounds": [
+    {
+     "round": 0,
+     "test_accuracy": {
+      "no_rulebook": 0.6364,
+      "reflexion_append": 0.6364,
+      "ungated_rewrite": 0.6364,
+      "gated_rewrite": 0.6364,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": []
+    },
+    {
+     "round": 1,
+     "test_accuracy": {
+      "no_rulebook": 0.6364,
+      "reflexion_append": 0.5909,
+      "ungated_rewrite": 0.7273,
+      "gated_rewrite": 0.6364,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "status",
+        "op": "not_in",
+        "value": [
+         "approved"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": [
+      "For the future, always double-check the most recent and approved revision to ensure you have the most accurate and up-to-date information."
+     ]
+    },
+    {
+     "round": 2,
+     "test_accuracy": {
+      "no_rulebook": 0.6364,
+      "reflexion_append": 0.6364,
+      "ungated_rewrite": 0.7273,
+      "gated_rewrite": 0.6364,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "status",
+        "op": "not_in",
+        "value": [
+         "approved"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": [
+      "For the future, always double-check the most recent and approved revision to ensure you have the most accurate and up-to-date information.",
+      "For the future, always carefully review and compare the information from multiple sources to ensure you select the most up-to-date and accurate revision for each question."
+     ]
+    },
+    {
+     "round": 3,
+     "test_accuracy": {
+      "no_rulebook": 0.6364,
+      "reflexion_append": 0.5,
+      "ungated_rewrite": 0.7727,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "not_in",
+         "value": [
+          "staff"
+         ]
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "eq",
+        "value": "ashby"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the future, always double-check the most recent and approved revision to ensure you have the most accurate and up-to-date information.",
+      "For the future, always carefully review and compare the information from multiple sources to ensure you select the most up-to-date and accurate revision for each question.",
+      "For the opening torque of valve V16 at Ashby, it's crucial to double-check the most recent and approved revision to ensure accuracy. Next time, always verify the most up-to-date and official source for such critical parameters."
+     ]
+    },
+    {
+     "round": 4,
+     "test_accuracy": {
+      "no_rulebook": 0.6364,
+      "reflexion_append": 0.5909,
+      "ungated_rewrite": 0.7727,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "not_in",
+         "value": [
+          "staff"
+         ]
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "eq",
+        "value": "ashby"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the future, always double-check the most recent and approved revision to ensure you have the most accurate and up-to-date information.",
+      "For the future, always carefully review and compare the information from multiple sources to ensure you select the most up-to-date and accurate revision for each question.",
+      "For the opening torque of valve V16 at Ashby, it's crucial to double-check the most recent and approved revision to ensure accuracy. Next time, always verify the most up-to-date and official source for such critical parameters.",
+      "When reviewing the notes, it's crucial to focus on the most recent and approved revisions for accurate information. In the case of the opening torque for valve V22 at Ashby, the correct answer comes from the most recent approved revision, which is 55 Nm. Next time, double-check the revision status and source to ensure you are using the most up-to-date and reliable information."
+     ]
+    }
+   ],
+   "decisions": [
+    {
+     "round": 1,
+     "adopted": false,
+     "incumbent": 0.75,
+     "candidate": 0.75
+    },
+    {
+     "round": 2,
+     "adopted": false,
+     "incumbent": 0.625,
+     "candidate": 0.375
+    },
+    {
+     "round": 3,
+     "adopted": true,
+     "incumbent": 0.375,
+     "candidate": 0.75
+    },
+    {
+     "round": 4,
+     "adopted": false,
+     "incumbent": 0.5,
+     "candidate": 0.5
+    }
+   ],
+   "gated_history": [
+    {
+     "version": 1,
+     "rules": {
+      "dropped": [],
+      "exclude": [],
+      "include": [],
+      "statement": "Rules learned from outcomes"
+     }
+    },
+    {
+     "version": 2,
+     "rules": {
+      "dropped": [],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "statement": "Rules learned from outcomes"
+     }
+    }
+   ]
+  },
+  {
+   "seed": 201,
+   "plant": "ashby",
+   "rounds": [
+    {
+     "round": 0,
+     "test_accuracy": {
+      "no_rulebook": 0.5909,
+      "reflexion_append": 0.5909,
+      "ungated_rewrite": 0.5909,
+      "gated_rewrite": 0.5909,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": []
+    },
+    {
+     "round": 1,
+     "test_accuracy": {
+      "no_rulebook": 0.5909,
+      "reflexion_append": 0.6364,
+      "ungated_rewrite": 0.7273,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the next time, when faced with multiple conflicting answers, it's important to cross-reference the most recent and approved revisions to ensure accuracy."
+     ]
+    },
+    {
+     "round": 2,
+     "test_accuracy": {
+      "no_rulebook": 0.5909,
+      "reflexion_append": 0.5909,
+      "ungated_rewrite": 0.7273,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        }
+       ],
+       [
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ],
+       [
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        }
+       ],
+       [
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ],
+       [
+        {
+         "field": "status",
+         "op": "not_in",
+         "value": [
+          "approved"
+         ]
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "neq",
+        "value": "ashby"
+       },
+       {
+        "field": "status",
+        "op": "neq",
+        "value": "approved"
+       },
+       {
+        "field": "revision",
+        "op": "neq",
+        "value": 2026
+       },
+       {
+        "field": "source",
+        "op": "neq",
+        "value": "staff"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the next time, when faced with multiple conflicting answers, it's important to cross-reference the most recent and approved revisions to ensure accuracy.",
+      "For future reference, when dealing with conflicting information, prioritize the most recent and approved revisions from the source, as they are likely to be the most accurate."
+     ]
+    },
+    {
+     "round": 3,
+     "test_accuracy": {
+      "no_rulebook": 0.5909,
+      "reflexion_append": 0.6364,
+      "ungated_rewrite": 0.7273,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        }
+       ],
+       [
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ],
+       [
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        }
+       ],
+       [
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ],
+       [
+        {
+         "field": "status",
+         "op": "not_in",
+         "value": [
+          "approved"
+         ]
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "status",
+        "op": "not_in",
+        "value": [
+         "approved"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the next time, when faced with multiple conflicting answers, it's important to cross-reference the most recent and approved revisions to ensure accuracy.",
+      "For future reference, when dealing with conflicting information, prioritize the most recent and approved revisions from the source, as they are likely to be the most accurate.",
+      "For next time, when answering questions about specific plant locations like Ashby, ensure to prioritize the most recent and approved versions of the safety rules and guidelines. This will help in obtaining the most accurate and up-to-date information."
+     ]
+    },
+    {
+     "round": 4,
+     "test_accuracy": {
+      "no_rulebook": 0.5909,
+      "reflexion_append": 0.6364,
+      "ungated_rewrite": 0.7273,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        }
+       ],
+       [
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ],
+       [
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        }
+       ],
+       [
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "status",
+        "op": "not_in",
+        "value": [
+         "approved"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the next time, when faced with multiple conflicting answers, it's important to cross-reference the most recent and approved revisions to ensure accuracy.",
+      "For future reference, when dealing with conflicting information, prioritize the most recent and approved revisions from the source, as they are likely to be the most accurate.",
+      "For next time, when answering questions about specific plant locations like Ashby, ensure to prioritize the most recent and approved versions of the safety rules and guidelines. This will help in obtaining the most accurate and up-to-date information.",
+      "For next time, double-check the specific revision and source of the information to ensure accuracy, as the speed limit can vary between different revisions and sources."
+     ]
+    }
+   ],
+   "decisions": [
+    {
+     "round": 1,
+     "adopted": true,
+     "incumbent": 0.5,
+     "candidate": 0.625
+    },
+    {
+     "round": 2,
+     "adopted": false,
+     "incumbent": 0.75,
+     "candidate": 0.75
+    },
+    {
+     "round": 3,
+     "adopted": false,
+     "incumbent": 0.75,
+     "candidate": 0.75
+    },
+    {
+     "round": 4,
+     "adopted": false,
+     "incumbent": 0.625,
+     "candidate": 0.625
+    }
+   ],
+   "gated_history": [
+    {
+     "version": 1,
+     "rules": {
+      "dropped": [],
+      "exclude": [],
+      "include": [],
+      "statement": "Rules learned from outcomes"
+     }
+    },
+    {
+     "version": 2,
+     "rules": {
+      "dropped": [],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "statement": "Rules learned from outcomes"
+     }
+    }
+   ]
+  },
+  {
+   "seed": 202,
+   "plant": "brook",
+   "rounds": [
+    {
+     "round": 0,
+     "test_accuracy": {
+      "no_rulebook": 0.4091,
+      "reflexion_append": 0.4091,
+      "ungated_rewrite": 0.4091,
+      "gated_rewrite": 0.4091,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": []
+    },
+    {
+     "round": 1,
+     "test_accuracy": {
+      "no_rulebook": 0.4091,
+      "reflexion_append": 0.3636,
+      "ungated_rewrite": 0.0909,
+      "gated_rewrite": 0.0909,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "gte",
+         "value": 2025
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "gte",
+         "value": 2025
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For next time, when faced with multiple conflicting values, it's important to carefully review the context and source of each revision to determine the most accurate and up-to-date information."
+     ]
+    },
+    {
+     "round": 2,
+     "test_accuracy": {
+      "no_rulebook": 0.4091,
+      "reflexion_append": 0.1818,
+      "ungated_rewrite": 0.5909,
+      "gated_rewrite": 0.5909,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 3,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For next time, when faced with multiple conflicting values, it's important to carefully review the context and source of each revision to determine the most accurate and up-to-date information.",
+      "For future reference, when dealing with conflicting information, prioritize the most recent and approved versions from reliable sources to ensure accuracy."
+     ]
+    },
+    {
+     "round": 3,
+     "test_accuracy": {
+      "no_rulebook": 0.4091,
+      "reflexion_append": 0.4545,
+      "ungated_rewrite": 0.0,
+      "gated_rewrite": 0.5909,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 3,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        }
+       ],
+       [
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For next time, when faced with multiple conflicting values, it's important to carefully review the context and source of each revision to determine the most accurate and up-to-date information.",
+      "For future reference, when dealing with conflicting information, prioritize the most recent and approved versions from reliable sources to ensure accuracy.",
+      "For future reference, when answering questions about specific locations like Brook, it's crucial to prioritize the most recent and approved information from reliable sources to ensure accuracy."
+     ]
+    },
+    {
+     "round": 4,
+     "test_accuracy": {
+      "no_rulebook": 0.4091,
+      "reflexion_append": 0.4545,
+      "ungated_rewrite": 0.0,
+      "gated_rewrite": 0.5909,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 3,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        }
+       ],
+       [
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For next time, when faced with multiple conflicting values, it's important to carefully review the context and source of each revision to determine the most accurate and up-to-date information.",
+      "For future reference, when dealing with conflicting information, prioritize the most recent and approved versions from reliable sources to ensure accuracy.",
+      "For future reference, when answering questions about specific locations like Brook, it's crucial to prioritize the most recent and approved information from reliable sources to ensure accuracy.",
+      "For future reference, when dealing with conflicting information, it's important to prioritize the most recent and approved revisions, as they are more likely to be accurate."
+     ]
+    }
+   ],
+   "decisions": [
+    {
+     "round": 1,
+     "adopted": true,
+     "incumbent": 0.5,
+     "candidate": 0.625
+    },
+    {
+     "round": 2,
+     "adopted": true,
+     "incumbent": 0.375,
+     "candidate": 0.5
+    },
+    {
+     "round": 3,
+     "adopted": false,
+     "incumbent": 0.5,
+     "candidate": 0.0
+    },
+    {
+     "round": 4,
+     "adopted": false,
+     "incumbent": 0.5,
+     "candidate": 0.5
+    }
+   ],
+   "gated_history": [
+    {
+     "version": 1,
+     "rules": {
+      "dropped": [],
+      "exclude": [],
+      "include": [],
+      "statement": "Rules learned from outcomes"
+     }
+    },
+    {
+     "version": 2,
+     "rules": {
+      "dropped": [],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "gte",
+         "value": 2025
+        }
+       ]
+      ],
+      "statement": "Rules learned from outcomes"
+     }
+    },
+    {
+     "version": 3,
+     "rules": {
+      "dropped": [],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby",
+         "carr"
+        ]
+       }
+      ],
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ]
+      ],
+      "statement": "Rules learned from outcomes"
+     }
+    }
+   ]
+  },
+  {
+   "seed": 203,
+   "plant": "ashby",
+   "rounds": [
+    {
+     "round": 0,
+     "test_accuracy": {
+      "no_rulebook": 0.3182,
+      "reflexion_append": 0.3182,
+      "ungated_rewrite": 0.3182,
+      "gated_rewrite": 0.3182,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": []
+    },
+    {
+     "round": 1,
+     "test_accuracy": {
+      "no_rulebook": 0.3182,
+      "reflexion_append": 0.5909,
+      "ungated_rewrite": 0.3182,
+      "gated_rewrite": 0.3182,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "gte",
+         "value": 2025
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": [
+      "For future reference, when dealing with multiple revisions and sources, it's crucial to review the most recent and approved versions to ensure accuracy. This will help in avoiding discrepancies and aligning with the most up-to-date information."
+     ]
+    },
+    {
+     "round": 2,
+     "test_accuracy": {
+      "no_rulebook": 0.3182,
+      "reflexion_append": 0.5455,
+      "ungated_rewrite": 0.3182,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "gte",
+         "value": 2025
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "status",
+        "op": "not_in",
+        "value": [
+         "approved"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For future reference, when dealing with multiple revisions and sources, it's crucial to review the most recent and approved versions to ensure accuracy. This will help in avoiding discrepancies and aligning with the most up-to-date information.",
+      "For the purge time question, it's important to carefully review the most recent and approved revision to ensure accuracy. Next time, double-check the revision history and prioritize using the most up-to-date and approved information."
+     ]
+    },
+    {
+     "round": 3,
+     "test_accuracy": {
+      "no_rulebook": 0.3182,
+      "reflexion_append": 0.5,
+      "ungated_rewrite": 0.3182,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "gte",
+         "value": 2025
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "status",
+        "op": "not_in",
+        "value": [
+         "approved"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For future reference, when dealing with multiple revisions and sources, it's crucial to review the most recent and approved versions to ensure accuracy. This will help in avoiding discrepancies and aligning with the most up-to-date information.",
+      "For the purge time question, it's important to carefully review the most recent and approved revision to ensure accuracy. Next time, double-check the revision history and prioritize using the most up-to-date and approved information.",
+      "In this case, the correct trip current for the fan F33 at Ashby is 31 A, as the most recent and approved revision from the staff source indicates this value. Always prioritize the most recent and approved information when looking for the correct data."
+     ]
+    },
+    {
+     "round": 4,
+     "test_accuracy": {
+      "no_rulebook": 0.3182,
+      "reflexion_append": 0.5,
+      "ungated_rewrite": 0.7273,
+      "gated_rewrite": 0.7273,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        }
+       ],
+       [
+        {
+         "field": "revision",
+         "op": "gte",
+         "value": 2025
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "status",
+        "op": "not_in",
+        "value": [
+         "approved"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For future reference, when dealing with multiple revisions and sources, it's crucial to review the most recent and approved versions to ensure accuracy. This will help in avoiding discrepancies and aligning with the most up-to-date information.",
+      "For the purge time question, it's important to carefully review the most recent and approved revision to ensure accuracy. Next time, double-check the revision history and prioritize using the most up-to-date and approved information.",
+      "In this case, the correct trip current for the fan F33 at Ashby is 31 A, as the most recent and approved revision from the staff source indicates this value. Always prioritize the most recent and approved information when looking for the correct data.",
+      "For the trip current question, it's important to double-check the most recent and approved revision to ensure accuracy. In this case, the correct trip current for fan F21 at Ashby is 27 A, not 12 A."
+     ]
+    }
+   ],
+   "decisions": [
+    {
+     "round": 1,
+     "adopted": false,
+     "incumbent": 0.375,
+     "candidate": 0.375
+    },
+    {
+     "round": 2,
+     "adopted": true,
+     "incumbent": 0.75,
+     "candidate": 0.875
+    },
+    {
+     "round": 3,
+     "adopted": false,
+     "incumbent": 0.625,
+     "candidate": 0.625
+    },
+    {
+     "round": 4,
+     "adopted": false,
+     "incumbent": 0.75,
+     "candidate": 0.75
+    }
+   ],
+   "gated_history": [
+    {
+     "version": 1,
+     "rules": {
+      "dropped": [],
+      "exclude": [],
+      "include": [],
+      "statement": "Rules learned from outcomes"
+     }
+    },
+    {
+     "version": 2,
+     "rules": {
+      "dropped": [],
+      "exclude": [
+       {
+        "field": "plant",
+        "op": "not_in",
+        "value": [
+         "ashby"
+        ]
+       },
+       {
+        "field": "status",
+        "op": "not_in",
+        "value": [
+         "approved"
+        ]
+       },
+       {
+        "field": "revision",
+        "op": "not_in",
+        "value": [
+         2026
+        ]
+       },
+       {
+        "field": "source",
+        "op": "not_in",
+        "value": [
+         "staff"
+        ]
+       }
+      ],
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "ashby"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        },
+        {
+         "field": "source",
+         "op": "eq",
+         "value": "staff"
+        }
+       ]
+      ],
+      "statement": "Rules learned from outcomes"
+     }
+    }
+   ]
+  },
+  {
+   "seed": 204,
+   "plant": "brook",
+   "rounds": [
+    {
+     "round": 0,
+     "test_accuracy": {
+      "no_rulebook": 0.5455,
+      "reflexion_append": 0.5455,
+      "ungated_rewrite": 0.5455,
+      "gated_rewrite": 0.5455,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": []
+    },
+    {
+     "round": 1,
+     "test_accuracy": {
+      "no_rulebook": 0.5455,
+      "reflexion_append": 0.4545,
+      "ungated_rewrite": 0.0,
+      "gated_rewrite": 0.5455,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 1,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "staff"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [],
+      "exclude": [],
+      "dropped": []
+     },
+     "lessons": [
+      "For the conveyor C20 at Brook, the correct belt speed is 37 m/min. Next time, carefully review all the notes to ensure you select the most up-to-date and accurate information."
+     ]
+    },
+    {
+     "round": 2,
+     "test_accuracy": {
+      "no_rulebook": 0.5455,
+      "reflexion_append": 0.5,
+      "ungated_rewrite": 0.0,
+      "gated_rewrite": 0.5455,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "staff"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "in",
+         "value": [
+          "brook"
+         ]
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the conveyor C20 at Brook, the correct belt speed is 37 m/min. Next time, carefully review all the notes to ensure you select the most up-to-date and accurate information.",
+      "When discrepancies arise, prioritize the most recent and approved revision from the source, as it is likely to be the most accurate. In this case, the correct answer should be derived from the most recent approved revision, which is 40 A for the trip current of the fan F59 at Brook."
+     ]
+    },
+    {
+     "round": 3,
+     "test_accuracy": {
+      "no_rulebook": 0.5455,
+      "reflexion_append": 0.5455,
+      "ungated_rewrite": 0.0,
+      "gated_rewrite": 0.5455,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "staff"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "in",
+         "value": [
+          "brook"
+         ]
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the conveyor C20 at Brook, the correct belt speed is 37 m/min. Next time, carefully review all the notes to ensure you select the most up-to-date and accurate information.",
+      "When discrepancies arise, prioritize the most recent and approved revision from the source, as it is likely to be the most accurate. In this case, the correct answer should be derived from the most recent approved revision, which is 40 A for the trip current of the fan F59 at Brook.",
+      "For future reference, when answering questions about plant data, carefully review the most recent and approved revisions to ensure accuracy, as they provide the most up-to-date and reliable information."
+     ]
+    },
+    {
+     "round": 4,
+     "test_accuracy": {
+      "no_rulebook": 0.5455,
+      "reflexion_append": 0.5455,
+      "ungated_rewrite": 0.0,
+      "gated_rewrite": 0.5455,
+      "oracle_rulebook": 1.0
+     },
+     "gated_version": 2,
+     "ungated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "eq",
+         "value": "brook"
+        },
+        {
+         "field": "status",
+         "op": "eq",
+         "value": "approved"
+        },
+        {
+         "field": "revision",
+         "op": "eq",
+         "value": 2026
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "staff"
+       }
+      ],
+      "dropped": []
+     },
+     "gated_rules": {
+      "statement": "Rules learned from outcomes",
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "in",
+         "value": [
+          "brook"
+         ]
+        }
+       ]
+      ],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "dropped": []
+     },
+     "lessons": [
+      "For the conveyor C20 at Brook, the correct belt speed is 37 m/min. Next time, carefully review all the notes to ensure you select the most up-to-date and accurate information.",
+      "When discrepancies arise, prioritize the most recent and approved revision from the source, as it is likely to be the most accurate. In this case, the correct answer should be derived from the most recent approved revision, which is 40 A for the trip current of the fan F59 at Brook.",
+      "For future reference, when answering questions about plant data, carefully review the most recent and approved revisions to ensure accuracy, as they provide the most up-to-date and reliable information.",
+      "For the flange bolt torque limit, it's important to consider the most recent and approved revision, as these values can change over time. In this case, the most recent approved revision for Brook is 68 Nm."
+     ]
+    }
+   ],
+   "decisions": [
+    {
+     "round": 1,
+     "adopted": false,
+     "incumbent": 0.5,
+     "candidate": 0.0
+    },
+    {
+     "round": 2,
+     "adopted": true,
+     "incumbent": 0.5,
+     "candidate": 0.625
+    },
+    {
+     "round": 3,
+     "adopted": false,
+     "incumbent": 0.375,
+     "candidate": 0.375
+    },
+    {
+     "round": 4,
+     "adopted": false,
+     "incumbent": 0.75,
+     "candidate": 0.5
+    }
+   ],
+   "gated_history": [
+    {
+     "version": 1,
+     "rules": {
+      "dropped": [],
+      "exclude": [],
+      "include": [],
+      "statement": "Rules learned from outcomes"
+     }
+    },
+    {
+     "version": 2,
+     "rules": {
+      "dropped": [],
+      "exclude": [
+       {
+        "field": "source",
+        "op": "eq",
+        "value": "vendor"
+       }
+      ],
+      "include": [
+       [
+        {
+         "field": "plant",
+         "op": "in",
+         "value": [
+          "brook"
+         ]
+        }
+       ]
+      ],
+      "statement": "Rules learned from outcomes"
+     }
+    }
+   ]
+  }
+ ]
+}

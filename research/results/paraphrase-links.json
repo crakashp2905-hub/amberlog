@@ -1,0 +1,11 @@
+{
+  "commit": "d1dbc0a",
+  "seeds": 5,
+  "tp": 180,
+  "fp": 0,
+  "fn": 0,
+  "copy_only": 120,
+  "claim_only": 60,
+  "precision": 1.0,
+  "recall": 1.0
+}

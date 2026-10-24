@@ -1,0 +1,43 @@
+# Three stores, each in its own container and network stack, federating over
+# the Docker network by service name. Driven by `experiments/multihost.py
+# --mode compose` (CI job `multihost`).
+#
+#   python -m experiments.multihost --mode prepare        # stores and peers files in ./work
+#   HOST_UID=$(id -u) HOST_GID=$(id -g) docker compose -f deploy/multihost/docker-compose.yml up -d
+#   python -m experiments.multihost --mode compose
+#
+# The work directory is shared with the host so the driver can open each
+# store's file; the containers run as the host user so SQLite's WAL files
+# stay writable on both sides.
+
+x-store: &store
+  build: ../..
+  user: "${HOST_UID:-1000}:${HOST_GID:-1000}"
+  volumes:
+    - ./work:/work
+  # The image keeps content keys in /keys, owned by its own user; these
+  # stores were prepared with their keys in the database, and run as the host
+  # user, so the variable is cleared.
+  environment:
+    MEMORY_FABRIC_KEYS: ""
+  entrypoint: ["memory-fabric"]
+
+services:
+  a:
+    <<: *store
+    command: ["--db", "/work/a.db", "--share-policy", "reviewed", "federate",
+              "--peers", "/work/a.peers.json", "--host", "0.0.0.0", "--port", "8767",
+              "--allow-plain-http", "--maintain-interval", "1"]
+    ports: ["18767:8767"]
+  b:
+    <<: *store
+    command: ["--db", "/work/b.db", "--share-policy", "reviewed", "federate",
+              "--peers", "/work/b.peers.json", "--host", "0.0.0.0", "--port", "8767",
+              "--allow-plain-http", "--maintain-interval", "1"]
+    ports: ["18768:8767"]
+  c:
+    <<: *store
+    command: ["--db", "/work/c.db", "--share-policy", "reviewed", "federate",
+              "--peers", "/work/c.peers.json", "--host", "0.0.0.0", "--port", "8767",
+              "--allow-plain-http", "--maintain-interval", "1"]
+    ports: ["18769:8767"]

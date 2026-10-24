@@ -38,13 +38,15 @@ is simply recalled again before `verify`.
 **Rate limits.** Each authenticated agent has a token bucket
 (`RateLimit`, default 20 requests a second with a burst of 40), and failed
 authentications are limited per remote address, so a flood is refused with
-`429` and `Retry-After`. The check runs under the store lock, after the credential is verified, so one agent cannot spend another's budget.
+`429` and `Retry-After` before it reaches the store's single write lock.
 Before this, nothing limited a caller: P12 measured that the store queues
 rather than fails under contention, so one agent in a loop could make every
 other agent wait.
 """
 
 from __future__ import annotations
+
+__stability__ = "beta"
 
 import base64
 import json
@@ -58,12 +60,20 @@ from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any, Callable, Mapping
 
+from .limits import LimitExceeded
 from .enforcement import ExposureToken, RiskLevel
 from .identity import Credential, IdentityError, ROLE_AGENT
 from .sdk import AgentClient, NotUsable, UsableMemory, public_error
 from .service import MemoryService
 
 MAX_BODY = 64 * 1024
+# How much of a refused body is read and discarded before replying. Closing a
+# socket with unread bytes makes the OS reset the connection, and the client
+# then sees an abort instead of the 413 -- one run in five on Windows for a
+# 70 KB body. Draining fixes that; the bound keeps a refusal from becoming a
+# way to make the server read an unlimited upload. Beyond it, the connection
+# is closed unread and a reset is the expected outcome.
+MAX_DRAIN = 1024 * 1024
 LOOPBACK = frozenset({"127.0.0.1", "localhost", "::1"})
 MIN_KEY_BYTES = 32
 MAX_TOKENS_PER_AGENT = 4096
@@ -218,43 +228,62 @@ class AgentApi:
         # The server owns the service; reaching its fabric here is the server
         # building the narrow per-agent client, not a caller bypassing it.
         self._fabric = service._fabric
-        self._lock = threading.Lock()
         self._issued: dict[str, OrderedDict[str, ExposureToken]] = {}
         limits = limits or RateLimit()
         self._per_agent = RateLimiter(limits.rate, limits.burst, clock)
         self._per_address = RateLimiter(limits.auth_failures,
                                         max(1, int(limits.auth_failures * 2)), clock)
 
-    def client_for(self, bearer: str | None, remote: str = "") -> AgentClient:
+    def _refused(self, remote: str) -> "_ApiError":
+        # One answer for every failure: unknown agent, bad signature,
+        # expired, revoked. Distinguishing them tells an attacker which.
+        wait = self._per_address.acquire(remote)
+        if wait:
+            return _ApiError(HTTPStatus.TOO_MANY_REQUESTS, "too many requests",
+                             retry_after=wait)
+        return _ApiError(HTTPStatus.UNAUTHORIZED, "authentication required")
+
+    def precheck(self, bearer: str | None, remote: str = "") -> Credential:
+        """Refuse or rate-limit without touching the store; return the credential.
+
+        Signature and expiry need only the in-memory registrations, so a forged
+        or expired credential, and an agent over its rate, are answered here,
+        before the request can queue on the store's lock.
+        """
         try:
             if not bearer:
                 raise IdentityError("no credential")
-            principal = self.service.session(decode_credential(bearer)).principal()
+            credential = decode_credential(bearer)
+            agent_id = self.service.precheck(credential)
         except IdentityError:
-            # One answer for every failure: unknown agent, bad signature,
-            # expired, revoked. Distinguishing them tells an attacker which.
-            wait = self._per_address.acquire(remote)
-            if wait:
-                raise _ApiError(HTTPStatus.TOO_MANY_REQUESTS, "too many requests",
-                                retry_after=wait) from None
-            raise _ApiError(HTTPStatus.UNAUTHORIZED, "authentication required") from None
-        wait = self._per_agent.acquire(principal.agent_id)
+            raise self._refused(remote) from None
+        wait = self._per_agent.acquire(agent_id)
         if wait:
             raise _ApiError(HTTPStatus.TOO_MANY_REQUESTS, "too many requests",
                             retry_after=wait)
+        return credential
+
+    def client_for(self, credential: Credential, remote: str = "") -> AgentClient:
+        """Full verification, revocation included. Call under the fabric's lock."""
+        try:
+            principal = self.service.session(credential).principal()
+        except IdentityError:
+            raise self._refused(remote) from None
         return AgentClient(self._fabric, principal.agent_id, principal.tenant_id)
 
     def handle(self, operation: str, bearer: str | None, body: Mapping[str, Any],
                remote: str = "") -> Any:
-        # Authentication reads the store (revocations), so it runs under the
-        # store lock with everything else. An earlier version moved it out to
-        # spare limited callers the queue, and 14% of requests failed with
-        # sqlite3.InterfaceError under 10 concurrent agents (P12b). The rate
-        # check cannot run first either: before verification the agent id is
-        # only the caller's claim, and a forged one would spend another
-        # agent's budget.
-        with self._lock:
-            client = self.client_for(bearer, remote)
+        # Two halves. Signature, expiry and the rate limit need no store and
+        # run first, so a forged, expired or over-rate request never queues on
+        # the store's lock. Revocation is a read on the store's one
+        # connection, so it runs under the lock with the operation: it used to
+        # run outside it, and concurrently with another request it failed 39
+        # of 200 times under ten agents (experiments/p12_http.py) -- an
+        # interfered-with read is a revocation check that can say "not
+        # revoked".
+        credential = self.precheck(bearer, remote)
+        with self._fabric.lock:
+            client = self.client_for(credential, remote)
             if operation == "recall":
                 return self._recall(client, body)
             if operation == "fetch":
@@ -286,7 +315,7 @@ class AgentApi:
 
     def _verify(self, client: AgentClient, body: Mapping[str, Any]) -> dict[str, Any]:
         memory_id = _string(body, "memory_id")
-        issued = self._issued.get(client.agent_id, {}).get(memory_id)
+        issued = self._issued.get(client.agent_id, OrderedDict()).get(memory_id)
         if issued is None:
             raise _ApiError(HTTPStatus.CONFLICT,
                             "recall or fetch this memory before verifying it")
@@ -357,8 +386,13 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
                 length = int(self.headers.get("Content-Length") or 0)
             except ValueError:
                 length = 0
-            if 0 < length <= MAX_BODY:
-                self.rfile.read(length)
+            if 0 < length <= MAX_DRAIN:
+                remaining = length
+                while remaining > 0:
+                    chunk = self.rfile.read(min(remaining, MAX_BODY))
+                    if not chunk:
+                        break
+                    remaining -= len(chunk)
             self.close_connection = True
             self._reply(status, {"error": message})
 
@@ -393,6 +427,10 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
                                     remote=self.client_address[0])
             except _ApiError as exc:
                 self._reply(exc.status, {"error": exc.message}, exc.retry_after)
+            except LimitExceeded as exc:
+                self._reply(HTTPStatus.TOO_MANY_REQUESTS if exc.code != "payload_too_large"
+                            else HTTPStatus.REQUEST_ENTITY_TOO_LARGE,
+                            {"error": exc.code}, 1)
             except Exception as exc:  # a refused write is an answer, not a crash
                 logging.getLogger(__name__).warning("request refused", exc_info=exc)
                 self._reply(HTTPStatus.UNPROCESSABLE_ENTITY, {"error": public_error(exc)})

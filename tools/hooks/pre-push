@@ -1,0 +1,35 @@
+#!/bin/sh
+# Branch protection from the client side (docs/BRANCHES.md).
+#
+# GitHub branch protection and rulesets need GitHub Pro on a private
+# repository, so the server does not refuse a force-push or a deletion of
+# `main`. This hook does, for pushes from this clone. Install with:
+#
+#     sh tools/install-hooks.sh
+#
+# Refused, for main, rc/*, archive/* and wip/*:
+#   - deleting the branch on the remote;
+#   - any push that is not a fast-forward (history rewrite).
+# A deliberate exception needs `git push --no-verify`, which says so in the
+# command itself.
+
+zero=0000000000000000000000000000000000000000
+status=0
+while read -r local_ref local_sha remote_ref remote_sha; do
+    branch=${remote_ref#refs/heads/}
+    case "$branch" in
+        main|rc/*|archive/*|wip/*) ;;
+        *) continue ;;
+    esac
+    if [ "$local_sha" = "$zero" ]; then
+        echo "pre-push: refusing to delete protected branch '$branch'" >&2
+        status=1
+        continue
+    fi
+    if [ "$remote_sha" != "$zero" ] && ! git merge-base --is-ancestor "$remote_sha" "$local_sha" 2>/dev/null; then
+        echo "pre-push: refusing a non-fast-forward push to protected branch '$branch'" >&2
+        echo "          (merge origin/$branch first; history on it is never rewritten)" >&2
+        status=1
+    fi
+done
+exit $status

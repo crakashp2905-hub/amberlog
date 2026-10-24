@@ -24,13 +24,15 @@ Both are thin wrappers over the engine. The point is what they *omit*.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Iterable, Mapping, Sequence
+__stability__ = "stable"
 
-from .enforcement import AccessDecision, EnforcedRead, ExposureToken, RiskLevel, Verdict
+from dataclasses import dataclass
+from typing import Any, Mapping, Sequence
+
+from .enforcement import AccessDecision, EnforcedRead, ExposureToken, RiskLevel
 from .identity import DEFAULT_TENANT, Credential
-from .model import LifecycleState, Memory, MemoryType, Scope
-from .protocol import Acknowledgement, PropagationState, Retraction
+from .model import Memory, MemoryType, Scope
+from .protocol import Acknowledgement, Retraction
 
 __all__ = [
     "AgentClient",
@@ -143,6 +145,17 @@ class AgentClient:
             include_contested=include_contested,
             tenant_id=self._tenant_id,
         )
+        from .conflicts import find_conflicts
+
+        # A memory that gives a different value for the same claim as another
+        # returned memory, by a different author, carries a warning naming it
+        # (default since 0.12.0; G4b). The agent sees the disagreement instead
+        # of whichever one ranked first.
+        disputed: dict[str, set[str]] = {}
+        for group in find_conflicts(list(hits.exposed)):
+            ids = {m.id for m in group}
+            for m in group:
+                disputed.setdefault(m.id, set()).update(ids - {m.id})
         out: list[UsableMemory] = []
         for memory in hits.exposed:
             read = self._fabric.use(
@@ -154,7 +167,22 @@ class AgentClient:
                 tenant_id=self._tenant_id,
             )
             if read.usable:
-                out.append(self._wrap(read))
+                usable = self._wrap(read)
+                from dataclasses import replace
+
+                if memory.id in disputed:
+                    usable = replace(usable, warnings=usable.warnings + (
+                        "disputed: gives a different value for the same claim as "
+                        + ", ".join(sorted(disputed[memory.id])),))
+                from . import validation
+
+                judged = validation.assess(self._fabric, memory.id)
+                if judged.suspicious:
+                    usable = replace(usable, warnings=usable.warnings + (
+                        "implausible: " + "; ".join(
+                            f"{k} ({v})" for k, v in judged.signals.items()
+                            if k in validation.SUSPICIOUS),))
+                out.append(usable)
         return out
 
     def fetch(
@@ -246,6 +274,10 @@ class AgentClient:
 
     def _wrap(self, read: EnforcedRead) -> UsableMemory:
         memory: Memory = read.memory
+        if read.token is None:
+            # A usable read always carries one. Refusing here keeps a memory
+            # from reaching an agent without the token that `verify` needs.
+            raise RuntimeError(f"enforced read of {memory.id} carried no token")
         return UsableMemory(
             memory_id=memory.id,
             version=memory.version,
@@ -357,6 +389,18 @@ class OperatorClient:
 
     def validate(self, memory_id: str, reason: str = "validated") -> Memory:
         return self._fabric.validate(memory_id, actor=self._actor, reason=reason)
+
+    def share(self, memory_id: str, scope: str = "team",
+              granted_capabilities: Sequence[str] = ()) -> Any:
+        """Widen who may read a memory, through the firewall.
+
+        An agent's own writes are private to it. `team` makes one readable by
+        every agent in its tenant; `federated` also lets it leave the store.
+        The decision and its reasons are logged either way, and a refusal
+        leaves the scope unchanged.
+        """
+        return self._fabric.share(memory_id, scope, actor=self._actor,
+                                  granted_capabilities=granted_capabilities)
 
     def erase_content(self, memory_id: str, reason: str) -> bool:
         """Crypto-erasure. Irreversible, and the audit trail survives it."""

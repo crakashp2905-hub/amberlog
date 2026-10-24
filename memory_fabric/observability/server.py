@@ -15,6 +15,8 @@ Three deliberate constraints:
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 import json
 import re
 import threading
@@ -24,9 +26,10 @@ from functools import partial
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Callable
+from typing import TYPE_CHECKING, Any
 from urllib.parse import parse_qs, urlparse
 
+from ..identity import DEFAULT_TENANT
 from . import report
 from .auth import (
     AuthConfig,
@@ -59,6 +62,8 @@ STATIC_ROUTES: dict[str, tuple[str, str]] = {
 }
 
 _ULID = re.compile(r"^[0-9A-HJKMNP-TV-Z]{26}$")
+_BRANCH = re.compile(r"^[a-z0-9][a-z0-9._-]{0,62}$")
+_RECEIPT = re.compile(r"^ctx_[0-9A-HJKMNP-TV-Z]{26}$")
 
 
 class ApiError(Exception):
@@ -116,7 +121,9 @@ class Api:
 
     def __init__(self, fabric: "MemoryFabric") -> None:
         self.fabric = fabric
-        self._lock = threading.Lock()
+        # The fabric's own lock, not one of ours: a process serving the
+        # dashboard and the agent API on one store must serialise across both.
+        self._lock = fabric.lock
 
     def handle(self, path: str, params: dict[str, list[str]]) -> Any:
         from ..fabric import NotFound
@@ -149,6 +156,23 @@ class Api:
 
             case ["attention"]:
                 return [i.to_json() for i in report.attention(f)]
+
+            case ["lifecycle"]:
+                from ..lifecycle import center
+
+                return center(f, stale_days=_int(params, "stale_days", 90) or 90)
+
+            case ["posture"]:
+                from ..posture import posture
+
+                return posture(f)
+
+            case ["review"]:
+                # The queue only. Decisions are writes and stay in the CLI and
+                # SDK: this server has no endpoint that changes a memory.
+                from ..review import queue
+
+                return [i.to_json() for i in queue(f)]
 
             case ["propagation"]:
                 # Invariant 9 made visible. Read-only, like everything here:
@@ -190,6 +214,60 @@ class Api:
 
             case ["episodes"]:
                 return report.episode_rows(f, limit=_int(params, "limit", 200))
+
+            case ["capabilities"]:
+                return json.loads((Path(__file__).parent / "static" / "capabilities.json")
+                                  .read_text(encoding="utf-8"))
+
+            case ["memories", raw, "correction"]:
+                from ..correction import preview
+
+                try:
+                    return preview(f, _memory_id(raw)).to_json()
+                except KeyError as exc:
+                    raise ApiError(HTTPStatus.NOT_FOUND, "no such memory") from exc
+
+            case ["branches"]:
+                from ..branching import Branches
+
+                return [b.to_json() for b in Branches(f).list_branches(
+                    tenant_id=_one(params, "tenant") or DEFAULT_TENANT)]
+
+            case ["branches", name] | ["branches", name, "preview"]:
+                from ..branching import Branches
+
+                if not _BRANCH.match(name):
+                    raise ApiError(HTTPStatus.BAD_REQUEST, "malformed branch name")
+                b = Branches(f)
+                tenant = _one(params, "tenant") or DEFAULT_TENANT
+                try:
+                    branch = b.get(name, tenant)
+                except KeyError as exc:
+                    raise ApiError(HTTPStatus.NOT_FOUND, "no such branch") from exc
+                if rest[-1] == "preview":
+                    if branch.closed:
+                        return {"branch": name, "closed": True, "changes": []}
+                    # The operator's view, read-only: computed as the owner would see it.
+                    return b.preview_merge(name, branch.owner, tenant).to_json()
+                return {**branch.to_json(), "history": b.history(name, tenant),
+                        "diff": b.diff(name, tenant)}
+
+            case ["receipts"]:
+                from ..context_receipt import receipts
+
+                found = receipts(f, tenant_id=_one(params, "tenant"),
+                                 agent_id=_one(params, "agent"))
+                return found[-(_int(params, "limit", 200) or 200):]
+
+            case ["receipts", rid]:
+                from ..context_receipt import explain_receipt
+
+                if not _RECEIPT.match(rid):
+                    raise ApiError(HTTPStatus.BAD_REQUEST, "malformed receipt id")
+                try:
+                    return explain_receipt(f, rid, tenant_id=_one(params, "tenant"))
+                except KeyError as exc:
+                    raise ApiError(HTTPStatus.NOT_FOUND, "no such receipt") from exc
 
             case ["search"]:
                 query = _one(params, "q")
@@ -460,7 +538,7 @@ def serve(
         if access_log:
             print(f"  access log:   {access_log}")
     elif config.enabled:
-        print(f"  auth:   token (open this URL once; it sets a session cookie)")
+        print("  auth:   token (open this URL once; it sets a session cookie)")
         print(f"\n  {authenticator.bootstrap_url(host, actual_port)}\n")
         print(f"  For scripts:  Authorization: Bearer {config.token}")
     else:

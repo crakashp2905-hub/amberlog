@@ -346,9 +346,9 @@ class FabricArm:
         if w._parent_objs:  # type: ignore[attr-defined]
             parents = [self.ids[id(p)] for p in w._parent_objs]  # type: ignore[attr-defined]
             mid = f.derive(w.agent, w.text, parents=parents, context=justification_context(
-                [(p, JustificationKind.ALTERNATIVE) for p in parents]))
+                [(p, JustificationKind.ALTERNATIVE) for p in parents]), scope="team")
         else:
-            mid = f.remember(w.agent, w.text)
+            mid = f.remember(w.agent, w.text, scope="team")
         self.ids[id(w)] = mid
         # The reviewer cannot tell poison from truth: validate whatever the
         # screens did not quarantine.

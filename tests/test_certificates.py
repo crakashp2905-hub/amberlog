@@ -43,14 +43,14 @@ class Fixture(unittest.TestCase):
         self.b = self.observe("ag2", "Tug B overheated at 41C in August.")
 
     def observe(self, agent: str, content: str) -> str:
-        memory_id = self.fabric.remember(agent, content)
+        memory_id = self.fabric.remember(agent, content, scope="team")
         self.fabric.validate(memory_id, actor="supervisor")
         return memory_id
 
     def conclude(self, content: str, parents: dict[str, JustificationKind]) -> str:
         memory_id = self.fabric.derive(
             "ag3", content, parents=list(parents),
-            context=justification_context(parents.items()))
+            context=justification_context(parents.items()), scope="team")
         self.fabric.validate(memory_id, actor="supervisor")
         return memory_id
 
@@ -97,7 +97,7 @@ class TestVerifier(Fixture):
         self.assertIn(C.EVIDENCE_NOT_FOUND, self.verify(cert).reason_codes)
 
     def test_a_candidate_is_not_evidence(self) -> None:
-        candidate = self.fabric.remember("ag1", "unreviewed claim")
+        candidate = self.fabric.remember("ag1", "unreviewed claim", scope="team")
         result = self.verify(self.certify(candidate))
         self.assertIn(C.EVIDENCE_NOT_USABLE, result.reason_codes)
 
@@ -193,7 +193,7 @@ class TestSelectiveReassessment(Fixture):
     def test_a_copy_is_not_independent_support(self) -> None:
         copy_id = self.fabric.derive(
             "ag4", "Tug B overheated at 41C in August (forwarded).", parents=[self.b],
-            context=justification_context([(self.b, JustificationKind.COPIED)]))
+            context=justification_context([(self.b, JustificationKind.COPIED)]), scope="team")
         self.fabric.validate(copy_id, actor="supervisor")
         cert = self.fabric.certify(
             "claim", [self.b, copy_id], "ag3",
@@ -455,7 +455,7 @@ class TestCrossProcess(unittest.TestCase):
         path = Path(tmp.name) / "s.db"
         writer = MemoryFabric(path, auto_activate=True)
         self.addCleanup(writer.close)
-        fact = writer.remember("ag1", "Valve 7 is upstream of pump 3.")
+        fact = writer.remember("ag1", "Valve 7 is upstream of pump 3.", scope="team")
         server = MemoryFabric(path)  # another process, in effect
         self.addCleanup(server.close)
         gate = ActionGate(server, _policy())

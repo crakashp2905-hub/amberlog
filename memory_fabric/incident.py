@@ -23,6 +23,8 @@ Three rules govern the report:
 
 from __future__ import annotations
 
+__stability__ = "beta"
+
 from dataclasses import dataclass, field
 from typing import Any, Iterable
 

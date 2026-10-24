@@ -7,6 +7,8 @@ event log and is never written directly.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import json
 from dataclasses import dataclass, field, replace
 from enum import Enum
@@ -15,7 +17,7 @@ from typing import Any, Mapping
 # `identity` imports only `ids`, so this direction carries no cycle.
 from .identity import DEFAULT_TENANT
 
-SCHEMA_VERSION = "0.9.0"
+SCHEMA_VERSION = "0.13.0"
 
 
 class MemoryType(str, Enum):
@@ -34,6 +36,44 @@ class Scope(str, Enum):
     @property
     def rank(self) -> int:
         return {"private": 0, "team": 1, "federated": 2}[self.value]
+
+
+PERMISSIONS = ("read", "write", "approve", "retract")
+"""What an agent can be granted on a collection. `read` is attachment: the
+collection's members become readable even when private. `write` lets it add
+its own memories. `approve` and `retract` let an authenticated agent validate
+and withdraw the collection's members without the operator role."""
+
+
+def visible_to(memory: "Memory", agent_id: str | None, state: Any = None) -> bool:
+    """Whether scope lets `agent_id` read `memory` inside its own store.
+
+    `private` is the agent that wrote it; `team` and `federated` are every
+    agent in the memory's tenant (tenancy is checked separately, first).
+    `agent_id` None is a caller that is not agent-scoped -- an operator, or
+    the store's own maintenance -- and scope does not restrict it, the same
+    convention `tenant_id` None follows in the enforcer.
+
+    Retrieval ignored scope until 2026-10-18: a validated private memory, a
+    restricted one included, was returned to every agent in the tenant,
+    although the specification and glossary define scope as visibility
+    (docs/SECURITY_REVIEW.md F10).
+    """
+    if agent_id is None or memory.scope is not Scope.PRIVATE:
+        return True
+    if memory.provenance.created_by == agent_id:
+        return True
+    # Attached through a collection: `read` on a collection that holds it.
+    return state is not None and granted(state, memory.tenant_id, agent_id, memory.id, "read")
+
+
+def granted(state: Any, tenant_id: str, agent_id: str, memory_id: str, permission: str) -> bool:
+    """Whether `agent_id` holds `permission` on a collection containing `memory_id`."""
+    for (tenant, _), collection in getattr(state, "collections", {}).items():
+        if tenant == tenant_id and memory_id in collection.members \
+                and permission in collection.grants.get(agent_id, ()):
+            return True
+    return False
 
 
 class WithdrawalBasis(str, Enum):

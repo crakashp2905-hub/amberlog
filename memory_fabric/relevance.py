@@ -53,9 +53,11 @@ stronger one falsely. `label` is the thing a caller should branch on.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field, replace
 from enum import Enum
-from typing import Any, Mapping, Sequence
+from typing import Any, Mapping
 
 from .identity import DEFAULT_TENANT
 from .ids import new_ulid

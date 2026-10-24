@@ -1,0 +1,117 @@
+{
+  "experiment": "x5-context-rendering",
+  "model": "qwen2.5:3b",
+  "seeds": 5,
+  "episodes": 128,
+  "pairs": 640,
+  "right_memory": 0.6578,
+  "arms": {
+    "plain": {
+      "success": 0.5984,
+      "hedged": 0.0,
+      "prompt_words": 48.5
+    },
+    "delimited": {
+      "success": 0.5922,
+      "hedged": 0.0,
+      "prompt_words": 80.5
+    },
+    "annotated": {
+      "success": 0.5641,
+      "hedged": 0.0,
+      "prompt_words": 57.5
+    },
+    "full": {
+      "success": 0.5281,
+      "hedged": 0.0,
+      "prompt_words": 122.5
+    }
+  },
+  "comparisons": {
+    "total (plain - full)": {
+      "comparison": "plain - full",
+      "n_pairs": 640,
+      "mean": 0.0703,
+      "ci95": [
+        0.0469,
+        0.0938
+      ],
+      "excludes_zero": true,
+      "discordance": 0.1109,
+      "realised_se": 0.0132
+    },
+    "annotations (delimited - full)": {
+      "comparison": "delimited - full",
+      "n_pairs": 640,
+      "mean": 0.0641,
+      "ci95": [
+        0.0406,
+        0.0875
+      ],
+      "excludes_zero": true,
+      "discordance": 0.0953,
+      "realised_se": 0.0122
+    },
+    "preamble (annotated - full)": {
+      "comparison": "annotated - full",
+      "n_pairs": 640,
+      "mean": 0.0359,
+      "ci95": [
+        0.0172,
+        0.0563
+      ],
+      "excludes_zero": true,
+      "discordance": 0.0734,
+      "realised_se": 0.0107
+    },
+    "plain - delimited": {
+      "comparison": "plain - delimited",
+      "n_pairs": 640,
+      "mean": 0.0063,
+      "ci95": [
+        -0.0094,
+        0.0219
+      ],
+      "excludes_zero": false,
+      "discordance": 0.0437,
+      "realised_se": 0.0083
+    }
+  },
+  "registered": {
+    "threshold": 0.05,
+    "primary": {
+      "comparison": "plain - full",
+      "n_pairs": 640,
+      "mean": 0.0703,
+      "ci95": [
+        0.0469,
+        0.0938
+      ],
+      "excludes_zero": true,
+      "discordance": 0.1109,
+      "realised_se": 0.0132
+    },
+    "supported": true,
+    "real_but_below_action_threshold": false
+  },
+  "checks": {
+    "ok": true,
+    "failed": [],
+    "shared_retrieval": {
+      "ok": true,
+      "note": "one retrieval per episode feeds every rendering, so right_memory is identical by construction; a difference would be a bug rather than a finding",
+      "right_memory": 0.6578
+    },
+    "power": {
+      "ok": true,
+      "registered_mde": 0.05,
+      "realised_mde": 0.037,
+      "note": "the registered MDE assumed a discordance rate; this is the realised one, so a reader can see whether the power held"
+    }
+  },
+  "cost": {
+    "calls": 2722.0,
+    "tokens": 851831.0,
+    "wall_s": 9104.3
+  }
+}

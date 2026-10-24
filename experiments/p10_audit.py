@@ -61,7 +61,7 @@ def build(seed: int) -> tuple[MemoryFabric, list[tuple[int, int, set[str]]], dic
     def write(agent: str, text: str) -> str:
         nonlocal n
         n += 1
-        return f.remember(agent, f"{text} #{seed}-{n}")
+        return f.remember(agent, f"{text} #{seed}-{n}", scope="team")
 
     def act(evidence: list[str]) -> int:
         decision = gate.authorize("override", "ops", f.certify("c", evidence, "ops"))

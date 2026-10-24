@@ -1,6 +1,6 @@
 # Product acceptance report
 
-**2026-10-24, branch `claude/wonderful-newton-t55gww` at `62a6ca1`.** This
+**2026-10-24, branch `claude/wonderful-newton-t55gww` at `62a6ca1`, before merging `main`.** This
 covers plan Phases 1–5. Every number below links to the run that produced it.
 Where something was not done or did not pass, this report says so.
 
@@ -50,24 +50,24 @@ Found and fixed, each with a regression test:
   backlog of 5 reset connections at 100 agents.
 
 Live integrations: Claude through Claude Code over MCP
-([result](../research/results/live-claude-mcp.md)) and over the agent HTTP API
-([result](../research/results/live-claude-http.md)). The direct-SDK adapter is
+([result](results/live-claude-mcp.md)) and over the agent HTTP API
+([result](results/live-claude-http.md)). The direct-SDK adapter is
 contract-tested through the real `anthropic` SDK with HTTP stubbed. It has
 **not** made a live API call (§6).
 
 ## 3. Real-world value (Phase 3)
 
 All pre-registered, with an oracle arm that no arm exceeded, and with raw data
-committed. Full rows are in [SCORECARD.md](../research/SCORECARD.md) §2c.
+committed. Full rows are in [SCORECARD.md](SCORECARD.md) §2c.
 
-- **D1: a real model behind a governed store** ([result](../research/results/d1-downstream.md)).
+- **D1: a real model behind a governed store** ([result](results/d1-downstream.md)).
   `sonnet`, 5 seeds. Task success went from 0.492 to **0.867** (oracle
   1.000). Harmful answers went from 0.508 to **0.133**. Valid evidence blocked:
   0.000. Critical omissions: 0.000 in both arms. Two harness corrections are
   disclosed in the result. The size of the gain is set by the registered case
   mix. The residual harm is **undetected poison**, which no governance
   mechanism here addresses.
-- **P2b: sufficiency at a fixed 400-token budget** ([result](../research/results/p2b-budget.md)).
+- **P2b: sufficiency at a fixed 400-token budget** ([result](results/p2b-budget.md)).
   It passed narrowly, on one family. `multi_hop_4` is still unsolved.
 - **Injections:** current models acted on 1 of 40 injected notes with no
   screen at all. P5's obedient-agent injection figures are an upper bound.
@@ -75,15 +75,15 @@ committed. Full rows are in [SCORECARD.md](../research/SCORECARD.md) §2c.
 ## 4. Production hardening (Phase 4)
 
 - **Scale:** one API process holds 159–195 ops/s from 1 to 100 agents, with
-  p99 of about 1.2 s at 100 ([P12b](../research/results/p12b-api-load.md)).
+  p99 of about 1.2 s at 100 ([P12b](results/p12b-api-load.md)).
   One process per agent collapses to 4 ops/s and is not supported
-  ([P12](../research/results/p12-load.md)).
+  ([P12](results/p12-load.md)).
 - **Rate limits:** per-agent token bucket, per-address limit on failed
   authentications, `429` with `Retry-After`. The token cache is bounded.
 - **Recovery, backup and restore, migration:** crash in mid-retraction, then
   recovery (e2e E2); backup and restore (E3, `tests/test_backup.py`); upgrade
   from every shipped schema, then backup (above).
-- **Operations:** [OPERATIONS.md](OPERATIONS.md) §4a states the supported scale
+- **Operations:** [OPERATIONS.md](../docs/OPERATIONS.md) §4a states the supported scale
   and how to size rate limits.
 
 ## 5. Advanced research (Phase 5)
@@ -106,7 +106,7 @@ mechanism with nothing to measure it against.
 **Causal incident reconstruction: evaluated.** P9 replays the log read-only
 and predicts which sources an action depended on. Against live withdrawal it
 scored precision **0.996** and recall **1.000**, after a 20% false-attribution
-bug was found and fixed ([result](../research/results/p9-incidents.md)). Its
+bug was found and fixed ([result](results/p9-incidents.md)). Its
 limit: it reconstructs dependence that is recorded in the log, and it cannot
 see reasoning a model did not cite.
 
@@ -115,7 +115,7 @@ see reasoning a model did not cite.
   at the same safety: 0.064 against 0.133 (P5 H5c).
 - Copy recognition stops a re-ingested withdrawn document from counting as
   independent support. The product matches the oracle on both splits
-  ([result](../research/results/p2b-copy-recognition.md)). Since Phase 2 this
+  ([result](results/p2b-copy-recognition.md)). Since Phase 2 this
   also holds through encoding noise.
 
 ## 6. Release blockers and open items

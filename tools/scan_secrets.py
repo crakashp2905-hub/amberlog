@@ -121,7 +121,7 @@ ALLOWED_LINES = {
 # a first-class domain object — the roadmap's own term — and the
 # `password_assignment` rule fires on `token: ExposureToken` and
 # `token = self.enforcer.issue(...)`. Exempting `password_assignment` for the
-# whole of fabric.py would leave a real hole in a 1,200-line module, and
+# whole of the access service would leave a real hole in it, and
 # renaming the concept to dodge a detector would be worse naming for a cosmetic
 # reason.
 ALLOWED_SNIPPETS = {
@@ -131,8 +131,11 @@ ALLOWED_SNIPPETS = {
     ("memory_fabric/enforcement.py", "password_assignment", "ExposureToken"),
     ("memory_fabric/enforcement.py", "password_assignment", "token.expired"),
     ("memory_fabric/fabric.py", "password_assignment", "ExposureToken"),
-    ("memory_fabric/fabric.py", "password_assignment", "self.enforcer.issue"),
-    ("memory_fabric/fabric.py", "password_assignment", "token=token, memory=memory"),
+    # The recorded public API of MemoryFabric: a signature, `token: 'ExposureToken'`.
+    ("tests/data/memory_fabric_api.json", "password_assignment", "ExposureToken"),
+    ("memory_fabric/_fabric/access.py", "password_assignment", "ExposureToken"),
+    ("memory_fabric/_fabric/access.py", "password_assignment", "self.enforcer.issue"),
+    ("memory_fabric/_fabric/access.py", "password_assignment", "token=token, memory=memory"),
     ("tests/test_enforcement.py", "password_assignment", "enforcer.issue"),
     ("memory_fabric/transport.py", "password_assignment", "retraction.sign"),
     ("memory_fabric/sdk.py", "password_assignment", "ExposureToken"),
@@ -142,6 +145,18 @@ ALLOWED_SNIPPETS = {
     ("memory_fabric/observability/auth.py", "password_assignment", "name, sep, token = line.partition"),
     ("memory_fabric/observability/auth.py", "password_assignment", "name, token = name.strip()"),
     ("memory_fabric/observability/server.py", "password_assignment", "token='<your-token>'"),
+    # The System One client takes an optional bearer token for a remote
+    # endpoint. `password_assignment` fires on the two lines that move the
+    # caller's parameter into the instance and read it back, neither of which
+    # contains a value: `self.api_key = api_key` and `if self.api_key:`. The
+    # detector is left alone -- a pattern that stopped firing on
+    # `api_key = <identifier>` would also stop firing on
+    # `api_key = "hunter2"`, and weakening a governance rule so that my own
+    # file passes the repository scan is the wrong direction.
+    ("memory_fabric/adapters/systemone.py", "password_assignment",
+     "self.api_key = api_key"),
+    ("memory_fabric/adapters/systemone.py", "password_assignment",
+     "if self.api_key:"),
 }
 
 

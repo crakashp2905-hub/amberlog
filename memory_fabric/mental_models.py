@@ -27,6 +27,8 @@ the registry is a projection of the log and survives a restart.
 
 from __future__ import annotations
 
+__stability__ = "experimental"
+
 from dataclasses import dataclass
 from typing import Any, Callable, Sequence
 

@@ -27,7 +27,7 @@ from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
 
 def main() -> int:
     fabric = MemoryFabric(seed=0)
-    gauge = fabric.remember("ag_field", "Valve 7 pressure reads 4 bar.")
+    gauge = fabric.remember("ag_field", "Valve 7 pressure reads 4 bar.", scope="team")
     fabric.validate(gauge, actor="supervisor")
 
     policy = ActionPolicy(

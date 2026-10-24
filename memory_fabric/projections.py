@@ -7,6 +7,8 @@ nothing but events, and unknown event types are ignored rather than fatal.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hashlib
 from dataclasses import dataclass, field, replace
 from typing import Any, Iterable, Mapping
@@ -52,6 +54,10 @@ class ExposureRecord:
     policy_id: str
     step: int
     ts: int
+    # Who was shown it, and where in the log: what `independence` needs to
+    # tell "wrote it having seen that" from "wrote it independently".
+    agent_id: str | None = None
+    seq: int = 0
 
 
 @dataclass
@@ -92,6 +98,7 @@ class ProjectionState:
     # decision, not of the memory, and a release leaves it readable.
     withdrawal_basis: dict[str, str] = field(default_factory=dict)
     copy_of: dict[str, str] = field(default_factory=dict)
+    created_seq: dict[str, int] = field(default_factory=dict)
     """Memory id -> the memory it re-ingests.
 
     Deliberately not a parent edge. `_group_by_root` spares a memory that is
@@ -127,6 +134,8 @@ class ProjectionState:
     # local memory id -> the stores this one sent it to, and the id each gave
     # it. The forwarding table a transitive retraction walks.
     shared_to: dict[str, dict[str, str]] = field(default_factory=dict)
+    # (tenant, collection name) -> members and per-agent grants (0.10.0).
+    collections: dict[tuple[str, str], "CollectionState"] = field(default_factory=dict)
     suppressed_duplicates: int = 0
     applied_seq: int = 0
 
@@ -236,6 +245,7 @@ def _register_memory(state: ProjectionState, memory: Memory) -> None:
 def _on_memory_created(state: ProjectionState, event: Event) -> None:
     memory = Memory.from_json(event.payload["memory"])
     _register_memory(state, memory)
+    state.created_seq[memory.id] = event.seq or 0
     if event.episode_id:
         key = (memory.provenance.created_by, event.episode_id, _digest(memory.content))
         state.written.setdefault(key, memory.id)
@@ -265,6 +275,8 @@ def _on_exposure_decided(state: ProjectionState, event: Event) -> None:
         policy_id=payload.get("policy_id", ""),
         step=int(payload.get("step", 0)),
         ts=event.ts,
+        agent_id=event.agent_id,
+        seq=event.seq or 0,
     )
     state.exposures.append(record)
     stats = state.stats_for(record.memory_id)
@@ -338,6 +350,15 @@ def _on_content_erased(state: ProjectionState, event: Event) -> None:
         # Replace the stored text in the projection too. The event log keeps the
         # ciphertext, which without its key is not content.
         state.memories[memory_id] = memory.evolve(content=ERASED_MARKER)
+    # And every earlier version. One key seals them all, so a replay after the
+    # erasure reads each of them back as the marker -- but a process that was
+    # already running kept their plaintext in `history`, and `history()` and
+    # the dashboard's version list served it after the erasure was recorded.
+    # Found by tests/test_catch_up.py comparing a live projection with a
+    # replayed one.
+    if memory_id in state.history:
+        state.history[memory_id] = [
+            old.evolve(content=ERASED_MARKER) for old in state.history[memory_id]]
 
 
 def _on_scope_changed(state: ProjectionState, event: Event) -> None:
@@ -383,6 +404,30 @@ def _on_copy_recognised(state: ProjectionState, event: Event) -> None:
     state.copies.setdefault(original, set()).add(memory_id)
 
 
+@dataclass
+class CollectionState:
+    members: set[str] = field(default_factory=set)
+    grants: dict[str, set[str]] = field(default_factory=dict)
+
+
+def _on_collection_changed(state: ProjectionState, event: Event) -> None:
+    p = event.payload
+    collection = state.collections.setdefault((p["tenant_id"], p["collection"]),
+                                              CollectionState())
+    action = p.get("action")
+    if action == "add" and p.get("memory_id"):
+        collection.members.add(p["memory_id"])
+    elif action == "remove" and p.get("memory_id"):
+        collection.members.discard(p["memory_id"])
+    elif action == "grant" and p.get("agent_id"):
+        collection.grants.setdefault(p["agent_id"], set()).update(p.get("permissions") or ())
+    elif action == "revoke" and p.get("agent_id"):
+        held = collection.grants.get(p["agent_id"], set())
+        held -= set(p.get("permissions") or held)
+        if not held:
+            collection.grants.pop(p["agent_id"], None)
+
+
 _HANDLERS = {
     EventType.EPISODE_STARTED: _on_episode_started,
     EventType.MEMORY_CREATED: _on_memory_created,
@@ -402,4 +447,5 @@ _HANDLERS = {
     EventType.RETRACTION_REQUESTED: _on_retraction_requested,
     EventType.CONTENT_ERASED: _on_content_erased,
     EventType.MEMORY_SHARED: _on_memory_shared,
+    EventType.COLLECTION_CHANGED: _on_collection_changed,
 }

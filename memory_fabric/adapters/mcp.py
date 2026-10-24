@@ -29,6 +29,8 @@ be passed per call can be omitted per call.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import copy
 import json
 import logging
@@ -38,7 +40,7 @@ from typing import Any, Callable, Mapping, TextIO
 from ..enforcement import ExposureToken, RiskLevel
 from ..sdk import AgentClient, NotUsable, UsableMemory, public_error
 
-__all__ = ["McpServer", "TOOLS", "PROTOCOL_VERSIONS", "serve_stdio"]
+__all__ = ["McpServer", "TOOLS", "EXTENDED_TOOLS", "PROTOCOL_VERSIONS", "serve_stdio"]
 
 # Newest first. A client asking for one of these gets it back; anything else
 # gets the newest, and the client decides whether it can proceed (the
@@ -145,6 +147,138 @@ TOOLS: list[dict[str, Any]] = [
     },
 ]
 
+# Context, provenance and branch tools, **off by default**: the default surface
+# stays the four agent tools (`tests/test_mcp.py` pins it). A server started
+# with `extended=True` (`memory-fabric mcp --extended-tools`) adds them.
+# Read-only except `build_context`
+# (it records a receipt) and the two branch writes, which only ever write
+# candidates on a branch the agent owns. No tool applies a merge, a correction
+# or a withdrawal: those are a person's decisions, made with the CLI, and the
+# server enforces that whatever the model is told.
+EXTENDED_TOOLS: list[dict[str, Any]] = [
+    {
+        "name": "build_context",
+        "description": (
+            "Assemble the memories relevant to a task under a token budget, as "
+            "untrusted evidence. Returns the text and a receipt id that records "
+            "exactly which memory versions were used and what was left out."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "What you are working on."},
+                "budget": {"type": "integer", "minimum": 50, "maximum": 20000,
+                            "description": "Token budget (estimated). Default 2000."},
+                "mode": {"type": "string",
+                          "enum": ["auto", "compact", "balanced", "evidence-first", "exact"],
+                          "description": "exact for numbers, ids and dates; auto decides."},
+            },
+            "required": ["query"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False,
+                         "idempotentHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "explain_context",
+        "description": (
+            "Read back one of your context receipts: what was used, what was left "
+            "out and why, and whether each memory is still usable now."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"receipt_id": {"type": "string"}},
+            "required": ["receipt_id"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "trace_provenance",
+        "description": (
+            "Where a memory you can read came from: who wrote it, how, what it "
+            "was derived from, and what depends on it, limited to memories you "
+            "may read."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"memory_id": {"type": "string"}},
+            "required": ["memory_id"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "preview_correction",
+        "description": (
+            "What withdrawing a memory would affect, among memories you may read. "
+            "A preview only: withdrawing is a person's decision."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"memory_id": {"type": "string"}},
+            "required": ["memory_id"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "branch_create",
+        "description": (
+            "Start a branch you own, to propose memory changes in isolation. "
+            "Nothing on it is visible to anyone until a reviewer merges it."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "pattern": "^[a-z0-9][a-z0-9._-]{0,62}$"},
+                "reviewers": {"type": "array", "items": {"type": "string"},
+                               "description": "Who may merge it into main."},
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False,
+                         "idempotentHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "branch_propose",
+        "description": (
+            "Commit one proposed change to your branch: add a memory, or revise "
+            "one you can read. It is screened like any write and stays on the "
+            "branch until a reviewer merges it."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "branch": {"type": "string"},
+                "content": {"type": "string"},
+                "revises": {"type": "string",
+                             "description": "The memory id this revises; omit to add."},
+                "message": {"type": "string"},
+            },
+            "required": ["branch", "content"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "destructiveHint": False,
+                         "idempotentHint": False, "openWorldHint": False},
+    },
+    {
+        "name": "merge_preview",
+        "description": (
+            "What merging your branch into main would do, change by change: "
+            "applied, kept as a conflict, needing review, or refused, and why."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {"branch": {"type": "string"}},
+            "required": ["branch"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
+]
+
 # JSON-RPC error codes.
 PARSE_ERROR = -32700
 INVALID_REQUEST = -32600
@@ -162,7 +296,8 @@ class McpServer:
     feeding it dicts."""
 
     def __init__(
-        self, client: AgentClient, fabric: Any, trusted_local: bool = False
+        self, client: AgentClient, fabric: Any, trusted_local: bool = False,
+        extended: bool = False,
     ) -> None:
         self.client = client
         # Off by default. On, the agent's own clean writes become active and
@@ -185,6 +320,17 @@ class McpServer:
             "verify": self._verify,
             "remember": self._remember,
         }
+        self.extended = extended
+        if extended:
+            self._handlers.update({
+            "build_context": self._build_context,
+            "explain_context": self._explain_context,
+            "trace_provenance": self._trace_provenance,
+            "preview_correction": self._preview_correction,
+            "branch_create": self._branch_create,
+            "branch_propose": self._branch_propose,
+            "merge_preview": self._merge_preview,
+            })
 
     # --- protocol --------------------------------------------------------
 
@@ -229,9 +375,10 @@ class McpServer:
 
     def tools(self) -> list[dict[str, Any]]:
         """The tool list, with `remember` described as this server behaves."""
+        base = TOOLS + (EXTENDED_TOOLS if self.extended else [])
         if not self.trusted_local:
-            return TOOLS
-        out = copy.deepcopy(TOOLS)
+            return base
+        out = copy.deepcopy(base)
         for tool in out:
             if tool["name"] == "remember":
                 tool["description"] = (
@@ -253,6 +400,18 @@ class McpServer:
             "serverInfo": {"name": SERVER_NAME, "version": __version__},
             "instructions": INSTRUCTIONS,
         }
+
+    def call(self, name: str, arguments: Mapping[str, Any]) -> tuple[Any, bool]:
+        """Run one tool outside JSON-RPC: `(payload, is_error)`.
+
+        For integrations that speak another tool protocol (OpenAI-style
+        function calling, LangGraph) but should get exactly this server's
+        validation, enforcement and server-side tokens rather than a copy.
+        """
+        if name not in self._handlers:
+            return {"error": f"unknown tool {name!r}"}, True
+        result = self._call(name, arguments)
+        return json.loads(result["content"][0]["text"]), bool(result.get("isError"))
 
     def _call(self, name: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
         try:
@@ -322,6 +481,105 @@ class McpServer:
         else:
             note = f"stored as {state}; it will not be recalled"
         return {"memory_id": memory_id, "state": state, "note": note}
+
+    def _readable(self, memory_id: str) -> bool:
+        return self._fabric.use(memory_id, agent_id=self.client.agent_id,
+                                tenant_id=self.client.tenant_id, audit=False).usable
+
+    def _require_readable(self, memory_id: str) -> None:
+        # One answer for "missing", "another tenant's" and "withdrawn", so the
+        # reply never confirms that an id exists somewhere.
+        if memory_id not in self._fabric.state.memories or not self._readable(memory_id):
+            raise _ToolError(f"{memory_id} is not a memory you can read")
+
+    def _build_context(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        from ..context_receipt import build_context
+
+        query = _require_str(args, "query")
+        budget = args.get("budget", 2000)
+        if not isinstance(budget, int) or isinstance(budget, bool) or not 50 <= budget <= 20000:
+            raise _ToolError("budget must be an integer from 50 to 20000")
+        mode = args.get("mode", "auto")
+        if mode not in ("auto", "compact", "balanced", "evidence-first", "exact"):
+            raise _ToolError("unknown mode")
+        bundle = build_context(self._fabric, self.client.agent_id, query, budget=budget,
+                               mode=mode, tenant_id=self.client.tenant_id)
+        r = bundle.receipt
+        return {"context": bundle.text, "receipt_id": r["receipt_id"],
+                "tokens_estimated": r["tokens_estimated"], "mode": r["mode"],
+                "excluded": len(r["excluded"])}
+
+    def _explain_context(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        from ..context_receipt import explain_receipt
+
+        rid = _require_str(args, "receipt_id")
+        try:
+            data = explain_receipt(self._fabric, rid, tenant_id=self.client.tenant_id)
+        except KeyError:
+            raise _ToolError(f"no receipt {rid} of yours") from None
+        if data["agent_id"] != self.client.agent_id:
+            raise _ToolError(f"no receipt {rid} of yours")
+        return data
+
+    def _trace_provenance(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        memory_id = _require_str(args, "memory_id")
+        self._require_readable(memory_id)
+        e = self._fabric.explain(memory_id)
+        lineage = self._fabric.lineage(memory_id)
+        visible = [m for m in (*e.derived_from, *e.root_memories) if self._readable(m)]
+        below = [n.memory_id for n in lineage.descendants if self._readable(n.memory_id)]
+        memory = self._fabric.get(memory_id)
+        return {"memory_id": memory_id, "version": memory.version,
+                "created_by": memory.provenance.created_by,
+                "method": memory.provenance.method.value,
+                "derived_from": sorted(set(visible)), "depended_on_by": sorted(set(below)),
+                "note": "limited to memories you may read; others are not listed"}
+
+    def _preview_correction(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        from ..correction import preview
+
+        memory_id = _require_str(args, "memory_id")
+        self._require_readable(memory_id)
+        p = preview(self._fabric, memory_id)
+        return {"memory_id": memory_id,
+                "would_contest": [m for m in p.would_contest if self._readable(m)],
+                "would_survive": [m for m in p.would_survive if self._readable(m)],
+                "copies": [m for m in p.copies if self._readable(m)],
+                "note": "a preview among memories you may read; withdrawing is a "
+                        "person's decision, made outside this tool"}
+
+    def _branches(self) -> Any:
+        from ..branching import Branches
+
+        return Branches(self._fabric)
+
+    def _branch_create(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        reviewers = args.get("reviewers") or []
+        if not isinstance(reviewers, list) or not all(isinstance(r, str) for r in reviewers):
+            raise _ToolError("reviewers must be a list of agent ids")
+        branch = self._branches().create(_require_str(args, "name"), owner=self.client.agent_id,
+                                         tenant_id=self.client.tenant_id,
+                                         reviewers=tuple(reviewers))
+        return branch.to_json()
+
+    def _branch_propose(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        b = self._branches()
+        name, content = _require_str(args, "branch"), _require_str(args, "content")
+        revises = args.get("revises")
+        if revises is not None:
+            self._require_readable(_require_str(args, "revises"))
+        with b.commit(name, self.client.agent_id, str(args.get("message") or "proposed"),
+                      tenant_id=self.client.tenant_id) as c:
+            cid = c.revise(revises, content) if revises else c.add(content)
+        state = self._fabric.lifecycle_of(cid).value
+        return {"branch": name, "proposed_memory_id": cid, "state": state,
+                "head": b.get(name, self.client.tenant_id).head}
+
+    def _merge_preview(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        preview = self._branches().preview_merge(_require_str(args, "branch"),
+                                                 self.client.agent_id,
+                                                 tenant_id=self.client.tenant_id)
+        return preview.to_json()
 
     def _present(self, memory: UsableMemory) -> dict[str, Any]:
         self._issued[memory.memory_id] = memory.token

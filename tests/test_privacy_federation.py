@@ -46,31 +46,31 @@ class Fixture(unittest.TestCase):
 
 class TestDerivedContent(Fixture):
     def test_a_summary_inherits_the_strictest_class(self) -> None:
-        summary = self.origin.derive("ag", "Acme summary: price 1.2M", parents=[self.restricted])
+        summary = self.origin.derive("ag", "Acme summary: price 1.2M", parents=[self.restricted], scope="team")
         self.assertIs(self.origin.get(summary).security_class, SecurityClass.RESTRICTED)
 
     def test_a_caller_cannot_lower_the_class_of_a_summary(self) -> None:
         summary = self.origin.derive("ag", "Acme summary", parents=[self.restricted],
-                                     security_class="public")
+                                     security_class="public", scope="team")
         self.assertIs(self.origin.get(summary).security_class, SecurityClass.RESTRICTED)
 
     def test_a_caller_can_raise_it(self) -> None:
-        open_fact = self.origin.remember("ag", "yard opens at 6", security_class="public")
+        open_fact = self.origin.remember("ag", "yard opens at 6", security_class="public", scope="team")
         summary = self.origin.derive("ag", "yard hours", parents=[open_fact],
                                      security_class="restricted")
         self.assertIs(self.origin.get(summary).security_class, SecurityClass.RESTRICTED)
 
     def test_ordinary_summaries_keep_the_default(self) -> None:
-        fact = self.origin.remember("ag", "yard opens at 6")
-        summary = self.origin.derive("ag", "yard hours", parents=[fact])
+        fact = self.origin.remember("ag", "yard opens at 6", scope="team")
+        summary = self.origin.derive("ag", "yard hours", parents=[fact], scope="team")
         self.assertIs(self.origin.get(summary).security_class, SecurityClass.INTERNAL)
 
     def test_a_summary_of_restricted_content_cannot_be_shared(self) -> None:
-        summary = self.origin.derive("ag", "Acme summary: price 1.2M", parents=[self.restricted])
+        summary = self.origin.derive("ag", "Acme summary: price 1.2M", parents=[self.restricted], scope="team")
         self.assertIs(self.origin.share(summary, Scope.TEAM).decision, FirewallDecision.DENY)
 
     def test_a_summary_of_restricted_content_cannot_be_federated(self) -> None:
-        summary = self.origin.derive("ag", "Acme summary: price 1.2M", parents=[self.restricted])
+        summary = self.origin.derive("ag", "Acme summary: price 1.2M", parents=[self.restricted], scope="team")
         result = offer(self.origin, summary, self.recipient, recipient_agent="b")
         self.assertFalse(result.accepted)
         self.assertTrue(any("restricted" in r for r in result.reasons), result.reasons)
@@ -83,7 +83,7 @@ class TestDisclosureOfExistence(unittest.TestCase):
     def make(self, conceal: bool) -> tuple[MemoryFabric, str]:
         fabric = MemoryFabric(auto_activate=True, conceal_cross_tenant=conceal)
         self.addCleanup(fabric.close)
-        return fabric, fabric.remember("ag", "tenant A fact", tenant_id="tn_a")
+        return fabric, fabric.remember("ag", "tenant A fact", tenant_id="tn_a", scope="team")
 
     def decision_shape(self, decision) -> tuple:
         return (decision.verdict, decision.reason_code, decision.version,

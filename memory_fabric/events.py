@@ -7,8 +7,10 @@ them. Events are therefore append-only and never mutated.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field
-from typing import Any, Mapping
+from typing import Any, Mapping, Sequence
 
 from .ids import new_ulid
 from .model import SCHEMA_VERSION, Memory
@@ -40,6 +42,21 @@ class EventType:
     CONTENT_ERASED = "ContentErased"
     MEMORY_SHARED = "MemoryShared"
     ACTION_GATED = "ActionGated"
+    COLLECTION_CHANGED = "CollectionChanged"
+    ACTION_EXECUTED = "ActionExecuted"
+    ACTION_ATTEMPTED = "ActionAttempted"
+    MANAGER_LEASE = "ManagerLease"
+    MAINTENANCE_RAN = "MaintenanceRan"
+    SOURCE_DISCREDITED = "SourceDiscredited"
+    AUTHORITY_ELEVATED = "AuthorityElevated"
+    GRANT_ISSUED = "GrantIssued"
+    OBJECTIVE_CHANGED = "ObjectiveChanged"
+    CONTEXT_BUILT = "ContextBuilt"
+    BRANCH_CREATED = "BranchCreated"
+    BRANCH_COMMITTED = "BranchCommitted"
+    BRANCH_HEAD_MOVED = "BranchHeadMoved"
+    MERGE_APPLIED = "MergeApplied"
+    BRANCH_CLOSED = "BranchClosed"
 
 
 @dataclass(frozen=True)
@@ -633,6 +650,8 @@ def action_gated(
     tenant_id: str | None = None,
     required_checks: list[str] | None = None,
     min_independent_sources: int | None = None,
+    grant_id: str | None = None,
+    binding: str | None = None,
 ) -> Event:
     """A decision about a protected tool call, with the evidence it rested on.
 
@@ -655,5 +674,181 @@ def action_gated(
             "tenant_id": tenant_id,
             "required_checks": list(required_checks or []),
             "min_independent_sources": min_independent_sources,
+            "grant_id": grant_id,
+            "binding": binding,
         },
     )
+
+
+def collection_changed(
+    ts: int,
+    tenant_id: str,
+    collection: str,
+    action: str,
+    actor: str,
+    agent_id: str | None = None,
+    memory_id: str | None = None,
+    permissions: Sequence[str] = (),
+) -> Event:
+    """A collection's membership or grants changed (schema 0.10.0).
+
+    `action` is `add` or `remove` (a memory), or `grant` or `revoke` (an
+    agent's permissions). One type for all four, because they are one
+    projection and an older reader skips it as a whole.
+    """
+    payload: dict[str, Any] = {"tenant_id": tenant_id, "collection": collection,
+                               "action": action}
+    if agent_id is not None:
+        payload["agent_id"] = agent_id
+    if memory_id is not None:
+        payload["memory_id"] = memory_id
+    if permissions:
+        payload["permissions"] = sorted(permissions)
+    return Event(type=EventType.COLLECTION_CHANGED, ts=ts, agent_id=actor, payload=payload)
+
+
+def action_executed(
+    ts: int,
+    agent_id: str,
+    key: str,
+    tool: str,
+    outcome: str,
+    fenced: bool,
+    watermark: int | None,
+    lease_ms: int,
+    elapsed_ms: int,
+    evidence: list[list[Any]],
+    tenant_id: str | None = None,
+) -> Event:
+    """A protected tool call that ran under the action fence (schema 0.11.0).
+
+    `ActionGate.execute`. `key` is the caller's idempotency key, which the
+    tool receives too. `outcome` is executed / failed / timed_out. `fenced`
+    false means the lease ran out while the tool was still running, so its
+    side effect may land after the store moved on. `actions.unfenced_changes`
+    reports any change to its evidence after this event. Ids only, never
+    content.
+    """
+    return Event(
+        type=EventType.ACTION_EXECUTED,
+        ts=ts,
+        agent_id=agent_id,
+        payload={
+            "key": key,
+            "tool": tool,
+            "outcome": outcome,
+            "fenced": fenced,
+            "watermark": watermark,
+            "lease_ms": lease_ms,
+            "elapsed_ms": elapsed_ms,
+            "evidence": [list(e) for e in evidence],
+            "tenant_id": tenant_id,
+        },
+    )
+
+
+def manager_lease(ts: int, holder: str, expires_ms: int) -> Event:
+    """The background manager's claim on this store until `expires_ms` (schema 0.12.0).
+
+    Taken and renewed inside a write transaction, so at most one manager acts
+    on a store at a time, across processes and machines.
+    """
+    return Event(type=EventType.MANAGER_LEASE, ts=ts, agent_id=holder,
+                 payload={"holder": holder, "expires_ms": expires_ms})
+
+
+def maintenance_ran(ts: int, holder: str, since_seq: int, until_seq: int,
+                    tasks: Mapping[str, Any]) -> Event:
+    """One cycle of the background manager: what each task did, or why it failed.
+
+    Ids and counts only, never content. The manager is audited like everything
+    else it maintains.
+    """
+    return Event(type=EventType.MAINTENANCE_RAN, ts=ts, agent_id=holder,
+                 payload={"since_seq": since_seq, "until_seq": until_seq,
+                          "tasks": dict(tasks)})
+
+
+def source_discredited(ts: int, author_ref: str, signal: str, origin_store_id: str,
+                       notice_id: str, reason_code: str, actor: str,
+                       authorised: bool = True) -> Event:
+    """A source was found hostile here, or a peer said so in a signed notice (0.12.0).
+
+    `author_ref` is how this store names the source: a local agent id, or
+    `<origin store>/<agent>` for a peer's author, the form imports resolve to.
+    An unauthenticated notice is recorded with `authorised: false` and changes
+    nothing.
+    """
+    return Event(type=EventType.SOURCE_DISCREDITED, ts=ts, agent_id=actor,
+                 payload={"author_ref": author_ref, "signal": signal,
+                          "origin_store_id": origin_store_id, "notice_id": notice_id,
+                          "reason_code": reason_code, "authorised": authorised})
+
+
+def authority_elevated(ts: int, memory_id: str, version: int, approver: str, policy: str,
+                       reason: str, revoked: bool = False) -> Event:
+    """An approver lifted a memory version's soft authority reasons, or revoked that (0.13.0).
+
+    Bound to one exact version: a correction is a new version and is not elevated.
+    """
+    return Event(type=EventType.AUTHORITY_ELEVATED, ts=ts, agent_id=approver,
+                 payload={"memory_id": memory_id, "version": version, "approver": approver,
+                          "policy": policy, "reason": reason, "revoked": revoked})
+
+
+def grant_issued(ts: int, grant_id: str, tool: str, agent_id: str, binding: str,
+                 expires_ms: int, issuer: str, revoked: bool = False) -> Event:
+    """A short-lived grant for one exact action (0.13.0).
+
+    `binding` is the digest of (tool, target, parameters, evidence versions,
+    agent, tenant). The grant is consumed by its first execution.
+    """
+    return Event(type=EventType.GRANT_ISSUED, ts=ts, agent_id=issuer,
+                 payload={"grant_id": grant_id, "tool": tool, "agent": agent_id,
+                          "binding": binding, "expires_ms": expires_ms, "revoked": revoked})
+
+
+def objective_changed(ts: int, actor: str, digest: str, status: str, proposer: str,
+                      evaluation: Mapping[str, float], reason: str,
+                      objective: Mapping[str, Any]) -> Event:
+    """A memory objective was proposed, adopted or rejected (0.12.0).
+
+    The objective is rules over metadata, never memory content.
+    """
+    return Event(type=EventType.OBJECTIVE_CHANGED, ts=ts, agent_id=actor,
+                 payload={"digest": digest, "status": status, "proposer": proposer,
+                          "evaluation": dict(evaluation), "reason": reason,
+                          "objective": dict(objective)})
+
+
+def action_attempted(ts: int, agent_id: str, key: str, tool: str,
+                     tenant_id: str | None = None) -> Event:
+    """An action is about to run under the fence (0.12.0). Committed *before* it.
+
+    The fence's own record commits with the outcome, so a crash mid-tool
+    leaves nothing of it. This record survives: an attempt with no outcome
+    after it is an **uncertain** side effect, and the next call with the
+    same key is refused until a caller passes `retry=True`.
+    """
+    return Event(type=EventType.ACTION_ATTEMPTED, ts=ts, agent_id=agent_id,
+                 payload={"key": key, "tool": tool, "tenant_id": tenant_id})
+
+
+
+def context_built(ts: int, agent_id: str, receipt: Mapping[str, Any]) -> Event:
+    """A context bundle was delivered to an agent (0.13.0).
+
+    Ids, versions, digests and reason codes only: never the query, never
+    memory or summary content (docs/architecture/ADR-003-context-receipts.md).
+    """
+    return Event(type=EventType.CONTEXT_BUILT, ts=ts, agent_id=agent_id,
+                 payload=dict(receipt))
+
+
+def branch_event(type_: str, ts: int, actor: str, payload: Mapping[str, Any]) -> Event:
+    """A branch was created, committed to, moved, merged or closed (0.13.0).
+
+    Commit envelopes carry ids and digests, never content
+    (docs/architecture/ADR-001-branch-commit-model.md).
+    """
+    return Event(type=type_, ts=ts, agent_id=actor, payload=dict(payload))

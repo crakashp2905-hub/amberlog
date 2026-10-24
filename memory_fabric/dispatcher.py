@@ -15,6 +15,8 @@ recipient and is never the origin's guess about it.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass, field
 from typing import Any, Sequence
 
@@ -92,7 +94,6 @@ class Dispatcher:
         reopen, because nothing had committed them.
         """
         outbox = self.fabric.outbox
-        connection = self.fabric.log._conn
         try:
             ack = self.transport.send(row.recipient, row.retraction)
         except TransportError as exc:

@@ -45,8 +45,8 @@ def main() -> int:
                                  text=True, cwd=base.HERE).stdout.strip()
     print(json.dumps(r["verdict"], indent=2))
     out = base.HERE / "research" / "results"
-    (out / "p1c-strength.json").write_text(json.dumps(r, indent=2) + "\n")
-    (out / "p1c-strength.md").write_text(to_markdown(r))
+    (out / "p1c-strength.json").write_text(json.dumps(r, indent=2) + "\n", encoding="utf-8")
+    (out / "p1c-strength.md").write_text(to_markdown(r), encoding="utf-8")
     return 0
 
 
@@ -61,7 +61,7 @@ def main_p1d() -> int:
     cases = [B.BUILDERS["multi_hop_3"](i) for i in range(300, 324)]
     B.shuffle_corpora(cases)
     (base.HERE / "research" / "bench" / "relevance_v2" / f"{name}.json").write_text(
-        json.dumps({"benchmark": "relevance_v2", "split": name, "cases": cases}) + "\n")
+        json.dumps({"benchmark": "relevance_v2", "split": name, "cases": cases}) + "\n", encoding="utf-8")
     h3 = base.measure(name, SWITCH)
     dev = base.measure("dev", SWITCH)
     b = h3["chain_before"]["by_family"]["multi_hop_3"]
@@ -77,7 +77,7 @@ def main_p1d() -> int:
          "dev_mh4_not_worse": mh4_ok, "verdict": verdict, "commit": commit,
          "cases": len(cases)}
     out = base.HERE / "research" / "results"
-    (out / "p1d-strength-mh3.json").write_text(json.dumps(r, indent=2) + "\n")
+    (out / "p1d-strength-mh3.json").write_text(json.dumps(r, indent=2) + "\n", encoding="utf-8")
     (out / "p1d-strength-mh3.md").write_text(f"""# P1d — link-strength selection on three-hop chains
 
 Registered in [p1d-link-strength-mh3.md](../prereg/p1d-link-strength-mh3.md)
@@ -92,7 +92,7 @@ Cost: nodes explored {h3['chain_before']['nodes_explored']} → {h3['chain_after
 
 **What it does not establish.** Same templates as every other split: new
 cases, not a new distribution. `reconstruct` is opt-in either way.
-""")
+""", encoding="utf-8")
     print(json.dumps({k: v for k, v in r.items() if k not in ("holdout3", "dev")}, indent=2))
     return 0
 

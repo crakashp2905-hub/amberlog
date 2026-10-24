@@ -20,6 +20,8 @@ is written out.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import hmac
 import re
 import secrets
@@ -283,7 +285,8 @@ class Authenticator:
 
         parsed = urlparse(path)
         query = parse_qs(parsed.query)
-        supplied = (query.get(TOKEN_PARAM) or [None])[0]
+        values = query.get(TOKEN_PARAM)
+        supplied = values[0] if values else None
         operator = self.identify(supplied)
         if operator is not None:
             # Bootstrap: trade the URL token for a cookie and redirect to a clean

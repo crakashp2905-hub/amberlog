@@ -1,0 +1,139 @@
+{
+  "commit": "d1dbc0a",
+  "machine": "Windows-11-10.0.26200-SP0",
+  "max_hops": 16,
+  "rows": [
+    {
+      "topology": "chain",
+      "stores": 2,
+      "reach": 2,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.14,
+      "converge_s": 0.0
+    },
+    {
+      "topology": "chain",
+      "stores": 5,
+      "reach": 5,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.03,
+      "converge_s": 0.01
+    },
+    {
+      "topology": "chain",
+      "stores": 10,
+      "reach": 10,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.05,
+      "converge_s": 0.02
+    },
+    {
+      "topology": "chain",
+      "stores": 16,
+      "reach": 16,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.11,
+      "converge_s": 0.03
+    },
+    {
+      "topology": "chain",
+      "stores": 17,
+      "reach": 17,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.09,
+      "converge_s": 0.03
+    },
+    {
+      "topology": "chain",
+      "stores": 20,
+      "reach": 17,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.11,
+      "converge_s": 0.03
+    },
+    {
+      "topology": "star",
+      "stores": 10,
+      "reach": 10,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.05,
+      "converge_s": 0.01
+    },
+    {
+      "topology": "star",
+      "stores": 50,
+      "reach": 50,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.23,
+      "converge_s": 0.06
+    },
+    {
+      "topology": "star",
+      "stores": 100,
+      "reach": 100,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 2,
+      "hop_limit_rejections": 0,
+      "build_s": 0.44,
+      "converge_s": 0.1
+    },
+    {
+      "topology": "mesh_fanout3",
+      "stores": 25,
+      "reach": 22,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 4,
+      "hop_limit_rejections": 0,
+      "build_s": 0.11,
+      "converge_s": 0.04
+    },
+    {
+      "topology": "mesh_fanout3",
+      "stores": 50,
+      "reach": 50,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 4,
+      "hop_limit_rejections": 0,
+      "build_s": 0.27,
+      "converge_s": 0.08
+    },
+    {
+      "topology": "mesh_fanout3",
+      "stores": 100,
+      "reach": 93,
+      "still_exposable": 0,
+      "deepest_live": [],
+      "rounds": 4,
+      "hop_limit_rejections": 0,
+      "build_s": 0.48,
+      "converge_s": 0.16
+    }
+  ]
+}

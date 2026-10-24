@@ -76,6 +76,8 @@ the right way round.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import re
 import unicodedata
 from dataclasses import dataclass
@@ -254,13 +256,16 @@ class CopyIndex:
     exhaustive path is kept as `find_copy` and tested against this one.
     """
 
-    ANCHORS = 3
-    """How many of its own terms each memory is indexed under.
+    ANCHORS = 1
+    """How many of its own terms each memory is indexed under: its rarest, at write time.
 
-    Three rather than one: the anchors are chosen by rarity at write time, and
-    a term's rarity changes as the store grows, so a single anchor could become
-    a common word and its posting list could become the whole store. Three
-    independent chances keeps the lists short without storing every term twice.
+    One is exact. If a stored memory C is contained in the incoming text I,
+    every term of C is in I, its anchor included, so C is reachable from
+    `anchors[anchor(C)]`. More anchors cannot find anything one misses; they
+    only make the buckets longer. Three was the first choice, and on a store
+    of near-identical notes ("The purge time for P1 is 40 s.") every memory's
+    third anchor tied on a common word, put the whole store in one bucket,
+    and made each write scan all of it (5,000 notes: ~29 ms a write).
     """
 
     def __init__(self) -> None:
@@ -269,6 +274,10 @@ class CopyIndex:
         self.terms: dict[str, frozenset[str]] = {}
 
     def add(self, memory_id: str, content: str) -> None:
+        # Replace, never accumulate: a revision's old terms would otherwise
+        # stay reachable, and an erased memory's -- whose marker is too short
+        # to index -- would stay in memory after the erasure.
+        self.remove(memory_id)
         tokens = terms(content)
         if len(tokens) < MIN_TERMS:
             return
@@ -280,8 +289,27 @@ class CopyIndex:
         for token in rarest[: self.ANCHORS]:
             self.anchors.setdefault(token, set()).add(memory_id)
 
-    def candidates(self, content: str) -> set[str]:
-        tokens = terms(content)
+    def remove(self, memory_id: str) -> None:
+        """Forget a memory's terms entirely. For erasure and deletion only.
+
+        Withdrawn memories stay in the index on purpose: re-ingesting a
+        quarantined or deprecated document must still be recognised as a
+        copy. An erased one has no content left to be a copy of, and its
+        term set is derived from the plaintext erasure destroyed.
+        """
+        tokens = self.terms.pop(memory_id, None)
+        if tokens is None:
+            return
+        for token in tokens:
+            for table in (self.postings, self.anchors):
+                bucket = table.get(token)
+                if bucket is not None:
+                    bucket.discard(memory_id)
+                    if not bucket:
+                        del table[token]
+
+    def candidates(self, content: str, tokens: frozenset[str] | None = None) -> set[str]:
+        tokens = terms(content) if tokens is None else tokens
         if len(tokens) < MIN_TERMS:
             return set()
         # Direction 1: the smallest posting list among the incoming terms.
@@ -295,18 +323,22 @@ class CopyIndex:
 
     def find(self, content: str, *, exclude: Iterable[str] = ()) -> Match | None:
         skip = set(exclude)
+        # Tokenised once. It was re-tokenised for every candidate, which on a
+        # store of near-duplicates was 90% of a write's time and grew with
+        # the store (5,000 near-identical memories: ~29 ms a write).
+        incoming = terms(content)
         hits = [
             memory_id
-            for memory_id in self.candidates(content)
+            for memory_id in self.candidates(content, incoming)
             if memory_id not in skip and memory_id in self.terms
-            and _is_copy_terms(terms(content), self.terms[memory_id])
+            and _is_copy_terms(incoming, self.terms[memory_id])
         ]
         if not hits:
             return None
         chosen = min(hits)
         return Match(
             memory_id=chosen,
-            score=round(containment(terms(content), self.terms[chosen]), 4),
+            score=round(containment(incoming, self.terms[chosen]), 4),
         )
 
 

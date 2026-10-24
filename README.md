@@ -1,6 +1,11 @@
 # Memory Fabric
 
-**Governed memory for AI agents: auditable, retractable across stores, and safe to share.**
+**Memory for AI agents that you can audit, correct and trust.**
+
+Every memory knows where it came from. A wrong one can be withdrawn
+everywhere it travelled, along with everything built on it. Nothing an agent
+remembers can authorise an action unless the evidence still holds at the
+moment it acts.
 
 [![CI](https://github.com/crakashp2905-hub/memory-fabric/actions/workflows/ci.yml/badge.svg)](https://github.com/crakashp2905-hub/memory-fabric/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
@@ -8,200 +13,151 @@
 ![MCP](https://img.shields.io/badge/MCP-stdio%20server-purple)
 ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-> **Working name.** "MemOS" and "MemoryOS" are taken, and so is `memory-fabric`
-> on PyPI. A final name is an open decision ([ROADMAP.md](ROADMAP.md), decision 6).
+> **Status: alpha, 0.12.0 in qualification** (0.11.0 released). Working name;
+> not yet on PyPI. What is stable and what is experimental: [STABILITY.md](STABILITY.md).
 
 ---
 
-## Overview
+## Why
 
-Memory Fabric is a memory layer for LLM agents that answers the questions a
-vector store cannot: *where did this memory come from, why does the agent
-believe it, who may see it, and how do we pull it back?*
+A vector store gives an agent memory. It does not answer the questions that
+matter once that memory is shared, long-lived or used to act:
 
-Every memory carries provenance and a lifecycle. The source of truth is an
-append-only, tamper-evident event log, and everything else is a projection that
-can be rebuilt from it. When a memory turns out to be wrong, its retraction
-follows it into every store it was shared with, and conclusions built on it are
-re-checked rather than deleted.
+- **Where did this come from?** A summary of a summary of a scraped web page
+  looks exactly like a fact.
+- **What happens when it turns out to be wrong?** The bad memory is already
+  copied into other agents' stores and baked into their conclusions.
+- **Should the agent act on it?** Being retrieved is not the same as being
+  true, and a successful outcome does not prove the memory was right.
 
-It is aimed at teams running agents where memory has to be **accountable**:
-multi-agent systems that share knowledge, regulated settings that need audit
-and erasure, and anyone who has watched one bad memory spread.
+Memory Fabric is a memory layer built around those questions.
 
-## Key features
+## What you get
 
-| | Capability | Evidence |
-|---|---|---|
-| 🔁 | **Retraction that crosses stores.** A withdrawn memory is withdrawn wherever it travelled, including stores two hops away. | Acting on withdrawn knowledge fell **17% → 0%** ([PB2](research/results/phase-b-federated-agents.md)); holds under outage, crash, diamond and cycle ([fault matrix](docs/INVARIANTS.md)) |
-| 🧠 | **Truth maintenance, not cascading deletes.** Losing one premise leaves independently justified conclusions standing. | [Phase 4 invariants](docs/INVARIANTS.md) |
-| ⚖️ | **Contradictions are preserved.** Disagreement becomes flagged uncertainty instead of a confident wrong answer. | Confidently wrong **80% → 0%** with real models ([live](research/results/live-multi-agent.md)) |
-| 🔐 | **Erasure with accountability.** Crypto-erasure removes content and keeps provenance, lineage and audit trail. | Authenticated encryption, external key custody ([SECURITY.md](SECURITY.md)) |
-| 🧾 | **Tamper-evident log.** A hash chain over every event, with external checkpoints. | [SECURITY.md](SECURITY.md) |
-| 🚫 | **Never serves an invalid version**, including at action time, via exposure tokens re-checked before use. | [INVARIANTS.md](docs/INVARIANTS.md) |
-| 🛂 | **Evidence-gated actions.** A protected tool needs a grant *and* a certificate whose evidence still verifies at the moment of use. Valid memory never grants a tool. | Ten-agent benchmark: acted on invalid evidence **0.099** vs **0.285–0.375** for acting baselines; registered safety threshold **not met** ([P5](research/results/p5-poisonworld.md)) |
-| 🏢 | **Multi-tenant by construction.** Tenant scope is bound to the handle, not passed per call. | [SECURITY.md](SECURITY.md) |
-| 🔌 | **Works with any MCP client**, alongside the Python SDK and a Claude API adapter. | [From an MCP client](#from-an-mcp-client) |
-| ⚡ | **Cheap.** **+0.2 ms** per episode and **1.16×** tokens against an ungoverned vector store. | [Phase A cost gate](research/results/phase-a-real-agent-benchmark.md) |
+| | |
+|---|---|
+| **Provenance and authority** | Every memory records its source, its author and how it was made. Trust is bound to the origin and carried through summaries, tool copies and other stores, so an injected note stays untrusted however many times it is rewritten. |
+| **Correction that travels** | Withdraw a memory and it is withdrawn in every store it reached, including stores that received it second-hand. Conclusions built on it are re-checked; ones with independent support survive. |
+| **Safe actions** | A protected tool runs only with a short-lived grant for that exact action, on evidence that is re-verified in the same transaction as the side effect. Expired grants, replays, changed targets and withdrawn evidence are refused. |
+| **Poisoning defences** | Every claim is checked against what the store already knows: a corrected value stated again, a value far out of range, or a contradiction of an established fact is held for review and cannot be acted on. Injection and secret screens run at write time, disagreements are shown rather than ranked away, and a source caught injecting is withheld everywhere its memories travelled. |
+| **Audit and erasure** | An append-only, hash-chained event log is the source of truth. Erasure destroys content and keeps the audit trail. |
+| **Multi-tenant** | Tenant scope bound to the credential, seven separate permissions, or a physically separate store per tenant. |
+| **Session handoff** | A short, governed summary of what a session established, for the sessions that follow. A later correction reaches it like any other memory. |
+| **Runs anywhere** | Pure Python with no runtime dependencies. SQLite by default, PostgreSQL for several writers. MCP, HTTP, Python and LangChain. |
 
-**1318 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)), 17 deterministic multi-store fault scenarios and 14 integrity
-invariants ([matrix](docs/INVARIANTS.md)), all run in CI with nothing
-installed. What was run and what it showed: [docs/VALIDATION.md](docs/VALIDATION.md).
+Memory Fabric is a governance layer. It works alongside your retriever and
+your models; it does not replace them. It makes what your agents remember
+accountable.
 
 ## Quick start
-
-### Install
 
 ```bash
 git clone https://github.com/crakashp2905-hub/memory-fabric.git
 cd memory-fabric
-pip install .                 # core: zero runtime dependencies
-pip install ".[claude]"       # optional: Claude API adapter
+pip install .
+memory-fabric init ./memory        # a store, keys kept outside it, one agent, MCP config, doctor
 ```
 
-Python 3.11–3.13 on Linux, macOS and Windows, all tested in CI with nothing
-installed. Installing provides the `memory-fabric` command, which is also
-available as `python -m memory_fabric`.
-
-### Try the demo
-
-Seed a deliberately messy store, with a poisoning and its retraction, an
-unresolved disagreement, a leaked secret and a rare-but-critical procedure.
-Then inspect it:
-
-```bash
-memory-fabric --db demo.db --create demo
-memory-fabric --db demo.db attention     # triage: what needs a human, worst first
-memory-fabric --db demo.db serve         # the same, as a local dashboard
-```
-
-### Use it from Python
+Then, in Python: store, retrieve, inspect the evidence, correct, verify.
 
 ```python
-from memory_fabric import MemoryFabric
+from memory_fabric import MemoryFabric, correction
+from memory_fabric.response import verify_recovery
 
-fabric = MemoryFabric("memory.db")
+fabric = MemoryFabric("memory.db", auto_activate=True)
 
-episode = fabric.start_episode("agent-a", task_id="onboard-42", context={"team": "sales"})
-mid = fabric.remember(
-    "agent-a",
-    "Email follow-up beats calling after a failed onboarding.",
-    source_episodes=[episode.id],
-)
-fabric.validate(mid, actor="reviewer")            # candidates are not retrievable
+wrong = fabric.remember("field-tech", "Pump P1 purge time is 10 s.", scope="team")
+plan = fabric.derive("planner", "Restart P1 with a 10 s purge.", parents=[wrong], scope="team")
 
-hits = fabric.retrieve("agent-a", "how to follow up?", episode_id=episode.id)
-fabric.record_outcome(episode.id, outcome=1.0, verifier_id="env")   # never self-reported
+print([m.content for m in fabric.retrieve("assistant", "P1 purge time").exposed])
+print(fabric.authority(plan).origins)               # ('field-tech',): where the plan came from
 
-print(fabric.explain(mid).narrative())            # why does the system remember this?
-fabric.share(mid, "team")                         # default-deny; returns a reasoned ruling
+correction.apply(fabric, wrong, reason="the manual says 30 s", actor="shift-lead")
+fabric.remember("manual", "Pump P1 requires a 30 s purge.", scope="team")
+
+print([m.content for m in fabric.retrieve("assistant", "P1 purge time").exposed])
+print(verify_recovery(fabric, wrong)["status"])     # contained: the plan was withdrawn too
+fabric.close()
 ```
 
-## Usage
+The ten-minute version, step by step: [docs/QUICKSTART.md](docs/QUICKSTART.md).
+Recipes for sharing, gating tools, federating, tenants and handoffs:
+[docs/COOKBOOK.md](docs/COOKBOOK.md).
 
-### From an MCP client
+## Connect your agent
 
-```bash
-memory-fabric --db memory.db --create mcp --agent my-assistant
-```
-
-This serves one store to one agent over MCP on stdio, for Claude Code, Claude
-Desktop, IDE assistants or TypeScript agents. Client configuration:
+**Claude Code, Claude Desktop, IDE assistants (MCP):** paste the configuration
+`init` printed, or:
 
 ```json
 {
   "mcpServers": {
     "memory-fabric": {
       "command": "memory-fabric",
-      "args": ["--db", "/path/to/memory.db", "--create", "mcp", "--agent", "my-assistant"]
+      "args": ["--db", "/path/to/memory/store.db", "--keys", "/path/to/memory/keys",
+               "mcp", "--agent", "my-assistant"]
     }
   }
 }
 ```
 
-| Tool | What it does |
-|---|---|
-| `recall` | Search memory; returns only memories that pass enforcement |
-| `fetch` | Read one memory by id; a withdrawn memory is an error, never content |
-| `verify` | Re-check a memory immediately before a consequential action |
-| `remember` | Record a lesson as a private, unvalidated memory |
+The agent gets four tools: `recall`, `fetch`, `verify` (re-check before
+acting) and `remember`. Its identity is fixed at launch. It cannot read
+withdrawn memories, widen who sees a memory, or score its own work.
 
-The identity is fixed at launch. The model cannot read withdrawn memories,
-choose who sees a memory, or act as another agent. There is deliberately **no
-outcome tool**, because the model is the agent being scored.
-
-> [!NOTE]
-> A memory the agent `remember`s is a private **candidate** and is not returned
-> by `recall` until someone validates it. This review step is the governance:
->
-> ```bash
-> memory-fabric --db memory.db attention                       # what is waiting
-> memory-fabric --db memory.db validate <id> --actor <you>     # promote one
-> ```
->
-> For a single user's local assistant, where you are both the user and the
-> reviewer, `mcp --trusted-local` makes the agent's clean writes active at once.
-> Each is marked `trusted-local` in its provenance, and the sensitive-data
-> screen still applies. Never use it for a shared or federated store.
-
-### Over HTTP, for agents anywhere
+**Agents in other processes or languages (HTTP):**
 
 ```bash
-# agents.txt (server-only, owner-readable): agent_id:tenant_id:hex_key per line
-memory-fabric --db memory.db agent-api --agents-file agents.txt          # serves on 127.0.0.1:8766
-memory-fabric --db memory.db agent-api-issue --agents-file agents.txt --agent my-bot
+memory-fabric --db memory/store.db agent-api --agents-file agents.txt     # 127.0.0.1:8766
+memory-fabric --db memory/store.db agent-api-issue --agents-file agents.txt --agent my-bot
 curl -s -X POST http://127.0.0.1:8766/v1/recall \
   -H "Authorization: Bearer <credential>" -d '{"query": "pump fault E01"}'
 ```
 
-The same four operations as MCP, for agents in other processes, languages or
-machines. Every request is verified from a signed, expiring credential, so
-revocation and expiry take effect at the next call. It is a separate server
-from the read-only dashboard, refuses browser-originated requests, and will not
-bind beyond loopback over plain HTTP unless told TLS terminates in front of it
-(`--behind-tls`).
+**Python agents:** `sdk.agent(fabric, "my-bot")` for recall and remember;
+`sdk.operator(fabric, actor="lead")` for review. LangChain, function-calling
+tools and the Claude API adapter: [INTEGRATIONS.md](docs/INTEGRATIONS.md). A
+complete agent loop, from retrieval to a gated, verified action:
+[examples/reference_agent.py](examples/reference_agent.py).
 
-### Multiple tenants
+## How it works
 
-```python
-import secrets
-from memory_fabric import MemoryService
-
-ACME_KEY = secrets.token_bytes(32)                   # per-agent signing key; keep it out of the store
-service = MemoryService(path="memory.db")            # owns the fabric; does not expose it
-service.register_agent("acme-bot", key=ACME_KEY, tenant_id="tn_acme")
-
-acme = service.session(service.issue("acme-bot"))    # verified: signed, unexpired, not revoked
-acme.remember("valve 7 is upstream of the pump")
-acme.retrieve("valve")                               # cannot be asked to read outside tn_acme
-
-service.revoke(acme.credential)                      # effective on the very next call
+```
+ agents ─► MCP / HTTP / SDK ─► identity + permissions ─► retrieval ─► action gate
+                    │                                        │             │
+                    ▼                                        ▼             ▼
+          write path: injection and          exposure logged with   grant + evidence
+          secret screens, firewall,          its probability        re-verified inside
+          provenance, authority                     │               the transaction
+                    │                               │                      │
+                    └───────────►  append-only, hash-chained event log  ◄──┘
+                                                │
+              projections: memories, lineage, authority, influence graph
+                                                │
+           background manager: notices, retractions, retention, audit, checkpoints
+                                                │
+                       other stores (federation)  ·  CLI  ·  dashboard
 ```
 
-Session methods take no `tenant_id`, so there is no call site where it can be
-omitted, and the credential is re-checked on every operation. The tenant filter
-runs before the index is queried, and a cross-tenant refusal reveals nothing
-about the other tenant's data.
+- **The event log is the source of truth.** Every other piece of state can be
+  rebuilt from it.
+- **Memories have a lifecycle**: candidate → active → contested, quarantined,
+  deprecated or deleted. Only active memories are shown by default.
+- **Outcomes need a third-party verifier.** An agent cannot score itself.
+- **Contradictions stay visible.** Nothing silently overwrites a disagreement.
 
-> [!IMPORTANT]
-> Tenancy is an **authorisation** boundary, not a physical one. It holds against
-> bugs in ranking, querying or federation, not against anything that can read
-> the database file. See [SECURITY.md](SECURITY.md).
+The ideas in one page: [docs/CONCEPTS.md](docs/CONCEPTS.md). The design in
+full: [ARCHITECTURE.md](ARCHITECTURE.md) and [SPEC.md](SPEC.md).
 
-### Health checks
+## How far it scales
 
-```bash
-memory-fabric --db memory.db doctor
-```
+One store sustains **130 memory operations a second** (p99 91 ms), and
+saturates at 160. Agents that touch memory once every few seconds fit by the
+hundred on one store. Past that, add stores and federate them. A correction
+reaches every copy across chains of up to 16 hops, stars of 100 stores and
+meshes with cycles. Details and sources: [docs/SCALE.md](docs/SCALE.md).
 
-`doctor` reports whether an installation's answers can be believed: **ok**
-(verified), **warn** (a real condition that does not invalidate answers) or
-**fail** (do not use for decisions), with exit codes 0, 1 and 5 for use in
-scripts. A check that cannot run reports a warning, never `ok`. Among its
-checks: a retraction that has permanently failed to reach a recipient, which
-nothing else would surface.
-
-### Running in production
+## Running it
 
 ```bash
 docker build -t memory-fabric .
@@ -209,132 +165,62 @@ docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
   -e MEMORY_FABRIC_TOKEN=<token> memory-fabric
 ```
 
-The container runs as a non-root user and serves the read-only dashboard with
-token authentication. **Mount both volumes:** `/data` holds the event log, the
-source of truth, and `/keys` holds the content keys, kept apart so a copy of the
-database alone cannot read content. Back up both: `memory-fabric backup` copies
-and verifies the log, and the key directory needs its own backup. A store
-created before keys moved out can be migrated with `memory-fabric migrate-keys`;
-the container tells you how at startup. See [DEPLOYMENT.md](DEPLOYMENT.md) for backup, serving, capacity, upgrades
-and current limits. Writers on more than one machine need the optional
-PostgreSQL backend (`pip install ".[postgres]"`, then `--db postgresql://...`).
+- `memory-fabric doctor` says whether an installation's answers can be
+  believed (exit 0 ok, 1 warn, 5 fail).
+- `serve`, `mcp` and `agent-api` run the background manager by default. It
+  delivers retractions and notices, applies retention, scans for
+  contradictions and writes integrity checkpoints.
+- `backup --with-keys` and `restore` cover the log, keys and config, checked
+  against a manifest.
+- `--log-format json` gives structured logs.
+- The container uses the production cryptography profile: content is sealed
+  only with AES-256-GCM from the maintained `cryptography` library
+  ([CRYPTOGRAPHY.md](docs/CRYPTOGRAPHY.md)).
 
-### Examples
+Deployment, capacity and upgrades: [DEPLOYMENT.md](DEPLOYMENT.md). Day-two
+operations and incidents: [docs/OPERATIONS.md](docs/OPERATIONS.md),
+[docs/RUNBOOKS.md](docs/RUNBOOKS.md).
 
-```bash
-python examples/poisoning_and_rollback.py   # the governance story, offline
-python examples/agent_on_the_fabric.py      # an agent end to end, with a stub model
-python examples/action_gate.py              # a tool call gated on its evidence
-```
+## What it does not do
 
-## How it works
+The full list is [docs/LIMITATIONS.md](docs/LIMITATIONS.md). The ones to
+know before you start:
 
-```
- agents ──► SDK / MCP / Claude adapter ──► enforcement ──► retrieval
-                         │                                    │
-                         ▼                                    ▼
-              governed write path                  exposure + propensity
-       (sensitive-data screen, firewall,                 logged
-            lifecycle, provenance)                         │
-                         │                                 │
-                         └──────────►  append-only, hash-chained event log
-                                                 │
-                         projections (memories, lineage, value, profiles)
-                                                 │
-                    CLI · read-only dashboard · federation to other stores
-```
-
-Design principles, each enforced in code:
-
-- **The event log is the source of truth.** All state is a projection that can be rebuilt byte-identically.
-- **Every exposure decision logs its propensity**, so unbiased value estimates are possible later. This cannot be retrofitted.
-- **Outcomes need a third-party verifier.** An agent cannot score its own episodes.
-- **Contradictions stay representable.** Nothing silently overwrites a conflicting memory.
-- **Observability is read-only and never displays secrets.** Browsing does not write exposure events, and a quarantined credential is shown by kind, never by value.
-
-Full detail: [ARCHITECTURE.md](ARCHITECTURE.md), [SPEC.md](SPEC.md), and the
-repository constitution in [AGENTS.md](AGENTS.md).
-
-## Research findings
-
-Every claim in this project was pre-registered with thresholds, a baseline and
-an oracle ceiling, then tested. **The accuracy claim failed**, and the negative
-results are among the most useful things here.
-
-| Phase | Claim | Outcome |
-|---|---|---|
-| A | Governed memory beats an ungoverned vector store | ❌ Killed: 0.283 against 0.583 |
-| A′ | Leave-one-out attribution recovers most of naive blame's damage | ✅ Supported: 71% of the gap |
-| B1 | Selective sharing beats sharing all or none | ❌ Killed |
-| B2 | Retraction propagation works under both sharing policies | ✅ Supported: 17% → 0% |
-| C | A population learns what to propagate | 🔬 Exploratory; made outcomes worse |
-
-**The key insight:** success tracked one quantity, whether a correct memory
-reached the prompt (coverage-to-success correlation **+0.975**). Withdrawing
-memories blamed for failures withdrew correct ones. The product acted on this:
-withdrawals record their evidence basis, and the triage list flags a
-withdrawal made on weak evidence.
-
-What the project offers is therefore **governance, not accuracy**: provenance,
-retraction and audit that work across store boundaries
-([PRIOR_ART.md](research/PRIOR_ART.md)). Lineage-gated actions and action
-certificates have close 2026 prior art (MemLineage, Proof-Carrying Agent
-Actions), so they are not claimed as new. A limited search found no prior
-cross-store retraction. See [docs/RESEARCH_ROADMAP.md](docs/RESEARCH_ROADMAP.md).
-
-The safety work adds a pre-registered ten-agent poisoning benchmark
-([P5](research/results/p5-poisonworld.md)). Fabric met three of four
-hypotheses. **H5a failed as registered**: the best baseline on the safety
-metric barely acts. 65% of fabric's remaining harm is paraphrased injection
-that its pattern screen does not catch. The agent is deterministic, so the
-benchmark says nothing about real models.
-
-More: [SCORECARD.md](research/SCORECARD.md) (every claim and its outcome) and
-[FINDINGS.md](research/FINDINGS.md) (the full narrative).
-
-## Project status
-
-**Alpha (0.9.0).** The governance core, observability, adapters, federation and
-MCP server are built and tested. Open items:
-
-- The Claude adapter has not yet been run against the live API (P3 gate).
-- Developer-experience (R8) and release-qualification (R9) gates are in progress.
-- Not yet published to PyPI, pending a name.
-- **Concurrency:** throughput falls sharply as agent processes are added to one store ([P12](research/results/p12-load.md)). Run a few processes per store, not one per agent.
-
-See [ROADMAP.md](ROADMAP.md) for milestones, gates and kill criteria, and
-[CHANGELOG.md](CHANGELOG.md) for what changed.
+- **A plain false claim from a source that has never misbehaved is
+  indistinguishable from truth** until something contradicts it.
+  Contradiction surfacing and review narrow the window; nothing closes it.
+- **The injection screens are text screens.** They catch common injection
+  patterns, not every paraphrase. Origin-bound authority at the action gate
+  is the backstop: untrusted content cannot authorise an action.
+- **Tenancy within one store is an authorisation boundary**, not a physical
+  one. Use a store per tenant (`tenancy.TenantRouter`) when that matters.
+- **There has been no independent security review**
+  ([brief](docs/INDEPENDENT_EVALUATION.md)).
 
 ## Documentation
 
-| Topic | Document |
+| | |
 |---|---|
-| Running it for real | [DEPLOYMENT.md](DEPLOYMENT.md), [docs/OPERATIONS.md](docs/OPERATIONS.md) |
-| Two-store federation in five minutes | [docs/REFERENCE_DEPLOYMENT.md](docs/REFERENCE_DEPLOYMENT.md) |
-| Architecture and data model | [ARCHITECTURE.md](ARCHITECTURE.md), [SPEC.md](SPEC.md) |
-| Federation protocol | [docs/PROTOCOL.md](docs/PROTOCOL.md) |
-| Security and threat model | [SECURITY.md](SECURITY.md), [docs/SAFETY_AND_SECURITY.md](docs/SAFETY_AND_SECURITY.md), [docs/SECURITY_TEST_PLAN.md](docs/SECURITY_TEST_PLAN.md) |
-| What is implemented, task by task | [docs/IMPLEMENTATION_STATUS.md](docs/IMPLEMENTATION_STATUS.md), [docs/RELEASE_EVALUATION.md](docs/RELEASE_EVALUATION.md) |
-| Which guarantees are implemented | [docs/AUDIT.md](docs/AUDIT.md), [docs/INVARIANTS.md](docs/INVARIANTS.md) |
-| What was validated, and how | [docs/VALIDATION.md](docs/VALIDATION.md) |
-| Relevance contract | [docs/RELEVANCE_SPEC.md](docs/RELEVANCE_SPEC.md) |
-| Research results | [research/SCORECARD.md](research/SCORECARD.md), [research/FINDINGS.md](research/FINDINGS.md) |
-| Research design and evaluation | [RESEARCH.md](RESEARCH.md), [EVALUATION.md](EVALUATION.md) |
-| Versioning policy | [VERSIONING.md](VERSIONING.md) |
+| **Start** | [Quickstart](docs/QUICKSTART.md) · [Concepts](docs/CONCEPTS.md) · [Cookbook](docs/COOKBOOK.md) · [FAQ](docs/FAQ.md) · [Examples](examples/README.md) |
+| **Reference** | [Python API](docs/API.md) · [CLI](docs/CLI.md) · [Integrations](docs/INTEGRATIONS.md) · [Federation protocol](docs/PROTOCOL.md) · [Schema](SPEC.md) |
+| **Operate** | [Deployment](DEPLOYMENT.md) · [Operations](docs/OPERATIONS.md) · [Runbooks](docs/RUNBOOKS.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Migration](docs/MIGRATION.md) · [Scale](docs/SCALE.md) |
+| **Trust** | [Security and threat model](SECURITY.md) · [Limitations](docs/LIMITATIONS.md) · [Stability](STABILITY.md) |
+| **Project** | [Changelog](CHANGELOG.md) · [Release notes](docs/RELEASE_NOTES_0.12.0.md) · [Versioning](VERSIONING.md) · [Contributing](CONTRIBUTING.md) · [All docs](docs/README.md) |
 
 ## Development
 
 ```bash
-python -m unittest discover -s tests -t .   # full suite, no dependencies needed
-python -m experiments.faultsim              # deterministic multi-store fault matrix
-python tools/scan_secrets.py                # sensitive-data scan of the repository
+python tools/check.py           # regenerate docs, lint, type-check, doc tests, adversarial gate
+python tools/check.py --full    # and the full suite, which needs no dependencies
 ```
 
-Read [AGENTS.md](AGENTS.md), the rules for everyone changing this repository,
-humans and AI agents alike, and [CONTRIBUTING.md](CONTRIBUTING.md) before
-opening a pull request.
+**1895 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
+a multi-store fault matrix and an adversarial release gate run
+in CI on Linux, macOS and Windows. Read [AGENTS.md](AGENTS.md), the rules for
+everyone who changes this repository, humans and AI agents alike, and
+[CONTRIBUTING.md](CONTRIBUTING.md).
 
 ## License
 
-Copyright © 2026 C R Akash Preetham. All rights reserved. This is proprietary software;
-see [LICENSE](LICENSE) for terms.
+Copyright © 2026 C R Akash Preetham. All rights reserved. Proprietary; see
+[LICENSE](LICENSE).

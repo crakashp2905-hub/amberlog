@@ -1,0 +1,101 @@
+# Work plan
+
+The task list for the requests of 2026-10-18: the six release gates, the six
+research directions, the ten product capabilities, and then the
+memory-objective experiment, which is deliberately **last**. One row per task,
+each with a definition of done that names evidence, not effort. Status is kept
+current as the work lands. This is a working document, not a claim: "done"
+means the row's own definition is met and linked.
+
+Status: ⬜ not started · 🔄 in progress · ✅ done · ⛔ blocked (needs something
+outside this environment, named) · 🔶 done with a stated gap.
+
+## Blockers outside this environment
+
+| | Needs | Blocks |
+|---|---|---|
+| ~~X-CI~~ | **Resolved 2026-10-18.** CI runs again. The first runs, on `5da2b0b` through `4e7ce31`, passed 17 of 18 jobs; `claude-contract` failed on a fixture that predated F10 (fixed, see G1) | — |
+| **X-API** | A frontier model: `ANTHROPIC_API_KEY`, or the Claude Code CLI on this machine. Neither is present | Frontier-model arms in G4, S3, M1; the live Claude-adapter check in G2 |
+| **X-DKR** | A Docker daemon | Container smoke test in G6 |
+
+Everything else runs here: Windows, 8 cores, CPU only, Python 3.12/3.13, a local
+PostgreSQL 16, and local Ollama models from 1.5B to 14B (`qwen2.5:7b`,
+`llama3.1:8b`, `phi4`, `deepseek-r1:14b`, `gemma3:4b`, ...). The ⛔ rows are
+the parts that need the items above. The rest of each task proceeds.
+
+## Order, and why
+
+1. **G2, then G3**: lint, types and packaging first, because every later task
+   adds code that should be checked by them. Then the capacity work, because
+   P12 is the largest product gap and four product capabilities (console,
+   review queue, incident response, integrations) assume many agents on one
+   store.
+2. **G5**: the security review runs after the capacity changes, so it reviews
+   the code that ships.
+3. **P1–P10**: the product capabilities. Several reuse modules that already
+   exist (`observability/`, `incident.py`, `auditor.py`, `doctor`), so each
+   starts with what is there.
+4. **G4 with S3**: one independently designed adversarial benchmark serves both
+   the release gate and the federated-benchmark research direction.
+5. **S1, S2, S4, S5, S6**: research, each pre-registered with a ceiling,
+   baselines measured in the run and a power estimate (AGENTS.md 8–8d), and
+   checked by `memeval`.
+6. **G6**: final acceptance against a frozen release candidate.
+7. **M1**: the memory objective.
+
+## Release gates
+
+| ID | Task | Definition of done | Status |
+|---|---|---|---|
+| G1 | Pin the exact `main` SHA and get a verified, fully passing CI run. Reconcile all test counts and release records | A green CI run on a named SHA. Every test count in README, VALIDATION, IMPLEMENTATION_STATUS and RELEASE_EVALUATION derived from one command at that SHA, and a test that fails when a doc's count drifts | ✅ **CI green on `12f0fd13c78b` (main): 18/18 jobs**: 9 OS × Python test jobs (Windows, macOS and Linux; 3.11–3.13), Postgres, Docker, package, lint, e2e, faults, secrets, LangChain and Claude contracts. CI ran 1,650 tests, matching the README at that SHA (`tools/count_tests.py` plus the hygiene test). The first runs after billing returned failed only `claude-contract`, a fixture that predated F10, now fixed |
+| G2 | Resolve the Claude API adapter, metadata, lint/type-checking, migration and packaging gaps | ruff and mypy configured, clean, and in CI. Package metadata complete, with the wheel built and installed in a clean venv. The Claude adapter's contract test passes, with model ids current. The migration path from every shipped schema tested | 🔶 ruff and mypy configured, clean (25 and 27 findings before) and in CI job `lint`; PEP 639 licence metadata; both wheels built and installed in a clean venv (`demo`, `doctor` sound); migration covered by the shipped-schema test. Live adapter call ⛔ X-API; its contract test runs in CI |
+| G3 | Profile and improve the multi-agent workload. Publish measured supported capacity and latency limits | A profile attributing P12's latency to causes. A change that moves the measured numbers, re-measured at 10/50/100 agents on both backends. A supported-capacity table in the deployment docs, derived from the run | ✅ [P12b](../research/results/p12b-catch-up.md): profiled (95% full replays), incremental fold with a 500-seed equivalence test, 23×/32× at 100 agents, agent-api shape measured, limits in DEPLOYMENT §3. Open-loop load not measured |
+| G4 | An independently designed adversarial benchmark against real models and fair baselines. Publish successes and failures | A scenario family not derived from DepotWorld or PoisonWorld templates. Real (local) models as the agents. At least two external-style baselines (a plain vector store; a framework-style memory). Pre-registered; failures published beside successes | ✅ run, ❌ **NOT SUPPORTED** ([result](../research/results/g4-labnet.md)): qwen2.5:3b 35% of headroom (bar 40%), +0.150 over the best baseline; gemma3:4b UNDERPOWERED with a ceiling its arms beat. Re-run after F11–F13: unchanged. Failures published: paraphrased injection, poison ranked first before detection, offline window. Frontier arm ⛔ X-API |
+| G5 | Finish the security review and deployment runbooks. No unresolved critical or high release blockers | Every threat-register row is closed, accepted with a reason, or a named blocker. Runbooks for install, upgrade, backup/restore, key rotation, erasure, incident and capacity. A findings table with severities, and zero open critical/high | ✅ [SECURITY_REVIEW.md](SECURITY_REVIEW.md): 13 findings, 4 high (F1, F10, F11 and one during the review), all fixed and tested; F12, F13 medium, fixed; 0 open critical/high; runbooks in [RUNBOOKS.md](RUNBOOKS.md) |
+| G6 | Final acceptance against a frozen release candidate. Tag only after the gates pass. A clear release note with limitations | An RC branch, the acceptance suite run against it, and a release note. The tag is created only when G1 is green | ✅ **Released `v0.11.0`** at `ef43629` (rc/0.11.0): CI 18/18 on the tagged commit; acceptance at `7d3fc25`: SQLite 1,637, Postgres 268, faultsim 17/17, live model path (qwen2.5:3b); release workflow built the GitHub release and container image (PyPI off, name undecided). Live Claude API not validated (X-API) |
+
+## Research directions
+
+Each one starts with a real literature check: the citations in the request are
+verified to exist, and what they establish is read, before a question is
+registered.
+
+| ID | Direction | Definition of done | Status |
+|---|---|---|---|
+| S1 | Federated semantic retraction with precise recovery | Registered question on convergence under partitions, replay, cycles and concurrent corrections. A harness extending `faultsim` and the transitive-retraction tests. Measured stale use and unnecessary invalidation, against baselines | ✅ run, ⛔ **ABANDONED** ([result](../research/results/s1-correction-sim.md)): `delete_and_reshare` reaches the ceiling (headroom 0.0023), so correct-state rate cannot separate mechanisms (8c, not checked before registering). `versioned` = `delete_and_reshare` on every metric; converges 20/20, naive 3/20. Shipped `supersede_copies`. Found and fixed F12 (echo imports). `verified` still unset: a recipient cannot prove enforcement without a receipt, moved to S5 |
+| S2 | Evidence independence under collusion and copy laundering | Transformed copies (paraphrase, summary, multi-store), with independent-but-similar reports as the control. Measured false corroboration against blocked independent evidence | ✅ run, ❌ **NOT SUPPORTED** ([result](../research/results/s2-launder-sim.md)): `independence.py` (exposure-based) closes 28% of headroom (bar 40%). False corroboration 0.83 → 0.28, perfect on laundering in one store and across stores; blocked independent 0.02 → 0.25 (exposed-but-independent authors). Collusion off-store invisible. Opt-in, not wired in |
+| S3 | A federated extension to memory-security benchmarks | Merged with G4: write → share → act → retract → recover across stores and offline recipients, scoring safety, success and valid-evidence retention together | ✅ = G4 ([result](../research/results/g4-labnet.md)) |
+| S4 | Recipient-specific trust under changing context | Can a recipient estimate transferability from its own verified outcomes, without importing the sender's value score, and improve utility without more harmful reliance? Registered against B1's inconclusive result | ✅ **SUPPORTED on the bar** ([result](../research/results/s4-recipient-trust.md)): `trust.py` (Beta per origin × context from own cited outcomes) 40.04% of headroom, harmful reliance 0.23 against 0.49; the per-memory estimator learns nothing at this budget. Opt-in |
+| S5 | Privacy-preserving correction receipts | A receipt that proves enforcement without revealing content or unrelated graph structure. A measured leakage analysis of what the receipts themselves reveal | ✅ run, 🔶 ([result](../research/results/s5-correction-receipts.md)): `receipts.py` (commitment + HMAC, binds at audit against the hash chain); soundness 150/150; leakage S5a failed as registered on a bar that fails pure noise 26% of the time. Found and fixed F13: acknowledgements leaked the recipient's activity, copies and peers |
+| S6 | Race-free authorization at external action time | A tested protocol coupling a fresh memory state to a tool side effect, including timeout and retry. Closes or bounds S14 | ✅ **SUPPORTED** ([result](../research/results/s6-action-fence.md)): `ActionGate.execute` (schema 0.11.0): verify + side effect in one write transaction; 0/1,229 violations against 28.4% for authorize-then-act; lease overruns bounded and 30/30 reported; idempotency keys and re-verifying retry. S14 controlled for fenced tools. Cost: writers wait up to ~2 s |
+
+## Product capabilities
+
+| ID | Capability | Definition of done | Status |
+|---|---|---|---|
+| P1 | Memory governance console | One view per memory: source, history, status and confidence, and which agents and stores can reach it. Answers "why does this agent know this?" in the dashboard | ✅ memory page and `show`: source, versions, audit, status (P9), value with n_eff, and reach (`reach.py`: may read / has seen / other stores). Building it found F10 |
+| P2 | Review queue for proposed memories | Approve, reject, correct or limit candidates before they spread, each decision logged with its reviewer | ✅ `review.py`: queue (candidates, screen quarantines, secrets redacted) and approve / limit / correct / reject, each naming its reviewer; `review` command; read-only Review tab with each item's commands |
+| P3 | Safe correction and retraction | Preview the copies and dependents a change would touch, apply it, and see which stores confirmed | ✅ `correction.py`: preview (contested / still standing on independent support / copies / stores owed) computed by the rules quarantine uses — a 40-graph test checks preview = outcome; `correct --apply` owes every store; `--status` per store; on the memory page |
+| P4 | Access and sharing controls | Attach or detach a collection to agents. Read, write, approve and retract permissions, audited | ✅ collections (schema 0.10.0): attach/detach agents, read/write/approve/retract grants enforced on the authenticated service path, every change an audited event; `collection` command; reach shows collection readers. Rests on scope enforced on reads (F10) |
+| P5 | Integrations that fit existing stacks | At least two framework adapters with a policy boundary and a migration path, tested end to end | ✅ `integrations/`: function tools (OpenAI and Anthropic formats, dispatching to the MCP server's own handlers) and a LangChain retriever with `verify`, both at the agent-facing boundary; `import` from Mem0 / LangChain / plain exports as reviewable candidates. CI job `langchain-contract` |
+| P6 | Security posture and audit export | Export decisions, changes, access events and deletion receipts. A posture page listing which controls are on and which gaps exist | ✅ `posture.py`: controls read from the live store plus the review's accepted gaps (`posture`, dashboard Posture tab); `audit-export` writes decisions / changes / access / deletion receipts as content-free JSONL ending with a chain checkpoint (tested: no content or secret leaves; the log verifies against it) |
+| P7 | A low-friction first run | `init` with a guided setup and working demo, and a `doctor` that explains every failure in plain language with its fix | ✅ `init`: store + external keys + agents file (key never printed) + MCP config + doctor, never overwriting; tested by running the printed MCP config; every doctor warning/failure now carries a fix, enforced by a test |
+| P8 | Lifecycle and deletion center | Retention rules, stale and sensitive finders, and deletion/revocation progress across stores | ✅ `lifecycle.py`: retention rules + dry-run sweep, stale (never shown) and long-waiting candidates, readable secrets and memories the current screens would flag, erasures and per-store propagation of withdrawn shared memories; `lifecycle` command and Lifecycle tab; read-only |
+| P9 | Honest, explainable status labels | Distinct labels: source recorded, reviewed, policy-checked, verified in destination. Each says what it does and does not establish, everywhere a memory is shown | ✅ `status.py`, on `show` and the dashboard; 'verified in destination' is self-reported because the protocol's `verified` state is never set (→ S1) |
+| P10 | Guided incident response | Detect → show propagation → contain → retract → reviewable incident record, as one workflow | ✅ `response.py` + `incident`: candidates (auditor, screens, attention) → assessment (author's other memories, who saw it, stores, blast radius, gated actions with necessity) → contain (withdraw + owe stores) → a record generated from the log (.md or .json); runbook §4 now uses it |
+
+## Follow-ups from results
+
+| ID | Task | Definition of done | Status |
+|---|---|---|---|
+| G4b | **Retrieval must not surface an undetected poison first.** G4 found the poison ranked above the honest note in 35/40 questions before detection | A change tested on held-out seeds (5–9) with G4's arms, prompt, k and models; attack-first and honest-first order both measured; clean and corrected success not reduced | ✅ run ([result](../research/results/g4b-contradiction-surfacing.md)): **NOT SUPPORTED at 40%** (13% / 19% of headroom), but flag +0.081 and incumbent +0.119 over the shipped store, both significant; acting on undetected poison 63% → 51–55%; guard holds. Recommend flag as the default (owner's decision) |
+| T1 | **Learned staleness** (from the temporal-reasoning review): trust forgets at a rate learned per context | Registered; held-out seeds; against no, fixed and Zep-style forgetting | ✅ run, ❌ **NOT SUPPORTED** ([result](../research/results/t1-learned-staleness.md)): 1.5% of headroom; detection perfect, decision gain nil. `TransferTrust(adaptive=True)` kept as a safe default, opt-in |
+| T2 | **Hindsight re-decision**: a memory withdrawn as false re-flags its author's other memories and the decisions that rested on them | Registered on LabNet with an honest-mistake control family; real models | ✅ run, ❌ **NOT SUPPORTED** ([result](../research/results/t2-hindsight.md)): withholding wins on the attacker and destroys the honest author's notes (net −0.11); flagging ignored; the hostile signal does not cross stores. Follow-up candidate: a federated "source discredited" notice (owner's decision) |
+| T2b | **Cross-store hostile-source notice**: the origin's injection verdict travels, signed, to the stores holding that source's memories | Registered after a one-seed pilot; held-out seeds 15–19; qwen2.5:3b | ✅ run, ✅ **SUPPORTED** ([result](../research/results/t2b-source-notice.md)): 0.732 → 0.949 safe success, 81% of headroom, collateral up. Delivery on by default; withholding on receipt is still opt-in (owner's decision) |
+
+## Last
+
+| ID | Task | Definition of done | Status |
+|---|---|---|---|
+| M1 | **Memory objective**: before a session, state what counts as relevant and what as irrelevant, as rules given to the agent and to retrieval | Pre-registered against plain retrieval and an oracle on a family where relevance is decided by the objective, not by similarity. At least two ways of using the objective (prompt only; retrieval filter; both). Measured on real models | ✅ **SUPPORTED on both models** ([result](../research/results/m1-memory-objective.md)): qwen 58% registered / 70% corrected (both reported), gemma 74%. The objective belongs in the prompt; filters only with reviewed rules. `objective.py` opt-in |
+| M2 | **Reflective rulebooks** (requested 2026-10-18): memory-based recursive self-improvement. After verified outcomes, an agent reflects and proposes revisions to its own rulebook: rules stored as memories with provenance and value | Pre-registered against no rulebook, append-only reflections (Reflexion-style), and ungated self-rewriting, with an oracle rulebook as the ceiling. A revision replaces its incumbent only when propensity-logged outcomes say it is better, so improvement is measured, not self-reported. Rules can never widen tool grants or loosen governance. Rounds of revision on real models, reporting whether gains compound, plateau or regress. Shares M1's harness; runs after M1 | ✅ run ([result](../research/results/m2-reflective-rulebooks.md)): **M2a NOT SUPPORTED** (26% of headroom), **M2b SUPPORTED** (1 regression, against 3 ungated and 8 Reflexion). Ungated self-rewriting ends below no rulebook. `rulebook.py` stays experimental |

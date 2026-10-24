@@ -37,6 +37,8 @@ Translation, all of it:
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 import re
 import sqlite3
 import threading
@@ -166,8 +168,13 @@ class PgConnection:
                 "a postgresql:// store needs psycopg: pip install 'memory-fabric[postgres]'")
         self.url = url
         self._lock = threading.RLock()
+        # A bounded connect. Without it the OS's TCP retry schedule decides how
+        # long a mistyped URL hangs: 131 s against a closed port on Windows,
+        # found by the 0.11.0 RC's Postgres acceptance run. A URL that sets its
+        # own `connect_timeout` keeps it.
+        extra = {} if "connect_timeout" in url else {"connect_timeout": CONNECT_TIMEOUT_S}
         try:
-            self._pg = psycopg.connect(url, autocommit=True)
+            self._pg = psycopg.connect(url, autocommit=True, **extra)
         except psycopg.Error as exc:
             # The message can echo the URL; never let a password through.
             raise sqlite3.OperationalError(
@@ -298,6 +305,10 @@ class PgConnection:
         script = re.sub(r"\bBLOB\b", "BYTEA", script)
         statements = [s.strip() for s in script.split(";") if s.strip()]
         return statements + triggers
+
+
+CONNECT_TIMEOUT_S = 10
+"""Seconds to wait for a Postgres server before giving up, unless the URL says."""
 
 
 def connect(url: str, busy_timeout_ms: int = 5_000) -> PgConnection:

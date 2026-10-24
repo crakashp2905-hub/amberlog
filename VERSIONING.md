@@ -19,7 +19,7 @@ So the guarantee is placed where the irreversible damage is:
 
 `SCHEMA_VERSION` in `memory_fabric/model.py` is the authority on the schema;
 the version in `pyproject.toml` is what `pip` sees. They are equal today, at
-`0.2.0`, and the invariant that is actually tested
+`0.13.0`, and the invariant that is actually tested
 (`test_package_version_is_not_behind_the_schema`) is the weaker one:
 
 > the package version is never *behind* the schema version.
@@ -57,6 +57,25 @@ the ones that would be lost.
 What 1.0 will mean: the API surface in SPEC.md §API v0 settles, and the estimator
 whose output drives retention and federation decisions has been validated against
 live agents rather than only RuleWorld. Neither is true today.
+
+## Supported versions
+
+| version | status | gets |
+|---|---|---|
+| latest minor (0.12.x, once tagged) | **supported** | bug and security fixes |
+| previous minor (0.11.x) | **security fixes only** | for 90 days after the next minor is tagged |
+| older | unsupported | upgrade; every older log replays on the current reader |
+
+- **Python:** 3.11, 3.12 and 3.13, each tested in CI on Linux, macOS and
+  Windows. A Python version is dropped only in a minor release, announced in
+  the CHANGELOG one minor release ahead.
+- **PostgreSQL:** 14 or later through `psycopg` 3.1 or later (CI runs 16).
+- **Optional integrations:** `anthropic` 0.40 or later, `langchain-core`
+  0.3 or later. Each one is tested by a contract test that runs without
+  network access.
+- **Security reports** for a supported version: see SECURITY.md. A fix lands
+  on the latest minor first, then on the previous one if it is still in its
+  window.
 
 ## Checking a store
 

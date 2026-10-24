@@ -143,8 +143,8 @@ def main() -> int:
                                  text=True, cwd=HERE).stdout.strip()
     print(json.dumps(r["verdict"], indent=2))
     out = HERE / "research" / "results"
-    (out / "p1b-links.json").write_text(json.dumps(r, indent=2) + "\n")
-    (out / "p1b-links.md").write_text(to_markdown(r))
+    (out / "p1b-links.json").write_text(json.dumps(r, indent=2) + "\n", encoding="utf-8")
+    (out / "p1b-links.md").write_text(to_markdown(r), encoding="utf-8")
     return 0
 
 

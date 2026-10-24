@@ -185,9 +185,13 @@ class TestFirewall(unittest.TestCase):
         self.assertTrue(any("sibling" in r for r in ruling.reasons))
 
     def test_missing_evidence_asks_for_validation(self) -> None:
-        ruling = self.evaluate(memory=memory(), target_scope=Scope.TEAM, value=None)
+        ruling = self.evaluate(memory=memory(), target_scope=Scope.FEDERATED, value=None)
         self.assertIs(ruling.decision, FirewallDecision.REQUIRE_VALIDATION)
         self.assertIn("no value evidence yet", ruling.reasons)
+
+    def test_the_team_needs_no_value_evidence(self) -> None:
+        ruling = self.evaluate(memory=memory(), target_scope=Scope.TEAM, value=None)
+        self.assertIs(ruling.decision, FirewallDecision.ALLOW)
 
     def test_non_contrastive_evidence_is_not_enough(self) -> None:
         """A high average outcome is not proof that a memory helped.
@@ -206,7 +210,7 @@ class TestFirewall(unittest.TestCase):
 
     def test_value_must_clear_zero(self) -> None:
         ruling = self.evaluate(
-            memory=memory(), target_scope=Scope.TEAM, value=value(0.05, -0.20)
+            memory=memory(), target_scope=Scope.FEDERATED, value=value(0.05, -0.20)
         )
         self.assertIs(ruling.decision, FirewallDecision.REQUIRE_VALIDATION)
         self.assertTrue(any("does not clear zero" in r for r in ruling.reasons))

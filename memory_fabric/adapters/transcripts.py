@@ -13,6 +13,8 @@ attributable step.
 
 from __future__ import annotations
 
+__stability__ = "stable"
+
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any, Iterable, Mapping, Sequence
 

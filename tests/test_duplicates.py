@@ -316,6 +316,82 @@ class EncodingNoise(unittest.TestCase):
         self.assertFalse(is_copy(self.DOC, self.DOC.replace("450", "420")))
 
 
+class TestIndexAgreesWithExhaustiveSearch(unittest.TestCase):
+    """Randomised: the index finds exactly what the exhaustive scan finds, both directions.
+
+    The anchors only matter when the incoming text is the *longer* side (a
+    stored memory contained in it), so half the probes are a stored memory
+    with words added, and half are a stored memory with words removed.
+    """
+
+    def test_random_corpora_both_directions(self) -> None:
+        import random
+
+        words = [f"w{i}" for i in range(60)] + ["purge", "time", "pressure", "valve", "site"]
+        for seed in range(25):
+            rng = random.Random(seed)
+            store = {f"m{i}": " ".join(rng.sample(words, rng.randint(5, 9)))
+                     for i in range(150)}
+            index = duplicates.CopyIndex()
+            for mid, content in store.items():
+                index.add(mid, content)
+            for _ in range(40):
+                base = store[rng.choice(sorted(store))].split()
+                if rng.random() < 0.5:
+                    probe = base + rng.sample(words, 2)          # stored memory inside the probe
+                else:
+                    probe = rng.sample(base, max(5, len(base) - 1))  # probe inside a stored memory
+                text = " ".join(probe)
+                exhaustive = duplicates.find_copy(text, store)
+                indexed = index.find(text)
+                self.assertEqual(exhaustive and exhaustive.memory_id,
+                                 indexed and indexed.memory_id, (seed, text))
+
+
+class TestNearDuplicatesStayCheap(unittest.TestCase):
+    """A store of near-identical notes must not make each write scan the whole store.
+
+    Before the fix, every memory's third anchor tied on a common word, so one
+    bucket held every memory, and the incoming text was re-tokenised for each
+    candidate: ~29 ms a write at 5,000 notes, growing with the store.
+    """
+
+    @staticmethod
+    def _note(i: int) -> str:
+        return f"The purge time for P{i} is {20 + i % 41} s."
+
+    def test_the_candidate_set_does_not_grow_with_the_store(self) -> None:
+        index = duplicates.CopyIndex()
+        for i in range(3000):
+            index.add(f"m{i}", self._note(i))
+        self.assertLess(len(index.candidates(self._note(99999))), 200)
+
+    def test_copy_lookups_at_5000_are_at_most_3x_lookups_at_500(self) -> None:
+        """Times copy recognition itself, so the storage backend does not enter into it.
+
+        A whole-store write also grows with the log on PostgreSQL, for reasons
+        unrelated to copy recognition; timing writes there failed this bound
+        at 4.8x while the lookups it is about stayed flat.
+        """
+        import statistics
+        import time
+
+        def per_lookup(n: int) -> float:
+            index = duplicates.CopyIndex()
+            for i in range(n):
+                index.add(f"m{i}", self._note(i))
+            times = []
+            for batch in range(5):
+                t0 = time.perf_counter()
+                for i in range(n + batch * 200, n + batch * 200 + 200):
+                    index.find(self._note(i))
+                times.append((time.perf_counter() - t0) / 200)
+            return statistics.median(times)
+
+        small, large = per_lookup(500), per_lookup(5000)
+        self.assertLess(large, 3 * small, f"{large * 1e6:.1f} us vs {small * 1e6:.1f} us")
+
+
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()
 

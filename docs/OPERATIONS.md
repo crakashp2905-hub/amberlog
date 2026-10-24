@@ -183,6 +183,19 @@ writers being unsupported.
 
 ## 4. Upgrades
 
+**Upgrading across the scope change (2026-10-18).** Scope is now enforced on
+reads: a `private` memory is visible only to the agent that wrote it. Before,
+every active memory was readable by its whole tenant. To keep that visibility
+for memories written before the upgrade, decide it once, explicitly:
+
+```bash
+memory-fabric --db store.db share --all-private-active --actor <you>
+```
+
+It shares each active private memory to `team` through the firewall, so a
+restricted memory is refused and listed rather than widened. Skip it if
+per-agent privacy is what you wanted all along.
+
 **Older store, newer code: supported.** Every field added since 0.2.0 is
 nullable with a defined absent-meaning, and `tests/test_version_skew.py` checks
 each one — absent tenant means `tn_default`, absent validity means "applies
@@ -216,8 +229,7 @@ the log is the one thing this design forbids.
 
 ## 4a. Supported scale and rate limits
 
-Measured on one 4-CPU Linux machine with SQLite ([P12](../research/results/p12-load.md),
-[P12b](../research/results/p12b-api-load.md)):
+Measured on one 4-CPU Linux machine with SQLite, 20 mixed operations per agent:
 
 | deployment | agents | ops/s total | p99 latency | status |
 |---|---|---|---|---|
@@ -226,8 +238,7 @@ Measured on one 4-CPU Linux machine with SQLite ([P12](../research/results/p12-l
 
 The store serialises writes (one lock, a gapless hash-chained log), so latency
 grows with the number of agents waiting on it. Above 100 concurrent agents per
-store is unmeasured. Postgres is slower than SQLite at every measured point
-in P12.
+store is unmeasured. Postgres was slower than SQLite at every point measured.
 
 **Rate limits** (`agent-api`): each agent gets a token bucket, by default 20
 requests a second with a burst of 40 (`--rate-limit`, `--burst`;
@@ -248,8 +259,36 @@ queue on the lock rather than being refused.
 Said plainly rather than left for an incident to discover.
 
 - **No concurrency beyond serialised single-writer.** Measured, not assumed: 4 processes × 20 appends land all 80 with a gapless sequence and a verifying chain. Throughput is bounded by that one writer (§4a).
-- **No multi-host story.** P9 declined distribution on measurement — 25× the memories cost 1.7× the latency.
+- **No multi-host story.** Distribution was declined on measurement — 25× the memories cost 1.7× the latency.
 - **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those — `erasure_scope` reports them as unknown rather than pretending otherwise, which is the most a store can honestly do.
 - **No alerting.** `doctor` and `attention` exit non-zero; wiring that to a pager is yours.
 - **Revocation durability depends on which surface you use.** A `MemoryService` writes revocations to the database; a bare `PrincipalRegistry` keeps them in memory. `service.revocations_are_durable` answers it rather than leaving it to be inferred.
 - **Untested here:** restore onto a different OS, stores above a few hundred thousand events, and recovery from filesystem-level corruption rather than logical tampering.
+
+## Background maintenance (0.12.0)
+
+The store maintains itself. `serve`, `agent-api` and `mcp` each start the
+background manager. Run it alone with `memory-fabric --db <store> maintain`,
+or for one cycle with `--once`.
+
+**What it does, every `--maintain-interval` seconds (60 by default):**
+
+- delivers owed retractions to peers (`--peers peers.json`, or
+  `MEMORY_FABRIC_PEERS`; the file holds keys, so keep it readable by the
+  service user only);
+- applies retention: deprecations always, deletions only with
+  `--retention-delete`;
+- scans for audit triggers and contradictions;
+- records an integrity checkpoint: give `--checkpoint-dir` a path on other
+  storage, or it is only recorded in the log;
+- runs the doctor's checks.
+
+**Seeing what it did:** `memory-fabric maintain --status` shows the last
+cycle and everything it found that needs a person. Conflicts and audit
+findings are never resolved automatically. `doctor` warns when the manager
+has not run for an hour.
+
+**Several processes on one store:** they coordinate through a lease, so
+exactly one maintains the store. Turn it off in a process with
+`--no-maintain`.
+

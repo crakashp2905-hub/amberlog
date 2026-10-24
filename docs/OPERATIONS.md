@@ -233,12 +233,15 @@ Measured on one 4-CPU Linux machine with SQLite, 20 mixed operations per agent:
 
 | deployment | agents | ops/s total | p99 latency | status |
 |---|---|---|---|---|
-| one `agent-api` process serving the agents | 1 → 100 | 159–195 | 7 ms → 1.2 s | **supported** up to 100 concurrent agents |
+| one `agent-api` process serving the agents | 1 → 100 | 159–195 | 7 ms → 1.2 s | **supported** |
+| one `agent-api` process serving the agents | 200 / 400 | 198 / 166 | 1.4 s / 3.1 s | **supported**, if your agents tolerate the latency |
 | one process per agent, all opening the store | 10 / 100 | 31 / 4 | 0.7 s / 56 s | **not supported** beyond a few writers |
 
 The store serialises writes (one lock, a gapless hash-chained log), so latency
-grows with the number of agents waiting on it. Above 100 concurrent agents per
-store is unmeasured. Postgres was slower than SQLite at every point measured.
+grows with the number of agents waiting on it. Throughput stays flat as agents are added; latency grows by about 7 ms per
+agent waiting. Above 400 concurrent agents per store is unmeasured. For more,
+split agents across stores (`tenancy.TenantRouter`) rather than queueing more
+agents on one. Postgres was slower than SQLite at every point measured.
 
 **Rate limits** (`agent-api`): each agent gets a token bucket, by default 20
 requests a second with a burst of 40 (`--rate-limit`, `--burst`;

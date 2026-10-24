@@ -21,7 +21,7 @@ from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
 from memory_fabric.dependence import decisions_depending_on
 
 ROOT = Path(__file__).resolve().parent.parent
-SEEDS = (1, 2, 3, 4, 5)
+SEEDS = tuple(int(x) for x in sys.argv[1:]) or (1, 2, 3, 4, 5)
 
 
 def run_seed(seed: int) -> dict[str, Any]:
@@ -95,18 +95,19 @@ def main() -> int:
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
                             text=True, cwd=ROOT).stdout.strip()
     out = ROOT / "research" / "results"
-    (out / "c2-dependence.json").write_text(json.dumps({"commit": commit, "rows": rows,
+    name = "c2-dependence" if SEEDS == (1, 2, 3, 4, 5) else "c2r-dependence"
+    (out / f"{name}.json").write_text(json.dumps({"commit": commit, "rows": rows,
                                                         "verdict": v}, indent=2) + "\n")
     table = "\n".join(
         f"| {r['seed']} | {r['affected']} | {r['depended_truth']} "
         f"| {r['graph']['flagged']} · {r['graph']['precision']:.2f} · {r['graph']['recall']:.2f} "
         f"| {r['counterfactual']['flagged']} · {r['counterfactual']['precision']:.2f} · "
         f"{r['counterfactual']['recall']:.2f} |" for r in rows)
-    (out / "c2-dependence.md").write_text(f"""# C2 — which decisions genuinely depended on a corrected memory?
+    (out / f"{name}.md").write_text(f"""# C2 — which decisions genuinely depended on a corrected memory?
 
 Registered in [c2-decision-dependence.md](../prereg/c2-decision-dependence.md) before the
 mechanism existed. Produced by `python -m experiments.c2_dependence` at commit `{commit}`;
-raw numbers in [c2-dependence.json](c2-dependence.json). Deterministic, seeds 1–5,
+raw numbers in [{name}.json]({name}.json). Deterministic, seeds {SEEDS},
 60 allowed actions a seed, 40 facts with copies and derived conclusions; the most-used
 fact is corrected.
 

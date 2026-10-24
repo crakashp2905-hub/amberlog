@@ -54,3 +54,11 @@ not from the product.
   here.
 - Independence is judged by source roots, which inherits S2's limits: an
   independent-looking root that was laundered is counted as independent.
+
+## Amendment 1 — 2026-10-24, after the C2 run, before any seed 6–10 number
+
+C2a failed because of a product defect (`min_independent_sources` was not
+enforced unless `independent_support` was listed). It was fixed in the
+verifier and covered by a test. The re-run uses fresh seeds 6–10, with the
+mechanism and world unchanged, and the same thresholds. The original seeds
+1–5 result stands as recorded.

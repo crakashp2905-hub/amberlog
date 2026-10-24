@@ -32,12 +32,12 @@
  {
   "area": "Security",
   "limitation": "Tenancy within one store is an authorisation boundary. Someone holding the database file or the process can read every tenant.",
-  "what_to_do": "One store per tenant (tenancy.TenantRouter) where isolation must survive an administrator."
+  "what_to_do": "Pick an isolation pattern (DEPLOYMENT.md, tenant isolation patterns): store, process or host per tenant."
  },
  {
   "area": "Security",
   "limitation": "A database administrator can rewrite the log and its hash chain together. Tampering is detected only against a checkpoint kept elsewhere.",
-  "what_to_do": "Run the manager with --checkpoint-dir on separate storage."
+  "what_to_do": "Anchor checkpoints off the host: memory-fabric anchor --to git:... --to https://... from cron, then anchor --verify."
  },
  {
   "area": "Security",

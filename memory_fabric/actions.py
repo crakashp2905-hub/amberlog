@@ -97,6 +97,7 @@ RETRY_REQUIRED = "retry_required"
 AUTHORITY_INSUFFICIENT = "authority_insufficient"
 INSTRUCTION_EVIDENCE = "instruction_is_not_evidence"
 EVIDENCE_SUSPICIOUS = "evidence_suspicious"
+EVIDENCE_PROVISIONAL = "evidence_provisional"
 GRANT_REQUIRED = "grant_required"
 GRANT_UNKNOWN = "grant_unknown"
 GRANT_EXPIRED = "grant_expired"
@@ -140,6 +141,11 @@ class ToolRule:
     """Refuse evidence whose claim contradicts what the store knows
     (`validation.assess`: a corrected value restated, a value far out of
     range, or a contradiction of an established fact)."""
+    refuse_provisional: bool = False
+    """Also refuse evidence `validation.assess` rates provisional: a first
+    claim from a new source, untrusted origin, or an author's own change to a
+    fact a reviewer had validated (`revises_validated`). Off by default; turn
+    it on for tools where a compromised account must not act unreviewed."""
 
 
 @dataclass(frozen=True)
@@ -350,15 +356,19 @@ class ActionGate:
                 return INSTRUCTION_EVIDENCE
             if not found.at_least(rule.min_authority):
                 return AUTHORITY_INSUFFICIENT
-        if rule.refuse_suspicious:
+        if rule.refuse_suspicious or rule.refuse_provisional:
             from .validation import assess
 
             for item in certificate.evidence:
                 try:
-                    if assess(self.fabric, item.memory_id).suspicious:
-                        return EVIDENCE_SUSPICIOUS
+                    level = assess(self.fabric, item.memory_id).level
                 except KeyError:
                     return STATE_UNAVAILABLE
+                # Refusing the provisional means refusing the worse, too.
+                if level == "suspicious" and (rule.refuse_suspicious or rule.refuse_provisional):
+                    return EVIDENCE_SUSPICIOUS
+                if level == "provisional" and rule.refuse_provisional:
+                    return EVIDENCE_PROVISIONAL
         return None
 
     def issue_grant(self, tool: str, agent_id: str, issuer: str, *,

@@ -13,6 +13,7 @@ its identifiers, content words and values) against the store:
 | `outlier` | its value is far outside what the store holds for this kind of parameter on other equipment: robust z > 3.5 **and** beyond twice the largest or half the smallest of at least 5 comparable claims | suspicious |
 | `new_source` | its author has no validated memory older than this one | provisional |
 | `untrusted_origin` | its origin-bound authority is untrusted (tool output, import, web) | provisional |
+| `revises_validated` | its own author restates a fact **someone else validated** with another value, and nobody has validated the new one | provisional |
 | `corroborated` | another independent source (a different source root) states the same claim and value | supporting |
 
 `level` is the summary: `suspicious` if any suspicious signal holds;
@@ -42,7 +43,7 @@ if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
 
 SUSPICIOUS = ("reasserts_corrected", "contradicts_established", "outlier")
-PROVISIONAL = ("new_source", "untrusted_origin")
+PROVISIONAL = ("new_source", "untrusted_origin", "revises_validated")
 OUTLIER_Z = 3.5
 MIN_COMPARABLE = 5
 
@@ -185,6 +186,18 @@ def _index(fabric: "MemoryFabric") -> _ClaimIndex:
     return index
 
 
+def _validated_by_other(fabric: "MemoryFabric", memory_id: str, who: str) -> str | None:
+    """The actor, other than `who`, who validated this memory, if any."""
+    if not memory_id:
+        return None
+    for event in fabric.audit_trail(memory_id):
+        p = event.payload
+        if (p.get("to") == "active" and p.get("reason") == "validated"
+                and p.get("actor") not in (None, who)):
+            return str(p.get("actor"))
+    return None
+
+
 def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assessment:
     from . import authority
     from .model import EXPOSABLE_STATES, WITHDRAWN_STATES
@@ -214,6 +227,16 @@ def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assess
         if other.lifecycle_state in WITHDRAWN_STATES and theirs[2] == values:
             signals.setdefault("reasserts_corrected", oid)
         elif other.lifecycle_state in EXPOSABLE_STATES and theirs[2] and theirs[2] != values:
+            # An author changing its own fact is an update, not a conflict, but
+            # if a reviewer had vouched for the old value, the new one has not
+            # been vouched for. A compromised established account is exactly
+            # this case (LIMITATIONS: "can change its own facts"), so it is
+            # marked provisional until someone validates it, and a gate rule
+            # can refuse it (`ToolRule.refuse_provisional`).
+            if (author(other) == me and other.created_at <= memory.created_at
+                    and (vouched := _validated_by_other(fabric, oid, me))
+                    and not _validated_by_other(fabric, memory_id, me)):
+                signals.setdefault("revises_validated", f"{oid} validated by {vouched}")
             # Established means older *and* by an author with a track record
             # (another usable memory) by now. Without the second condition an
             # earlier poison counted as established, and an honest author

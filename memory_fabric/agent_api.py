@@ -38,7 +38,7 @@ is simply recalled again before `verify`.
 **Rate limits.** Each authenticated agent has a token bucket
 (`RateLimit`, default 20 requests a second with a burst of 40), and failed
 authentications are limited per remote address, so a flood is refused with
-`429` and `Retry-After` before it reaches the store's single write lock.
+`429` and `Retry-After`. The check runs under the store lock, after the credential is verified, so one agent cannot spend another's budget.
 Before this, nothing limited a caller: P12 measured that the store queues
 rather than fails under contention, so one agent in a loop could make every
 other agent wait.
@@ -246,10 +246,15 @@ class AgentApi:
 
     def handle(self, operation: str, bearer: str | None, body: Mapping[str, Any],
                remote: str = "") -> Any:
-        # Authentication and the rate check run before the store lock, so a
-        # refused caller never queues behind it.
-        client = self.client_for(bearer, remote)
+        # Authentication reads the store (revocations), so it runs under the
+        # store lock with everything else. An earlier version moved it out to
+        # spare limited callers the queue, and 14% of requests failed with
+        # sqlite3.InterfaceError under 10 concurrent agents (P12b). The rate
+        # check cannot run first either: before verification the agent id is
+        # only the caller's claim, and a forged one would spend another
+        # agent's budget.
         with self._lock:
+            client = self.client_for(bearer, remote)
             if operation == "recall":
                 return self._recall(client, body)
             if operation == "fetch":

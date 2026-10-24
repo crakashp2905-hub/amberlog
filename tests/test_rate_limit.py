@@ -120,14 +120,25 @@ class TestApiLimits(ApiCase):
                 self.api.handle("recall", None, {"query": "x"}, remote="10.0.0.9")
         self.api.handle("recall", self.bearer(), {"query": "E01"}, remote="10.0.0.9")
 
-    def test_a_refused_request_never_takes_the_store_lock(self) -> None:
-        a = self.bearer()
-        for _ in range(2):
-            self.api.handle("recall", a, {"query": "E01"})
-        with self.api._lock:          # held: a limited request must not wait for it
-            with self.assertRaises(_ApiError) as caught:
-                self.api.handle("recall", a, {"query": "E01"})
-        self.assertEqual(caught.exception.status, 429)
+    def test_concurrent_agents_do_not_share_the_connection_unlocked(self) -> None:
+        """P12b found authentication reading SQLite outside the store lock."""
+        api = AgentApi(self.service, RateLimit(rate=0.0))
+        bearers = [self.bearer("ag_a"), self.bearer("ag_b")] * 8
+        errors: list[BaseException] = []
+
+        def hammer(bearer: str) -> None:
+            try:
+                for _ in range(25):
+                    api.handle("recall", bearer, {"query": "E01 coastal"})
+            except BaseException as exc:  # noqa: BLE001 - collected for the assertion
+                errors.append(exc)
+
+        threads = [threading.Thread(target=hammer, args=(b,)) for b in bearers]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(errors, [])
 
 
 class TestBoundedTokens(ApiCase):

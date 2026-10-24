@@ -472,11 +472,13 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - **macOS** added to the CI test matrix.
 
 ### Fixed
+- **The agent API reset connections at 100 concurrent agents.** The socket backlog was the library default of 5; it is now 128 (found by `experiments/p12b_api_load.py`).
 - **Credentials expired 1000x early.** `now` is epoch milliseconds and the lifetime is seconds, but they were added unconverted. The default hour-long credential lasted 3.6 s, and `agent-api-issue --ttl 1800` lasted 1.8 s. Every unit test called back at once, so nothing failed until a live model, a few seconds into its turn, was refused (`experiments/live_claude_http.py`). Credentials issued before the fix simply expire.
 - **The action gate verified against a stale view in another process** (found by `experiments/e2e_validation.py`), and two fail-closed leaks: raw exception text over the agent API and MCP, and concealed cross-tenant `derive` confirming an id exists.
 - **Re-ingestion through encoding noise.** Zero-width characters, soft hyphens, ligatures and non-ASCII hyphens no longer let a withdrawn document return as active, independent evidence.
 
 ### Changed
+- **Agent API rate limits.** Per-agent token bucket (default 20/s, burst 40; `--rate-limit`, `--burst`), failed authentications limited per remote address, `429` with `Retry-After`. The per-agent exposure-token cache is bounded (oldest evicted).
 - **Chain search prefers the chain whose weakest link is strongest** (P1d, pre-registered on a fresh holdout: three-hop sufficiency 0.417 → 0.917).
 - **A broken `cryptography` install no longer crashes every write.** A native panic on import (a `BaseException`) escaped the availability check. The store now falls back to encrypt-then-MAC, warns once, and `doctor` names the reason: a warning, or a failure when AES-GCM content exists that cannot be read there.
 - **`derive` never writes a conclusion less restricted than its premises.** A summary of `restricted` content used to be written `internal`, so it could be shared.

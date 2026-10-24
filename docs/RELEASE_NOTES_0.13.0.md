@@ -34,3 +34,12 @@ Schema 0.13.0 opens 0.12.0 stores unchanged ([MIGRATION.md](MIGRATION.md)).
 See [LIMITATIONS.md](LIMITATIONS.md), which the dashboard also shows. The
 largest is unchanged: no independent security review has taken place, and that
 review blocks 1.0.
+
+## Pinned baseline
+
+The 0.13.0 baseline is `main` at `125f838` (squash of PR #8). Its tree is
+byte-identical to PR head `54b6d4f`, on which CI run
+[40104740004](https://github.com/crakashp2905-hub/memory-fabric/actions/runs/40104740004)
+passed all 29 jobs: lint, mypy, secrets, the test matrix (Ubuntu, macOS and
+Windows on Python 3.11–3.13), postgres, multihost, docker, package and
+release-evidence. Not yet tagged or published.

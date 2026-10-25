@@ -441,6 +441,12 @@ Memories whose claim contradicts what the store knows: a corrected value restate
 Which tenants this store holds
 
 
+### `tour`
+
+The whole idea in sixty seconds: one fact, four agents, one correction
+
+- `--fast`: print it at once, without pauses
+
 ### `validate`
 
 WRITES: promote a candidate to active

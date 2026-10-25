@@ -214,7 +214,7 @@ def _sentence(f: "MemoryFabric", e: Any, focus: str | None = None) -> dict[str, 
         codes = [c for c in p.get("reason_codes", []) if c != "allowed"]
         text = (f"{e.agent_id} was allowed to run {p.get('tool')} on it" if allowed else
                 f"{e.agent_id} was blocked from {p.get('tool')}: "
-                + " ".join(say(c) for c in codes[:2]))
+                + " ".join(say(c).split(": ", 1)[-1] for c in codes[:2]))
     if kind is None:
         return None
     return {"seq": e.seq, "ts": e.ts, "kind": kind, "memory_id": mid, "text": text}
@@ -253,7 +253,7 @@ def timeline(f: "MemoryFabric", memory_id: str, limit: int = 200) -> dict[str, A
     allowed = sum(1 for s in steps if s["kind"] == "action_allowed")
     headline = (f"“{_short(_safe(f, memory_id))}” is {memory.lifecycle_state.value}"
                 + (f"; {allowed} action(s) relied on it" if allowed else "")
-                + (f", {blocked} blocked after it changed" if blocked else "") + ".")
+                + (f", {blocked} blocked" if blocked else "") + ".")
     return {"memory_id": memory_id, "headline": headline, "steps": steps[:limit],
             "recalls": recalls}
 

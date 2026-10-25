@@ -1908,6 +1908,14 @@ def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
     return 0 if ok else 5
 
 
+def cmd_tour(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """One fact, four agents, one correction, told in the terminal (`tour.py`)."""
+    from .tour import run
+
+    run(pause=0.0 if args.fast else 0.8)
+    return 0
+
+
 def cmd_sandbox(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """A throwaway store full of deliberately wrong memories, opened in the dashboard.
 
@@ -3047,6 +3055,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--dir", help="where to create it (default: a new temporary folder)")
     p.add_argument("--no-serve", action="store_true", help="seed only; print the path")
+    p = add("tour", cmd_tour,
+            "The whole idea in sixty seconds: one fact, four agents, one correction")
+    p.add_argument("--fast", action="store_true", help="print it at once, without pauses")
     _fill_help(sub)
     return parser
 
@@ -3187,6 +3198,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "tour":  # in memory; opens no --db
+        return cmd_tour(None, args)  # type: ignore[arg-type]
     if args.command == "sandbox":  # creates its own store; opens no --db
         return cmd_sandbox(None, args)  # type: ignore[arg-type]
     if args.command == "receipt-verify":  # reads a file; opens no --db

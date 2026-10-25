@@ -13,10 +13,45 @@ moment it acts.
 ![MCP](https://img.shields.io/badge/MCP-stdio%20server-purple)
 ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-> **Status: alpha, 0.12.0 in qualification** (0.11.0 released). Working name;
-> not yet on PyPI. What is stable and what is experimental: [STABILITY.md](STABILITY.md).
+> **Status: alpha, 0.13.0** (baseline pinned in the
+> [release notes](docs/RELEASE_NOTES_0.13.0.md)). Working name; not yet on PyPI.
+> What is stable and what is experimental: [STABILITY.md](STABILITY.md).
 
 ---
+
+## See it in sixty seconds
+
+```bash
+pip install .
+memory-fabric tour
+```
+
+```
+3. An operations agent asks to act on it
+   ALLOWED: set_relief_valve, on evidence checked just now
+
+4. The vendor says 12 bar was wrong
+   shift-lead withdraws the fact, once, in one place
+   recall now returns: nothing
+   the plan built on it is now: contested
+
+5. The same action, a minute later
+   BLOCKED
+   Blocked: "Pump P-14 relief valve is set to 12 bar." was withdrawn by shift-lead
+   at 2026-10-25 15:08 UTC: vendor re-specified the setting as 10 bar.
+   Re-certify with current evidence.
+```
+
+One fact, four agents, one correction, in an in-memory store: nothing is
+written, downloaded or sent to a model. Then explore a store like it in the
+dashboard, with a replay of everything that happened and the story of each
+fact:
+
+```bash
+memory-fabric sandbox          # opens the Memory Control Center on localhost
+```
+
+![The Memory Control Center: the story of one fact](docs/images/control-center.png)
 
 ## Why
 
@@ -102,8 +137,14 @@ Recipes for sharing, gating tools, federating, tenants and handoffs:
 ```
 
 The agent gets four tools: `recall`, `fetch`, `verify` (re-check before
-acting) and `remember`. Its identity is fixed at launch. It cannot read
-withdrawn memories, widen who sees a memory, or score its own work.
+acting) and `remember`. Every recalled memory comes with a one-line trust
+summary (source, independent sources, age, corrections), and every refusal
+with a sentence saying why and what to do. Its identity is fixed at launch. It
+cannot read withdrawn memories, widen who sees a memory, or score its own work.
+
+Framework guides: [Claude Code and Desktop](docs/guides/claude.md) ·
+[LangGraph](docs/guides/langgraph.md) · [OpenAI Agents SDK](docs/guides/openai-agents.md) ·
+[CrewAI](docs/guides/crewai.md).
 
 **Agents in other processes or languages (HTTP):**
 
@@ -205,7 +246,7 @@ know before you start:
 | **Reference** | [Python API](docs/API.md) · [CLI](docs/CLI.md) · [Integrations](docs/INTEGRATIONS.md) · [Federation protocol](docs/PROTOCOL.md) · [Schema](SPEC.md) |
 | **Operate** | [Deployment](DEPLOYMENT.md) · [Operations](docs/OPERATIONS.md) · [Runbooks](docs/RUNBOOKS.md) · [Troubleshooting](docs/TROUBLESHOOTING.md) · [Migration](docs/MIGRATION.md) · [Scale](docs/SCALE.md) |
 | **Trust** | [Security and threat model](SECURITY.md) · [Limitations](docs/LIMITATIONS.md) · [Stability](STABILITY.md) |
-| **Project** | [Changelog](CHANGELOG.md) · [Release notes](docs/RELEASE_NOTES_0.12.0.md) · [Versioning](VERSIONING.md) · [Contributing](CONTRIBUTING.md) · [All docs](docs/README.md) |
+| **Project** | [Changelog](CHANGELOG.md) · [Release notes](docs/RELEASE_NOTES_0.13.0.md) · [Versioning](VERSIONING.md) · [Contributing](CONTRIBUTING.md) · [All docs](docs/README.md) |
 
 ## Development
 
@@ -214,7 +255,7 @@ python tools/check.py           # regenerate docs, lint, type-check, doc tests, 
 python tools/check.py --full    # and the full suite, which needs no dependencies
 ```
 
-**2031 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
+**2035 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
 a multi-store fault matrix and an adversarial release gate run
 in CI on Linux, macOS and Windows. Read [AGENTS.md](AGENTS.md), the rules for
 everyone who changes this repository, humans and AI agents alike, and

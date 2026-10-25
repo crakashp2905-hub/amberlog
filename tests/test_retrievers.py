@@ -156,3 +156,31 @@ class TestBestAvailable(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestSpecs(unittest.TestCase):
+    def test_http_embedders_from_specs(self):
+        from memory_fabric.retrievers import embedder_from_spec
+
+        with mock.patch.dict(os.environ, {"OPENAI_API_KEY": "x"}):
+            e = embedder_from_spec("openai:text-embedding-3-small")
+        self.assertEqual(e.url, "https://api.openai.com/v1/embeddings")
+        self.assertEqual(e.api_key_env, "OPENAI_API_KEY")
+        local = embedder_from_spec("ollama:nomic-embed-text")
+        self.assertEqual(local.url, "http://127.0.0.1:11434/v1/embeddings")
+        self.assertIsNone(local.api_key_env)
+        c = embedder_from_spec("compat:m@https://emb.internal/v1")
+        self.assertEqual(c.url, "https://emb.internal/v1/embeddings")
+        with self.assertRaises(ValueError):
+            embedder_from_spec("anthropic:x")
+
+    def test_environment_falls_back_to_best_available(self):
+        from memory_fabric import retrievers as r
+
+        with mock.patch.dict(os.environ, {}, clear=True), \
+                mock.patch.object(r, "fastembed_available", return_value=False):
+            self.assertEqual(r.from_environment(), {"retrieval": "lexical"})
+        with mock.patch.dict(os.environ, {"MEMORY_FABRIC_EMBEDDER": "ollama:nomic-embed-text"},
+                             clear=True):
+            cfg = r.from_environment()
+        self.assertEqual(cfg["retrieval"], "hybrid")

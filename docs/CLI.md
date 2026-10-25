@@ -310,6 +310,12 @@ WRITES: move content keys out of the database into a directory, verified by repl
 
 - `directory`: where the keys will live from now on
 
+### `models`
+
+Which model providers are ready here, and test one: models [--test provider:model]
+
+- `--test`: send one short request, e.g. ollama:qwen2.5:7b
+
 ### `offer`
 
 WRITES: offer one memory to a peer store over HTTP. It lands there as a candidate, recorded as from this store; a correction here follows it

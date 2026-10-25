@@ -1908,6 +1908,37 @@ def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
     return 0 if ok else 5
 
 
+def cmd_models(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Bring your own model (`models.py`): what is ready, and a one-call test."""
+    import os
+
+    from .models import ENV_MODEL, ModelClient, ModelError, configured
+
+    if args.test:
+        try:
+            done = ModelClient(args.test).complete("Reply with the single word: ready",
+                                                   max_tokens=8)
+        except (ModelError, ValueError) as exc:
+            print(f"{args.test}: not working: {exc}")
+            return 1
+        cost = "unknown cost" if done.cost_usd is None else f"${done.cost_usd:.6f}"
+        print(f"{args.test}: ok in {done.seconds:.1f}s, {done.input_tokens} in / "
+              f"{done.output_tokens} out tokens, {cost}: {done.text.strip()[:40]!r}")
+        return 0
+    if args.json:
+        print(json.dumps({"default": os.environ.get(ENV_MODEL), "providers": configured()},
+                         indent=2))
+        return 0
+    heading("Models")
+    print(f"  default ({ENV_MODEL}): {os.environ.get(ENV_MODEL) or 'not set'}\n")
+    table(["provider", "ready", "needs"],
+          [[r["provider"], "yes" if r["ready"] else "-", r["needs"]] for r in configured()])
+    print("\n  Pick one: export MEMORY_FABRIC_MODEL=anthropic:claude-opus-5-5  "
+          "(or openai:..., ollama:..., compat:<model>@<url>)")
+    print("  Check it: memory-fabric models --test anthropic:claude-opus-5-5")
+    return 0
+
+
 def cmd_tour(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """One fact, four agents, one correction, told in the terminal (`tour.py`)."""
     from .tour import run
@@ -3055,6 +3086,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--dir", help="where to create it (default: a new temporary folder)")
     p.add_argument("--no-serve", action="store_true", help="seed only; print the path")
+    p = add("models", cmd_models,
+            "Which model providers are ready here, and test one: models [--test provider:model]")
+    p.add_argument("--test", metavar="SPEC", help="send one short request, e.g. ollama:qwen2.5:7b")
     p = add("tour", cmd_tour,
             "The whole idea in sixty seconds: one fact, four agents, one correction")
     p.add_argument("--fast", action="store_true", help="print it at once, without pauses")
@@ -3198,6 +3232,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "models":  # environment only; opens no --db
+        return cmd_models(None, args)  # type: ignore[arg-type]
     if args.command == "tour":  # in memory; opens no --db
         return cmd_tour(None, args)  # type: ignore[arg-type]
     if args.command == "sandbox":  # creates its own store; opens no --db
@@ -3232,9 +3268,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         from .governance.firewall import SHARE_POLICIES, Firewall
 
+        retrieval: dict[str, Any] = {}
+        if os.environ.get("MEMORY_FABRIC_EMBEDDER") or os.environ.get("MEMORY_FABRIC_RERANKER"):
+            # The retriever the operator chose (RETRIEVAL.md). Only when asked:
+            # opening a store must not download a model by surprise.
+            from .retrievers import from_environment
+
+            retrieval = from_environment()
         fabric = MemoryFabric(
             args.db, estimator=args.estimator, key_provider=key_provider,
-            firewall=Firewall(rules=SHARE_POLICIES[args.share_policy]),
+            firewall=Firewall(rules=SHARE_POLICIES[args.share_policy]), **retrieval,
         )
     except KeyUnavailable as exc:
         # Distinguished from any other open failure, because the remedy is

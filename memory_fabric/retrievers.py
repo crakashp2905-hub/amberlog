@@ -361,3 +361,53 @@ BEST: dict[str, str] = {
     "embedder": DEFAULT_EMBED_MODEL,
     "reranker": DEFAULT_RERANK_MODEL,
 }
+
+
+ENV_EMBEDDER = "MEMORY_FABRIC_EMBEDDER"
+ENV_RERANKER = "MEMORY_FABRIC_RERANKER"
+
+
+def embedder_from_spec(spec: str, cache_path: str | None = None) -> Any:
+    """An embedder named the way models are (`models.py`):
+
+        fastembed:BAAI/bge-small-en-v1.5        local ONNX
+        st:sentence-transformers/all-MiniLM-L6-v2
+        openai:text-embedding-3-small           OPENAI_API_KEY
+        ollama:nomic-embed-text                 local server
+        gemini:text-embedding-004, mistral:mistral-embed, together:..., vllm:...
+        compat:<model>@https://host/v1          any OpenAI-compatible endpoint
+    """
+    from .models import OPENAI_COMPATIBLE, ModelSpec
+
+    provider, _, model = spec.partition(":")
+    provider = provider.lower()
+    if provider == "fastembed":
+        return FastEmbedEmbedder(model, cache_path=cache_path)
+    if provider in ("st", "sentence-transformers"):
+        return SentenceTransformerEmbedder(model, cache_path=cache_path)
+    parsed = ModelSpec.parse(spec)
+    if parsed.provider == "compat":
+        return HttpEmbedder(parsed.base_url or "", parsed.model, api_key_env="MF_COMPAT_API_KEY",
+                            cache_path=cache_path)
+    if parsed.provider not in OPENAI_COMPATIBLE:
+        raise ValueError(f"{parsed.provider} has no embeddings endpoint here; use fastembed:, "
+                         "st:, openai:, ollama:, gemini:, mistral:, together:, vllm: or compat:")
+    base, key_env = OPENAI_COMPATIBLE[parsed.provider]
+    if base.startswith("$"):
+        base = os.environ.get(base[1:], "")
+    return HttpEmbedder(base, parsed.model, api_key_env=key_env if key_env and os.environ.get(
+        key_env) else None, cache_path=cache_path)
+
+
+def from_environment(cache_path: str | None = None) -> dict[str, Any]:
+    """`MemoryFabric` keyword arguments from MEMORY_FABRIC_EMBEDDER / _RERANKER,
+    falling back to `best_available()` when neither is set."""
+    emb, rr = os.environ.get(ENV_EMBEDDER), os.environ.get(ENV_RERANKER)
+    if not emb and not rr:
+        return best_available(cache_path=cache_path)
+    config: dict[str, Any] = {"retrieval": "lexical"}
+    if emb:
+        config.update(retrieval="hybrid", embedder=embedder_from_spec(emb, cache_path))
+    if rr:
+        config["rerank"] = CrossEncoderReranker(rr.split(":", 1)[-1])
+    return config

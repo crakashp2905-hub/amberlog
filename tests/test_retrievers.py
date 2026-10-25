@@ -213,23 +213,24 @@ class TestDenseScan(unittest.TestCase):
             self.assertEqual([x[0] for x in a], [x[0] for x in b])
 
 
-def test_warm_batches_respect_a_character_budget():
-    from memory_fabric.retrievers import BATCH_CHARS_PER_TEXT, _BatchEmbedder
+class TestWarmBatching(unittest.TestCase):
+    def test_warm_batches_respect_a_character_budget(self) -> None:
+        from memory_fabric.retrievers import BATCH_CHARS_PER_TEXT, _BatchEmbedder
 
-    class Fake(_BatchEmbedder):
-        def __init__(self) -> None:
-            super().__init__("fake", None, 4)
-            self.sizes: list[int] = []
+        class Fake(_BatchEmbedder):
+            def __init__(self) -> None:
+                super().__init__("fake", None, 4)
+                self.sizes: list[int] = []
 
-        def _documents(self, texts: list[str]) -> list[list[float]]:
-            self.sizes.append(sum(map(len, texts)))
-            return [[float(len(t))] for t in texts]
+            def _documents(self, texts: list[str]) -> list[list[float]]:
+                self.sizes.append(sum(map(len, texts)))
+                return [[float(len(t))] for t in texts]
 
-    e = Fake()
-    texts = [f"{i}" + "x" * 10 for i in range(9)] + [f"{i}" + "y" * 3 * BATCH_CHARS_PER_TEXT
-                                                       for i in range(3)]
-    e.warm(texts)
-    assert all(e.embed(t) == [float(len(t))] for t in texts)
-    # short texts fill batches by count; no batch holds two long texts
-    assert max(e.sizes) < 2 * 3 * BATCH_CHARS_PER_TEXT
-    assert e.calls == 5
+        e = Fake()
+        texts = [f"{i}" + "x" * 10 for i in range(9)] + [f"{i}" + "y" * 3 * BATCH_CHARS_PER_TEXT
+                                                           for i in range(3)]
+        e.warm(texts)
+        self.assertTrue(all(e.embed(t) == [float(len(t))] for t in texts))
+        # short texts fill batches by count; no batch holds two long texts
+        self.assertLess(max(e.sizes), 2 * 3 * BATCH_CHARS_PER_TEXT)
+        self.assertEqual(e.calls, 5)

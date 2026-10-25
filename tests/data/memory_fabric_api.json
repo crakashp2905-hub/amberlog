@@ -1,7 +1,7 @@
 {
   "__enter__": "self",
   "__exit__": "self, *exc",
-  "__init__": "self, path: str | Path=':memory:', estimator: str | ValueEstimator='naive_usage', exposure_policy: str | ExposurePolicy='top_k', firewall: Firewall | None=None, retention: RetentionPolicy | None=None, embedder: Embedder | None=None, seed: int | None=None, clock=None, auto_activate: bool=False, encrypt_content: bool=True, key_provider: 'KeyProvider | None'=None, retrieval: str='lexical', busy_timeout_ms: int=5000, recognise_copies: bool=True, rerank: bool=False, conceal_cross_tenant: bool=False, limits: 'Any'=None, withhold_hostile_sources: bool=True, hold_suspicious: bool=True, crypto_profile: str | None=None, contest_restatements: bool=True",
+  "__init__": "self, path: str | Path=':memory:', estimator: str | ValueEstimator='naive_usage', exposure_policy: str | ExposurePolicy='top_k', firewall: Firewall | None=None, retention: RetentionPolicy | None=None, embedder: Embedder | None=None, seed: int | None=None, clock=None, auto_activate: bool=False, encrypt_content: bool=True, key_provider: 'KeyProvider | None'=None, retrieval: str='lexical', busy_timeout_ms: int=5000, recognise_copies: bool=True, rerank: 'bool | str | Any'=False, conceal_cross_tenant: bool=False, limits: 'Any'=None, withhold_hostile_sources: bool=True, hold_suspicious: bool=True, crypto_profile: str | None=None, contest_restatements: bool=True",
   "as_principal": "self, credential: Credential",
   "audit_trail": "self, memory_id: str",
   "authority": "self, memory_id: str",

@@ -203,6 +203,18 @@
 .guide button.link { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; cursor: pointer; text-decoration: underline; color: inherit; }
 .why-form { display: flex; gap: 6px; flex-wrap: wrap; margin: 6px 0; }
 .why-form input { flex: 1 1 140px; min-width: 0; }
+ol.story { list-style: none; padding-left: 0; margin: 6px 0; border-left: 2px solid var(--border); }
+ol.story li { position: relative; padding: 4px 0 8px 16px; }
+ol.story li::before { content: ""; position: absolute; left: -6px; top: 9px; width: 10px; height: 10px;
+  border-radius: 50%; background: var(--panel); border: 2px solid var(--faint); }
+ol.story li.k-withdrawn::before, ol.story li.k-action_blocked::before, ol.story li.k-refused::before { border-color: var(--high); }
+ol.story li.k-validated::before, ol.story li.k-action_allowed::before { border-color: var(--accent); }
+ol.story li.k-shared::before, ol.story li.k-sent::before, ol.story li.k-recalled::before { border-color: var(--medium, #b8860b); }
+ol.story .when { color: var(--faint); font-size: 11.5px; font-family: var(--mono); }
+ol.story li.future { opacity: .25; }
+.headline { font-size: 15px; margin: 4px 0 2px; }
+.replay-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin: 8px 0; }
+.replay-bar input[type=range] { flex: 1 1 200px; }
 </style>
 </head>
 <body>
@@ -227,6 +239,7 @@
       <button data-tab="posture" aria-selected="false">Posture</button>
       <button data-tab="changes" aria-selected="false">Changes<span class="count" id="c-changes"></span></button>
       <button data-tab="context" aria-selected="false">Agent context</button>
+      <button data-tab="replay" aria-selected="false">Replay</button>
       <button data-tab="actions" aria-selected="false">Actions<span class="count" id="c-actions"></span></button>
       <button data-tab="capabilities" aria-selected="false">Capabilities &amp; limits</button>
     </nav>
@@ -241,6 +254,18 @@
       changed. This page only reads. Every change is a command it shows you, so nothing happens
       by a stray click.</div>
     <ol class="guide" id="guide"></ol>
+  </section>
+
+  <section id="tab-replay" hidden>
+    <h2>Replay what happened</h2>
+    <div class="note">The store's history as a story, one step at a time: what agents recorded,
+      what was shared, what was withdrawn, and which actions were allowed or blocked because of
+      it. Open any line to follow that fact. Works for any store, including a recorded
+      multi-agent run or <code>memory-fabric sandbox</code>.</div>
+    <div class="replay-bar"><button id="rp-play">▶ Play</button><button id="rp-step">Step</button>
+      <input type="range" id="rp-pos" min="0" value="0" aria-label="replay position">
+      <span id="rp-count" class="sub"></span></div>
+    <ol class="story" id="rp-list"></ol>
   </section>
 
   <section id="tab-actions" hidden>
@@ -644,6 +669,13 @@ async function openDetail(id) {
       not shown here, so reviewing it cannot leak it to a screenshot or scrollback.</div>` : ""}
     <div class="content-quote">${esc(detail.full_content)}</div>
 
+    <h3>The story of this fact</h3>
+    <div id="tl-out" class="sub">Loading…</div>
+
+    <h3>What would change if this were wrong?</h3>
+    <div><button id="wrong-go">Show me</button></div>
+    <div id="wrong-out"></div>
+
     <h3>Status</h3>
     <dl class="kv">${(detail.status || []).map((s) => `
       <dt>${esc(s.label)}</dt>
@@ -736,7 +768,64 @@ async function openDetail(id) {
   $("drawer-close").addEventListener("click", closeDetail);
   $("why-go").addEventListener("click", () => runWhy(r.id).catch(showError));
   loadDependence(r.id).catch((err) => { $("dep-out").textContent = err.message; });
+  loadTimeline(r.id).catch((err) => { $("tl-out").textContent = err.message; });
+  $("wrong-go").addEventListener("click", () => loadIfWrong(r.id).catch(showError));
 }
+
+function fmtTs(ts) {
+  return ts ? new Date(ts).toISOString().replace("T", " ").slice(0, 16) + " UTC" : "";
+}
+
+function storyItems(steps, linkIds) {
+  return steps.map((s) => `<li class="k-${esc(s.kind)}"><div>${esc(s.text)}${
+    linkIds && s.memory_id ? ` <span class="link link-id" data-id="${esc(s.memory_id)}">follow</span>` : ""}</div>
+    <div class="when">${s.seq ? "#" + s.seq + " · " : ""}${esc(fmtTs(s.ts))}</div></li>`).join("");
+}
+
+async function loadTimeline(id) {
+  const t = await api(`/api/memories/${encodeURIComponent(id)}/timeline`);
+  $("tl-out").innerHTML = `<div class="headline">${esc(t.headline)}</div>
+    <ol class="story">${storyItems(t.steps, false)}</ol>`;
+}
+
+async function loadIfWrong(id) {
+  const w = await api(`/api/memories/${encodeURIComponent(id)}/if-wrong`);
+  const ids = (xs) => xs.map((p) => `<span class="link link-id" data-id="${esc(p)}">${esc(p)}</span>`).join(", ");
+  const acts = (xs) => xs.map((x) => `#${x.seq} ${esc(x.agent_id)} → <b>${esc(x.tool)}</b>`).join(", ");
+  $("wrong-out").innerHTML = `<p class="headline">${esc(w.summary)}</p>
+    ${w.descendants.length ? `<div class="sub">Built on it: ${ids(w.descendants)}</div>` : ""}
+    ${w.depended.length ? `<div class="sub">Decisions to review: ${acts(w.depended)}</div>` : ""}
+    ${w.would_stand.length ? `<div class="sub">Would stand: ${acts(w.would_stand)}</div>` : ""}
+    ${w.stores.length ? `<div class="sub">Stores owed a retraction: ${w.stores.map(esc).join(", ")}</div>` : ""}`;
+}
+
+let REPLAY = [], REPLAY_TIMER = null;
+
+function drawReplay() {
+  const pos = Number($("rp-pos").value);
+  for (const [i, li] of [...$("rp-list").children].entries()) li.classList.toggle("future", i >= pos);
+  $("rp-count").textContent = `${pos} of ${REPLAY.length} steps`;
+  $("rp-list").children[Math.max(0, pos - 1)]?.scrollIntoView({block: "nearest"});
+}
+
+async function loadReplay() {
+  REPLAY = await api("/api/story?limit=2000");
+  $("rp-list").innerHTML = REPLAY.length ? storyItems(REPLAY, true)
+    : `<li class="sub">Nothing has happened in this store yet.</li>`;
+  $("rp-pos").max = REPLAY.length;
+  $("rp-pos").value = REPLAY.length;
+  drawReplay();
+}
+
+function stepReplay() {
+  const el = $("rp-pos");
+  if (Number(el.value) >= REPLAY.length) el.value = 0;
+  el.value = Number(el.value) + 1;
+  drawReplay();
+  if (Number(el.value) >= REPLAY.length) stopReplay();
+}
+
+function stopReplay() { clearInterval(REPLAY_TIMER); REPLAY_TIMER = null; $("rp-play").textContent = "▶ Play"; }
 
 async function runWhy(id) {
   const q = new URLSearchParams({agent: $("why-agent").value, q: $("why-q").value});
@@ -893,6 +982,7 @@ async function showAction(seq) {
     <p>${a.decision.allowed ? badge("allowed", "low") : badge("refused", "high")}
       ${esc((a.decision.reason_codes || []).join(", "))}
       ${a.still_holds === false ? badge("evidence changed since", "high") : ""}</p>
+    ${(a.explanation || []).length ? `<ul class="caveats">${a.explanation.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : ""}
     <table><thead><tr><th>memory</th><th>then</th><th>now</th><th>claim check</th></tr></thead>
     <tbody>${a.evidence.map((x) => `<tr><td><span class="link link-id" data-id="${esc(x.memory_id)}">
       ${esc(x.memory_id)}</span><div class="sub">${esc(x.content_now || "")}</div></td>
@@ -921,7 +1011,7 @@ async function loadCapabilities() {
 /* ---------- wiring ---------- */
 
 const TABS = ["start", "attention", "review", "memories", "episodes", "search", "lifecycle", "posture",
-  "changes", "context", "actions", "capabilities"];
+  "changes", "context", "replay", "actions", "capabilities"];
 const LOADERS = {
   start: loadStart,
   actions: loadActions,
@@ -935,6 +1025,7 @@ const LOADERS = {
   changes: loadChanges,
   context: loadContext,
   capabilities: loadCapabilities,
+  replay: loadReplay,
 };
 
 function showTab(name) {
@@ -996,6 +1087,14 @@ function wire() {
     searchTimer = setTimeout(() => runSearch().catch(showError), 220);
   });
   $("s-all").addEventListener("change", () => runSearch().catch(showError));
+  $("rp-pos").addEventListener("input", drawReplay);
+  $("rp-step").addEventListener("click", () => { stopReplay(); stepReplay(); });
+  $("rp-play").addEventListener("click", () => {
+    if (REPLAY_TIMER) return stopReplay();
+    if (Number($("rp-pos").value) >= REPLAY.length) $("rp-pos").value = 0;
+    $("rp-play").textContent = "❚❚ Pause";
+    REPLAY_TIMER = setInterval(stepReplay, 700);
+  });
 }
 
 async function fillEnums() {

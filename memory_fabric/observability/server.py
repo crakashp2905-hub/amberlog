@@ -221,6 +221,22 @@ class Api:
 
                 return dependence(f, _memory_id(raw))
 
+            case ["memories", raw, "timeline"]:
+                from .control import timeline
+
+                return timeline(f, _memory_id(raw))
+
+            case ["memories", raw, "if-wrong"]:
+                from .control import if_wrong
+
+                return if_wrong(f, _memory_id(raw))
+
+            case ["story"]:
+                from .control import story
+
+                return story(f, after=_int(params, "after", 0) or 0,
+                             limit=_int(params, "limit", 300) or 300)
+
             case ["actions"]:
                 from .control import action_rows
 

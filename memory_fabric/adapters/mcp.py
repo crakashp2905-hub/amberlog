@@ -480,15 +480,27 @@ class McpServer:
         if not isinstance(include_contested, bool):
             raise _ToolError("include_contested must be a boolean")
         hits = self.client.recall(query, k=k, include_contested=include_contested)
-        return {"memories": [self._present(m) for m in hits]}
+        return {"memories": [self._with_trust(self._present(m)) for m in hits]}
+
+    def _with_trust(self, shown: dict[str, Any]) -> dict[str, Any]:
+        # One line beside each memory: source, independent sources, age,
+        # corrections (`reasons.badge`). Facts about the memory, never content.
+        from ..reasons import badge
+
+        if shown.get("memory_id") in self._fabric.state.memories:
+            shown["trust"] = badge(self._fabric, shown["memory_id"])["summary"]
+        return shown
 
     def _fetch(self, args: Mapping[str, Any]) -> dict[str, Any]:
         memory_id = _require_str(args, "memory_id")
         try:
             usable = self.client.fetch(memory_id)
         except NotUsable as exc:
+            from ..reasons import say
+
             raise _ToolError(
-                f"{memory_id} is not usable: {exc.decision.reason_code}"
+                f"{memory_id} is not usable: {exc.decision.reason_code} "
+                f"({say(exc.decision.reason_code)})"
             ) from None
         return self._present(usable)
 
@@ -503,11 +515,14 @@ class McpServer:
         decision = self._fabric.verify_before_action(
             issued, self.client.agent_id, risk=RiskLevel.HIGH
         )
+        from ..reasons import say
+
         return {
             "memory_id": memory_id,
             "usable": decision.usable,
             "verdict": decision.verdict.value,
             "reason": decision.reason_code,
+            "explanation": say(decision.reason_code),
             "detail": decision.detail,
         }
 

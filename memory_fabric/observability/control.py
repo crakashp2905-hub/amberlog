@@ -110,12 +110,24 @@ def action_detail(f: "MemoryFabric", seq: int) -> dict[str, Any]:
                 "version_now": m.version if m else None,
                 "state_now": m.lifecycle_state.value if m else "missing",
                 "claim_check_now": assess(f, mid).level if m else None,
-                "content_now": m.content if m else None,
+                "content_now": _safe(f, mid) if m else None,
                 "changed_since": bool(m) and (m.version != version
                                               or m.lifecycle_state.value != "active"),
             })
+        from ..reasons import fix, say, withdrawal
+
+        explanation = []
+        for x in evidence:
+            if x["changed_since"] and x["state_now"] != "missing":
+                who = withdrawal(f, x["memory_id"])
+                explanation.append(
+                    f"Since then, “{_short(x['content_now'] or '')}” "
+                    + (f"was {who['to']} by {who['by']}" + (f": {who['reason']}" if who["reason"] else "")
+                       if who else f"changed (now v{x['version_now']}, {x['state_now']})") + ".")
+        for code in p.get("reason_codes", []):
+            explanation.append(" ".join(filter(None, [say(code), fix(code)])))
         return {"seq": e.seq, "ts": e.ts, "agent_id": e.agent_id, "decision": p,
-                "evidence": evidence,
+                "explanation": explanation, "evidence": evidence,
                 "still_holds": all(not x["changed_since"] for x in evidence) if evidence else None}
     raise KeyError(seq)
 
@@ -129,3 +141,155 @@ def dependence(f: "MemoryFabric", memory_id: str) -> dict[str, Any]:
 
 def limitations() -> list[dict[str, str]]:
     return json.loads((STATIC / "limitations.json").read_text(encoding="utf-8"))
+
+
+# --- the story of a fact, and of a store ------------------------------------
+
+def _safe(f: "MemoryFabric", memory_id: str | None) -> str:
+    """Memory content for display, with any secret values masked (`report.safe_content`)."""
+    from .report import safe_content
+
+    memory = f.state.memories.get(memory_id or "")
+    return safe_content(f, memory.content)[0] if memory else ""
+
+
+def _short(text: str, limit: int = 70) -> str:
+    text = " ".join((text or "").split())
+    return text if len(text) <= limit else text[:limit - 1] + "…"
+
+
+def _sentence(f: "MemoryFabric", e: Any, focus: str | None = None) -> dict[str, Any] | None:
+    """One log event as a plain sentence, or None when it is not part of a story."""
+    from .. import events as ev
+    from ..reasons import say
+
+    p = e.payload
+    kind, text, mid = None, None, None
+    if e.type == ev.EventType.MEMORY_CREATED:
+        m = p.get("memory", {})
+        mid = m.get("id")
+        how = (m.get("provenance") or {}).get("method", "observed")
+        parents = (m.get("provenance") or {}).get("parents") or []
+        kind = "created"
+        text = (f"{e.agent_id or (m.get('provenance') or {}).get('created_by')} "
+                + ("derived" if parents else "imported" if how == "imported" else "recorded")
+                + f" “{_short(_safe(f, mid))}”")
+    elif e.type == ev.EventType.MEMORY_VERSIONED:
+        mid = p.get("memory", {}).get("id")
+        kind, text = "revised", f"{e.agent_id} revised it: {p.get('reason') or 'new version'}"
+    elif e.type == ev.EventType.LIFECYCLE_CHANGED:
+        mid, to = p.get("memory_id"), p.get("to")
+        who = p.get("actor") or e.agent_id or "the system"
+        kind = {"active": "validated", "quarantined": "withdrawn", "deprecated": "retired",
+                "contested": "disputed", "deleted": "erased"}.get(to, to)
+        reason = p.get("reason") or ""
+        text = {"validated": f"{who} validated it",
+                "withdrawn": f"{who} withdrew it" + (f": {reason}" if reason else ""),
+                "retired": f"{who} retired it" + (f": {reason}" if reason else ""),
+                "disputed": "it became disputed" + (f": {reason}" if reason else ""),
+                "erased": f"{who} erased its content"}.get(kind, f"{who} moved it to {to}")
+    elif e.type == ev.EventType.SCOPE_CHANGED:
+        mid = p.get("memory_id")
+        kind, text = "shared", f"{p.get('actor') or e.agent_id} shared it with the {p.get('to')}"
+    elif e.type == ev.EventType.MEMORY_SHARED:
+        mid = p.get("memory_id")
+        kind, text = "sent", f"sent to store {p.get('recipient_store_id')}"
+    elif e.type == ev.EventType.COPY_RECOGNISED:
+        mid = p.get("original_memory_id") if focus == p.get("original_memory_id") else p.get("memory_id")
+        kind, text = "copied", f"{e.agent_id} wrote a copy (counted as the same source)"
+    elif e.type == ev.EventType.RETRACTION_APPLIED:
+        mid = p.get("local_memory_id")
+        kind, text = "retracted", f"retraction from store {p.get('origin_store_id')} applied"
+    elif e.type == ev.EventType.ACCESS_DENIED:
+        mid = p.get("memory_id")
+        kind = "refused"
+        text = f"{e.agent_id} was refused it: {say(p.get('reason_code', ''))}"
+    elif e.type == ev.EventType.ACTION_GATED:
+        ids = [x[0] for x in p.get("evidence", [])]
+        if focus is not None and focus not in ids:
+            return None
+        mid = focus or (ids[0] if ids else None)
+        allowed = p.get("allowed")
+        kind = "action_allowed" if allowed else "action_blocked"
+        codes = [c for c in p.get("reason_codes", []) if c != "allowed"]
+        text = (f"{e.agent_id} was allowed to run {p.get('tool')} on it" if allowed else
+                f"{e.agent_id} was blocked from {p.get('tool')}: "
+                + " ".join(say(c) for c in codes[:2]))
+    if kind is None:
+        return None
+    return {"seq": e.seq, "ts": e.ts, "kind": kind, "memory_id": mid, "text": text}
+
+
+def timeline(f: "MemoryFabric", memory_id: str, limit: int = 200) -> dict[str, Any]:
+    """The life of one fact, as sentences: made, shared, used, corrected, acted on.
+
+    Exposures are summarised per agent rather than listed: a fact recalled
+    four hundred times is one line, "recalled by planner ×400".
+    """
+    from .. import events as ev
+
+    if memory_id not in f.state.memories:
+        raise KeyError(memory_id)
+    steps: list[dict[str, Any]] = []
+    recalls: dict[str, int] = {}
+    for e in f.log.read():
+        p = e.payload
+        if e.type == ev.EventType.EXPOSURE_DECIDED:
+            if p.get("memory_id") == memory_id and p.get("exposed"):
+                recalls[e.agent_id or "?"] = recalls.get(e.agent_id or "?", 0) + 1
+            continue
+        row = _sentence(f, e, focus=memory_id)
+        if row is None:
+            continue
+        if row["memory_id"] == memory_id or (e.type == ev.EventType.COPY_RECOGNISED
+                                             and p.get("original_memory_id") == memory_id):
+            steps.append(row)
+    if recalls:
+        steps.append({"seq": None, "ts": None, "kind": "recalled", "memory_id": memory_id,
+                      "text": "recalled by " + ", ".join(f"{a} ×{n}" for a, n in
+                                                         sorted(recalls.items()))})
+    memory = f.state.memories[memory_id]
+    blocked = sum(1 for s in steps if s["kind"] == "action_blocked")
+    allowed = sum(1 for s in steps if s["kind"] == "action_allowed")
+    headline = (f"“{_short(_safe(f, memory_id))}” is {memory.lifecycle_state.value}"
+                + (f"; {allowed} action(s) relied on it" if allowed else "")
+                + (f", {blocked} blocked after it changed" if blocked else "") + ".")
+    return {"memory_id": memory_id, "headline": headline, "steps": steps[:limit],
+            "recalls": recalls}
+
+
+def story(f: "MemoryFabric", after: int = 0, limit: int = 300) -> list[dict[str, Any]]:
+    """The store's log as sentences, oldest first, for step-by-step replay."""
+    out = []
+    for e in f.log.read(since_seq=after):
+        row = _sentence(f, e)
+        if row is not None:
+            out.append(row)
+            if len(out) >= limit:
+                break
+    return out
+
+
+def if_wrong(f: "MemoryFabric", memory_id: str) -> dict[str, Any]:
+    """"What would change if this were wrong?" in one place, reading only."""
+    from .. import events as ev
+    from ..dependence import decisions_depending_on
+
+    descendants = sorted({n.memory_id for n in f.lineage(memory_id).descendants})
+    dep = decisions_depending_on(f, memory_id)
+    stores = sorted({str(e.payload.get("recipient_store_id"))
+                     for e in f.log.read_types([ev.EventType.MEMORY_SHARED])
+                     if e.payload.get("memory_id") == memory_id})
+    parts = []
+    if descendants:
+        parts.append(f"{len(descendants)} conclusion(s) built on it would be re-checked")
+    if dep["depended"]:
+        parts.append(f"{len(dep['depended'])} past decision(s) would need review")
+    if dep["would_stand"]:
+        parts.append(f"{len(dep['would_stand'])} decision(s) would stand on other evidence")
+    if stores:
+        parts.append(f"{len(stores)} other store(s) would get a retraction")
+    summary = ("If this were wrong: " + "; ".join(parts) + ".") if parts else \
+        "If this were wrong: nothing else rests on it yet."
+    return {"memory_id": memory_id, "summary": summary, "descendants": descendants,
+            "depended": dep["depended"], "would_stand": dep["would_stand"], "stores": stores}

@@ -184,3 +184,30 @@ class TestSpecs(unittest.TestCase):
                              clear=True):
             cfg = r.from_environment()
         self.assertEqual(cfg["retrieval"], "hybrid")
+
+
+class TestDenseScan(unittest.TestCase):
+    def test_numpy_and_python_scans_agree(self):
+        import random as rnd
+
+        from memory_fabric.vectors import VectorIndex
+
+        class E:
+            dim = 32
+
+            def embed(self, text):
+                r = rnd.Random(text)
+                return [r.gauss(0, 1) for _ in range(32)]
+
+        fast, slow = VectorIndex(E()), VectorIndex(E())
+        slow._dense_scores = lambda q: None
+        for i in range(200):
+            fast.add(f"d{i}", f"t{i}")
+            slow.add(f"d{i}", f"t{i}")
+        fast.remove("d5")
+        slow.remove("d5")
+        allowed = {f"d{i}" for i in range(0, 200, 3)}
+        for q in ("a", "b", "c"):
+            a = fast.search(q, k=10, min_relevance=-1.0, restrict_to=allowed)
+            b = slow.search(q, k=10, min_relevance=-1.0, restrict_to=allowed)
+            self.assertEqual([x[0] for x in a], [x[0] for x in b])

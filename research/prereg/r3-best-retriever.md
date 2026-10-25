@@ -98,3 +98,19 @@ run.
 If the re-measured `B` differs from 0.621 by more than 0.01, the harness has
 changed under the registration: the run is reported and not used to set
 `BEST` until the difference is explained.
+
+## Amendment 1 — procedure only, registered 2026-10-25 before any result
+
+The first run (one CI job, every arm in sequence) was cancelled after about
+two hours without producing a result; no number from it was seen. The arms,
+benchmarks, metrics, thresholds and decision rule are unchanged. Two changes
+to how it runs:
+
+- **Split into five parallel jobs** (`base`, `bge-small`, `bge-base`,
+  `arctic-m`, `nomic`), each re-measuring `lexical`; a final job combines them
+  and refuses to decide if the parts disagree on the baseline.
+- **The vector index scores with numpy when it is installed** (a product
+  change: 768-dim scan of 5,000 memories, 212 → 4 ms a query, identical
+  rankings to 1e-16). This changes speed, not which documents are returned,
+  so the cost bound (p50 ≤ 250 ms) is now measured on the faster index the
+  product ships.

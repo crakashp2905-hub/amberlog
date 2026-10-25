@@ -14,7 +14,7 @@ import hashlib
 import heapq
 import math
 import re
-from typing import AbstractSet, Iterable, Protocol, Sequence
+from typing import AbstractSet, Any, Iterable, Protocol, Sequence
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -328,6 +328,11 @@ class VectorIndex:
         # (16 of 32 s) and most of its memory: a 256-float vector per memory.
         self.lazy = lazy
         self._pending: dict[str, str] = {}
+        # Dense scans with numpy when it is installed (every trained embedder
+        # brings it): a 768-dim scan of 5,000 memories in pure Python was
+        # ~0.5 s a query. Rebuilt on the next search after any change.
+        self._matrix: Any = None
+        self._matrix_keys: list[str] = []
 
     def _materialize(self) -> None:
         if not self._pending:
@@ -352,11 +357,28 @@ class VectorIndex:
         if norm > 0.0:
             vector = [v / norm for v in vector]
         self._vectors[key] = vector
+        self._matrix = None
         return key
 
     def remove(self, key: str) -> None:
-        self._vectors.pop(key, None)
+        if self._vectors.pop(key, None) is not None:
+            self._matrix = None
         self._pending.pop(key, None)
+
+    def _dense_scores(self, query_vector: list[float]) -> list[tuple[str, float]] | None:
+        try:
+            import numpy as np
+        except ImportError:
+            return None
+        if self._matrix is None:
+            self._matrix_keys = list(self._vectors)
+            self._matrix = (np.array([self._vectors[k] for k in self._matrix_keys], dtype=np.float64)
+                            if self._matrix_keys else np.zeros((0, len(query_vector))))
+        if not self._matrix_keys or self._matrix.shape[1] != len(query_vector):
+            return [] if not self._matrix_keys else None
+        scores = self._matrix @ np.asarray(query_vector, dtype=np.float64)
+        keys = self._matrix_keys
+        return [(keys[i], float(scores[i])) for i in range(len(keys))]
 
     def __contains__(self, key: str) -> bool:
         return key in self._vectors or key in self._pending
@@ -399,6 +421,12 @@ class VectorIndex:
 
         allowed = _as_set(restrict_to)
         scored: list[tuple[str, float]] = []
+        dense = None if sparse else self._dense_scores(query_vector)
+        if dense is not None:
+            scored = [(key, score) for key, score in dense
+                      if score >= min_relevance and (allowed is None or key in allowed)]
+            scored.sort(key=lambda pair: (-pair[1], pair[0]))
+            return scored[:k]
         for key, vector in self._vectors.items():
             if allowed is not None and key not in allowed:
                 continue

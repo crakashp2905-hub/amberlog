@@ -303,21 +303,23 @@ def to_markdown(result: Mapping[str, Any]) -> str:
     return "\n".join(lines) + "\n"
 
 
-def main(argv: Sequence[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--lme-limit", type=int, default=60)
-    p.add_argument("--arms", nargs="*")
-    p.add_argument("--run", default="local")
-    args = p.parse_args(argv)
-    data = sf.load()
-    print("SciFact", flush=True)
-    sci = scifact(data, args.arms)
-    print("LongMemEval", flush=True)
-    lm = longmemeval(lme.load("s", limit=args.lme_limit),
-                     [a for a in sci["rows"] if a != "oracle"])
+PARTS: dict[str, list[str]] = {
+    "base": ["lexical", "hashing_hybrid", *[f"lexical+{r}" for r in RERANKERS]],
+    "bge-small": ["bge-small_vector", "bge-small_hybrid",
+                  *[f"bge-small_hybrid+{r}" for r in RERANKERS]],
+    "bge-base": ["bge-base_vector", "bge-base_hybrid"],
+    "arctic-m": ["arctic-m_vector", "arctic-m_hybrid"],
+    "nomic": ["nomic_vector", "nomic_hybrid"],
+}
+"""One CI job each, so no single job runs for hours (the first run, one job,
+was cancelled after two). Every part re-measures `lexical`, which is cheap,
+and `--combine` checks that they all agree before deciding."""
+
+
+def write_result(sci: Mapping[str, Any], lm: Mapping[str, Any], run: str) -> int:
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
                             text=True, cwd=ROOT).stdout.strip()
-    result = {"commit": commit, "run": args.run, "scifact": sci, "longmemeval": lm,
+    result = {"commit": commit, "run": run, "scifact": sci, "longmemeval": lm,
               "missing": missing, "decision": decide(sci, lm)}
     out = ROOT / "research" / "results"
     slim = {**result, "scifact": {"rows": sci["rows"]}}
@@ -327,6 +329,49 @@ def main(argv: Sequence[str] | None = None) -> int:
     print(json.dumps(slim))
     print("=== R3 END ===")
     return 0
+
+
+def combine(paths: Sequence[str], run: str) -> int:
+    rows: dict[str, Any] = {}
+    per_query: dict[str, list[float]] = {}
+    lm: dict[str, Any] = {}
+    lexical: list[float] = []
+    for path in paths:
+        part = json.loads(pathlib.Path(path).read_text())
+        rows.update(part["scifact"]["rows"])
+        per_query.update(part["scifact"]["per_query"])
+        lm.update(part["longmemeval"])
+        missing.update(part.get("missing", {}))
+        lexical.append(part["scifact"]["rows"]["lexical"]["ndcg_at_10"])
+    if max(lexical) - min(lexical) > 1e-9:
+        raise SystemExit(f"parts disagree on the lexical baseline: {lexical}")
+    return write_result({"rows": rows, "per_query": per_query}, lm, run)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p.add_argument("--lme-limit", type=int, default=60)
+    p.add_argument("--arms", nargs="*")
+    p.add_argument("--part", choices=sorted(PARTS))
+    p.add_argument("--combine", nargs="+", metavar="PART_JSON")
+    p.add_argument("--run", default="local")
+    args = p.parse_args(argv)
+    if args.combine:
+        return combine(args.combine, args.run)
+    arms = PARTS[args.part] if args.part else args.arms
+    data = sf.load()
+    print("SciFact", flush=True)
+    sci = scifact(data, arms)
+    print("LongMemEval", flush=True)
+    lm = longmemeval(lme.load("s", limit=args.lme_limit),
+                     [a for a in sci["rows"] if a != "oracle"])
+    if args.part:
+        out = ROOT / "research" / "results" / f"r3-part-{args.part}.json"
+        out.write_text(json.dumps({"part": args.part, "scifact": sci, "longmemeval": lm,
+                                   "missing": missing}) + "\n")
+        print(f"wrote {out}")
+        return 0
+    return write_result(sci, lm, args.run)
 
 
 if __name__ == "__main__":

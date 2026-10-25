@@ -362,28 +362,30 @@ def best_available(cache_path: str | None = None, rerank: bool = True,
                    cache_dir: str | None = None) -> dict[str, Any]:
     """`MemoryFabric` keyword arguments for the best retriever this machine can run.
 
-    With `fastembed` installed: the registered winner, a trained embedder fused
-    with lexical, plus the cross-encoder when `rerank` (see the result in
-    `research/results/r3-best-retriever.md`). Without it: `lexical`, the best
+    With `fastembed` installed: the registered winner, `bge-base` fused with
+    lexical (`research/results/r3-best-retriever.md`). No reranker passed the
+    comparison's cost bound, so `rerank` adds one only if `BEST` names one. Without it: `lexical`, the best
     zero-dependency arm on every external benchmark.
     """
     if not fastembed_available():
         return {"retrieval": "lexical"}
     config: dict[str, Any] = {
         "retrieval": "hybrid",
-        "embedder": FastEmbedEmbedder(BEST["embedder"], cache_path=cache_path,
+        "embedder": FastEmbedEmbedder(str(BEST["embedder"]), cache_path=cache_path,
                                       cache_dir=cache_dir),
     }
     if rerank and BEST.get("reranker"):
-        config["rerank"] = CrossEncoderReranker(BEST["reranker"], cache_dir=cache_dir)
+        config["rerank"] = CrossEncoderReranker(str(BEST["reranker"]), cache_dir=cache_dir)
     return config
 
 
 # The configuration `best_available` builds. Set from the registered result,
 # not by taste: changing it means re-running experiments/retriever_eval.py.
-BEST: dict[str, str] = {
-    "embedder": DEFAULT_EMBED_MODEL,
-    "reranker": DEFAULT_RERANK_MODEL,
+# R3 (research/results/r3-best-retriever.md): bge-base fused with lexical
+# passed every bar; every reranker failed the 250 ms cost bound.
+BEST: dict[str, str | None] = {
+    "embedder": "BAAI/bge-base-en-v1.5",
+    "reranker": None,
 }
 
 

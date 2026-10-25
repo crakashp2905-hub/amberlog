@@ -41,7 +41,7 @@ from memory_fabric.retrievers import CrossEncoderReranker, FastEmbedEmbedder, Ht
 
 fabric = MemoryFabric("store.db", retrieval="hybrid",
                       embedder=FastEmbedEmbedder("BAAI/bge-base-en-v1.5", cache_path="vectors.db"),
-                      rerank=CrossEncoderReranker("Xenova/ms-marco-MiniLM-L-6-v2"))
+                      rerank=CrossEncoderReranker("jinaai/jina-reranker-v1-turbo-en"))
 
 remote = HttpEmbedder("https://api.openai.com/v1", "text-embedding-3-small",
                       api_key_env="OPENAI_API_KEY")
@@ -68,3 +68,27 @@ query (cached for repeated questions) and a scan of the vectors; a reranker
 adds one model call per candidate it reorders (30 by default).
 
 ## Measured
+
+Two third-party benchmarks, measured in CI on a shared 4-core runner, run 40235543450:
+**SciFact** (300 questions over 5,183 scientific abstracts, nDCG@10) and
+**LongMemEval** (60 long chat histories of about 490 turns each, share of the
+answer-bearing turns found in the top 10), through the same `retrieve` you
+call.
+
+| configuration | SciFact | LongMemEval | time a search |
+|---|---|---|---|
+| default (`lexical`, nothing installed) | 0.621 | 0.768 | 9 ms |
+| **`best_available()`: bge-base + lexical** | **0.743** | **0.861** | 46 ms |
+| bge-small + lexical | 0.734 | 0.797 | 32 ms |
+| bge-small + lexical + jina reranker | 0.754 | 0.876 | 3.6 s |
+| lexical + jina reranker | 0.720 | 0.851 | 3.5 s |
+
+**What to take from it.** The trained embedder adds 12 points on scientific
+text and 9 on conversation for about 40 ms a search. A reranker adds at most
+two more points and costs seconds a search on a CPU, so `best_available()`
+does not include one; add `rerank=CrossEncoderReranker(...)` yourself if your
+searches are rare and quality matters more than latency, or you have a GPU.
+
+**Conversation logs written by one agent:** set
+`withhold_hostile_sources=False` (see LIMITATIONS). The LongMemEval numbers
+above are measured that way.

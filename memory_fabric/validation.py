@@ -48,6 +48,10 @@ SUSPICIOUS = ("reasserts_corrected", "contradicts_established", "conflicts_with_
 PROVISIONAL = ("new_source", "untrusted_origin", "revises_validated")
 OUTLIER_Z = 3.5
 MIN_COMPARABLE = 5
+PEER_SAMPLE = 256
+"""Comparable claims the outlier check reads, newest first."""
+PEER_SCAN = 1024
+"""At most this many memories are looked at to find them."""
 
 
 @dataclass(frozen=True)
@@ -159,16 +163,21 @@ class _ClaimIndex:
     def __init__(self) -> None:
         self.seen: dict[str, tuple[int, tuple, str, str]] = {}
         self.by_ident: dict[str, set[str]] = {}
-        self.by_word: dict[str, set[str]] = {}
+        # Insertion-ordered (a dict used as an ordered set), so the outlier
+        # check can read the newest comparable claims first without sorting.
+        self.by_word: dict[str, dict[str, None]] = {}
         self.by_author: dict[tuple[str, str], set[str]] = {}
         self.vouched: dict[str, set[str]] = {}
         """memory id -> actors who validated it, from the log, kept incrementally."""
         self.seq: int | None = None
+        self._numbers: dict[str, tuple[int, float | None]] = {}
 
     def _drop(self, mid: str) -> None:
         _, (ids, words, _), who, tenant = self.seen.pop(mid)
-        for key, table in [(i, self.by_ident) for i in ids] + [(w, self.by_word) for w in words]:
-            table.get(key, set()).discard(mid)
+        for ident in ids:
+            self.by_ident.get(ident, set()).discard(mid)
+        for word in words:
+            self.by_word.get(word, {}).pop(mid, None)
         self.by_author.get((tenant, who), set()).discard(mid)
 
     def _index_one(self, fabric: "MemoryFabric", mid: str) -> None:
@@ -183,7 +192,7 @@ class _ClaimIndex:
         for ident in parsed[0]:
             self.by_ident.setdefault(ident, set()).add(mid)
         for word in parsed[1]:
-            self.by_word.setdefault(word, set()).add(mid)
+            self.by_word.setdefault(word, {})[mid] = None
         self.by_author.setdefault((m.tenant_id, who), set()).add(mid)
 
     def refresh(self, fabric: "MemoryFabric") -> None:
@@ -228,6 +237,16 @@ class _ClaimIndex:
 
     def claim_of(self, mid: str) -> tuple:
         return self.seen[mid][1]
+
+    def number_of(self, mid: str) -> float | None:
+        """The claim's single value, if it has exactly one; cached per version."""
+        entry = self.seen[mid]
+        cached = self._numbers.get(mid)
+        if cached is not None and cached[0] == entry[0]:
+            return cached[1]
+        value = _number(entry[1][2])
+        self._numbers[mid] = (entry[0], value)
+        return value
 
 
 def _index(fabric: "MemoryFabric") -> _ClaimIndex:
@@ -314,21 +333,30 @@ def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assess
             signals.setdefault("corroborated", oid)
 
     # Same kind of parameter on other equipment: share two content words.
-    counts: dict[str, int] = {}
-    for w in words:
-        for oid in index.by_word.get(w, ()):
-            counts[oid] = counts.get(oid, 0) + 1
+    # The newest PEER_SAMPLE comparable claims, read newest first from the
+    # rarest word's list, with at most PEER_SCAN looked at. Counting every
+    # memory sharing a word made each write linear in the store: 38 ms a
+    # write at 4,000 memories, most of it here, for a median that a few
+    # hundred recent peers estimate as well.
     peers_values: list[float] = []
-    for oid, shared in counts.items():
-        if shared < 2 or oid == memory_id or oid in same_claim:
-            continue
-        other = memories[oid]
-        if other.tenant_id != tenant or other.lifecycle_state not in EXPOSABLE_STATES:
-            continue
-        if _same_parameter(mine, index.claim_of(oid)):
-            n = _number(index.claim_of(oid)[2])
-            if n is not None:
-                peers_values.append(n)
+    looked: set[str] = set()
+    for w in sorted(words, key=lambda w: (len(index.by_word.get(w, ())), w)):
+        for oid in reversed(index.by_word.get(w, {})):
+            if oid in looked:
+                continue
+            looked.add(oid)
+            if (oid != memory_id and oid not in same_claim
+                    and len(index.claim_of(oid)[1] & words) >= 2):
+                other = memories[oid]
+                if (other.tenant_id == tenant and other.lifecycle_state in EXPOSABLE_STATES
+                        and _same_parameter(mine, index.claim_of(oid))):
+                    n = index.number_of(oid)
+                    if n is not None:
+                        peers_values.append(n)
+            if len(peers_values) >= PEER_SAMPLE or len(looked) >= PEER_SCAN:
+                break
+        if len(peers_values) >= PEER_SAMPLE or len(looked) >= PEER_SCAN:
+            break
 
     value = _number(values)
     if value is not None and len(peers_values) >= MIN_COMPARABLE:

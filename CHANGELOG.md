@@ -5,6 +5,22 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: make it easy to see, understand and trust
+- **`memory-fabric tour`**: the whole idea in sixty seconds, in a terminal, with nothing written or downloaded. The README now opens with it.
+- **Plain-language reasons** (`reasons.py`): every refusal code the gate, verifier, limits and enforcer can return has a sentence and a fix; a blocked action names the memory, who withdrew it, when and why. MCP and the agent API return them as `explanation`.
+- **Trust badge on recall**: each recalled memory carries its source, independent sources (not agent count), age and corrections (`trust` in MCP and the agent API).
+- **Control Center**: the story of each fact (made, shared, recalled, acted on, corrected, blocked), "what would change if this were wrong?", a **Replay** tab that steps through a store's history, and plain-language explanations on every action. Secret values stay masked in all of them.
+- **Trained retrievers** (`retrievers.py`, `pip install ".[retrieval]"`): ONNX embedders through fastembed, sentence-transformers, any OpenAI-compatible embeddings endpoint, and a cross-encoder reranker, with vector caches that survive restarts and query caching. `best_available()` returns the configuration chosen by a registered comparison (R3).
+- **Framework guides** for Claude Code and Desktop, LangGraph, the OpenAI Agents SDK and CrewAI, and `FabricTools.guarded`: run a side-effecting tool only if its evidence still holds, with the reason as the answer when it does not.
+- **`GET /metrics`** on `serve` (Prometheus), incremental, without content, memory ids or agent ids; `doctor` warns when a SQLite store has outgrown one process.
+
+### Changed: faster at scale
+- **Lexical retrieval prunes**: rarest query terms first, stopping once nothing unseen can reach the top k; in stores of 2,000 memories or more, a term in over 90% of them no longer nominates candidates by itself. 110 ms → 0.6 ms a retrieval at 10,000 memories on the scale benchmark's corpus; identical results to a full scan below 2,000 memories.
+- **Writes**: the outlier claim check reads the newest 256 comparable claims (at most 1,024 looked at) instead of every memory sharing a word: about 23 ms → 4 ms a write at 10,000 memories, still catching a 900-bar claim against a median of 26.
+
+### Research
+- **L1 / L1′**: a long-running task against a plain vector store. L1 abandoned under its 8c rule (baselines already at the oracle); the registered amendment L1′ on fresh seeds: 0 harmful actions per 1,000 against 80.5, recovery 0 steps against 130.
+
 ### Fixed
 - **`min_independent_sources` above one was not enforced** unless `independent_support` was also listed among the required checks. `ToolRule(min_independent_sources=2)` let a single-source certificate through, so the corroboration defence recommended for consequential tools did nothing. Asking for more than one source now implies the check. Found by C2.
 - **Agent API `verify` on a withdrawn memory the agent never recalled** answered "recall or fetch first" instead of "not usable", because withdrawn memories no longer come back from recall. It now fetches under the agent's own permission check and answers directly; unknown and other-tenant ids stay opaque. Found by the multi-agent pilot.

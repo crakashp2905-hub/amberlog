@@ -125,6 +125,17 @@ class Api:
         # The fabric's own lock, not one of ours: a process serving the
         # dashboard and the agent API on one store must serialise across both.
         self._lock = fabric.lock
+        self._metrics: Any = None
+
+    def metrics_text(self) -> str:
+        """Prometheus exposition for this store (`metrics.py`), behind the same auth."""
+        from .metrics import StoreMetrics
+
+        with self._lock:
+            self.fabric.refresh()
+            if self._metrics is None:
+                self._metrics = StoreMetrics()
+            return self._metrics.render(self.fabric)
 
     def handle(self, path: str, params: dict[str, list[str]]) -> Any:
         from ..fabric import NotFound
@@ -491,6 +502,13 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, b"missing asset", "text/plain", body)
                 return
             self._send(HTTPStatus.OK, payload, content_type, body)
+            return
+
+        if path == "/metrics":
+            payload = self.api.metrics_text().encode("utf-8")
+            from .metrics import CONTENT_TYPE
+
+            self._send(HTTPStatus.OK, payload, CONTENT_TYPE, body)
             return
 
         if path.startswith("/api/"):

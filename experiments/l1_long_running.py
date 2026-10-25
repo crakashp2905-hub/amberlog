@@ -32,6 +32,10 @@ NOTES = ("Shift plan: run {e} at setpoint {v}.",
          "Used setpoint {v} on {e} today; it held.",
          "{e} running at setpoint {v} per the procedure.",
          "Reminder for next shift: {e} setpoint {v}.")
+QUERIES = ("{e} setpoint for the shift plan", "what setpoint is {e} running at",
+           "setpoint used on {e} today", "reminder: {e} setpoint for next shift")
+"""Amendment 1 (L1′): recall in the words of the job."""
+AMENDED = False
 VALUE = re.compile(r"setpoint (?:is )?(\d+)")
 
 
@@ -53,7 +57,12 @@ def schedule(seed: int) -> dict[str, Any]:
     jobs = [(rng.choice(WORKERS), f"E-{rng.randrange(1, EQUIPMENT + 1)}",
              rng.random() < NOTE_RATE, rng.randrange(len(NOTES))) for _ in range(STEPS)]
     shifts = [rng.choice((-15, -9, -6, 6, 9, 15)) for _ in range(CORRECTIONS)]
-    return {"truth0": truth0, "fixes": fixes, "jobs": jobs, "shifts": shifts}
+    # A separate stream, so the original world's draws are unchanged.
+    qrng = random.Random(f"l1q/{seed}")
+    queries = [QUERIES[qrng.randrange(len(QUERIES))] if AMENDED else "{e} setpoint"
+               for _ in range(STEPS)]
+    return {"truth0": truth0, "fixes": fixes, "jobs": jobs, "shifts": shifts,
+            "queries": queries}
 
 
 class VectorArm:
@@ -88,8 +97,8 @@ class VectorArm:
         else:
             self.write(text)
 
-    def recall(self, agent: str, equipment: str) -> tuple[int | None, Any]:
-        hits = self.index.search(f"{equipment} setpoint", k=10, min_relevance=0.0)
+    def recall(self, agent: str, equipment: str, query: str) -> tuple[int | None, Any]:
+        hits = self.index.search(query, k=10, min_relevance=0.0)
         hits.sort(key=lambda h: (-round(h[1], 9), -self.order[h[0]]))
         for key, _ in hits:
             v = value_of(self.docs[key], equipment)
@@ -97,8 +106,8 @@ class VectorArm:
                 return v, key
         return None, None
 
-    def act(self, agent: str, equipment: str) -> int | None:
-        return self.recall(agent, equipment)[0]
+    def act(self, agent: str, equipment: str, query: str) -> int | None:
+        return self.recall(agent, equipment, query)[0]
 
     def note(self, agent: str, text: str, used: Any) -> None:
         self.write(text)
@@ -128,16 +137,16 @@ class FabricArm:
         self.original[equipment] = self.f.remember(
             "supervisor", f"{equipment} setpoint is {new_value}.", scope="team")
 
-    def recall(self, agent: str, equipment: str) -> tuple[int | None, Any]:
-        for m in self.f.retrieve(agent, f"{equipment} setpoint", k=10).exposed:
+    def recall(self, agent: str, equipment: str, query: str) -> tuple[int | None, Any]:
+        for m in self.f.retrieve(agent, query, k=10).exposed:
             v = value_of(m.content, equipment)
             if v is not None:
                 return v, m.id
         return None, None
 
-    def act(self, agent: str, equipment: str) -> int | None:
+    def act(self, agent: str, equipment: str, query: str) -> int | None:
         for _ in range(2):  # recall, act through the gate; once more if refused
-            value, mid = self.recall(agent, equipment)
+            value, mid = self.recall(agent, equipment, query)
             if value is None:
                 return None
             cert = self.f.certify(f"{equipment}={value}", [mid], agent)
@@ -186,9 +195,10 @@ def run(seed: int, arm: str) -> dict[str, Any]:
                 value: int | None = truth[e]
                 used = None
             else:
-                value = store.act(agent, e)
+                query = world["queries"][step].format(e=e)
+                value = store.act(agent, e, query)
                 used = getattr(store, "_used", None) if isinstance(store, FabricArm) else \
-                    store.recall(agent, e)[1]
+                    store.recall(agent, e, query)[1]
             if value is None:
                 continue
             taken += 1
@@ -218,6 +228,10 @@ ARMS: tuple[str, ...] = ("oracle", "vector_append", "vector_replace", "fabric",
 
 
 def main() -> int:
+    global SEEDS, AMENDED
+    if "--amended" in sys.argv:
+        SEEDS, AMENDED = (6, 7, 8, 9, 10), True
+    name = "l1p-long-running" if AMENDED else "l1-long-running"
     rows: dict[str, list[dict[str, Any]]] = {a: [] for a in ARMS}
     # Baselines and the oracle first: the 8c check runs before any fabric arm.
     for arm in ("oracle", "vector_append", "vector_replace"):
@@ -243,7 +257,7 @@ def main() -> int:
     commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], capture_output=True,
                             text=True, cwd=ROOT).stdout.strip()
     out = ROOT / "research" / "results"
-    (out / "l1-long-running.json").write_text(json.dumps(
+    (out / f"{name}.json").write_text(json.dumps(
         {"commit": commit, "rows": rows, "verdict": verdict}, indent=2) + "\n")
     table = "\n".join(
         f"| `{a}` | {mean(a, 'harm_per_1000'):.1f} | {mean(a, 'completion'):.3f} "
@@ -253,14 +267,26 @@ def main() -> int:
         f"| {s} | " + " | ".join(f"{rows[a][i]['harm_per_1000']:.1f}" for a in ARMS if rows[a]) + " |"
         for i, s in enumerate(SEEDS))
     v = verdict
+    reading = ""
+    if rows["fabric"]:
+        refusals = sum(r["gate_refusals"] for r in rows["fabric"])
+        reading = (
+            "**Reading.** Completion counts a job with no action as not done. "
+            f"`fabric` acted on {mean('fabric', 'actions'):.0f} of {STEPS} jobs a seed "
+            f"against {mean(best, 'actions'):.0f} for `{best}`, and every one of its actions "
+            f"used the true value. The gate refused {refusals} time(s) across all seeds, so the "
+            "gap in actions is retrieval, not safety: on those jobs no memory about that "
+            "equipment was in the top 10 for a job-phrased query, where the baseline's top 10 "
+            "more often held a note restating a value, current or not. The trained retriever "
+            "(R3) is the lever for that, not the gate.")
 
     def mark(arm: str, key: str) -> str:
         return ("pass" if v[arm][key] else "fail") if arm in v else "n/a"
-    (out / "l1-long-running.md").write_text(f"""# L1 — a long-running task: a plain vector store against Memory Fabric
+    (out / f"{name}.md").write_text(f"""# L1 — a long-running task: a plain vector store against Memory Fabric
 
 Registered in [l1-long-running-task.md](../prereg/l1-long-running-task.md) before the
-harness existed. Produced by `python -m experiments.l1_long_running` at commit
-`{commit}`; raw numbers in [l1-long-running.json](l1-long-running.json). Deterministic,
+harness existed. {"Amendment 1 (L1′): recall in the words of the job, fresh seeds. " if AMENDED else ""}Produced by `python -m experiments.l1_long_running{" --amended" if AMENDED else ""}` at commit
+`{commit}`; raw numbers in [{name}.json]({name}.json). Deterministic,
 seeds {SEEDS}: {STEPS} jobs, {EQUIPMENT} pieces of equipment, {CORRECTIONS} corrections,
 four worker agents writing working notes at rate {NOTE_RATE}.
 
@@ -275,6 +301,8 @@ Best baseline: `{best}`. Ceiling check: {"ok" if v["ceiling_ok"] else "FAILED"}.
 |---|---|---|---|
 | `fabric` | {mark("fabric", "L1a")} | {mark("fabric", "L1b")} | {mark("fabric", "L1c")} |
 | `fabric_no_lineage` (no claim registered) | {mark("fabric_no_lineage", "L1a")} | {mark("fabric_no_lineage", "L1b")} | {mark("fabric_no_lineage", "L1c")} |
+
+{reading}
 
 Harm per 1,000 actions, by seed:
 

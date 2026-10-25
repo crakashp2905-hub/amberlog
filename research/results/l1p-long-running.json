@@ -1,0 +1,304 @@
+{
+  "commit": "9c689b3",
+  "rows": {
+    "oracle": [
+      {
+        "seed": 6,
+        "arm": "oracle",
+        "jobs": 600,
+        "actions": 600,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 1.0,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 7,
+        "arm": "oracle",
+        "jobs": 600,
+        "actions": 600,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 1.0,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 8,
+        "arm": "oracle",
+        "jobs": 600,
+        "actions": 600,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 1.0,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 9,
+        "arm": "oracle",
+        "jobs": 600,
+        "actions": 600,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 1.0,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 10,
+        "arm": "oracle",
+        "jobs": 600,
+        "actions": 600,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 1.0,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      }
+    ],
+    "vector_append": [
+      {
+        "seed": 6,
+        "arm": "vector_append",
+        "jobs": 600,
+        "actions": 544,
+        "harmful": 33,
+        "harm_per_1000": 60.661764705882355,
+        "completion": 0.8516666666666667,
+        "mean_recovery": 89.875,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 7,
+        "arm": "vector_append",
+        "jobs": 600,
+        "actions": 577,
+        "harmful": 79,
+        "harm_per_1000": 136.9150779896014,
+        "completion": 0.83,
+        "mean_recovery": 199.125,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 8,
+        "arm": "vector_append",
+        "jobs": 600,
+        "actions": 579,
+        "harmful": 47,
+        "harm_per_1000": 81.17443868739205,
+        "completion": 0.8866666666666667,
+        "mean_recovery": 114.625,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 9,
+        "arm": "vector_append",
+        "jobs": 600,
+        "actions": 553,
+        "harmful": 55,
+        "harm_per_1000": 99.45750452079567,
+        "completion": 0.83,
+        "mean_recovery": 158.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 10,
+        "arm": "vector_append",
+        "jobs": 600,
+        "actions": 568,
+        "harmful": 36,
+        "harm_per_1000": 63.38028169014085,
+        "completion": 0.8866666666666667,
+        "mean_recovery": 120.6875,
+        "gate_refusals": 0
+      }
+    ],
+    "vector_replace": [
+      {
+        "seed": 6,
+        "arm": "vector_replace",
+        "jobs": 600,
+        "actions": 547,
+        "harmful": 31,
+        "harm_per_1000": 56.672760511883,
+        "completion": 0.86,
+        "mean_recovery": 89.875,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 7,
+        "arm": "vector_replace",
+        "jobs": 600,
+        "actions": 582,
+        "harmful": 78,
+        "harm_per_1000": 134.02061855670104,
+        "completion": 0.84,
+        "mean_recovery": 199.125,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 8,
+        "arm": "vector_replace",
+        "jobs": 600,
+        "actions": 588,
+        "harmful": 35,
+        "harm_per_1000": 59.523809523809526,
+        "completion": 0.9216666666666666,
+        "mean_recovery": 85.4375,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 9,
+        "arm": "vector_replace",
+        "jobs": 600,
+        "actions": 561,
+        "harmful": 51,
+        "harm_per_1000": 90.9090909090909,
+        "completion": 0.85,
+        "mean_recovery": 155.75,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 10,
+        "arm": "vector_replace",
+        "jobs": 600,
+        "actions": 571,
+        "harmful": 35,
+        "harm_per_1000": 61.29597197898424,
+        "completion": 0.8933333333333333,
+        "mean_recovery": 120.6875,
+        "gate_refusals": 0
+      }
+    ],
+    "fabric": [
+      {
+        "seed": 6,
+        "arm": "fabric",
+        "jobs": 600,
+        "actions": 515,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.8583333333333333,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 7,
+        "arm": "fabric",
+        "jobs": 600,
+        "actions": 555,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.925,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 8,
+        "arm": "fabric",
+        "jobs": 600,
+        "actions": 554,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.9233333333333333,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 9,
+        "arm": "fabric",
+        "jobs": 600,
+        "actions": 526,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.8766666666666667,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 10,
+        "arm": "fabric",
+        "jobs": 600,
+        "actions": 531,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.885,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      }
+    ],
+    "fabric_no_lineage": [
+      {
+        "seed": 6,
+        "arm": "fabric_no_lineage",
+        "jobs": 600,
+        "actions": 562,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.9366666666666666,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 7,
+        "arm": "fabric_no_lineage",
+        "jobs": 600,
+        "actions": 582,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.97,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 8,
+        "arm": "fabric_no_lineage",
+        "jobs": 600,
+        "actions": 583,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.9716666666666667,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 9,
+        "arm": "fabric_no_lineage",
+        "jobs": 600,
+        "actions": 544,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.9066666666666666,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      },
+      {
+        "seed": 10,
+        "arm": "fabric_no_lineage",
+        "jobs": 600,
+        "actions": 566,
+        "harmful": 0,
+        "harm_per_1000": 0.0,
+        "completion": 0.9433333333333334,
+        "mean_recovery": 0.0,
+        "gate_refusals": 0
+      }
+    ]
+  },
+  "verdict": {
+    "best_baseline": "vector_replace",
+    "fabric": {
+      "L1a": true,
+      "L1b": true,
+      "L1c": true
+    },
+    "fabric_no_lineage": {
+      "L1a": true,
+      "L1b": true,
+      "L1c": true
+    },
+    "ceiling_ok": true
+  }
+}

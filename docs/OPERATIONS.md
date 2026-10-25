@@ -293,6 +293,37 @@ sequence gap, and the client resumed in about 0.1 s. Steps:
 Asynchronous replication can lose the last acknowledged commits on failover
 under load; use `synchronous_commit = on` with a standby where that matters.
 
+## 4c. Metrics
+
+`serve` answers `GET /metrics` in the Prometheus text format, behind the
+same token as the dashboard (`Authorization: Bearer <token>`):
+
+```yaml
+scrape_configs:
+  - job_name: memory-fabric
+    authorization: {credentials_file: /etc/prometheus/mf-token}
+    static_configs: [{targets: ["fabric-host:8765"]}]
+```
+
+| metric | what |
+|---|---|
+| `mf_memories{state}` | memories by lifecycle state |
+| `mf_events_total` | events in the log |
+| `mf_retrievals_total`, `mf_writes_total` | retrievals and new memories |
+| `mf_actions_total{tool,allowed}` | gate decisions on protected tools |
+| `mf_refusals_total{reason}` | memories refused to an agent, by reason code |
+| `mf_withdrawals_total{to}` | memories quarantined, retired, disputed or erased |
+
+Counters are read incrementally from the log, so a scrape costs what changed
+since the last one. No label carries memory content, memory ids or agent ids.
+Worth alerting on: a rising `mf_actions_total{allowed="false"}` (agents
+trying to act on evidence that no longer holds) and any
+`mf_refusals_total{reason="wrong_tenant"}`.
+
+`doctor` also warns when more than eight distinct agents have used one
+SQLite store recently: put them behind one `agent-api`, or open the store on
+PostgreSQL.
+
 ## 5. Rollback
 
 - **Code only, same schema:** reinstall the previous wheel. Safe.

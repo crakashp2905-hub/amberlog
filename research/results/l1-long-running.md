@@ -2,7 +2,7 @@
 
 Registered in [l1-long-running-task.md](../prereg/l1-long-running-task.md) before the
 harness existed. Produced by `python -m experiments.l1_long_running` at commit
-`d7fd02b`; raw numbers in [l1-long-running.json](l1-long-running.json). Deterministic,
+`9c689b3`; raw numbers in [l1-long-running.json](l1-long-running.json). Deterministic,
 seeds (1, 2, 3, 4, 5): 600 jobs, 40 pieces of equipment, 16 corrections,
 four worker agents writing working notes at rate 0.35.
 

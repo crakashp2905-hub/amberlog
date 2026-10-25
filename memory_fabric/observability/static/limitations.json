@@ -21,8 +21,8 @@
  },
  {
   "area": "Security",
-  "limitation": "A source caught injecting is withheld everywhere its memories went, which can also hide a correct note it wrote. Only an injection finding triggers it, never an ordinary correction.",
-  "what_to_do": "MemoryFabric(withhold_hostile_sources=False) to turn it off; review the source's other memories with incident."
+  "limitation": "A source caught injecting is withheld everywhere its memories went, which can also hide a correct note it wrote. Only an injection finding triggers it, never an ordinary correction. The injection screen also flags about 1% of ordinary conversation turns, so one agent that stores a long chat history as itself can lose all of it to a single false flag: on LongMemEval, written that way, retrieval returned nothing.",
+  "what_to_do": "MemoryFabric(withhold_hostile_sources=False) to turn it off, which conversation logs written by one agent need today; review the source's other memories with incident."
  },
  {
   "area": "Security",

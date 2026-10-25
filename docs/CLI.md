@@ -124,6 +124,16 @@ Collections: named sets of memories agents can be attached to. list, or WRITES: 
 - `--actor`: who is changing this; required for a change
 - `--tenant`: tenant id to act within
 
+### `connect`
+
+Set up an agent tool: connect <tool> --agent <id> [--write]; connect --list
+
+- `tool`: claude-code, claude-desktop, cursor, windsurf, vscode, cline, gemini-cli, zed, codex, continue, http, python
+- `--agent`: the id this tool's memories are recorded under
+- `--write`: merge into the tool's config file (keeps a .bak)
+- `--trusted-local`: single-user machine: the agent's clean writes skip review
+- `--list`: list the tools this knows
+
 ### `context`
 
 Build an agent's context bundle under a token budget and record its receipt (WRITES the receipt), list receipts, or explain one

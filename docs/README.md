@@ -4,7 +4,8 @@
 
 1. `memory-fabric tour` — the idea in sixty seconds, in your terminal.
 2. [QUICKSTART.md](QUICKSTART.md) — ten minutes with your own store.
-3. A guide for your stack: [Claude Code and Desktop](guides/claude.md) ·
+3. [Any agent, any model](guides/any-agent-any-model.md): connect your tool and pick your
+   model in two commands. Or a guide for your stack: [Claude Code and Desktop](guides/claude.md) ·
    [LangGraph](guides/langgraph.md) · [OpenAI Agents SDK](guides/openai-agents.md) ·
    [CrewAI](guides/crewai.md).
 

@@ -142,6 +142,13 @@ summary (source, independent sources, age, corrections), and every refusal
 with a sentence saying why and what to do. Its identity is fixed at launch. It
 cannot read withdrawn memories, widen who sees a memory, or score its own work.
 
+**Any other tool, any model:** `memory-fabric connect <tool> --write` sets up
+Claude Code, Claude Desktop, Cursor, Windsurf, VS Code, Cline, Gemini CLI, Zed,
+Codex or Continue; `MEMORY_FABRIC_MODEL=provider:model` picks the model for
+every model-backed feature (Anthropic, OpenAI, Azure, Gemini, Groq, OpenRouter,
+Ollama, vLLM and any OpenAI-compatible server):
+[Any agent, any model](docs/guides/any-agent-any-model.md).
+
 Framework guides: [Claude Code and Desktop](docs/guides/claude.md) ·
 [LangGraph](docs/guides/langgraph.md) · [OpenAI Agents SDK](docs/guides/openai-agents.md) ·
 [CrewAI](docs/guides/crewai.md).

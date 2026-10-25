@@ -1908,6 +1908,38 @@ def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
     return 0 if ok else 5
 
 
+def cmd_connect(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """The setup for one agent tool (`connect.py`), printed or written."""
+    from .connect import TARGETS, snippet, write
+
+    if args.list or not args.tool:
+        heading("Connect an agent")
+        table(["tool", "what"], [[t.name, t.title] for t in TARGETS.values()])
+        print("\n  memory-fabric --db <store> connect <tool> --agent <id> [--write]")
+        return 0
+    if args.tool not in TARGETS:
+        print(f"unknown tool {args.tool!r}; one of: {', '.join(TARGETS)}", file=sys.stderr)
+        return 2
+    agent = args.agent or args.tool
+    keys = getattr(args, "keys", None)
+    if args.write:
+        try:
+            path = write(args.tool, args.db, agent, keys, args.trusted_local)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        print(f"{TARGETS[args.tool].title}: added memory-fabric to {path} (agent {agent}). "
+              "Restart the tool to load it.")
+        return 0
+    s = snippet(args.tool, args.db, agent, keys, args.trusted_local)
+    where = f" in {s['path']}" if s["path"] else ""
+    print(f"# {s['title']}: agent id {agent!r}{where}")
+    if s["note"]:
+        print(f"# {s['note']}")
+    print(s["text"])
+    return 0
+
+
 def cmd_models(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """Bring your own model (`models.py`): what is ready, and a one-call test."""
     import os
@@ -3086,6 +3118,16 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--dir", help="where to create it (default: a new temporary folder)")
     p.add_argument("--no-serve", action="store_true", help="seed only; print the path")
+    p = add("connect", cmd_connect,
+            "Set up an agent tool: connect <tool> --agent <id> [--write]; connect --list")
+    p.add_argument("tool", nargs="?", help="claude-code, claude-desktop, cursor, windsurf, vscode, "
+                   "cline, gemini-cli, zed, codex, continue, http, python")
+    p.add_argument("--agent", help="the id this tool's memories are recorded under")
+    p.add_argument("--write", action="store_true",
+                   help="merge into the tool's config file (keeps a .bak)")
+    p.add_argument("--trusted-local", action="store_true",
+                   help="single-user machine: the agent's clean writes skip review")
+    p.add_argument("--list", action="store_true", help="list the tools this knows")
     p = add("models", cmd_models,
             "Which model providers are ready here, and test one: models [--test provider:model]")
     p.add_argument("--test", metavar="SPEC", help="send one short request, e.g. ollama:qwen2.5:7b")
@@ -3232,6 +3274,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "connect":  # writes a tool's config, not the store
+        return cmd_connect(None, args)  # type: ignore[arg-type]
     if args.command == "models":  # environment only; opens no --db
         return cmd_models(None, args)  # type: ignore[arg-type]
     if args.command == "tour":  # in memory; opens no --db

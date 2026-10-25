@@ -293,3 +293,79 @@ def if_wrong(f: "MemoryFabric", memory_id: str) -> dict[str, Any]:
         "If this were wrong: nothing else rests on it yet."
     return {"memory_id": memory_id, "summary": summary, "descendants": descendants,
             "depended": dep["depended"], "would_stand": dep["would_stand"], "stores": stores}
+
+
+# --- the graph and the agents ------------------------------------------------
+
+def graph(f: "MemoryFabric", limit: int = 400) -> dict[str, Any]:
+    """Memories as nodes and "built from" / "copy of" as edges, for the graph view.
+
+    Bounded to `limit` memories, preferring those with lineage, then the most
+    recent, so a large store still draws. Labels are content previews with
+    secret values masked.
+    """
+    from .. import events as ev
+
+    memories = f.state.memories
+    children = f.state.children
+    linked = {mid for mid, kids in children.items() if kids} | {
+        mid for mid, m in memories.items() if m.provenance.parents}
+    order = sorted(memories, key=lambda mid: (mid not in linked, -memories[mid].created_at))
+    chosen = set(order[:limit])
+    exposures: dict[str, int] = {}
+    copies: list[tuple[str, str]] = []
+    for e in f.log.read_types([ev.EventType.EXPOSURE_DECIDED, ev.EventType.COPY_RECOGNISED]):
+        p = e.payload
+        if e.type == ev.EventType.EXPOSURE_DECIDED:
+            if p.get("exposed") and p.get("memory_id") in chosen:
+                exposures[p["memory_id"]] = exposures.get(p["memory_id"], 0) + 1
+        elif p.get("memory_id") in chosen and p.get("original_memory_id") in chosen:
+            copies.append((p["original_memory_id"], p["memory_id"]))
+    nodes = [{"id": mid, "label": _short(_safe(f, mid), 60), "state": m.lifecycle_state.value,
+              "type": m.type.value, "author": m.provenance.created_by,
+              "exposures": exposures.get(mid, 0)}
+             for mid in order[:limit] for m in [memories[mid]]]
+    edges = [{"from": parent, "to": mid, "kind": "derived"}
+             for mid in chosen for parent, _ in memories[mid].provenance.parents if parent in chosen]
+    edges += [{"from": a, "to": b, "kind": "copy"} for a, b in copies]
+    return {"nodes": nodes, "edges": edges, "total": len(memories), "shown": len(nodes)}
+
+
+def agents(f: "MemoryFabric") -> list[dict[str, Any]]:
+    """One row per agent: what it wrote, recalled, was refused and did."""
+    from .. import events as ev
+
+    rows: dict[str, dict[str, Any]] = {}
+
+    def row(agent: str | None) -> dict[str, Any] | None:
+        if not agent:
+            return None
+        return rows.setdefault(agent, {"agent_id": agent, "writes": 0, "recalls": 0,
+                                       "refused": 0, "actions_allowed": 0,
+                                       "actions_blocked": 0, "withdrawn": 0, "last_ts": 0})
+
+    authored: dict[str, str] = {}
+    for e in f.log.read_types([ev.EventType.MEMORY_CREATED, ev.EventType.EXPOSURE_DECIDED,
+                               ev.EventType.ACCESS_DENIED, ev.EventType.ACTION_GATED,
+                               ev.EventType.LIFECYCLE_CHANGED]):
+        p = e.payload
+        if e.type == ev.EventType.LIFECYCLE_CHANGED:
+            if p.get("to") == "quarantined" and (who := authored.get(p.get("memory_id", ""))):
+                rows[who]["withdrawn"] += 1
+            continue
+        r = row(e.agent_id)
+        if r is None:
+            continue
+        r["last_ts"] = max(r["last_ts"], e.ts or 0)
+        if e.type == ev.EventType.MEMORY_CREATED:
+            r["writes"] += 1
+            authored[p.get("memory", {}).get("id", "")] = r["agent_id"]
+        elif e.type == ev.EventType.EXPOSURE_DECIDED:
+            r["recalls"] += 1 if p.get("exposed") else 0
+        elif e.type == ev.EventType.ACCESS_DENIED:
+            r["refused"] += 1
+        elif p.get("allowed"):
+            r["actions_allowed"] += 1
+        else:
+            r["actions_blocked"] += 1
+    return sorted(rows.values(), key=lambda r: -r["last_ts"])

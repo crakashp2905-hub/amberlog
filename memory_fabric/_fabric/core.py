@@ -107,6 +107,7 @@ class FabricCore:
         hold_suspicious: bool = True,
         crypto_profile: str | None = None,
         contest_restatements: bool = True,
+        claim_checker: Any = None,
     ) -> None:
         # Off by default to keep the documented reason code. On, a request
         # from another tenant is refused exactly as a missing id is, so the
@@ -161,6 +162,8 @@ class FabricCore:
         # constructor argument. An object with a `score(query, texts)` method
         # (`retrievers.CrossEncoderReranker`) is a model reranker instead.
         self.rerank = rerank
+        # Optional model-backed check for free-text claims (`claimcheck.py`).
+        self.claim_checker = claim_checker
         # Bounded candidate lookup for the subset test. The exhaustive scan it
         # replaces cost 32.4 ms a write at 10,000 memories against 0.19 ms
         # with the check off -- a 168x write cost growing linearly, which made

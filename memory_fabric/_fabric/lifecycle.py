@@ -470,6 +470,22 @@ class LifecycleMixin(FabricCore):
         from ..validation import assess_write
 
         try:
-            return assess_write(cast("MemoryFabric", self), agent_id, content, context, tenant_id).suspicious
+            assessment = assess_write(cast("MemoryFabric", self), agent_id, content, context,
+                                      tenant_id)
         except Exception:  # noqa: BLE001 - validation never blocks a write
+            return False
+        if assessment.suspicious:
+            return True
+        checker = getattr(self, "claim_checker", None)
+        if checker is None:
+            return False
+        from ..conflicts import claim
+
+        ids, _, values = claim(content)
+        if ids and values:
+            return False  # the built-in rules read this claim; no model call needed
+        try:
+            return checker.check(cast("MemoryFabric", self), agent_id, content,
+                                 tenant_id) is not None
+        except Exception:  # noqa: BLE001 - a model failure never blocks a write
             return False

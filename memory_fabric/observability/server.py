@@ -242,6 +242,16 @@ class Api:
 
                 return if_wrong(f, _memory_id(raw))
 
+            case ["graph"]:
+                from .control import graph
+
+                return graph(f, limit=min(_int(params, "limit", 400) or 400, 2000))
+
+            case ["agents"]:
+                from .control import agents
+
+                return agents(f)
+
             case ["story"]:
                 from .control import story
 

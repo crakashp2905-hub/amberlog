@@ -1,0 +1,40 @@
+# R3: which retriever best_available() ships (research/prereg/r3-best-retriever.md).
+# Manual: it downloads models and datasets, and takes about an hour on CPU.
+name: retriever-eval
+
+on:
+  workflow_dispatch:
+    inputs:
+      lme_limit:
+        description: LongMemEval instances (stratified)
+        default: "60"
+
+permissions:
+  contents: read
+
+jobs:
+  r3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: pip install -e ".[retrieval]"
+      - name: Fetch LongMemEval s
+        run: |
+          mkdir -p research/bench/longmemeval/data
+          curl -fsSL -o research/bench/longmemeval/data/longmemeval_s_cleaned.json \
+            https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json
+      - name: Run R3
+        run: python -m experiments.retriever_eval --lme-limit "${{ inputs.lme_limit }}" --run "${{ github.run_id }}"
+      - name: Result
+        if: always()
+        run: cat research/results/r3-best-retriever.md || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: r3-best-retriever
+          path: research/results/r3-best-retriever.*

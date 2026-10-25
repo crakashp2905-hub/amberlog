@@ -314,7 +314,10 @@ class VectorIndex:
         whose good memories have been retracted starts serving its irrelevant
         ones. A score at or below zero means no shared signal at all.
         """
-        query_vector = self.embedder.embed(query)
+        # A trained embedder may encode queries differently from documents
+        # (an instruction prefix); `embed_query` is optional on the protocol.
+        encode = getattr(self.embedder, "embed_query", None) or self.embedder.embed
+        query_vector = encode(query)
         query_norm = math.sqrt(sum(v * v for v in query_vector))
         if query_norm == 0.0:
             return []

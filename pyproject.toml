@@ -45,6 +45,10 @@ langchain = ["langchain-core>=0.3"]
 # AES-256-GCM from a maintained library; required by the production crypto
 # profile (MEMORY_FABRIC_CRYPTO_PROFILE=production).
 crypto = ["cryptography>=42"]
+# Trained retrieval (memory_fabric.retrievers): ONNX models on CPU, no PyTorch.
+retrieval = ["fastembed>=0.5"]
+# The same with sentence-transformers, for teams already on PyTorch or a GPU.
+retrieval-torch = ["sentence-transformers>=3"]
 
 [project.scripts]
 memory-fabric = "memory_fabric.cli:main"

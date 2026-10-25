@@ -8,6 +8,12 @@ on:
       lme_limit:
         description: LongMemEval instances (stratified)
         default: "60"
+  # Also when the harness itself changes, so a new registration runs before
+  # its PR merges (a dispatch-only workflow cannot run until it is on main).
+  push:
+    paths:
+      - experiments/retriever_eval.py
+      - .github/workflows/retriever-eval.yml
 
 permissions:
   contents: read
@@ -29,7 +35,7 @@ jobs:
           curl -fsSL -o research/bench/longmemeval/data/longmemeval_s_cleaned.json \
             https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json
       - name: Run R3
-        run: python -m experiments.retriever_eval --lme-limit "${{ inputs.lme_limit }}" --run "${{ github.run_id }}"
+        run: python -m experiments.retriever_eval --lme-limit "${{ inputs.lme_limit || '60' }}" --run "${{ github.run_id }}"
       - name: Result
         if: always()
         run: cat research/results/r3-best-retriever.md || true

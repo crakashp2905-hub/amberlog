@@ -1908,6 +1908,85 @@ def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
     return 0 if ok else 5
 
 
+def cmd_pilot_report(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """A shareable pilot report (`pilot.py`): counts and durations, never content."""
+    from .pilot import report
+
+    print(json.dumps(report(fabric, names=args.names), indent=2))
+    return 0
+
+
+def cmd_connect(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """The setup for one agent tool (`connect.py`), printed or written."""
+    from .connect import TARGETS, snippet, write
+
+    if args.list or not args.tool:
+        heading("Connect an agent")
+        table(["tool", "what"], [[t.name, t.title] for t in TARGETS.values()])
+        print("\n  memory-fabric --db <store> connect <tool> --agent <id> [--write]")
+        return 0
+    if args.tool not in TARGETS:
+        print(f"unknown tool {args.tool!r}; one of: {', '.join(TARGETS)}", file=sys.stderr)
+        return 2
+    agent = args.agent or args.tool
+    keys = getattr(args, "keys", None)
+    if args.write:
+        try:
+            path = write(args.tool, args.db, agent, keys, args.trusted_local)
+        except ValueError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        print(f"{TARGETS[args.tool].title}: added memory-fabric to {path} (agent {agent}). "
+              "Restart the tool to load it.")
+        return 0
+    s = snippet(args.tool, args.db, agent, keys, args.trusted_local)
+    where = f" in {s['path']}" if s["path"] else ""
+    print(f"# {s['title']}: agent id {agent!r}{where}")
+    if s["note"]:
+        print(f"# {s['note']}")
+    print(s["text"])
+    return 0
+
+
+def cmd_models(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Bring your own model (`models.py`): what is ready, and a one-call test."""
+    import os
+
+    from .models import ENV_MODEL, ModelClient, ModelError, configured
+
+    if args.test:
+        try:
+            done = ModelClient(args.test).complete("Reply with the single word: ready",
+                                                   max_tokens=8)
+        except (ModelError, ValueError) as exc:
+            print(f"{args.test}: not working: {exc}")
+            return 1
+        cost = "unknown cost" if done.cost_usd is None else f"${done.cost_usd:.6f}"
+        print(f"{args.test}: ok in {done.seconds:.1f}s, {done.input_tokens} in / "
+              f"{done.output_tokens} out tokens, {cost}: {done.text.strip()[:40]!r}")
+        return 0
+    if args.json:
+        print(json.dumps({"default": os.environ.get(ENV_MODEL), "providers": configured()},
+                         indent=2))
+        return 0
+    heading("Models")
+    print(f"  default ({ENV_MODEL}): {os.environ.get(ENV_MODEL) or 'not set'}\n")
+    table(["provider", "ready", "needs"],
+          [[r["provider"], "yes" if r["ready"] else "-", r["needs"]] for r in configured()])
+    print("\n  Pick one: export MEMORY_FABRIC_MODEL=anthropic:claude-opus-5-5  "
+          "(or openai:..., ollama:..., compat:<model>@<url>)")
+    print("  Check it: memory-fabric models --test anthropic:claude-opus-5-5")
+    return 0
+
+
+def cmd_tour(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """One fact, four agents, one correction, told in the terminal (`tour.py`)."""
+    from .tour import run
+
+    run(pause=0.0 if args.fast else 0.8)
+    return 0
+
+
 def cmd_sandbox(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """A throwaway store full of deliberately wrong memories, opened in the dashboard.
 
@@ -2867,6 +2946,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("dir", help="directory to create the store in")
     p.add_argument("--agent", default="my-assistant")
     p.add_argument("--tenant", default="tn_default")
+    p.add_argument("--mode", choices=("personal", "team", "regulated"), default="team",
+                   help="personal: one user, writes active at once; team: review before "
+                        "sharing (default); regulated: two independent sources and fresh "
+                        "evidence for protected tools")
 
     p = add("incident", cmd_incident,
             "Guided incident response: list candidates, assess one, --contain it "
@@ -3047,6 +3130,25 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--dir", help="where to create it (default: a new temporary folder)")
     p.add_argument("--no-serve", action="store_true", help="seed only; print the path")
+    p = add("pilot-report", cmd_pilot_report,
+            "Outcome numbers for a pilot, from the log: no content, agents pseudonymised")
+    p.add_argument("--names", action="store_true", help="keep agent names instead of hashes")
+    p = add("connect", cmd_connect,
+            "Set up an agent tool: connect <tool> --agent <id> [--write]; connect --list")
+    p.add_argument("tool", nargs="?", help="claude-code, claude-desktop, cursor, windsurf, vscode, "
+                   "cline, gemini-cli, zed, codex, continue, http, python")
+    p.add_argument("--agent", help="the id this tool's memories are recorded under")
+    p.add_argument("--write", action="store_true",
+                   help="merge into the tool's config file (keeps a .bak)")
+    p.add_argument("--trusted-local", action="store_true",
+                   help="single-user machine: the agent's clean writes skip review")
+    p.add_argument("--list", action="store_true", help="list the tools this knows")
+    p = add("models", cmd_models,
+            "Which model providers are ready here, and test one: models [--test provider:model]")
+    p.add_argument("--test", metavar="SPEC", help="send one short request, e.g. ollama:qwen2.5:7b")
+    p = add("tour", cmd_tour,
+            "The whole idea in sixty seconds: one fact, four agents, one correction")
+    p.add_argument("--fast", action="store_true", help="print it at once, without pauses")
     _fill_help(sub)
     return parser
 
@@ -3164,13 +3266,19 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  store       {db_s}")
     print(f"  keys        {keys_s}   {C.DIM}(outside the database; back it up separately){C.RESET}")
     print(f"  agents      {agents}   {C.DIM}(holds a signing key; keep it on the server){C.RESET}")
+    from .presets import mcp_flags
+
+    (root / "mode").write_text(args.mode + "\n", encoding="utf-8")
+    print(f"  mode        {args.mode}   {C.DIM}(memory_fabric.presets: open_store(path, {args.mode!r})){C.RESET}")
     print("\nConnect an MCP client (Claude Code, Claude Desktop, an IDE) with:")
     print(json.dumps({"mcpServers": {"memory-fabric": {
         "command": "memory-fabric",
-        "args": ["--db", db_s, "--keys", keys_s, "mcp", "--agent", args.agent]}}}, indent=2))
+        "args": ["--db", db_s, "--keys", keys_s, "mcp", "--agent", args.agent,
+                 *mcp_flags(args.mode)]}}}, indent=2))
     print("\nNext:")
     print(f"  memory-fabric --db {db_s} --keys {keys_s} review      # what agents wrote, waiting for you")
     print(f"  memory-fabric --db {db_s} --keys {keys_s} serve       # the dashboard")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} connect --list   # set up another agent tool")
     print(f"  memory-fabric --db {db_s} --keys {keys_s} agent-api --agents-file {agents}")
     print()
     return main(["--db", db_s, "--keys", keys_s, "doctor"])
@@ -3187,6 +3295,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         return cmd_init(args)
     if args.command == "restore":  # writes a new directory; opens no --db
         return cmd_restore(None, args)  # type: ignore[arg-type]
+    if args.command == "connect":  # writes a tool's config, not the store
+        return cmd_connect(None, args)  # type: ignore[arg-type]
+    if args.command == "models":  # environment only; opens no --db
+        return cmd_models(None, args)  # type: ignore[arg-type]
+    if args.command == "tour":  # in memory; opens no --db
+        return cmd_tour(None, args)  # type: ignore[arg-type]
     if args.command == "sandbox":  # creates its own store; opens no --db
         return cmd_sandbox(None, args)  # type: ignore[arg-type]
     if args.command == "receipt-verify":  # reads a file; opens no --db
@@ -3219,9 +3333,24 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         from .governance.firewall import SHARE_POLICIES, Firewall
 
+        retrieval: dict[str, Any] = {}
+        if os.environ.get("MEMORY_FABRIC_EMBEDDER") or os.environ.get("MEMORY_FABRIC_RERANKER"):
+            # The retriever the operator chose (RETRIEVAL.md). Only when asked:
+            # opening a store must not download a model by surprise.
+            from .retrievers import from_environment
+
+            retrieval = from_environment()
+        mode_file = Path(str(args.db)).parent / "mode"
+        if "://" not in str(args.db) and mode_file.is_file():
+            # The mode `init --mode` recorded beside the store (presets.py).
+            from .presets import MODES, store_settings
+
+            mode = mode_file.read_text(encoding="utf-8").strip()
+            if mode in MODES:
+                retrieval = {**store_settings(mode), **retrieval}
         fabric = MemoryFabric(
             args.db, estimator=args.estimator, key_provider=key_provider,
-            firewall=Firewall(rules=SHARE_POLICIES[args.share_policy]),
+            firewall=Firewall(rules=SHARE_POLICIES[args.share_policy]), **retrieval,
         )
     except KeyUnavailable as exc:
         # Distinguished from any other open failure, because the remedy is

@@ -124,6 +124,16 @@ Collections: named sets of memories agents can be attached to. list, or WRITES: 
 - `--actor`: who is changing this; required for a change
 - `--tenant`: tenant id to act within
 
+### `connect`
+
+Set up an agent tool: connect <tool> --agent <id> [--write]; connect --list
+
+- `tool`: claude-code, claude-desktop, cursor, windsurf, vscode, cline, gemini-cli, zed, codex, continue, http, python
+- `--agent`: the id this tool's memories are recorded under
+- `--write`: merge into the tool's config file (keeps a .bak)
+- `--trusted-local`: single-user machine: the agent's clean writes skip review
+- `--list`: list the tools this knows
+
 ### `context`
 
 Build an agent's context bundle under a token budget and record its receipt (WRITES the receipt), list receipts, or explain one
@@ -238,6 +248,7 @@ never overwrites: an existing store is an error, not a reset.
 - `dir`: directory to create the store in
 - `--agent`: the first agent to register
 - `--tenant`: its tenant id
+- `--mode`: personal: one user, writes active at once; team: review before sharing (default); regulated: two independent sources and fresh evidence for protected tools
 
 ### `lifecycle`
 
@@ -310,6 +321,12 @@ WRITES: move content keys out of the database into a directory, verified by repl
 
 - `directory`: where the keys will live from now on
 
+### `models`
+
+Which model providers are ready here, and test one: models [--test provider:model]
+
+- `--test`: send one short request, e.g. ollama:qwen2.5:7b
+
 ### `offer`
 
 WRITES: offer one memory to a peer store over HTTP. It lands there as a candidate, recorded as from this store; a correction here follows it
@@ -323,6 +340,12 @@ WRITES: offer one memory to a peer store over HTTP. It lands there as a candidat
 
 Store health and what it can and cannot tell you
 
+
+### `pilot-report`
+
+Outcome numbers for a pilot, from the log: no content, agents pseudonymised
+
+- `--names`: keep agent names instead of hashes
 
 ### `posture`
 
@@ -440,6 +463,12 @@ Memories whose claim contradicts what the store knows: a corrected value restate
 
 Which tenants this store holds
 
+
+### `tour`
+
+The whole idea in sixty seconds: one fact, four agents, one correction
+
+- `--fast`: print it at once, without pauses
 
 ### `validate`
 

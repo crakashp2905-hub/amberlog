@@ -320,3 +320,20 @@ Ranking exposure on estimated value is available and is not recommended.
 **Do not withdraw memories because they were in context when something failed.**
 This is the one deployment rule that comes from a measurement rather than from
 caution, and §5 says what to do instead.
+
+## Kubernetes (Helm)
+
+`deploy/helm/memory-fabric` runs the dashboard, and optionally the agent HTTP
+API, on one pod with the store and its keys on separate volumes:
+
+```bash
+kubectl create secret generic mf-agents --from-file=agents.txt
+helm install mf deploy/helm/memory-fabric \
+  --set dashboard.token=$(openssl rand -hex 24) \
+  --set mode=team --set agentApi.enabled=true --set agentApi.agentsSecret=mf-agents
+```
+
+One replica, because a SQLite store has one writer host; for writers on
+several hosts open the store on PostgreSQL. Model and embedder keys go in a
+Secret referenced by `extraEnvFrom`, never in values. CI lints and renders the
+chart on every change.

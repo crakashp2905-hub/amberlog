@@ -105,7 +105,7 @@ class CatchUpEqualsReplay(unittest.TestCase):
                     with self.subTest(seed=seed, field=name):
                         self.assertEqual(getattr(live.state, name), value)
                 self.assertEqual(_searchable(live), _searchable(fresh))
-                self.assertEqual(set(live.index._vectors) & set(_searchable(fresh)),
+                self.assertEqual({k for k in _searchable(fresh) if k in live.index},
                                  set(_searchable(fresh)))
             finally:
                 fresh.close()

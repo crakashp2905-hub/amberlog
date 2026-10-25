@@ -14,7 +14,7 @@ import hashlib
 import heapq
 import math
 import re
-from typing import AbstractSet, Iterable, Protocol, Sequence
+from typing import AbstractSet, Any, Iterable, Protocol, Sequence
 
 _TOKEN = re.compile(r"[a-z0-9]+")
 
@@ -40,6 +40,12 @@ def _as_set(keys: Iterable[str] | None) -> AbstractSet[str] | None:
     if keys is None:
         return None
     return keys if isinstance(keys, AbstractSet) else set(keys)
+
+UBIQUITOUS_SHARE = 0.9
+"""A term in more than this share of documents does not nominate candidates
+(`LexicalIndex.search`). Applies from UBIQUITOUS_MIN_DOCS documents up."""
+UBIQUITOUS_MIN_DOCS = 2000
+
 
 class LexicalIndex:
     """IDF-weighted token overlap. The arm the product was missing.
@@ -77,12 +83,17 @@ class LexicalIndex:
         # slow — I guessed that it was and the measurement said otherwise. The
         # cost is the dense vector scan; see `VectorIndex.search`.
         self._idf_cache: dict[str, float] | None = None
+        # A lower bound on any document's term count, for the pruning bound in
+        # `search`. Never raised on removal: a smaller bound is still valid.
+        self._min_len = 1 << 30
 
     def add(self, key: str, text: str) -> str:
         if key in self._terms:
             self.remove(key)
         terms = frozenset(self._tokens(text))
         self._terms[key] = terms
+        if terms:
+            self._min_len = min(self._min_len, len(terms))
         for term in terms:
             self._postings.setdefault(term, set()).add(key)
         self._idf_cache = None
@@ -133,25 +144,59 @@ class LexicalIndex:
         weights = self._idf()
         allowed = _as_set(restrict_to)
         scored: list[tuple[str, float]] = []
-        if min_relevance >= 0:
-            candidates: set[str] = set()
-            for term in query_terms:
-                candidates |= self._postings.get(term, set())
-            if allowed is not None:
-                candidates = {k_ for k_ in candidates if k_ in allowed}
-            pool: Iterable[str] = candidates
-        else:  # a negative floor admits documents sharing nothing: score them all
-            pool = self._terms if allowed is None else (k_ for k_ in self._terms if k_ in allowed)
-        for key in pool:
+
+        def score(key: str) -> None:
             terms = self._terms[key]
             if not terms:
-                continue
+                return
             overlap = sum(weights.get(t, 0.0) for t in terms & query_terms)
             # Length-normalised, or a long memory wins by containing more
             # words rather than better ones.
-            score = overlap / math.sqrt(len(terms))
-            if score > min_relevance:
-                scored.append((key, score))
+            value = overlap / math.sqrt(len(terms))
+            if value > min_relevance:
+                scored.append((key, value))
+
+        if min_relevance < 0:  # a negative floor admits documents sharing nothing: score them all
+            pool = self._terms if allowed is None else (k_ for k_ in self._terms if k_ in allowed)
+            for key in pool:
+                score(key)
+            return heapq.nsmallest(k, scored, key=lambda pair: (-pair[1], pair[0]))
+        # Rarest terms first, stopping once nothing unseen can reach the top k
+        # (the MaxScore idea, exact). A document not yet scored contains only
+        # the remaining, commoner terms, so its score is at most their summed
+        # IDF over the shortest document's length. Without this, a query whose
+        # words appear in most memories ("pump", "relief") scored the whole
+        # store: 110 ms a query at 10,000 memories, linear beyond.
+        #
+        # A term in nearly every document (more than UBIQUITOUS_SHARE of them)
+        # carries almost no information. It still counts towards the score of a document
+        # found through another term, but it does not make a document a
+        # candidate on its own. Otherwise a query with one rare word and k=20
+        # filled the other 19 places by scanning the whole store for documents
+        # whose only match scored ~0.000005, ordered by nothing but length.
+        total = len(self._terms)
+        cap = UBIQUITOUS_SHARE * total if total >= UBIQUITOUS_MIN_DOCS else float("inf")
+        order = sorted((t for t in query_terms if len(self._postings.get(t, ())) <= cap),
+                       key=lambda t: (-weights.get(t, 0.0), t))
+        if not order:
+            # Every query term is in nearly every document ("pump relief" in
+            # a store of pump notes). Nothing narrows it, so rank them all, as
+            # before: returning nothing would read as "nothing is known".
+            order = sorted(query_terms, key=lambda t: (-weights.get(t, 0.0), t))
+        remaining = sum(weights.get(t, 0.0) for t in order)
+        seen: set[str] = set()
+        for term in order:
+            remaining -= weights.get(term, 0.0)
+            for key in self._postings.get(term, ()):
+                if key in seen:
+                    continue
+                seen.add(key)
+                if allowed is None or key in allowed:
+                    score(key)
+            if len(scored) >= k and remaining >= 0:
+                threshold = heapq.nsmallest(k, scored, key=lambda pair: (-pair[1], pair[0]))[-1][1]
+                if remaining / math.sqrt(self._min_len) < threshold:
+                    break
         # Top k without sorting every candidate; same order as a full sort.
         return heapq.nsmallest(k, scored, key=lambda pair: (-pair[1], pair[0]))
 
@@ -274,26 +319,72 @@ class VectorIndex:
     a scan costing `n × dim` and `n × terms`.
     """
 
-    def __init__(self, embedder: Embedder | None = None) -> None:
+    def __init__(self, embedder: Embedder | None = None, lazy: bool = False) -> None:
         self.embedder = embedder or HashingEmbedder()
         self._vectors: dict[str, list[float]] = {}
+        # Lazy: texts wait here until a search needs vectors. A store using
+        # lexical retrieval (the default) never searches this index, and
+        # embedding every memory on open was half of reopening 20,000 memories
+        # (16 of 32 s) and most of its memory: a 256-float vector per memory.
+        self.lazy = lazy
+        self._pending: dict[str, str] = {}
+        # Dense scans with numpy when it is installed (every trained embedder
+        # brings it): a 768-dim scan of 5,000 memories in pure Python was
+        # ~0.5 s a query. Rebuilt on the next search after any change.
+        self._matrix: Any = None
+        self._matrix_keys: list[str] = []
+
+    def _materialize(self) -> None:
+        if not self._pending:
+            return
+        pending, self._pending = self._pending, {}
+        warm = getattr(self.embedder, "warm", None)
+        if warm is not None:
+            warm(list(pending.values()))
+        for key, text in pending.items():
+            self._embed_into(key, text)
 
     def add(self, key: str, text: str) -> str:
+        if self.lazy:
+            self._vectors.pop(key, None)
+            self._pending[key] = text
+            return key
+        return self._embed_into(key, text)
+
+    def _embed_into(self, key: str, text: str) -> str:
         vector = self.embedder.embed(text)
         norm = math.sqrt(sum(v * v for v in vector))
         if norm > 0.0:
             vector = [v / norm for v in vector]
         self._vectors[key] = vector
+        self._matrix = None
         return key
 
     def remove(self, key: str) -> None:
-        self._vectors.pop(key, None)
+        if self._vectors.pop(key, None) is not None:
+            self._matrix = None
+        self._pending.pop(key, None)
+
+    def _dense_scores(self, query_vector: list[float]) -> list[tuple[str, float]] | None:
+        try:
+            import numpy as np
+        except ImportError:
+            return None
+        if self._matrix is None:
+            self._matrix_keys = list(self._vectors)
+            self._matrix = (np.array([self._vectors[k] for k in self._matrix_keys], dtype=np.float64)
+                            if self._matrix_keys else np.zeros((0, len(query_vector))))
+        if not self._matrix_keys or self._matrix.shape[1] != len(query_vector):
+            return [] if not self._matrix_keys else None
+        scores = self._matrix @ np.asarray(query_vector, dtype=np.float64)
+        keys = self._matrix_keys
+        return [(keys[i], float(scores[i])) for i in range(len(keys))]
 
     def __contains__(self, key: str) -> bool:
-        return key in self._vectors
+        return key in self._vectors or key in self._pending
 
     def __len__(self) -> int:
-        return len(self._vectors)
+        return len(self._vectors) + len(self._pending)
 
     def search(
         self,
@@ -314,7 +405,11 @@ class VectorIndex:
         whose good memories have been retracted starts serving its irrelevant
         ones. A score at or below zero means no shared signal at all.
         """
-        query_vector = self.embedder.embed(query)
+        self._materialize()
+        # A trained embedder may encode queries differently from documents
+        # (an instruction prefix); `embed_query` is optional on the protocol.
+        encode = getattr(self.embedder, "embed_query", None) or self.embedder.embed
+        query_vector = encode(query)
         query_norm = math.sqrt(sum(v * v for v in query_vector))
         if query_norm == 0.0:
             return []
@@ -326,6 +421,12 @@ class VectorIndex:
 
         allowed = _as_set(restrict_to)
         scored: list[tuple[str, float]] = []
+        dense = None if sparse else self._dense_scores(query_vector)
+        if dense is not None:
+            scored = [(key, score) for key, score in dense
+                      if score >= min_relevance and (allowed is None or key in allowed)]
+            scored.sort(key=lambda pair: (-pair[1], pair[0]))
+            return scored[:k]
         for key, vector in self._vectors.items():
             if allowed is not None and key not in allowed:
                 continue

@@ -258,6 +258,14 @@ def run_arm(arm: str, instances: Sequence[Mapping[str, Any]], k: int,
             # tests/test_duplicates.py; paying for it here would measure the
             # scan rather than retrieval.
             recognise_copies=False,
+            # Off: every turn is written as one agent, so a single turn the
+            # injection screen flags (about 1% of LongMemEval's conversational
+            # turns, 1-9 per history) marks that agent hostile and withholds
+            # the whole history, scoring 0.08 turn recall where retrieval
+            # scores 0.75. A real finding about the screen's false positives,
+            # reported separately; here it would measure the screen, not
+            # retrieval.
+            withhold_hostile_sources=False,
             **kwargs,
         )
         try:

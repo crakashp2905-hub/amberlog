@@ -117,6 +117,11 @@ def canonical(content: str) -> str:
     which is the error this module is built to avoid. Look-alike letters are
     deliberately not mapped here.
     """
+    if content.isascii():
+        # Nothing to fold: NFKC leaves ASCII alone, ASCII has no format
+        # characters, and its only dash is "-" already. Per-character Unicode
+        # lookups here were 40% of reopening a 20,000-memory store.
+        return content
     text = unicodedata.normalize("NFKC", content)
     return "".join(
         "-" if unicodedata.category(ch) == "Pd" else ch

@@ -125,6 +125,17 @@ class Api:
         # The fabric's own lock, not one of ours: a process serving the
         # dashboard and the agent API on one store must serialise across both.
         self._lock = fabric.lock
+        self._metrics: Any = None
+
+    def metrics_text(self) -> str:
+        """Prometheus exposition for this store (`metrics.py`), behind the same auth."""
+        from .metrics import StoreMetrics
+
+        with self._lock:
+            self.fabric.refresh()
+            if self._metrics is None:
+                self._metrics = StoreMetrics()
+            return self._metrics.render(self.fabric)
 
     def handle(self, path: str, params: dict[str, list[str]]) -> Any:
         from ..fabric import NotFound
@@ -220,6 +231,32 @@ class Api:
                 from .control import dependence
 
                 return dependence(f, _memory_id(raw))
+
+            case ["memories", raw, "timeline"]:
+                from .control import timeline
+
+                return timeline(f, _memory_id(raw))
+
+            case ["memories", raw, "if-wrong"]:
+                from .control import if_wrong
+
+                return if_wrong(f, _memory_id(raw))
+
+            case ["graph"]:
+                from .control import graph
+
+                return graph(f, limit=min(_int(params, "limit", 400) or 400, 2000))
+
+            case ["agents"]:
+                from .control import agents
+
+                return agents(f)
+
+            case ["story"]:
+                from .control import story
+
+                return story(f, after=_int(params, "after", 0) or 0,
+                             limit=_int(params, "limit", 300) or 300)
 
             case ["actions"]:
                 from .control import action_rows
@@ -475,6 +512,13 @@ class Handler(BaseHTTPRequestHandler):
                 self._send(HTTPStatus.INTERNAL_SERVER_ERROR, b"missing asset", "text/plain", body)
                 return
             self._send(HTTPStatus.OK, payload, content_type, body)
+            return
+
+        if path == "/metrics":
+            payload = self.api.metrics_text().encode("utf-8")
+            from .metrics import CONTENT_TYPE
+
+            self._send(HTTPStatus.OK, payload, CONTENT_TYPE, body)
             return
 
         if path.startswith("/api/"):

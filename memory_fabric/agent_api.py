@@ -64,6 +64,7 @@ from .limits import LimitExceeded
 from .enforcement import ExposureToken, RiskLevel
 from .identity import Credential, IdentityError, ROLE_AGENT
 from ._fabric.common import FabricError
+from .reasons import say
 from .sdk import AgentClient, NotUsable, UsableMemory, public_error
 from .service import MemoryService
 
@@ -312,8 +313,13 @@ class AgentApi:
 
         shown = [self._fabric.state.memories[m.memory_id] for m in hits
                  if m.memory_id in self._fabric.state.memories]
-        return {"memories": [self._present(client, m) for m in hits],
-                "answerability": assess(query, shown).to_json()}
+        from .reasons import badge
+
+        memories = [self._present(client, m) for m in hits]
+        for row in memories:
+            if row["memory_id"] in self._fabric.state.memories:
+                row["trust"] = badge(self._fabric, row["memory_id"])
+        return {"memories": memories, "answerability": assess(query, shown).to_json()}
 
     def _fetch(self, client: AgentClient, body: Mapping[str, Any]) -> dict[str, Any]:
         memory_id = _string(body, "memory_id")
@@ -321,7 +327,8 @@ class AgentApi:
             return self._present(client, client.fetch(memory_id))
         except NotUsable as exc:
             raise _ApiError(HTTPStatus.FORBIDDEN,
-                            f"not usable: {exc.decision.reason_code}") from None
+                            f"not usable: {exc.decision.reason_code} "
+                            f"({say(exc.decision.reason_code)})") from None
 
     def _verify(self, client: AgentClient, body: Mapping[str, Any]) -> dict[str, Any]:
         memory_id = _string(body, "memory_id")
@@ -341,7 +348,8 @@ class AgentApi:
                     raise _ApiError(HTTPStatus.CONFLICT,
                                     "recall or fetch this memory before verifying it") from None
                 return {"memory_id": memory_id, "usable": False,
-                        "verdict": exc.decision.verdict.value, "reason": code}
+                        "verdict": exc.decision.verdict.value, "reason": code,
+                        "explanation": say(code)}
             except (KeyError, FabricError):
                 raise _ApiError(HTTPStatus.CONFLICT,
                                 "recall or fetch this memory before verifying it") from None
@@ -349,7 +357,8 @@ class AgentApi:
         decision = self._fabric.verify_before_action(issued, client.agent_id,
                                                      risk=RiskLevel.HIGH)
         return {"memory_id": memory_id, "usable": decision.usable,
-                "verdict": decision.verdict.value, "reason": decision.reason_code}
+                "verdict": decision.verdict.value, "reason": decision.reason_code,
+                "explanation": say(decision.reason_code)}
 
     def _remember(self, client: AgentClient, body: Mapping[str, Any]) -> dict[str, Any]:
         content = _string(body, "content")

@@ -75,7 +75,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.txn`
 - `memory_fabric.vectors`
 
-## Beta (42)
+## Beta (50)
 
 - `memory_fabric.action_receipt`
 - `memory_fabric.actions`
@@ -89,6 +89,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.branching`
 - `memory_fabric.chains`
 - `memory_fabric.conflicts`
+- `memory_fabric.connect`
 - `memory_fabric.consensus`
 - `memory_fabric.context_receipt`
 - `memory_fabric.correction`
@@ -106,23 +107,31 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.limits`
 - `memory_fabric.manager`
 - `memory_fabric.migrate`
+- `memory_fabric.models`
 - `memory_fabric.observability.control`
 - `memory_fabric.observability.logs`
+- `memory_fabric.observability.metrics`
 - `memory_fabric.observability.server`
+- `memory_fabric.pilot`
 - `memory_fabric.posture`
+- `memory_fabric.presets`
 - `memory_fabric.reach`
+- `memory_fabric.reasons`
 - `memory_fabric.relations`
 - `memory_fabric.rerank`
 - `memory_fabric.response`
 - `memory_fabric.retrieval_profiles`
+- `memory_fabric.retrievers`
 - `memory_fabric.review`
 - `memory_fabric.status`
 - `memory_fabric.tenancy`
+- `memory_fabric.tour`
 - `memory_fabric.validation`
 
-## Experimental (12)
+## Experimental (13)
 
 - `memory_fabric.adapters.systemone`
+- `memory_fabric.claimcheck`
 - `memory_fabric.compaction`
 - `memory_fabric.context_map`
 - `memory_fabric.decay`

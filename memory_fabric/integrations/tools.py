@@ -60,3 +60,23 @@ class FabricTools:
         if is_error and not (isinstance(payload, dict) and "error" in payload):
             return {"error": str(payload)}
         return payload if isinstance(payload, dict) else {"result": payload}
+
+    def guarded(self, gate: Any, tool: str, evidence: list[str], run: Any, *, key: str,
+                claim: str | None = None) -> dict[str, Any]:
+        """Run a side-effecting tool only if its evidence still holds, in one call.
+
+        `evidence` is the memory ids the agent is relying on; they are
+        certified and re-verified in the same transaction as `run(key)`
+        (`ActionGate.execute`). The answer is for a model to read: either the
+        result, or `blocked` with sentences saying why and what to do.
+        """
+        from ..reasons import describe
+
+        fabric = self._server._fabric
+        agent_id = self._server.client.agent_id
+        certificate = fabric.certify(claim or f"{tool}:{key}", evidence, agent_id)
+        done = gate.execute(tool, agent_id, run, certificate, key=key)
+        if done.ran and done.outcome == "executed":
+            return {"ran": True, "result": done.result}
+        why = describe(fabric, done.decision) if done.decision else [done.error or done.outcome]
+        return {"ran": done.ran, "blocked": not done.ran, "outcome": done.outcome, "why": why}

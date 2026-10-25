@@ -100,13 +100,14 @@ class FabricCore:
         retrieval: str = "lexical",
         busy_timeout_ms: int = 5_000,
         recognise_copies: bool = True,
-        rerank: bool = False,
+        rerank: "bool | str | Any" = False,
         conceal_cross_tenant: bool = False,
         limits: "Any" = None,
         withhold_hostile_sources: bool = True,
         hold_suspicious: bool = True,
         crypto_profile: str | None = None,
         contest_restatements: bool = True,
+        claim_checker: Any = None,
     ) -> None:
         # Off by default to keep the documented reason code. On, a request
         # from another tenant is refused exactly as a missing id is, so the
@@ -158,8 +159,11 @@ class FabricCore:
         # standing record of mechanisms that looked right and were not.
         # True selects the default mode; a string names one explicitly, so a
         # benchmark can measure "replace" against "tiebreak" without a second
-        # constructor argument.
+        # constructor argument. An object with a `score(query, texts)` method
+        # (`retrievers.CrossEncoderReranker`) is a model reranker instead.
         self.rerank = rerank
+        # Optional model-backed check for free-text claims (`claimcheck.py`).
+        self.claim_checker = claim_checker
         # Bounded candidate lookup for the subset test. The exhaustive scan it
         # replaces cost 32.4 ms a write at 10,000 memories against 0.19 ms
         # with the check off -- a 168x write cost growing linearly, which made
@@ -197,7 +201,9 @@ class FabricCore:
             self.encrypt_content = encrypt_content
             self.projection = Projection(unsealer=self._unseal_content)
             self._seen_seq = 0
-            self.index = VectorIndex(embedder)
+            # Vectors are built only when something searches them: lazily in
+            # lexical mode (the default), eagerly otherwise (vectors.py).
+            self.index = VectorIndex(embedder, lazy=retrieval == "lexical")
             # The arm the product was missing. `relevance_v1` measured the
             # vector path as the weakest non-broken arm, losing to
             # IDF-weighted token overlap by up to 32 points on the frozen
@@ -442,6 +448,13 @@ class FabricCore:
         versions (`projections.ChangeTrackingDict`), so the cost is the size of
         the change, not of the table.
         """
+        warm = None if self.index.lazy else getattr(self.index.embedder, "warm", None)
+        if warm is not None and len(before) > 1:
+            # A trained embedder batches: one call for a replayed log rather
+            # than one per memory. Already-embedded texts are skipped by it.
+            warm([self._index_text(m) for mid in before
+                  if (m := self.state.memories.get(mid)) is not None
+                  and m.lifecycle_state is not LifecycleState.DELETED])
         for memory_id in before:
             memory = self.state.memories.get(memory_id)
             old = before[memory_id]
@@ -517,6 +530,12 @@ class FabricCore:
         for memory_id in set(self.chain_terms) - set(self.state.memories):
             self._unindex(memory_id)
             self.copy_index.remove(memory_id)
+        warm = None if self.index.lazy else getattr(self.index.embedder, "warm", None)
+        if warm is not None:
+            # One batched pass for a trained embedder instead of a model
+            # call per memory on every open.
+            warm([self._index_text(m) for m in self.state.memories.values()
+                  if m.lifecycle_state is not LifecycleState.DELETED])
         for memory in self.state.memories.values():
             if memory.lifecycle_state is not LifecycleState.DELETED:
                 self._index(memory.id, self._index_text(memory))

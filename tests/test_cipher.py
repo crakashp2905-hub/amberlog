@@ -369,7 +369,7 @@ class TheErasureScopeIsHonest(unittest.TestCase):
         after = self.fabric.retrieve(agent_id="ag", query="keypad code PLUTO")
         self.assertEqual(after.exposed, [])
         self.assertNotIn(self.memory_id, self.fabric.lexical._terms)
-        self.assertNotIn(self.memory_id, self.fabric.index._vectors)
+        self.assertNotIn(self.memory_id, self.fabric.index)
 
     def test_what_is_outside_the_store_is_unknown_rather_than_claimed(self) -> None:
         """The part usually left out. A store cannot see its own backups,

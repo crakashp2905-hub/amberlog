@@ -96,6 +96,10 @@ ALLOWED_LINES = {
     # Tests of the agent API and dashboard operators, whose subject is tokens:
     # the same reason test_auth.py is listed. Values are generated or repeated
     # characters, never real credentials.
+    # Deployment templates name where the token comes from (a generated value,
+    # a Kubernetes Secret); they never hold one.
+    ("DEPLOYMENT.md", "password_assignment"),
+    ("deploy/helm/memory-fabric/templates/deployment.yaml", "password_assignment"),
     ("tests/test_agent_api.py", "password_assignment"),
     ("tests/test_operator_access.py", "password_assignment"),
     # Builds database URLs around a random per-run password to prove the CLI

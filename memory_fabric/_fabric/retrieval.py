@@ -525,7 +525,13 @@ class RetrievalMixin(FabricCore):
             # V2: evidence-aware ranking within what is eligible. It can only
             # re-order or drop, never add (`objective_v2.py`).
             hits = objective.rank(self, hits)
-        if self.rerank:
+        if self.rerank and hasattr(self.rerank, "score"):
+            # A model reranker (`retrievers.py`): same place, reorders only.
+            from ..retrievers import apply_reranker
+
+            hits = apply_reranker(cast(Any, self.rerank), query, hits,
+                                  lambda mid: self.state.memories[mid].content)
+        elif self.rerank:
             # After fusion and before grouping. Reranking a *fused* pool is
             # the claim under test -- that a reranker makes fusion safe -- so
             # it has to see what fusion produced, and grouping afterwards still

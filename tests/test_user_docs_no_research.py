@@ -17,7 +17,10 @@ USER_DOCS = ["README.md", "DEPLOYMENT.md", "SECURITY.md", "VERSIONING.md",
              "docs/SCALE.md", "docs/INTEGRATIONS.md", "docs/RELEASE_NOTES_0.12.0.md",
              "docs/TROUBLESHOOTING.md", "docs/LIMITATIONS.md", "docs/OPERATIONS.md",
              "docs/RUNBOOKS.md", "docs/MIGRATION.md", "docs/REFERENCE_DEPLOYMENT.md",
-             "examples/README.md", "STABILITY.md", "docs/API.md", "docs/CLI.md"]
+             "examples/README.md", "STABILITY.md", "docs/API.md", "docs/CLI.md",
+             "docs/guides/claude.md", "docs/guides/langgraph.md",
+             "docs/guides/openai-agents.md", "docs/guides/crewai.md",
+             "docs/RETRIEVAL.md", "docs/guides/any-agent-any-model.md", "docs/PILOT_KIT.md"]
 # Case-sensitive on purpose: "T2" alone is threat T2 in SECURITY.md, and
 # "oracle" alone is the security sense (a probe that reveals existence).
 FORBIDDEN = re.compile(

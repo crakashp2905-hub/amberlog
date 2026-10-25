@@ -1,0 +1,315 @@
+{
+  "commit": "36d9027",
+  "rows": {
+    "structural": [
+      {
+        "arm": "structural",
+        "seed": 1,
+        "recall": 0.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 0.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      },
+      {
+        "arm": "structural",
+        "seed": 2,
+        "recall": 0.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 0.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      },
+      {
+        "arm": "structural",
+        "seed": 3,
+        "recall": 0.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 0.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      },
+      {
+        "arm": "structural",
+        "seed": 4,
+        "recall": 0.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 0.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      },
+      {
+        "arm": "structural",
+        "seed": 5,
+        "recall": 0.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 0.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      }
+    ],
+    "haiku": [
+      {
+        "arm": "haiku",
+        "seed": 1,
+        "recall": 1.0,
+        "false_holds": 0.08333333333333333,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.25
+        },
+        "cost_usd": 0.01192,
+        "writes": 32
+      },
+      {
+        "arm": "haiku",
+        "seed": 2,
+        "recall": 1.0,
+        "false_holds": 0.08333333333333333,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.25
+        },
+        "cost_usd": 0.01198,
+        "writes": 32
+      },
+      {
+        "arm": "haiku",
+        "seed": 3,
+        "recall": 1.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.01217,
+        "writes": 32
+      },
+      {
+        "arm": "haiku",
+        "seed": 4,
+        "recall": 1.0,
+        "false_holds": 0.08333333333333333,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.25
+        },
+        "cost_usd": 0.01195,
+        "writes": 32
+      },
+      {
+        "arm": "haiku",
+        "seed": 5,
+        "recall": 1.0,
+        "false_holds": 0.08333333333333333,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.25
+        },
+        "cost_usd": 0.01115,
+        "writes": 32
+      }
+    ],
+    "sonnet": [
+      {
+        "arm": "sonnet",
+        "seed": 1,
+        "recall": 1.0,
+        "false_holds": 0.041666666666666664,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.125
+        },
+        "cost_usd": 0.2178,
+        "writes": 32
+      },
+      {
+        "arm": "sonnet",
+        "seed": 2,
+        "recall": 1.0,
+        "false_holds": 0.08333333333333333,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.25
+        },
+        "cost_usd": 0.21529,
+        "writes": 32
+      },
+      {
+        "arm": "sonnet",
+        "seed": 3,
+        "recall": 1.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.21725,
+        "writes": 32
+      },
+      {
+        "arm": "sonnet",
+        "seed": 4,
+        "recall": 1.0,
+        "false_holds": 0.125,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.375
+        },
+        "cost_usd": 0.2166,
+        "writes": 32
+      },
+      {
+        "arm": "sonnet",
+        "seed": 5,
+        "recall": 1.0,
+        "false_holds": 0.041666666666666664,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.125
+        },
+        "cost_usd": 0.20574,
+        "writes": 32
+      }
+    ],
+    "oracle": [
+      {
+        "arm": "oracle",
+        "seed": 1,
+        "recall": 1.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      },
+      {
+        "arm": "oracle",
+        "seed": 2,
+        "recall": 1.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      },
+      {
+        "arm": "oracle",
+        "seed": 3,
+        "recall": 1.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      },
+      {
+        "arm": "oracle",
+        "seed": 4,
+        "recall": 1.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      },
+      {
+        "arm": "oracle",
+        "seed": 5,
+        "recall": 1.0,
+        "false_holds": 0.0,
+        "held_by_type": {
+          "contradiction": 1.0,
+          "paraphrase": 0.0,
+          "new_detail": 0.0,
+          "other_place": 0.0
+        },
+        "cost_usd": 0.0,
+        "writes": 32
+      }
+    ]
+  },
+  "verdict": {
+    "structural_recall": 0.0,
+    "haiku": {
+      "recall": 1.0,
+      "false_holds": 0.06666666666666667,
+      "C3a": true,
+      "C3b": true,
+      "C3c": true,
+      "bar": 0.5,
+      "cost_per_write_usd": 0.0003698125
+    },
+    "sonnet": {
+      "recall": 1.0,
+      "false_holds": 0.05833333333333333,
+      "C3a": true,
+      "C3b": true,
+      "C3c": true,
+      "bar": 0.5,
+      "cost_per_write_usd": 0.00670425
+    },
+    "ceiling_ok": true
+  }
+}

@@ -2938,6 +2938,10 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("dir", help="directory to create the store in")
     p.add_argument("--agent", default="my-assistant")
     p.add_argument("--tenant", default="tn_default")
+    p.add_argument("--mode", choices=("personal", "team", "regulated"), default="team",
+                   help="personal: one user, writes active at once; team: review before "
+                        "sharing (default); regulated: two independent sources and fresh "
+                        "evidence for protected tools")
 
     p = add("incident", cmd_incident,
             "Guided incident response: list candidates, assess one, --contain it "
@@ -3251,10 +3255,17 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  store       {db_s}")
     print(f"  keys        {keys_s}   {C.DIM}(outside the database; back it up separately){C.RESET}")
     print(f"  agents      {agents}   {C.DIM}(holds a signing key; keep it on the server){C.RESET}")
+    from .presets import mcp_flags
+
+    (root / "mode").write_text(args.mode + "\n", encoding="utf-8")
+    print(f"  mode        {args.mode}   {C.DIM}(memory_fabric.presets: open_store(path, {args.mode!r})){C.RESET}")
     print("\nConnect an MCP client (Claude Code, Claude Desktop, an IDE) with:")
     print(json.dumps({"mcpServers": {"memory-fabric": {
         "command": "memory-fabric",
-        "args": ["--db", db_s, "--keys", keys_s, "mcp", "--agent", args.agent]}}}, indent=2))
+        "args": ["--db", db_s, "--keys", keys_s, "mcp", "--agent", args.agent,
+                 *mcp_flags(args.mode)]}}}, indent=2))
+    print(f"\nOr let it write the config: memory-fabric --db {db_s} --keys {keys_s} "
+          f"connect <cursor|claude-desktop|vscode|...> --agent <id> --write")
     print("\nNext:")
     print(f"  memory-fabric --db {db_s} --keys {keys_s} review      # what agents wrote, waiting for you")
     print(f"  memory-fabric --db {db_s} --keys {keys_s} serve       # the dashboard")
@@ -3319,6 +3330,14 @@ def main(argv: Sequence[str] | None = None) -> int:
             from .retrievers import from_environment
 
             retrieval = from_environment()
+        mode_file = Path(str(args.db)).parent / "mode"
+        if "://" not in str(args.db) and mode_file.is_file():
+            # The mode `init --mode` recorded beside the store (presets.py).
+            from .presets import MODES, store_settings
+
+            mode = mode_file.read_text(encoding="utf-8").strip()
+            if mode in MODES:
+                retrieval = {**store_settings(mode), **retrieval}
         fabric = MemoryFabric(
             args.db, estimator=args.estimator, key_provider=key_provider,
             firewall=Firewall(rules=SHARE_POLICIES[args.share_policy]), **retrieval,

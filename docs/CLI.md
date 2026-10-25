@@ -248,6 +248,7 @@ never overwrites: an existing store is an error, not a reset.
 - `dir`: directory to create the store in
 - `--agent`: the first agent to register
 - `--tenant`: its tenant id
+- `--mode`: personal: one user, writes active at once; team: review before sharing (default); regulated: two independent sources and fresh evidence for protected tools
 
 ### `lifecycle`
 

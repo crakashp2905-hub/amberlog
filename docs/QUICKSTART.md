@@ -10,12 +10,18 @@ Windows with Python 3.11 to 3.13.
 git clone https://github.com/crakashp2905-hub/memory-fabric.git
 cd memory-fabric
 pip install .
-memory-fabric init ./memory
+memory-fabric init ./memory --mode personal     # or team (default), or regulated
 ```
 
 `init` creates a store, keeps its keys outside it, registers one agent,
 prints an MCP client configuration and runs `doctor`. It never overwrites an
 existing store.
+
+**Pick a mode, not a dozen settings.** `personal`: one person and their
+agents; what they write is usable at once. `team`: shared knowledge; new
+memories wait for review. `regulated`: protected tools need two independent
+sources and fresh evidence. In Python: `presets.open_store(path, "team")` and
+`presets.tool_rule("team", "issue_refund")`.
 
 **Removal is clean.** The package writes nothing outside the directories you
 name:

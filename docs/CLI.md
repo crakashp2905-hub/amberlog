@@ -341,6 +341,12 @@ WRITES: offer one memory to a peer store over HTTP. It lands there as a candidat
 Store health and what it can and cannot tell you
 
 
+### `pilot-report`
+
+Outcome numbers for a pilot, from the log: no content, agents pseudonymised
+
+- `--names`: keep agent names instead of hashes
+
 ### `posture`
 
 Which security controls are on in this store, and the accepted gaps

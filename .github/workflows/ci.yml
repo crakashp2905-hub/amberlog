@@ -382,3 +382,17 @@ jobs:
         with:
           python-version: "3.13"
       - run: python tools/scan_secrets.py
+
+  helm:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@v4
+      - name: Lint and render the chart
+        run: |
+          helm lint deploy/helm/memory-fabric --set dashboard.token=ci-token
+          helm template t deploy/helm/memory-fabric --set dashboard.token=ci-token > /tmp/out.yaml
+          helm template t deploy/helm/memory-fabric --set dashboard.token=ci-token \
+            --set agentApi.enabled=true --set agentApi.agentsSecret=agents \
+            --set mode=regulated --set embedder=ollama:nomic-embed-text >> /tmp/out.yaml
+          python3 -c "import yaml,sys; docs=[d for d in yaml.safe_load_all(open('/tmp/out.yaml')) if d]; kinds=sorted({d['kind'] for d in docs}); print(kinds); assert {'Deployment','Service','PersistentVolumeClaim','Secret'} <= set(kinds)"

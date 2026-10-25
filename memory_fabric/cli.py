@@ -1908,6 +1908,14 @@ def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
     return 0 if ok else 5
 
 
+def cmd_pilot_report(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """A shareable pilot report (`pilot.py`): counts and durations, never content."""
+    from .pilot import report
+
+    print(json.dumps(report(fabric, names=args.names), indent=2))
+    return 0
+
+
 def cmd_connect(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """The setup for one agent tool (`connect.py`), printed or written."""
     from .connect import TARGETS, snippet, write
@@ -3122,6 +3130,9 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--port", type=int, default=8765)
     p.add_argument("--dir", help="where to create it (default: a new temporary folder)")
     p.add_argument("--no-serve", action="store_true", help="seed only; print the path")
+    p = add("pilot-report", cmd_pilot_report,
+            "Outcome numbers for a pilot, from the log: no content, agents pseudonymised")
+    p.add_argument("--names", action="store_true", help="keep agent names instead of hashes")
     p = add("connect", cmd_connect,
             "Set up an agent tool: connect <tool> --agent <id> [--write]; connect --list")
     p.add_argument("tool", nargs="?", help="claude-code, claude-desktop, cursor, windsurf, vscode, "

@@ -52,6 +52,7 @@ Every document in the repository, by what you are trying to do.
 | [TROUBLESHOOTING.md](TROUBLESHOOTING.md) | Every error message and what to do |
 | [MIGRATION.md](MIGRATION.md) | Moving between versions, and moving in from elsewhere |
 | [SCALE.md](SCALE.md) | How many agents, how far federated, what carries between sessions |
+| [PILOT_KIT.md](PILOT_KIT.md) | Try it with your own agents and send back only the numbers |
 | [REFERENCE_DEPLOYMENT.md](REFERENCE_DEPLOYMENT.md) | Two federated stores in five minutes |
 
 ## Trust and security

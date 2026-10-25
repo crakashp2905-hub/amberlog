@@ -13,6 +13,7 @@ on:
   push:
     paths:
       - experiments/retriever_eval.py
+      - experiments/r3_diag.py
       - .github/workflows/retriever-eval.yml
 
 permissions:
@@ -23,7 +24,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: |
+          mkdir -p research/bench/longmemeval/data
+          curl -fsSL -o research/bench/longmemeval/data/longmemeval_s_cleaned.json \
+            https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json
+      - run: python -m experiments.r3_diag
+
   part:
+    if: false
     runs-on: ubuntu-latest
     timeout-minutes: 240
     strategy:
@@ -51,7 +68,7 @@ jobs:
 
   decide:
     needs: part
-    if: always()
+    if: false
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

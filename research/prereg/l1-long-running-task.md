@@ -72,3 +72,31 @@ A simulation with known answers, not agents with models: it measures the
 mechanism under a stated pattern of corrections and restatements, not how
 often real agents restate values. The 0.35 note rate and the lexical
 retriever are choices, stated here, not tuned.
+
+## Amendment 1 — registered 2026-10-25, after the first run was abandoned, before L1′ ran
+
+**What happened.** Seeds 1–5 were abandoned under §4's 8c rule: both
+baselines scored **0.0 harmful actions per 1,000**, equal to the oracle
+(`research/results/l1-long-running.md`). The world made it so. Every recall
+used the query "E-12 setpoint", and the canonical sentence "E-12 setpoint is
+52." is the shortest exact match, so a working note never outranked it, and a
+correction written as a new memory won every tie against the value it
+replaced (ties break newest first, chosen to favour the baselines).
+
+**One change, L1′.** Workers recall in the words of their job, as agents do,
+rather than in the canonical sentence's words. The query for each job is
+drawn from these four, fixed here:
+
+- "{e} setpoint for the shift plan"
+- "what setpoint is {e} running at"
+- "setpoint used on {e} today"
+- "reminder: {e} setpoint for next shift"
+
+Everything else is unchanged: arms, ties newest first, note rate, thresholds,
+the 8c rule. **Fresh seeds 6–10.** If a baseline is again within 1 per 1,000
+of the oracle, L1′ is abandoned too and the result says so.
+
+This is a deliberate move toward a world where notes compete with facts. The
+reason is stated, not hidden: in the first world nothing could go wrong for
+any arm, so the measurement said nothing. Whether real agents' queries
+resemble their notes this much is not established here.

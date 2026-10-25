@@ -6,8 +6,8 @@
  },
  {
   "area": "Security",
-  "limitation": "Claim checks read numbers and identifiers (P7, and since 0.12.x codes with separators: H-14, PMP_0012, K/31). A free-text claim with no equipment id or value (\"the east wing is safe\") is not checked.",
-  "what_to_do": "Review free-text memories that matter before validating them."
+  "limitation": "The built-in claim checks read numbers and identifiers (P7, H-14, PMP_0012, K/31). A free-text claim with no equipment id or value (\"the east wing is safe\") is not checked by them.",
+  "what_to_do": "Turn on the model-backed check, opt-in, with a model you choose: MemoryFabric(..., claim_checker=ModelClaimChecker(\"anthropic:claude-opus-5-5\")). Measured on templated free-text contradictions it held all of them, holding 6–7% of other claims by mistake; each checked write is one model call."
  },
  {
   "area": "Security",

@@ -168,6 +168,13 @@ should be), mean over seeds, and model cost per checked write:
 |---|---|---|---|
 {mark("haiku")}
 {mark("sonnet")}
+
+**Reading.** Both models held every contradiction and never held a paraphrase or a new detail.
+Their false holds all came from the hardest kind: a claim worded as a contradiction ("the archive
+is closed to everyone") about a place with no established fact, which the model sometimes read as
+contradicting a similar fact about another place. Haiku costs about a twentieth of Sonnet a write
+for the same result here. Opt-in, as registered: every checked write is a model call, and content
+goes to the provider the user chose.
 """)
     print(json.dumps(verdict, indent=2))
     return 0

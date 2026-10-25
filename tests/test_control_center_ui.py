@@ -57,7 +57,7 @@ class TestPage(unittest.TestCase):
     def test_script_parses(self):
         html = HTML.read_text(encoding="utf-8")
         script = html[html.index("<script>") + 8: html.rindex("</script>")]
-        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False) as fh:
+        with tempfile.NamedTemporaryFile("w", suffix=".js", delete=False, encoding="utf-8") as fh:
             fh.write(script)
         result = subprocess.run(["node", "--check", fh.name], capture_output=True, text=True)
         Path(fh.name).unlink()

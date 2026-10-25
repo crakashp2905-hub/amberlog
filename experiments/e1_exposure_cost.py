@@ -31,7 +31,7 @@ from typing import Any
 from memory_fabric import MemoryFabric
 
 ROOT = Path(__file__).resolve().parent.parent
-SIZES = (2_000, 10_000)
+SIZES = (2_000, 10_000, 100_000)
 QUERIES = 300
 
 
@@ -90,10 +90,12 @@ pre-registered.
 |---|---|---|---|---|
 {rows}
 
-**Reading.** Recording is a minority of a retrieval's cost, and ranking is the
-majority. A retrieval writes one event per ranked candidate (pool `4k`), shown
-or withheld, so recording costs a fixed few milliseconds while ranking grows
-with the store.
+**Reading.** Recording costs a fixed few milliseconds a retrieval: one event per
+ranked candidate (pool `4k`), shown or withheld, whatever the store's size.
+Ranking used to grow linearly with the store (138 ms at 10,000 memories at
+commit `aafc559`); since lexical search prunes to the rarest query terms, its
+share is {results[-1]['share_ranking']:.0%} at {results[-1]['memories']:,} memories,
+and recording is {results[-1]['share_recording']:.0%}.
 
 **Batching, tried and not kept.** Inserting the hash-chain rows with one
 `executemany` instead of one statement each halved the SQL calls a retrieval
@@ -105,7 +107,7 @@ coarsen the per-candidate audit trail that credit estimation reads. Not done.
 
 **Where the capacity goes instead.** Read-heavy load is served by one
 `agent-api` process per store, which keeps throughput flat as agents are added
-(OPERATIONS §4a). Ranking, not recording, is what to optimise next.
+(OPERATIONS §4a).
 """)
     print(json.dumps(results, indent=2))
     return 0

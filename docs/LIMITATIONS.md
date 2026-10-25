@@ -25,9 +25,9 @@ relying on it for something that matters. Anything fixed since is in the
 
 | limitation | what to do |
 |---|---|
-| **It does not make answers more accurate than a good retriever.** It governs what is remembered; it does not find better memories. | Pair it with the best retriever you have (`Embedder`, rerankers). |
+| **It does not make answers more accurate than a good retriever.** It governs what is remembered; finding the right memory is the retriever's job. | Use a trained retriever and reranker ([RETRIEVAL.md](RETRIEVAL.md)). |
 | **It rarely says "I don't know".** If nothing relevant is stored, retrieval returns the closest memories. | Use `min_relevance`, or check the scores before acting. |
-| **The built-in hashing embedder is weak on real text.** | Plug in a real embedding model through the `Embedder` protocol. |
+| **The built-in hashing embedder is weak on real text.** | `pip install ".[retrieval]"` and `MemoryFabric(..., **best_available())`, or any model through the `Embedder` protocol ([RETRIEVAL.md](RETRIEVAL.md)). |
 | **Model-compiled objectives can drop alternatives** a session needed. | State the objective in the agent's prompt; use compiled filters only after review. |
 | **A session summary larger than the context budget is skipped, not shortened.** | Give handoffs a budget of at least ~80 words, or retrieve the session's notes directly. |
 

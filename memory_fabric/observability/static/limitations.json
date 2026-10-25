@@ -61,8 +61,8 @@
  },
  {
   "area": "Retrieval and memory quality",
-  "limitation": "It does not make answers more accurate than a good retriever. It governs what is remembered; it does not find better memories.",
-  "what_to_do": "Pair it with the best retriever you have (Embedder, rerankers)."
+  "limitation": "It does not make answers more accurate than a good retriever. It governs what is remembered; finding the right memory is the retriever's job.",
+  "what_to_do": "Use a trained retriever and reranker (RETRIEVAL.md)."
  },
  {
   "area": "Retrieval and memory quality",
@@ -72,7 +72,7 @@
  {
   "area": "Retrieval and memory quality",
   "limitation": "The built-in hashing embedder is weak on real text.",
-  "what_to_do": "Plug in a real embedding model through the Embedder protocol."
+  "what_to_do": "pip install \".[retrieval]\" and MemoryFabric(..., best_available()), or any model through the Embedder protocol (RETRIEVAL.md)."
  },
  {
   "area": "Retrieval and memory quality",

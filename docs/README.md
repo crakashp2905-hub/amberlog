@@ -33,6 +33,7 @@ Every document in the repository, by what you are trying to do.
 |---|---|
 | [API.md](API.md) | The Python API, generated from the code |
 | [CLI.md](CLI.md) | Every command and option, generated from the parser |
+| [RETRIEVAL.md](RETRIEVAL.md) | Getting the best retrieval: trained embedders, rerankers, one line |
 | [INTEGRATIONS.md](INTEGRATIONS.md) | MCP, HTTP, SDK, LangChain, Claude, Ollama, PostgreSQL |
 | [PROTOCOL.md](PROTOCOL.md) | The federation protocol, v1 ([schemas](protocol/)) |
 | [../SPEC.md](../SPEC.md) | The memory schema and event types, by version |

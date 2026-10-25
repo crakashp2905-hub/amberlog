@@ -24,29 +24,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  diag:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - run: pip install -e .
-      - run: |
-          mkdir -p research/bench/longmemeval/data
-          curl -fsSL -o research/bench/longmemeval/data/longmemeval_s_cleaned.json \
-            https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json
-      - run: python -m experiments.r3_diag
-
   part:
-    if: false
     runs-on: ubuntu-latest
-    timeout-minutes: 240
+    timeout-minutes: 340
     strategy:
       fail-fast: false
       matrix:
         part: [base, bge-small, bge-base, arctic-m, nomic]
+        # SciFact in one job; LongMemEval's 60 instances in three shards, so
+        # no job embeds ~30,000 turns on its own (amendment 2).
+        job: [scifact, lme0, lme1, lme2]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -55,20 +42,30 @@ jobs:
       - name: Install
         run: pip install -e ".[retrieval]"
       - name: Fetch LongMemEval s
+        if: matrix.job != 'scifact'
         run: |
           mkdir -p research/bench/longmemeval/data
           curl -fsSL -o research/bench/longmemeval/data/longmemeval_s_cleaned.json \
             https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json
       - name: Run part
-        run: python -m experiments.retriever_eval --part ${{ matrix.part }} --lme-limit "${{ inputs.lme_limit || '60' }}"
+        run: |
+          if [ "${{ matrix.job }}" = scifact ]; then
+            python -m experiments.retriever_eval --part ${{ matrix.part }} --only scifact
+          else
+            i="${{ matrix.job }}"; i="${i#lme}"
+            python -m experiments.retriever_eval --part ${{ matrix.part }} --only longmemeval \
+              --shard "$i/3" --lme-limit "${{ inputs.lme_limit || '60' }}"
+          fi
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
-          name: r3-part-${{ matrix.part }}
-          path: research/results/r3-part-${{ matrix.part }}.json
+          name: r3-part-${{ matrix.part }}-${{ matrix.job }}
+          path: research/results/r3-part-*.json
+          if-no-files-found: ignore
 
   decide:
     needs: part
-    if: false
+    if: always()
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

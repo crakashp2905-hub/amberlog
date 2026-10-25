@@ -178,7 +178,7 @@ def lme_config(arm: str) -> dict[str, Any] | None:
 def longmemeval(instances: Sequence[Mapping[str, Any]], arms: Sequence[str]) -> dict[str, Any]:
     from memory_fabric import MemoryFabric
 
-    rows: dict[str, dict[str, float]] = {}
+    rows: dict[str, dict[str, list[float]]] = {}
     for arm in ["lexical", *[a for a in arms if a != "lexical"], "oracle"]:
         if arm in missing:
             continue
@@ -195,7 +195,7 @@ def longmemeval(instances: Sequence[Mapping[str, Any]], arms: Sequence[str]) -> 
                                                          inst["haystack_sessions"])
                     for pos, turn in enumerate(session) if turn.get("has_answer")}
             fabric = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False,
-                                  recognise_copies=False,
+                                  recognise_copies=False, withhold_hostile_sources=False,
                                   **(config or {"retrieval": "lexical"}))
             try:
                 emb = (config or {}).get("embedder")
@@ -217,10 +217,16 @@ def longmemeval(instances: Sequence[Mapping[str, Any]], arms: Sequence[str]) -> 
                 fabric.close()
             hits = len({mapping[m] for m in returned if m in mapping} & gold)
             recalls.append(hits / len(gold) if gold else 0.0)
-        rows[arm] = {"turn_recall": round(statistics.fmean(recalls), 4),
-                     "p50_ms": round(statistics.median(latencies), 1)}
-        print(f"  longmemeval {arm}: {rows[arm]}", flush=True)
+        rows[arm] = {"recalls": recalls, "latencies": latencies}
+        print(f"  longmemeval {arm}: {summarise(rows[arm])}", flush=True)
     return rows
+
+
+def summarise(raw: Mapping[str, Sequence[float]]) -> dict[str, float]:
+    """Per-instance values (kept so shards can be pooled) to the reported row."""
+    return {"turn_recall": round(statistics.fmean(raw["recalls"]), 4),
+            "p50_ms": round(statistics.median(raw["latencies"]), 1),
+            "instances": len(raw["recalls"])}
 
 
 def decide(sci: Mapping[str, Any], lm: Mapping[str, Any]) -> dict[str, Any]:
@@ -239,10 +245,10 @@ def decide(sci: Mapping[str, Any], lm: Mapping[str, Any]) -> dict[str, Any]:
         gains = [round(bootstrap_gain(pq[arm], pq["lexical"], s), 4) for s in range(1, 6)]
         v: dict[str, Any] = {"ndcg": r["ndcg_at_10"], "gains_vs_lexical": gains}
         v["R3a"] = r["ndcg_at_10"] >= bar and all(g > 0 for g in gains)
-        l = lm.get(arm)
-        v["lme"] = l
-        v["R3b"] = bool(l) and l["turn_recall"] >= lex_lme - 0.02
-        v["cost_ok"] = bool(l) and l["p50_ms"] <= 250
+        row = lm.get(arm) or {}
+        v["lme"] = row
+        v["R3b"] = bool(row) and row["turn_recall"] >= lex_lme - 0.02
+        v["cost_ok"] = bool(row) and row["p50_ms"] <= 250
         base, _, rr = arm.partition("+")
         if rr:
             base_n = rows.get(base, {}).get("ndcg_at_10")
@@ -334,17 +340,39 @@ def write_result(sci: Mapping[str, Any], lm: Mapping[str, Any], run: str) -> int
 def combine(paths: Sequence[str], run: str) -> int:
     rows: dict[str, Any] = {}
     per_query: dict[str, list[float]] = {}
-    lm: dict[str, Any] = {}
     lexical: list[float] = []
+    pooled: dict[str, dict[str, list[float]]] = {}
+    lme_lexical: dict[str, float] = {}
     for path in paths:
         part = json.loads(pathlib.Path(path).read_text())
-        rows.update(part["scifact"]["rows"])
-        per_query.update(part["scifact"]["per_query"])
-        lm.update(part["longmemeval"])
         missing.update(part.get("missing", {}))
-        lexical.append(part["scifact"]["rows"]["lexical"]["ndcg_at_10"])
-    if max(lexical) - min(lexical) > 1e-9:
+        if part.get("scifact"):
+            rows.update(part["scifact"]["rows"])
+            per_query.update(part["scifact"]["per_query"])
+            lexical.append(part["scifact"]["rows"]["lexical"]["ndcg_at_10"])
+        shard = part.get("shard", "all")
+        for arm, raw in part.get("longmemeval", {}).items():
+            if arm == "lexical":
+                # Every family's shard i re-measures lexical on the same
+                # instances; pool it once per shard and check they agree.
+                key = statistics.fmean(raw["recalls"])
+                if shard in lme_lexical and abs(lme_lexical[shard] - key) > 1e-9:
+                    raise SystemExit(f"shard {shard} disagrees on LongMemEval lexical")
+                if shard in lme_lexical:
+                    continue
+                lme_lexical[shard] = key
+            if arm == "oracle" and f"oracle/{shard}" in pooled:
+                continue
+            pooled.setdefault(f"{arm}/{shard}", raw)
+            dest = pooled.setdefault(arm, {"recalls": [], "latencies": []})
+            dest["recalls"] += raw["recalls"]
+            dest["latencies"] += raw["latencies"]
+    if lexical and max(lexical) - min(lexical) > 1e-9:
         raise SystemExit(f"parts disagree on the lexical baseline: {lexical}")
+    lm = {arm: summarise(raw) for arm, raw in pooled.items() if "/" not in arm}
+    n = {row["instances"] for row in lm.values()}
+    if len(n) > 1:
+        print(f"warning: arms cover different instance counts: {sorted(n)}", flush=True)
     return write_result({"rows": rows, "per_query": per_query}, lm, run)
 
 
@@ -355,23 +383,35 @@ def main(argv: Sequence[str] | None = None) -> int:
     p.add_argument("--part", choices=sorted(PARTS))
     p.add_argument("--combine", nargs="+", metavar="PART_JSON")
     p.add_argument("--run", default="local")
+    p.add_argument("--only", choices=["scifact", "longmemeval"],
+                   help="run one benchmark (CI runs them as separate jobs)")
+    p.add_argument("--shard", default="0/1", help="LongMemEval instances i/n")
     args = p.parse_args(argv)
     if args.combine:
         return combine(args.combine, args.run)
-    arms = PARTS[args.part] if args.part else args.arms
-    data = sf.load()
-    print("SciFact", flush=True)
-    sci = scifact(data, arms)
-    print("LongMemEval", flush=True)
-    lm = longmemeval(lme.load("s", limit=args.lme_limit),
-                     [a for a in sci["rows"] if a != "oracle"])
+    arms = PARTS[args.part] if args.part else (args.arms or [])
+    sci: dict[str, Any] = {}
+    lm: dict[str, Any] = {}
+    if args.only != "longmemeval":
+        print("SciFact", flush=True)
+        sci = scifact(sf.load(), arms)
+    if args.only != "scifact":
+        i, n = (int(x) for x in args.shard.split("/"))
+        print(f"LongMemEval shard {i}/{n}", flush=True)
+        lm = longmemeval(lme.load("s", limit=args.lme_limit)[i::n],
+                         [a for a in arms if not a.endswith("_vector")])
     if args.part:
-        out = ROOT / "research" / "results" / f"r3-part-{args.part}.json"
-        out.write_text(json.dumps({"part": args.part, "scifact": sci, "longmemeval": lm,
-                                   "missing": missing}) + "\n")
+        tag = f"{args.part}-{args.only or 'all'}-{args.shard.replace('/', 'of')}"
+        out = ROOT / "research" / "results" / f"r3-part-{tag}.json"
+        out.write_text(json.dumps({"part": args.part, "shard": args.shard, "scifact": sci,
+                                   "longmemeval": lm, "missing": missing}) + "\n")
         print(f"wrote {out}")
         return 0
-    return write_result(sci, lm, args.run)
+    return combine_inline(sci, lm, args.run)
+
+
+def combine_inline(sci: Mapping[str, Any], lm: Mapping[str, Any], run: str) -> int:
+    return write_result(sci, {arm: summarise(raw) for arm, raw in lm.items()}, run)
 
 
 if __name__ == "__main__":

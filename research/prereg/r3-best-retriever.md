@@ -114,3 +114,32 @@ to how it runs:
   rankings to 1e-16). This changes speed, not which documents are returned,
   so the cost bound (p50 ≤ 250 ms) is now measured on the faster index the
   product ships.
+
+## Amendment 2 — procedure only, registered 2026-10-25
+
+Arms, benchmarks, metrics, thresholds and the decision rule are unchanged.
+
+**What was seen first, stated plainly.** Run 40215135822 finished the `base`
+part; the four model parts were cancelled at the 4-hour job limit, after
+printing SciFact rows for most of their arms (not a complete set, and no
+decision was made from them). Every LongMemEval arm, `lexical` included,
+scored **0.033** turn recall against an oracle of 1.000, which is a harness
+defect rather than a result: a diagnostic run found that `retrieve` returned
+nothing at all on these stores. One turn per few hundred trips the write-time
+injection screen; the history is written as a single agent, so
+`withhold_hostile_sources` (on by default) then withholds every turn. No
+LongMemEval number from that run is used.
+
+Changes:
+
+- **`withhold_hostile_sources=False`** in the LongMemEval harness, beside the
+  registered `recognise_copies=False` and for the same reason: it would
+  measure a write-time screen, not retrieval. The screen's false-positive rate
+  on conversational text is reported as a separate finding.
+- **SciFact and LongMemEval run as separate jobs**, and LongMemEval's 60
+  instances in **three shards** (instances `i::3`), pooled per instance by the
+  combine step. Every shard re-measures `lexical` on its own instances and the
+  combine step refuses to decide if two families disagree on it.
+- **Documents are embedded in order of length** (a product change: a batch is
+  padded to its longest text). It changes speed, not vectors.
+- Job limit 340 minutes.

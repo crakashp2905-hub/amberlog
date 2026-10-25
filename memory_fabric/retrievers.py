@@ -151,6 +151,9 @@ class _BatchEmbedder:
     def warm(self, texts: Sequence[str]) -> None:
         """Embed many documents in batches. Already-cached texts are skipped."""
         missing = [t for t in dict.fromkeys(texts) if self.cache.get(t) is None]
+        # Similar lengths in one batch: a batch is padded to its longest text,
+        # so mixing a 10-word turn with a 500-word one wastes most of the work.
+        missing.sort(key=len)
         for start in range(0, len(missing), self.batch_size):
             batch = missing[start:start + self.batch_size]
             self.calls += 1

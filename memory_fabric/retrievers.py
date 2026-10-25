@@ -50,7 +50,7 @@ import sys
 import threading
 import urllib.request
 from collections import OrderedDict
-from typing import Any, Callable, Iterable, Protocol, Sequence
+from typing import Any, Callable, Iterable, Iterator, Protocol, Sequence
 
 DEFAULT_EMBED_MODEL = "BAAI/bge-small-en-v1.5"
 DEFAULT_RERANK_MODEL = "Xenova/ms-marco-MiniLM-L-6-v2"
@@ -124,6 +124,9 @@ class VectorCache:
                 self._db = None
 
 
+BATCH_CHARS_PER_TEXT = 2000
+
+
 class _BatchEmbedder:
     """Shared caching and batching. Subclasses implement `_documents` and `_queries`."""
 
@@ -154,13 +157,31 @@ class _BatchEmbedder:
         # Similar lengths in one batch: a batch is padded to its longest text,
         # so mixing a 10-word turn with a 500-word one wastes most of the work.
         missing.sort(key=len)
-        for start in range(0, len(missing), self.batch_size):
-            batch = missing[start:start + self.batch_size]
+        for batch in self._batches(missing):
             self.calls += 1
             vectors = self._documents(batch)
             if vectors:
                 self.dim = len(vectors[0])
             self.cache.put_many(zip(batch, vectors))
+
+    def _batches(self, texts: list[str]) -> Iterator[list[str]]:
+        """At most `batch_size` texts and about `batch_size` x 2,000 characters.
+
+        Sorted by length, the long texts end up together, and a long-context
+        model pads the whole batch to them: 64 texts of 8,000 tokens asked
+        onnxruntime for 29 GB. The character budget keeps the long batches small.
+        """
+        budget = self.batch_size * BATCH_CHARS_PER_TEXT
+        batch: list[str] = []
+        size = 0
+        for text in texts:
+            if batch and (len(batch) >= self.batch_size or size + len(text) > budget):
+                yield batch
+                batch, size = [], 0
+            batch.append(text)
+            size += len(text)
+        if batch:
+            yield batch
 
     def embed(self, text: str) -> list[float]:
         found = self.cache.get(text)

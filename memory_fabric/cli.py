@@ -3264,11 +3264,10 @@ def cmd_init(args: argparse.Namespace) -> int:
         "command": "memory-fabric",
         "args": ["--db", db_s, "--keys", keys_s, "mcp", "--agent", args.agent,
                  *mcp_flags(args.mode)]}}}, indent=2))
-    print(f"\nOr let it write the config: memory-fabric --db {db_s} --keys {keys_s} "
-          f"connect <cursor|claude-desktop|vscode|...> --agent <id> --write")
     print("\nNext:")
     print(f"  memory-fabric --db {db_s} --keys {keys_s} review      # what agents wrote, waiting for you")
     print(f"  memory-fabric --db {db_s} --keys {keys_s} serve       # the dashboard")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} connect --list   # set up another agent tool")
     print(f"  memory-fabric --db {db_s} --keys {keys_s} agent-api --agents-file {agents}")
     print()
     return main(["--db", db_s, "--keys", keys_s, "doctor"])

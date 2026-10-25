@@ -187,7 +187,7 @@ class SealingMixin(FabricCore):
                 "content_key_destroyed": record.erased,
                 "log_payload_is_ciphertext": sealed,
                 "content_reads_as_marker": memory.content == ERASED_MARKER,
-                "removed_from_vector_index": memory_id not in self.index._vectors,
+                "removed_from_vector_index": memory_id not in self.index,
                 "removed_from_lexical_index": memory_id not in self.lexical._terms,
             },
             "kept_deliberately": [

@@ -340,25 +340,27 @@ def _assess(fabric: "MemoryFabric", memory: Any, with_authority: bool) -> Assess
     # hundred recent peers estimate as well.
     peers_values: list[float] = []
     looked: set[str] = set()
-    for w in sorted(words, key=lambda w: (len(index.by_word.get(w, ())), w)):
+    value = _number(values)
+    # The peers only matter for the outlier test, which needs this claim to
+    # have one value; without one there is nothing to compare and no scan.
+    for w in (sorted(words, key=lambda w: (len(index.by_word.get(w, ())), w))
+              if value is not None else ()):
         for oid in reversed(index.by_word.get(w, {})):
             if oid in looked:
                 continue
             looked.add(oid)
-            if (oid != memory_id and oid not in same_claim
-                    and len(index.claim_of(oid)[1] & words) >= 2):
-                other = memories[oid]
-                if (other.tenant_id == tenant and other.lifecycle_state in EXPOSABLE_STATES
-                        and _same_parameter(mine, index.claim_of(oid))):
-                    n = index.number_of(oid)
-                    if n is not None:
+            if oid != memory_id and oid not in same_claim:
+                n = index.number_of(oid)
+                if n is not None and len(index.claim_of(oid)[1] & words) >= 2:
+                    other = memories[oid]
+                    if (other.tenant_id == tenant and other.lifecycle_state in EXPOSABLE_STATES
+                            and _same_parameter(mine, index.claim_of(oid))):
                         peers_values.append(n)
             if len(peers_values) >= PEER_SAMPLE or len(looked) >= PEER_SCAN:
                 break
         if len(peers_values) >= PEER_SAMPLE or len(looked) >= PEER_SCAN:
             break
 
-    value = _number(values)
     if value is not None and len(peers_values) >= MIN_COMPARABLE:
         median = statistics.median(peers_values)
         mad = statistics.median(abs(v - median) for v in peers_values) or 1e-9

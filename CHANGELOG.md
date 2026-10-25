@@ -15,6 +15,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **`GET /metrics`** on `serve` (Prometheus), incremental, without content, memory ids or agent ids.
 
 ### Changed: faster at scale
+- **Reopening a store**: 20,000 memories open in about 1.6 s instead of 15–30 s, peaking at 144 MB instead of 310 MB. The hashed vector index is built only when a retrieval needs vectors (lexical, the default, never does), and text normalisation skips plain ASCII.
+- **Writes after reopening**: about 2.3 ms at 20,000 memories (from 14.7). The outlier check no longer scans peers for a claim that has no single value to compare.
 - **Lexical retrieval prunes**: rarest query terms first, stopping once nothing unseen can reach the top k; in stores of 2,000 memories or more, a term in over 90% of them no longer nominates candidates by itself. 110 ms → 0.6 ms a retrieval at 10,000 memories on the scale benchmark's corpus; identical results to a full scan below 2,000 memories.
 - **Writes**: the outlier claim check reads the newest 256 comparable claims (at most 1,024 looked at) instead of every memory sharing a word: about 23 ms → 4 ms a write at 10,000 memories, still catching a 900-bar claim against a median of 26.
 

@@ -319,11 +319,34 @@ class VectorIndex:
     a scan costing `n × dim` and `n × terms`.
     """
 
-    def __init__(self, embedder: Embedder | None = None) -> None:
+    def __init__(self, embedder: Embedder | None = None, lazy: bool = False) -> None:
         self.embedder = embedder or HashingEmbedder()
         self._vectors: dict[str, list[float]] = {}
+        # Lazy: texts wait here until a search needs vectors. A store using
+        # lexical retrieval (the default) never searches this index, and
+        # embedding every memory on open was half of reopening 20,000 memories
+        # (16 of 32 s) and most of its memory: a 256-float vector per memory.
+        self.lazy = lazy
+        self._pending: dict[str, str] = {}
+
+    def _materialize(self) -> None:
+        if not self._pending:
+            return
+        pending, self._pending = self._pending, {}
+        warm = getattr(self.embedder, "warm", None)
+        if warm is not None:
+            warm(list(pending.values()))
+        for key, text in pending.items():
+            self._embed_into(key, text)
 
     def add(self, key: str, text: str) -> str:
+        if self.lazy:
+            self._vectors.pop(key, None)
+            self._pending[key] = text
+            return key
+        return self._embed_into(key, text)
+
+    def _embed_into(self, key: str, text: str) -> str:
         vector = self.embedder.embed(text)
         norm = math.sqrt(sum(v * v for v in vector))
         if norm > 0.0:
@@ -333,12 +356,13 @@ class VectorIndex:
 
     def remove(self, key: str) -> None:
         self._vectors.pop(key, None)
+        self._pending.pop(key, None)
 
     def __contains__(self, key: str) -> bool:
-        return key in self._vectors
+        return key in self._vectors or key in self._pending
 
     def __len__(self) -> int:
-        return len(self._vectors)
+        return len(self._vectors) + len(self._pending)
 
     def search(
         self,
@@ -359,6 +383,7 @@ class VectorIndex:
         whose good memories have been retracted starts serving its irrelevant
         ones. A score at or below zero means no shared signal at all.
         """
+        self._materialize()
         # A trained embedder may encode queries differently from documents
         # (an instruction prefix); `embed_query` is optional on the protocol.
         encode = getattr(self.embedder, "embed_query", None) or self.embedder.embed

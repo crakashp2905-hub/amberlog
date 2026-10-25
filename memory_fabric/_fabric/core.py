@@ -201,7 +201,9 @@ class FabricCore:
             self.encrypt_content = encrypt_content
             self.projection = Projection(unsealer=self._unseal_content)
             self._seen_seq = 0
-            self.index = VectorIndex(embedder)
+            # Vectors are built only when something searches them: lazily in
+            # lexical mode (the default), eagerly otherwise (vectors.py).
+            self.index = VectorIndex(embedder, lazy=retrieval == "lexical")
             # The arm the product was missing. `relevance_v1` measured the
             # vector path as the weakest non-broken arm, losing to
             # IDF-weighted token overlap by up to 32 points on the frozen
@@ -446,7 +448,7 @@ class FabricCore:
         versions (`projections.ChangeTrackingDict`), so the cost is the size of
         the change, not of the table.
         """
-        warm = getattr(self.index.embedder, "warm", None)
+        warm = None if self.index.lazy else getattr(self.index.embedder, "warm", None)
         if warm is not None and len(before) > 1:
             # A trained embedder batches: one call for a replayed log rather
             # than one per memory. Already-embedded texts are skipped by it.
@@ -528,7 +530,7 @@ class FabricCore:
         for memory_id in set(self.chain_terms) - set(self.state.memories):
             self._unindex(memory_id)
             self.copy_index.remove(memory_id)
-        warm = getattr(self.index.embedder, "warm", None)
+        warm = None if self.index.lazy else getattr(self.index.embedder, "warm", None)
         if warm is not None:
             # One batched pass for a trained embedder instead of a model
             # call per memory on every open.

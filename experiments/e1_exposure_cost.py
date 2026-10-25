@@ -95,7 +95,11 @@ ranked candidate (pool `4k`), shown or withheld, whatever the store's size.
 Ranking used to grow linearly with the store (138 ms at 10,000 memories at
 commit `aafc559`); since lexical search prunes to the rarest query terms, its
 share is {results[-1]['share_ranking']:.0%} at {results[-1]['memories']:,} memories,
-and recording is {results[-1]['share_recording']:.0%}.
+and recording is {results[-1]['share_recording']:.0%}. Fewer events are recorded
+too (21 a retrieval at `aafc559`): these queries name one pump, and in a store
+this large the words every memory shares ("pump", "relief", "pressure") no
+longer bring in near-zero-score candidates, so the pool is the memories that
+actually match.
 
 **Batching, tried and not kept.** Inserting the hash-chain rows with one
 `executemany` instead of one statement each halved the SQL calls a retrieval

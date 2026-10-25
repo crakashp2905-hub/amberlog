@@ -1,24 +1,33 @@
 {
-  "commit": "aafc559",
+  "commit": "a502d4e",
   "machine": "Linux x86_64, 4 CPUs, Python 3.13.16",
   "results": [
     {
       "memories": 2000,
       "queries": 300,
-      "ms_per_retrieve": 27.721107496666566,
-      "events_per_retrieve": 21.0,
-      "share_recording": 0.12716537501270783,
-      "share_ranking": 0.7190107917014789,
-      "ms_recording": 3.500983143333334
+      "ms_per_retrieve": 1.1864761133332042,
+      "events_per_retrieve": 2.4433333333333334,
+      "share_recording": 0.6960151973116854,
+      "share_ranking": 0.1322389373422594,
+      "ms_recording": 0.7986550666666666
     },
     {
       "memories": 10000,
       "queries": 300,
-      "ms_per_retrieve": 137.92682741333314,
-      "events_per_retrieve": 21.0,
-      "share_recording": 0.026280304989512428,
-      "share_ranking": 0.8410570917133546,
-      "ms_recording": 3.5968566866666665
+      "ms_per_retrieve": 1.0606876933328142,
+      "events_per_retrieve": 2.0633333333333335,
+      "share_recording": 0.5305373492683746,
+      "share_ranking": 0.3223037398122975,
+      "ms_recording": 0.5474101400000001
+    },
+    {
+      "memories": 100000,
+      "queries": 300,
+      "ms_per_retrieve": 3.7530973633329268,
+      "events_per_retrieve": 2.0,
+      "share_recording": 0.21736384298513056,
+      "share_ranking": 0.7315796383865353,
+      "ms_recording": 0.8061406166666668
     }
   ]
 }

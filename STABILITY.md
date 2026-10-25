@@ -127,9 +127,10 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.tour`
 - `memory_fabric.validation`
 
-## Experimental (12)
+## Experimental (13)
 
 - `memory_fabric.adapters.systemone`
+- `memory_fabric.claimcheck`
 - `memory_fabric.compaction`
 - `memory_fabric.context_map`
 - `memory_fabric.decay`

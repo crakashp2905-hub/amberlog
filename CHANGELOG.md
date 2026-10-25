@@ -12,7 +12,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **Control Center**: the story of each fact (made, shared, recalled, acted on, corrected, blocked), "what would change if this were wrong?", a **Replay** tab that steps through a store's history, and plain-language explanations on every action. Secret values stay masked in all of them.
 - **Trained retrievers** (`retrievers.py`, `pip install ".[retrieval]"`): ONNX embedders through fastembed, sentence-transformers, any OpenAI-compatible embeddings endpoint, and a cross-encoder reranker, with vector caches that survive restarts and query caching. `best_available()` returns the configuration chosen by a registered comparison (R3).
 - **Framework guides** for Claude Code and Desktop, LangGraph, the OpenAI Agents SDK and CrewAI, and `FabricTools.guarded`: run a side-effecting tool only if its evidence still holds, with the reason as the answer when it does not.
-- **`GET /metrics`** on `serve` (Prometheus), incremental, without content, memory ids or agent ids; `doctor` warns when a SQLite store has outgrown one process.
+- **`GET /metrics`** on `serve` (Prometheus), incremental, without content, memory ids or agent ids.
 
 ### Changed: faster at scale
 - **Lexical retrieval prunes**: rarest query terms first, stopping once nothing unseen can reach the top k; in stores of 2,000 memories or more, a term in over 90% of them no longer nominates candidates by itself. 110 ms → 0.6 ms a retrieval at 10,000 memories on the scale benchmark's corpus; identical results to a full scan below 2,000 memories.

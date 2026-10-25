@@ -320,10 +320,6 @@ Worth alerting on: a rising `mf_actions_total{allowed="false"}` (agents
 trying to act on evidence that no longer holds) and any
 `mf_refusals_total{reason="wrong_tenant"}`.
 
-`doctor` also warns when more than eight distinct agents have used one
-SQLite store recently: put them behind one `agent-api`, or open the store on
-PostgreSQL.
-
 ## 5. Rollback
 
 - **Code only, same schema:** reinstall the previous wheel. Safe.

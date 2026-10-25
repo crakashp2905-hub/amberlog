@@ -2450,29 +2450,6 @@ def _check_manager(fabric: MemoryFabric) -> Finding:
     return Finding("ok", "background manager", f"last cycle {age_s:.0f} s ago by {run.get('holder')}")
 
 
-SQLITE_AGENT_GUIDE = 8
-"""Distinct agents seen recently above which `doctor` suggests a single
-`agent-api` or PostgreSQL (OPERATIONS.md §4a): measured, a handful of
-processes on one SQLite file is fine and a hundred is not."""
-
-
-def _check_backend_fit(fabric: MemoryFabric) -> Finding:
-    """Is SQLite still the right backend for how this store is used?"""
-    if getattr(fabric.log, "dialect", "sqlite") == "postgresql":
-        return Finding("ok", "backend fits the load", "PostgreSQL backend")
-    head = fabric.log.head_seq or 0
-    agents = {e.agent_id for e in fabric.log.read(since_seq=max(0, head - 10_000))
-              if e.agent_id}
-    detail = f"SQLite; {len(agents)} distinct agent(s) in the last 10,000 events"
-    if len(agents) <= SQLITE_AGENT_GUIDE:
-        return Finding("ok", "backend fits the load", detail)
-    return Finding(
-        "warn", "backend fits the load",
-        detail + ". Many processes writing one SQLite file queue on its lock.",
-        "Put the agents behind one `memory-fabric agent-api` for this store (one process, "
-        "many agents), or open the store on PostgreSQL (`--db postgresql://...`; INTEGRATIONS.md, OPERATIONS.md §4a and §4b).")
-
-
 DOCTOR_CHECKS = (
     _check_manager,
     _check_append_only,
@@ -2486,7 +2463,6 @@ DOCTOR_CHECKS = (
     _check_blocked_not_exposed,
     _check_tenant_isolation,
     _check_dashboard_asset,
-    _check_backend_fit,
 )
 
 

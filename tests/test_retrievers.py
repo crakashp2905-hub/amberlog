@@ -62,9 +62,12 @@ class TestCaching(unittest.TestCase):
     def test_disk_cache_survives_reopen(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = os.path.join(tmp, "vectors.db")
-            WordEmbedder(path).warm(["pump seal", "valve"])
+            first = WordEmbedder(path)
+            first.warm(["pump seal", "valve"])
+            first.close()
             again = WordEmbedder(path)
             again.warm(["pump seal", "valve"])
+            again.close()
             self.assertEqual(again.batches, [])
             if os.name == "posix":
                 self.assertEqual(os.stat(path).st_mode & 0o777, 0o600)

@@ -117,6 +117,12 @@ class VectorCache:
     def __len__(self) -> int:
         return len(self._memory)
 
+    def close(self) -> None:
+        with self._lock:
+            if self._db is not None:
+                self._db.close()
+                self._db = None
+
 
 class _BatchEmbedder:
     """Shared caching and batching. Subclasses implement `_documents` and `_queries`."""
@@ -131,6 +137,10 @@ class _BatchEmbedder:
         self.cache = VectorCache(model, cache_path)
         self._queries_cache: OrderedDict[str, list[float]] = OrderedDict()
         self.calls = 0
+
+    def close(self) -> None:
+        """Close the on-disk vector cache, if any. The in-memory cache stays."""
+        self.cache.close()
 
     def _documents(self, texts: list[str]) -> list[list[float]]:  # pragma: no cover
         raise NotImplementedError

@@ -69,7 +69,7 @@ adds one model call per candidate it reorders (30 by default).
 
 ## Measured
 
-Two third-party benchmarks, measured in CI on a shared 4-core runner, run 40235543450:
+Two third-party benchmarks, measured in CI on a shared runner (runs 40235543450 and 40401777737):
 **SciFact** (300 questions over 5,183 scientific abstracts, nDCG@10) and
 **LongMemEval** (60 long chat histories of about 490 turns each, share of the
 answer-bearing turns found in the top 10), through the same `retrieve` you
@@ -79,7 +79,9 @@ call.
 |---|---|---|---|
 | default (`lexical`, nothing installed) | 0.621 | 0.768 | 9 ms |
 | **`best_available()`: bge-base + lexical** | **0.743** | **0.861** | 46 ms |
+| nomic-embed-text v1.5 + lexical | 0.735 | 0.855 | 69 ms |
 | bge-small + lexical | 0.734 | 0.797 | 32 ms |
+| snowflake arctic-embed-m + lexical | 0.732 | 0.845 | 35 ms |
 | bge-small + lexical + jina reranker | 0.754 | 0.876 | 3.6 s |
 | lexical + jina reranker | 0.720 | 0.851 | 3.5 s |
 

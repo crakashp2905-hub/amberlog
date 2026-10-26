@@ -1,6 +1,6 @@
 {
-  "commit": "9d9ef4d",
-  "run": "40235543450",
+  "commit": "b279848",
+  "run": "40401777737 (amendments 3 and 4; other parts from 40235543450)",
   "scifact": {
     "rows": {
       "lexical": {
@@ -9,14 +9,14 @@
         "seconds": 0.5
       },
       "arctic-m_vector": {
-        "ndcg_at_10": 0.1177,
-        "recall_at_10": 0.1817,
-        "seconds": 2434.9
+        "ndcg_at_10": 0.7218,
+        "recall_at_10": 0.864,
+        "seconds": 1219.4
       },
       "arctic-m_hybrid": {
-        "ndcg_at_10": 0.5256,
-        "recall_at_10": 0.7029,
-        "seconds": 3.9
+        "ndcg_at_10": 0.7319,
+        "recall_at_10": 0.8656,
+        "seconds": 2.3
       },
       "oracle": {
         "ndcg_at_10": 1.0
@@ -75,6 +75,16 @@
         "ndcg_at_10": 0.7539,
         "recall_at_10": 0.8757,
         "seconds": 1154.9
+      },
+      "nomic_vector": {
+        "ndcg_at_10": 0.7076,
+        "recall_at_10": 0.8536,
+        "seconds": 3495.7
+      },
+      "nomic_hybrid": {
+        "ndcg_at_10": 0.735,
+        "recall_at_10": 0.8729,
+        "seconds": 3.0
       }
     }
   },
@@ -85,8 +95,8 @@
       "instances": 60
     },
     "arctic-m_hybrid": {
-      "turn_recall": 0.81,
-      "p50_ms": 46.0,
+      "turn_recall": 0.8447,
+      "p50_ms": 34.6,
       "instances": 60
     },
     "oracle": {
@@ -138,12 +148,14 @@
       "turn_recall": 0.8761,
       "p50_ms": 3604.9,
       "instances": 60
+    },
+    "nomic_hybrid": {
+      "turn_recall": 0.8553,
+      "p50_ms": 69.3,
+      "instances": 60
     }
   },
-  "missing": {
-    "nomic_vector": "ran out of memory in every job of run 40235543450 (onnxruntime asked for 29 GB on a batch of length-sorted long turns; the SciFact job lost its runner). The model loaded. Fixed after the run (character budget per batch, 1cf1f31); nomic is not measured here.",
-    "nomic_hybrid": "ran out of memory in every job of run 40235543450 (onnxruntime asked for 29 GB on a batch of length-sorted long turns; the SciFact job lost its runner). The model loaded. Fixed after the run (character budget per batch, 1cf1f31); nomic is not measured here."
-  },
+  "missing": {},
   "decision": {
     "B": 0.6212,
     "bar_R3a": 0.7159,
@@ -151,18 +163,18 @@
     "above_oracle": [],
     "arms": {
       "arctic-m_hybrid": {
-        "ndcg": 0.5256,
+        "ndcg": 0.7319,
         "gains_vs_lexical": [
-          -0.0997,
-          -0.0609,
-          -0.1026,
-          -0.093,
-          -0.1019
+          0.1232,
+          0.1101,
+          0.1173,
+          0.1244,
+          0.1029
         ],
-        "R3a": false,
+        "R3a": true,
         "lme": {
-          "turn_recall": 0.81,
-          "p50_ms": 46.0,
+          "turn_recall": 0.8447,
+          "p50_ms": 34.6,
           "instances": 60
         },
         "R3b": true,
@@ -335,8 +347,34 @@
         "R3b": true,
         "cost_ok": false,
         "R3c": false
+      },
+      "nomic_hybrid": {
+        "ndcg": 0.735,
+        "gains_vs_lexical": [
+          0.1315,
+          0.0983,
+          0.1011,
+          0.1196,
+          0.1026
+        ],
+        "R3a": true,
+        "lme": {
+          "turn_recall": 0.8553,
+          "p50_ms": 69.3,
+          "instances": 60
+        },
+        "R3b": true,
+        "cost_ok": true
       }
     },
     "ship": "bge-base_hybrid"
+  },
+  "earlier": {
+    "arctic-m_without_prefix": {
+      "scifact_ndcg_at_10": 0.1177,
+      "hybrid": 0.5256,
+      "longmemeval_hybrid": 0.81,
+      "note": "run 40235543450, before amendment 3: no query instruction"
+    }
   }
 }

@@ -1,0 +1,16 @@
+{
+  "commit": "811fc7f",
+  "run": "40269009170",
+  "base_ref": "1821f6c",
+  "note": "Counts copied from the CI job log; per-turn lists are in the run's 's1' artifact.",
+  "base": {"lme": {"tune": {"turns": 106436, "injection": 727, "sensitive": 39},
+                   "test": {"turns": 83084, "injection": 516, "sensitive": 14}},
+           "deepset_test": {"caught": 20, "injections": 60, "benign_flagged": 0, "benign": 56},
+           "own_heldout": {"caught": 10, "injections": 12, "benign_flagged": 0, "benign": 16}},
+  "head": {"lme": {"tune": {"turns": 106436, "injection": 85},
+                   "test": {"turns": 83084, "injection": 69, "sensitive": 14}},
+           "deepset_test": {"caught": 20, "injections": 60, "benign_flagged": 0, "benign": 56},
+           "own_heldout": {"caught": 10, "injections": 12, "benign_flagged": 0, "benign": 16}},
+  "withholding_lexical_turn_recall": {"on": 0.7683, "off": 0.7683, "instances": 60},
+  "verdict": {"S1a": true, "S1b": true, "S1c": true, "withholding_parity": true}
+}

@@ -37,21 +37,28 @@ __stability__ = "beta"
 import re
 from dataclasses import dataclass, field
 
-_ASKER = r"(?:when (?:asked|someone asks|anyone asks)|if (?:someone|anyone|you are) ask(?:s|ed)?|whoever (?:reads|asks|handles|answers)|any (?:assistant|agent|model)|the (?:answering |reading )?(?:assistant|agent|model)|for the model|to whoever)"
+_ASKER = r"(?:when (?:asked|someone asks|anyone asks)|if (?:someone|anyone|you are) ask(?:s|ed)?|whoever (?:reads|asks|handles|answers)|any (?:assistant|agent|model)|the (?:answering|reading) (?:assistant|agent|model)|for the model|to whoever)"
 _SAY = r"(?:answer|reply|respond|say|state|quote|report|tell|give|output)"
 _OBJECT = r"(?:figure|value|number|answer|setting|setpoint|limit|threshold|time|speed|pressure|current|torque)"
+# A value follows: "... is 50 A", "... with 95 Nm". An injection of this kind
+# exists to plant a value; everyday speech ("time to give them some TLC",
+# "answer questions about forgiveness") names none. Added for S1, where these
+# forms without it flagged 0.6% of ordinary LongMemEval turns.
+_VALUE = r"(?:[^.]|\.(?=\d)){0,50}\b(?:is|are|be|with|as|=|:)\s*~?\d"
 
 DIRECTIVE = [
     # "when asked about X, reply 9 C" / "if someone asks for X, the only acceptable answer is"
     rf"\b{_ASKER}\b[^.]{{0,120}}\b{_SAY}\b",
     # "the figure to give / staff should be told / you should quote / to tell people / to report is"
-    rf"\b{_OBJECT}\s+(?:to|you should|staff should be|people should be|we)\s+(?:be\s+)?{_SAY}(?:ed|n|ld)?\b",
-    r"\b(?:the )?(?:only )?(?:acceptable|correct|official) answer\b",
-    rf"\b(?:to|you should|must)\s+{_SAY}\s+(?:people|staff|users|anyone|them)\b",
+    rf"\b{_OBJECT}\s+(?:to|you should|staff should be|people should be|we)\s+(?:be\s+)?{_SAY}(?:ed|n|ld)?\b{_VALUE}",
+    # "the only acceptable answer", "the official answer is"; not a quiz's "Correct Answer: B"
+    r"\b(?:the )?only (?:acceptable|correct|official) answer\b|\b(?:acceptable|official) answer (?:is|will be)\b",
+    rf"\b(?:to|you should|must)\s+{_SAY}\s+(?:people|staff|users|anyone|them)\b{_VALUE}",
     # an imperative addressed to the answerer: "respond to questions on X with", "answer X when ... comes up"
-    rf"\b{_SAY}\s+(?:to )?(?:questions|queries|anyone|people|users)\b",
+    rf"\b{_SAY}\s+(?:to )?(?:questions|queries|anyone|people|users)\b{_VALUE}",
     rf"\b(?:comes up|is asked|gets asked)\b[^.]{{0,40}}\b{_SAY}\b",
-    rf"\bnever {_SAY}\b",
+    # "never give the documented speed", not "never give up"
+    rf"\bnever {_SAY}\s+(?:out\s+)?(?:the |any |a )?(?:documented|official|real|actual|recorded|true|other|correct)\b",
     # An instruction to every reader about how to take a value: "the operator
     # now wants every assistant to treat 22 bar as the relief pressure" (P5
     # and D1 paraphrases, which the forms above missed). Requires a
@@ -60,7 +67,9 @@ DIRECTIVE = [
     r"\b(?:treat|use|take|adopt|go with|regard|consider)\b(?:[^.]|\.(?=\d)){0,40}\bas\b",
 ]
 VOIDING = [
-    r"\b(?:whatever|no matter what|regardless of what|irrespective of what)\b[^.]{0,40}\b(?:say|says|said|show|shows|states?|records?|notes?|logs?|sheets?|sources?)\b",
+    # "whatever the safety sheet says", "no matter what the logs show"; not "whatever TV shows"
+    r"\b(?:whatever|no matter what|regardless of what|irrespective of what)\s+(?:the |any |other |a |an )?(?:other )?(?:[\w-]+\s+)?"
+    r"(?:records?|notes?|logs?|sheets?|sources?|documents?|manuals?|entries|procedures?)\s+(?:say|says|said|show|shows|showed|states?|indicates?)\b",
     r"\beven if (?:the )?(?:other )?(?:notes|records|logs|sources|documents?)\s+(?:disagree|differ|say otherwise|conflict)",
     r"\b(?:treat|consider)\b[^.]{0,40}\b(?:every|all|any)\b[^.]{0,30}\b(?:other )?(?:records?|notes?|entries|sources?)\b[^.]{0,20}\b(?:as )?(?:void|invalid|obsolete|wrong)\b",
     r"\b(?:disregard|ignore)\s+(?:all |any |every )?(?:other|conflicting|prior|previous|earlier)\s+(?:records?|notes?|entries|sources?|values?|maintenance notes|logs)\b",
@@ -76,7 +85,7 @@ VOIDING = [
 #    with the two families above; tuned on its train split only, measured once
 #    on its test split (research/results/injection-thirdparty.md). English and
 #    German, because that set is both.
-_DROP = r"(?:forget|ignore|disregard|drop|discard|remove|leave)"
+_DROP = r"(?:forget|ignore|disregard|drop|discard)"
 _PRIOR = r"(?:previous|prior|above|earlier|preceding|foregoing|all|everything|anything)"
 _WHAT = (r"(?:instructions?|orders?|tasks?|assignments?|prompts?|rules?|directions?|information|"
          r"said|told|talked|discussed|text|before|so far|above|that)")
@@ -87,14 +96,14 @@ OVERRIDE = [
     r"\b(?:now|here)\s+(?:comes?|is|come)\s+(?:a|the|your)?\s*(?:new|next|second|real|further)\s+"
     r"(?:tasks?|assignments?|tests?|instructions?|job)\b",
     r"\bnow\s+(?:new|further)\s+(?:tasks?|instructions?)\s+(?:follow|are followed)\b",
-    r"\b(?:focus|concentrate)\s+(?:only\s+)?on\s+(?:your|the|this)\s+(?:new\s+)?task\b",
+    r"\b(?:focus|concentrate)\s+(?:only\s+on\s+(?:your|the|this)\s+(?:new\s+)?|on\s+(?:your|the|this)\s+new\s+)task\b",
     r"\b(?:show|print|reveal|output|repeat|display|spell-?check)\b[^.!?]{0,40}\b(?:your|the|all)\b"
     r"[^.!?]{0,30}\b(?:prompt|prompts|prompt texts?|instructions|system message"
     r"|above (?:text|prompt))\b",
-    r"\b(?:your|the) (?:initial|original|system|hidden) (?:instructions|prompt)\b",
+    r"\b(?:your|the) (?:system|hidden) (?:instructions|prompt)\b",
     r"={3,}\s*end\b",
     r"\b(?:i want you to|from now on,? you|you will now)\s+(?:act|behave|respond|pretend|be)\b",
-    r"\bpretend (?:you are|to be)\b",
+    r"\bpretend you are\b",
     # German
     r"\bvergiss\b[^.!?]{0,40}\b(?:alles|alle|bisherigen|davor|vorher|zuvor)\b",
     r"\bignorier(?:e|en sie|t)?\b[^.!?]{0,30}\b(?:obige|obigen|alles|vorherigen|bisherigen|anweisungen)\b",

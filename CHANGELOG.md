@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Fixed: one false flag no longer hides a whole history
+- **An author's own memories are not withheld from it** by hostile-source withholding. Other readers still have them withheld, the flagged memory stays quarantined, and imports keep their origin author. LongMemEval keyword retrieval with withholding on: 0.033 → 0.768, the same as off.
+- **The directive screen flags far less ordinary conversation**: 0.62% → 0.08% of LongMemEval turns, with third-party injection recall unchanged (20/60, 0/56 benign) and the held-out set unchanged (10/12, 0/16). Forms that tell the answerer what to say now need a planted value to follow.
+
 ### Added: make it easy to see, understand and trust
 - **`memory-fabric tour`**: the whole idea in sixty seconds, in a terminal, with nothing written or downloaded. The README now opens with it.
 - **Plain-language reasons** (`reasons.py`): every refusal code the gate, verifier, limits and enforcer can return has a sentence and a fix; a blocked action names the memory, who withdrew it, when and why. MCP and the agent API return them as `explanation`.

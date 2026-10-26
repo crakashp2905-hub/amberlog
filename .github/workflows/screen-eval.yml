@@ -1,0 +1,62 @@
+# S1: the injection screen on ordinary conversation (research/prereg/s1-screen-false-positives.md).
+# Measures the base commit's screen and this commit's in the same job.
+name: screen-eval
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - experiments/s1_screen_fp.py
+      - memory_fabric/governance/injection.py
+      - memory_fabric/governance/directive.py
+      - memory_fabric/governance/firewall.py
+      - .github/workflows/screen-eval.yml
+
+permissions:
+  contents: read
+
+env:
+  # The screen before S1, i.e. main when the registration was written.
+  BASE_REF: 1821f6c435daa901dc42409df6dff7e800cd2ea9
+
+jobs:
+  s1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.BASE_REF }}
+          path: base
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Fetch data
+        run: |
+          mkdir -p data/deepset
+          curl -fsSL -o data/lme_s.json \
+            https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json
+          curl -fsSL -o data/deepset/test-0.json \
+            "https://datasets-server.huggingface.co/rows?dataset=deepset/prompt-injections&config=default&split=test&offset=0&length=100"
+          curl -fsSL -o data/deepset/test-1.json \
+            "https://datasets-server.huggingface.co/rows?dataset=deepset/prompt-injections&config=default&split=test&offset=100&length=100"
+      - name: Tune-split flags (what the rules are changed against)
+        run: python experiments/s1_screen_fp.py show data/lme_s.json 60
+      - name: Baseline (base commit's screen)
+        working-directory: base
+        run: PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/experiments/s1_screen_fp.py" rates "$GITHUB_WORKSPACE/base.json" "$GITHUB_WORKSPACE/data/lme_s.json" "$GITHUB_WORKSPACE/data/deepset"
+      - name: This commit's screen
+        run: python experiments/s1_screen_fp.py rates head.json data/lme_s.json data/deepset
+      - name: Report
+        run: |
+          python experiments/s1_screen_fp.py report base.json head.json || echo "S1 NOT PASSED"
+          cat research/results/s1-screen-false-positives.md
+      - uses: actions/upload-artifact@v4
+        with:
+          name: s1
+          path: |
+            base.json
+            head.json
+            research/results/s1-screen-false-positives.*

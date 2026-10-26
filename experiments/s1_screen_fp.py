@@ -3,6 +3,7 @@
     python experiments/s1_screen_fp.py rates OUT.json LME.json DEEPSET_DIR
     python experiments/s1_screen_fp.py show LME.json [N]          # tune-split flags only
     python experiments/s1_screen_fp.py report BASE.json HEAD.json
+    python experiments/s1_screen_fp.py withholding OUT.json LME.json [LIMIT]
 
 `rates` imports whichever `memory_fabric` is first on the path, so CI runs it
 once against a checkout of the base commit and once against the change, in the
@@ -183,6 +184,41 @@ Test-split turns still quarantined after the change, for a reader to judge:
     return 0 if all(verdict_.values()) else 1
 
 
+def withholding(out: str, lme_path: str, limit: str = "60") -> int:
+    """§5: LongMemEval lexical turn recall with hostile-source withholding on and off."""
+    sys.path.insert(0, str(ROOT))
+    from experiments import longmemeval_bench as lme
+    from memory_fabric import MemoryFabric
+
+    lme.DATA = Path(lme_path).parent
+    lme.SPLITS["s"] = Path(lme_path).name
+    instances = lme.load("s", limit=int(limit))
+    result: dict[str, float] = {}
+    for on in (True, False):
+        recalls = []
+        for inst in instances:
+            gold = {(sid, pos) for sid, sess in zip(inst["haystack_session_ids"],
+                                                    inst["haystack_sessions"])
+                    for pos, t in enumerate(sess) if t.get("has_answer")}
+            f = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False,
+                             recognise_copies=False, retrieval="lexical",
+                             withhold_hostile_sources=on)
+            try:
+                mapping = lme._write_history(f, inst)
+                got = [m.id for m in f.retrieve(
+                    agent_id="lme", query=inst["question"], k=10, min_relevance=0.0,
+                    as_of=lme.parse_date(inst.get("question_date") or "")).exposed]
+            finally:
+                f.close()
+            hits = len({mapping[m] for m in got if m in mapping} & gold)
+            recalls.append(hits / len(gold) if gold else 0.0)
+        result["on" if on else "off"] = round(sum(recalls) / len(recalls), 4)
+    result["pass"] = abs(result["on"] - result["off"]) <= 0.01
+    Path(out).write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
+    print(json.dumps(result))
+    return 0
+
+
 def main(argv: list[str]) -> int:
     cmd, *rest = argv
     if cmd == "rates":
@@ -191,6 +227,8 @@ def main(argv: list[str]) -> int:
         return show(rest[0], int(rest[1]) if len(rest) > 1 else 80)
     if cmd == "report":
         return report(*rest)
+    if cmd == "withholding":
+        return withholding(*rest)
     raise SystemExit(__doc__)
 
 

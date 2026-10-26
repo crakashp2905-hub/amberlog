@@ -10,6 +10,7 @@ on:
       - memory_fabric/governance/injection.py
       - memory_fabric/governance/directive.py
       - memory_fabric/governance/firewall.py
+      - memory_fabric/_fabric/retrieval.py
       - .github/workflows/screen-eval.yml
 
 permissions:
@@ -49,6 +50,8 @@ jobs:
         run: PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/experiments/s1_screen_fp.py" rates "$GITHUB_WORKSPACE/base.json" "$GITHUB_WORKSPACE/data/lme_s.json" "$GITHUB_WORKSPACE/data/deepset"
       - name: This commit's screen
         run: python experiments/s1_screen_fp.py rates head.json data/lme_s.json data/deepset
+      - name: Own memories are not withheld from their author (prereg §5)
+        run: python experiments/s1_screen_fp.py withholding withholding.json data/lme_s.json 60
       - name: Report
         run: |
           python experiments/s1_screen_fp.py report base.json head.json || echo "S1 NOT PASSED"
@@ -59,4 +62,5 @@ jobs:
           path: |
             base.json
             head.json
+            withholding.json
             research/results/s1-screen-false-positives.*

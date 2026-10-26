@@ -511,7 +511,7 @@ class RetrievalMixin(FabricCore):
         # before ranking cannot be ranked, scored, logged or leaked by a bug
         # in a policy.
         eligible = self._applicable_at(eligible, as_of, until)
-        eligible = self._without_hostile_sources(eligible)
+        eligible = self._without_hostile_sources(eligible, reader=agent_id)
         if objective is not None:
             # The session's own statement of relevance, at the same chokepoint
             # as tenancy and lifecycle, for the same reason: an excluded memory
@@ -1030,10 +1030,20 @@ class RetrievalMixin(FabricCore):
                 hindsight.discredited_authors(cast("MemoryFabric", self), hindsight.HOSTILE, federated=True)))
         return self._hostile_cache[1]
 
-    def _without_hostile_sources(self, eligible: AbstractSet[str]) -> AbstractSet[str]:
+    def _without_hostile_sources(self, eligible: AbstractSet[str],
+                                 reader: str | None = None) -> AbstractSet[str]:
+        """Withhold memories by authors caught injecting, except from the author itself.
+
+        The protection is for *other* readers: an injection one agent stored
+        must not reach the rest. Withholding an agent's own notes from it
+        protects no one (it wrote them) and cost a whole history on
+        LongMemEval, where one falsely flagged turn hid every turn its single
+        author had stored (S1). The flagged memory itself stays quarantined,
+        and imports keep their original author, so an import is never "own".
+        """
         if not self.withhold_hostile_sources:
             return eligible
-        bad = self.hostile_authors()
+        bad = self.hostile_authors() - {reader} if reader else self.hostile_authors()
         if not bad:
             return eligible
         from ..hindsight import author

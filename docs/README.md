@@ -53,6 +53,7 @@ Every document in the repository, by what you are trying to do.
 | [MIGRATION.md](MIGRATION.md) | Moving between versions, and moving in from elsewhere |
 | [SCALE.md](SCALE.md) | How many agents, how far federated, what carries between sessions |
 | [PILOT_KIT.md](PILOT_KIT.md) | Try it with your own agents and send back only the numbers |
+| [PILOT_INVITE.md](PILOT_INVITE.md) | A one-page invitation to send a team you would like to pilot with |
 | [REFERENCE_DEPLOYMENT.md](REFERENCE_DEPLOYMENT.md) | Two federated stores in five minutes |
 
 ## Trust and security

@@ -1,5 +1,7 @@
 # Pilot kit: try it with your own agents, share only the numbers
 
+*Inviting a team? [PILOT_INVITE.md](PILOT_INVITE.md) is a one-page invitation to send them.*
+
 A two- to four-week pilot with your real agents answers the question no
 benchmark can: does Memory Fabric stop your agents acting on knowledge that
 turned out to be wrong, and how quickly? This kit is everything needed to
@@ -34,13 +36,23 @@ watch what agents were blocked from doing.
 
 ## 3. Send back the report
 
+First, check the pilot has produced enough to be worth sending:
+
+```bash
+memory-fabric --db pilot/store.db --keys pilot/keys pilot-report --check
+```
+
+It lists what is in place and what is missing (two agents sharing, a
+correction, a protected action) in plain words. Then:
+
 ```bash
 memory-fabric --db pilot/store.db --keys pilot/keys pilot-report > pilot-report.json
 ```
 
 The report holds counts and durations only: no memory content, no queries,
 and agent names replaced by hashes (keyed with a random value that is not
-stored, so they cannot be reversed). Read it before sending; it is plain JSON.
+stored, so they cannot be reversed). Read it before sending; it is plain JSON, and its `content_free` field
+records that it was checked for memory text before it was printed.
 
 | field | what it tells us |
 |---|---|

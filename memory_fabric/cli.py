@@ -1910,10 +1910,20 @@ def cmd_restore(fabric: MemoryFabric | None, args: argparse.Namespace) -> int:
 
 def cmd_pilot_report(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """A shareable pilot report (`pilot.py`): counts and durations, never content."""
-    from .pilot import report
+    from .pilot import readiness, report
 
-    print(json.dumps(report(fabric, names=args.names), indent=2))
-    return 0
+    rep = report(fabric, names=args.names)
+    if not args.check:
+        print(json.dumps(rep, indent=2))
+        return 0
+    heading("Is this pilot ready to send?")
+    checks = readiness(rep)
+    for ok, line in checks:
+        mark = f"{C.GREEN}ok{C.RESET}  " if ok else f"{C.YELLOW}not yet{C.RESET}"
+        print(f"  {mark}  {line}")
+    ready = all(ok for ok, _ in checks)
+    print(f"\n  {'Ready: run pilot-report > pilot-report.json and send that file.' if ready else 'Keep going; the report is still valid, just thin.'}")
+    return 0 if ready else 1
 
 
 def cmd_connect(fabric: MemoryFabric, args: argparse.Namespace) -> int:
@@ -3133,6 +3143,8 @@ def build_parser() -> argparse.ArgumentParser:
     p = add("pilot-report", cmd_pilot_report,
             "Outcome numbers for a pilot, from the log: no content, agents pseudonymised")
     p.add_argument("--names", action="store_true", help="keep agent names instead of hashes")
+    p.add_argument("--check", action="store_true",
+                   help="say in plain words whether the pilot has produced enough to send")
     p = add("connect", cmd_connect,
             "Set up an agent tool: connect <tool> --agent <id> [--write]; connect --list")
     p.add_argument("tool", nargs="?", help="claude-code, claude-desktop, cursor, windsurf, vscode, "

@@ -346,6 +346,7 @@ Store health and what it can and cannot tell you
 Outcome numbers for a pilot, from the log: no content, agents pseudonymised
 
 - `--names`: keep agent names instead of hashes
+- `--check`: say in plain words whether the pilot has produced enough to send
 
 ### `posture`
 

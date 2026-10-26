@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: pilots, screens and embedders
+- **`pilot-report --check`** says in plain words whether a pilot has produced enough to send and what is missing; every report now checks itself for memory text (`content_free`). `docs/PILOT_INVITE.md` is a one-page invitation for teams.
+- **`ModelScreen.using("provider:model")`**: the optional injection screen on any model `models.py` supports.
+- **Embedders add their model's instruction prefixes** (arctic-m, nomic), which fastembed does not.
+
 ### Fixed: one false flag no longer hides a whole history
 - **An author's own memories are not withheld from it** by hostile-source withholding. Other readers still have them withheld, the flagged memory stays quarantined, and imports keep their origin author. LongMemEval keyword retrieval with withholding on: 0.033 → 0.768, the same as off.
 - **The directive screen flags far less ordinary conversation**: 0.62% → 0.08% of LongMemEval turns, with third-party injection recall unchanged (20/60, 0/56 benign) and the held-out set unchanged (10/12, 0/16). Forms that tell the answerer what to say now need a planted value to follow.

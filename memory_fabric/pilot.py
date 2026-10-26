@@ -106,7 +106,7 @@ def report(fabric: "MemoryFabric", names: bool = False, salt: bytes | None = Non
     def med(xs: list[float]) -> float | None:
         return round(statistics.median(xs), 1) if xs else None
 
-    return {
+    out = {
         "format": "mf-pilot-report/1",
         "store_id_hash": hashlib.sha256(fabric.store_id.encode()).hexdigest()[:16],
         "span_days": round(((last_ts or 0) - (first_ts or 0)) / 86_400_000, 2),
@@ -120,3 +120,44 @@ def report(fabric: "MemoryFabric", names: bool = False, salt: bytes | None = Non
         "median_seconds_withdrawal_to_last_blocked_try": med(lag_after),
         "agents": agents,
     }
+    out["content_free"] = content_free(fabric, out)
+    return out
+
+
+def content_free(fabric: "MemoryFabric", rep: dict[str, Any]) -> bool:
+    """True if no memory's text appears anywhere in the report.
+
+    The report is built from counts, so this should never fail; checking it
+    means a team can send the file on the strength of a check, not a promise.
+    """
+    import json
+
+    blob = json.dumps(rep).lower()
+    for memory in fabric.state.memories.values():
+        text = memory.content if isinstance(memory.content, str) else ""
+        words = text.lower().split()
+        # Any run of six consecutive words is enough to recognise a memory.
+        for i in range(0, max(1, len(words) - 5)):
+            chunk = " ".join(words[i:i + 6])
+            if len(chunk) >= 20 and chunk in blob:
+                return False
+    return True
+
+
+def readiness(rep: dict[str, Any]) -> list[tuple[bool, str]]:
+    """Whether a pilot has produced anything worth sending, in plain words."""
+    agents = rep.get("agents", {})
+    acting = sum(1 for a in agents.values() if a.get("writes") or a.get("recalls"))
+    guarded = rep.get("actions_allowed", 0) + rep.get("blocked_on_evidence", 0) + sum(
+        a.get("blocked", 0) for a in agents.values())
+    return [
+        (acting >= 2, f"{acting} agent(s) wrote or recalled; the pilot needs at least 2 sharing a store"),
+        (rep.get("withdrawn", 0) >= 1,
+         f"{rep.get('withdrawn', 0)} memory(ies) withdrawn; the interesting numbers need at least one correction"),
+        (guarded >= 1,
+         f"{guarded} protected action(s) recorded; wrap a tool with ActionGate or FabricTools.guarded to count harm prevented"),
+        (rep.get("exposures_after_withdrawal", 0) == 0,
+         f"{rep.get('exposures_after_withdrawal', 0)} exposure(s) after withdrawal; anything above 0 is a defect, please report it"),
+        (bool(rep.get("content_free")), "no memory text in the report" if rep.get("content_free")
+         else "memory text found in the report: do not send it, and please report this"),
+    ]

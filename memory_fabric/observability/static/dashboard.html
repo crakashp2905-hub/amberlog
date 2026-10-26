@@ -337,6 +337,10 @@ button { transition: background .12s, border-color .12s; }
   .tile { padding: 8px 10px; } .tile .n { font-size: 18px; } .tile .k { font-size: 10px; }
   .map-stage { min-height: 0; }
 }
+.badge.active { background: color-mix(in srgb, var(--st-active) 14%, transparent); color: var(--st-active); }
+.badge.candidate { background: color-mix(in srgb, var(--st-candidate) 14%, transparent); color: var(--st-candidate); }
+.badge.contested { background: color-mix(in srgb, var(--st-contested) 16%, transparent); color: color-mix(in srgb, var(--st-contested) 70%, var(--text)); }
+.badge.quarantined, .badge.deleted { background: color-mix(in srgb, var(--st-withdrawn) 14%, transparent); color: var(--st-withdrawn); }
 .map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
 @media (max-width: 980px) { .map-layout { grid-template-columns: 1fr; } }
 .map-stage { position: relative; height: min(72vh, 720px); min-height: 440px; border-radius: 18px; overflow: hidden;
@@ -542,6 +546,7 @@ main button:not(.link):not(.copy):hover, .drawer button:not(.link):not(.copy):ho
   </section>
 
   <section id="tab-memories" hidden>
+    <h2>Memories</h2>
     <div class="filters">
       <input type="search" id="f-q" placeholder="Filter by content or id…" autocomplete="off">
       <select id="f-state"><option value="">any state</option></select>
@@ -549,7 +554,7 @@ main button:not(.link):not(.copy):hover, .drawer button:not(.link):not(.copy):ho
       <select id="f-type"><option value="">any type</option></select>
       <select id="f-sort">
         <option value="created">newest first</option>
-        <option value="exposures">most exposed</option>
+        <option value="exposures">most shown</option>
         <option value="value">highest value</option>
         <option value="state">by state</option>
       </select>
@@ -676,6 +681,13 @@ function fmtValue(row) {
   return `<span class="${cls}" title="${esc(row.value_estimator)}${
     row.value_contrastive ? "" : " (not contrastive: cannot show benefit)"
   }, n_eff ${row.value_n_eff.toFixed(1)}">${sign}${row.value_mean.toFixed(2)}${mark}</span>`;
+}
+
+// One vocabulary everywhere: the words a person would use, the stored name on hover.
+const STATE_WORDS = { active: "in use", candidate: "waiting for review", contested: "disputed",
+  quarantined: "withdrawn", deprecated: "retired", deleted: "deleted" };
+function stateBadge(state) {
+  return `<span class="badge ${esc(state)}" title="state: ${esc(state)}">${esc(STATE_WORDS[state] || state)}</span>`;
 }
 
 function badge(text, cls) {
@@ -829,13 +841,15 @@ async function loadMemories() {
   $("memories-table").innerHTML = `
     <table><thead><tr>
       <th>Content</th><th>Type</th><th>State</th><th>Scope</th>
-      <th class="num">Exp</th><th class="num">Wth</th><th class="num">Value</th><th>Created</th>
+      <th class="num" title="Times agents were shown it">Shown</th>
+      <th class="num" title="Times it matched but was held back">Held back</th>
+      <th class="num">Value</th><th>Created</th>
     </tr></thead><tbody>
     ${rows.map((r) => `
       <tr data-id="${esc(r.id)}">
         <td>${esc(r.content)}<div class="id">${esc(r.id)}</div></td>
         <td>${badge(r.type, "low")}</td>
-        <td>${badge(r.lifecycle_state)}</td>
+        <td>${stateBadge(r.lifecycle_state)}</td>
         <td>${esc(r.scope)}</td>
         <td class="num">${r.exposures}</td>
         <td class="num">${r.withholdings}</td>
@@ -884,7 +898,7 @@ async function runSearch() {
       ${hits.map((h) => `<tr data-id="${esc(h.id)}">
         <td class="num">${h.relevance.toFixed(3)}</td>
         <td>${esc(h.content)}<div class="id">${esc(h.id)}</div></td>
-        <td>${badge(h.lifecycle_state)}</td>
+        <td>${stateBadge(h.lifecycle_state)}</td>
         <td>${h.retrievable ? "yes" : '<span class="val-neg">no</span>'}</td>
       </tr>`).join("")}</tbody></table>`
     : `<div class="empty">Nothing above the relevance floor. A query with no shared
@@ -900,7 +914,7 @@ function treeHtml(node, isRoot) {
     : `<span class="link link-id" data-id="${esc(node.id)}">${esc(node.id.slice(0, 8))}…</span>
        <span class="txt">${esc(node.content)}</span>`;
   return `<li class="${isRoot ? "self" : ""}">
-    <div class="tree-node">${badge(node.lifecycle_state)}${label}
+    <div class="tree-node">${stateBadge(node.lifecycle_state)}${label}
     ${node.truncated ? '<span class="badge low">depth limit</span>' : ""}</div>
     ${kids ? `<ul>${kids}</ul>` : ""}</li>`;
 }
@@ -927,7 +941,7 @@ async function openDetail(id) {
     <div class="drawer-top">
       <div>
         <div class="card-head">
-          ${badge(r.lifecycle_state)}${badge(r.type, "low")}
+          ${stateBadge(r.lifecycle_state)}${badge(r.type, "low")}
           ${badge(r.scope, "low")}${badge(r.security_class, "low")}
         </div>
         <div class="id" style="margin-top:6px">${esc(r.id)} · v${r.version}</div>
@@ -1381,7 +1395,7 @@ async function fillEnums() {
     for (const value of enums[key]) {
       const opt = document.createElement("option");
       opt.value = value;
-      opt.textContent = value;
+      opt.textContent = key === "lifecycle_state" ? (STATE_WORDS[value] || value) : value;
       $(elId).append(opt);
     }
   }

@@ -10,6 +10,7 @@ answer.
     from memory_fabric.governance.model_screen import ModelScreen
 
     firewall = Firewall(model_screen=ModelScreen(OllamaClient(), "qwen2.5:3b"))
+    firewall = Firewall(model_screen=ModelScreen.using("anthropic:claude-haiku-5-5"))
 
 **Off by default.** It needs a model, adds a model call per new text, and a
 model can be wrong in both directions. The decision it feeds is the same as
@@ -43,6 +44,12 @@ SCHEMA = {"type": "object", "properties": {"injection": {"type": "boolean"},
           "required": ["injection", "reason"]}
 
 
+def _json_object(text: str) -> str:
+    """The first {...} in a reply: hosted models sometimes wrap JSON in prose or a fence."""
+    start, end = text.find("{"), text.rfind("}")
+    return text[start:end + 1] if start != -1 and end > start else text
+
+
 @dataclass
 class ModelVerdict:
     flagged: bool
@@ -56,18 +63,32 @@ class ModelScreen:
     cache: dict[str, ModelVerdict] = field(default_factory=dict)
     max_chars: int = 4000
 
+    @classmethod
+    def using(cls, model: Any) -> "ModelScreen":
+        """A screen on the model you choose: `"anthropic:claude-haiku-5-5"`, a
+        `models.ModelSpec` or a `models.ModelClient` (any provider `models.py` supports)."""
+        from ..models import ModelClient
+
+        client = model if isinstance(model, ModelClient) else ModelClient(model)
+        return cls(client, f"{client.spec.provider}:{client.spec.model}")
+
     def assess(self, text: str) -> ModelVerdict:
         key = hashlib.sha256(f"{self.model}\n{text}".encode()).hexdigest()
         hit = self.cache.get(key)
         if hit is not None:
             return hit
+        prompt = "Text to review:\n<<<\n" + text[: self.max_chars] + "\n>>>"
         try:
-            reply = self.client.chat(model=self.model, messages=[
-                {"role": "system", "content": SYSTEM},
-                {"role": "user", "content": "Text to review:\n<<<\n" + text[: self.max_chars]
-                 + "\n>>>"}], temperature=0.0, num_predict=64, schema=SCHEMA)
-            content = (reply.get("message") or {}).get("content", "")
-            data = json.loads(content)
+            if hasattr(self.client, "complete"):
+                # Any provider through `models.ModelClient` (`ModelScreen.using`).
+                content = self.client.complete(prompt, system=SYSTEM, max_tokens=100).text
+            else:
+                reply = self.client.chat(model=self.model, messages=[
+                    {"role": "system", "content": SYSTEM},
+                    {"role": "user", "content": prompt}],
+                    temperature=0.0, num_predict=64, schema=SCHEMA)
+                content = (reply.get("message") or {}).get("content", "")
+            data = json.loads(_json_object(content))
             verdict = ModelVerdict(bool(data.get("injection")), str(data.get("reason", ""))[:200])
         except Exception:  # noqa: BLE001 - a model failure never blocks a write
             verdict = ModelVerdict(False, "model unavailable")

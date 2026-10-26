@@ -219,6 +219,20 @@ def withholding(out: str, lme_path: str, limit: str = "60") -> int:
     return 0
 
 
+def dump(out: str, lme: str, deepset_dir: str) -> int:
+    """M1's data: deepset test rows and 500 seeded test-split turns, printed for a model run elsewhere."""
+    import random
+
+    test = lme_turns(lme)["test"]
+    sample = random.Random(1).sample(test, 500)
+    data = {"deepset_test": deepset(deepset_dir), "lme_sample": sample}
+    Path(out).write_text(json.dumps(data) + "\n", encoding="utf-8")
+    print("=== M1 DATA ===")
+    print(json.dumps(data))
+    print("=== M1 END ===")
+    return 0
+
+
 def main(argv: list[str]) -> int:
     cmd, *rest = argv
     if cmd == "rates":
@@ -227,6 +241,8 @@ def main(argv: list[str]) -> int:
         return show(rest[0], int(rest[1]) if len(rest) > 1 else 80)
     if cmd == "report":
         return report(*rest)
+    if cmd == "dump":
+        return dump(*rest)
     if cmd == "withholding":
         return withholding(*rest)
     raise SystemExit(__doc__)

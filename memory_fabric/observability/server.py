@@ -242,6 +242,10 @@ class Api:
 
                 return if_wrong(f, _memory_id(raw))
 
+            case ["map"]:
+                from .control import knowledge_map
+
+                return knowledge_map(f, per_topic=min(_int(params, "per_topic", 4) or 4, 8))
             case ["graph"]:
                 from .control import graph
 

@@ -331,6 +331,153 @@ def graph(f: "MemoryFabric", limit: int = 400) -> dict[str, Any]:
     return {"nodes": nodes, "edges": edges, "total": len(memories), "shown": len(nodes)}
 
 
+_MAP_STOP = frozenset(
+    "the a an is are was were be been being it its of for to in on at and or not no do does did "
+    "should would will shall may might must can could what which how why when who whom with from "
+    "this that these those there here than then also only just very more most less into onto over "
+    "under after before about above below between each every any all some such same other again "
+    "we i me my our us you your they them their he she his her has have had having use used uses "
+    "using one two three new note notes per via set sets get gets got make made run runs ran "
+    "if else so but yet because while once whenever where still now today yesterday always never "
+    "agent agents memory memories user users redacted "
+    # units and quantities name no topic
+    "bar bars psi kpa rpm degrees degree celsius hours hour minutes minute seconds second "
+    "days day weeks week percent times mbps gb mb kb".split())
+
+
+def _terms(text: str) -> set[str]:
+    import re
+
+    return {w for w in re.findall(r"[a-z][a-z0-9-]{2,}", text.lower()) if w not in _MAP_STOP}
+
+
+def knowledge_map(f: "MemoryFabric", max_topics: int = 8, per_topic: int = 4,
+                  limit: int = 5000) -> dict[str, Any]:
+    """What the store knows, at a glance: memories grouped into a few named topics.
+
+    A topic is a word most of its memories share, so its name says what it is
+    about; each memory joins the commonest such word it contains. Within a
+    topic the memories a person should see first are picked out: withdrawn or
+    disputed ones, then the ones agents used most. Everything else is a count.
+    Built for a view that must read without zooming, so it stays small:
+    at most `max_topics` topics and `per_topic` named memories in each.
+    """
+    from .. import events as ev
+
+    memories = f.state.memories
+    ids = sorted(memories, key=lambda m: -memories[m].created_at)[:limit]
+    text = {mid: _safe(f, mid) for mid in ids}
+    terms = {mid: _terms(text[mid]) for mid in ids}
+    df: dict[str, int] = {}
+    for ts in terms.values():
+        for t in ts:
+            df[t] = df.get(t, 0) + 1
+    n = len(ids)
+    ceiling = max(2, int(0.6 * n)) if n >= 6 else n
+    # Commonest first; on a tie the longer word, which is usually the more specific one.
+    candidates = sorted((t for t, c in df.items() if 2 <= c <= ceiling),
+                        key=lambda t: (-df[t], any(ch.isdigit() for ch in t), -len(t), t))
+    topic_of: dict[str, str] = {}
+    topics: list[tuple[str, list[str]]] = []
+    for t in candidates:
+        if len(topics) >= max_topics:
+            break
+        members = [mid for mid in ids if mid not in topic_of and t in terms[mid]]
+        if len(members) < 2:
+            continue
+        for mid in members:
+            topic_of[mid] = t
+        topics.append((t, members))
+    rest = [mid for mid in ids if mid not in topic_of]
+    if rest:
+        topics.append(("", rest))
+        for mid in rest:
+            topic_of[mid] = ""
+
+    exposures: dict[str, int] = {}
+    for e in f.log.read_types([ev.EventType.EXPOSURE_DECIDED]):
+        mid = e.payload.get("memory_id")
+        if e.payload.get("exposed") and mid in topic_of:
+            exposures[mid] = exposures.get(mid, 0) + 1
+
+    withdrawn = ("quarantined", "deprecated", "deleted")
+    priority = {"quarantined": 0, "deprecated": 1, "contested": 2, "candidate": 3}
+
+    def why(m: Any, uses: int) -> str:
+        state = m.lifecycle_state.value
+        if state in withdrawn:
+            return "withdrawn"
+        if state == "contested":
+            return "disputed"
+        if state == "candidate":
+            return "waiting for review"
+        return f"used {uses}×" if uses else "in use"
+
+    out_topics: list[dict[str, Any]] = []
+    for key, members in topics:
+        states: dict[str, int] = {}
+        for mid in members:
+            st = memories[mid].lifecycle_state.value
+            states[st] = states.get(st, 0) + 1
+        co: dict[str, int] = {}
+        for mid in members:
+            for t in terms[mid]:
+                if t != key:
+                    co[t] = co.get(t, 0) + 1
+        second = max(co, key=lambda t: (co[t], len(t), t)) if co else ""
+        if key:
+            label = key.capitalize() + (f" · {second}" if second and co[second] >= 2
+                                        and co[second] * 2 >= len(members) else "")
+        else:
+            label = "Other"
+        ranked = sorted(members, key=lambda mid: (priority.get(memories[mid].lifecycle_state.value, 9),
+                                                  -exposures.get(mid, 0), -memories[mid].created_at))
+        out_topics.append({
+            "id": key or "_other", "label": label, "size": len(members), "states": states,
+            "exposures": sum(exposures.get(mid, 0) for mid in members),
+            "highlights": [{"id": mid, "label": _short(text[mid], 48),
+                            "state": memories[mid].lifecycle_state.value,
+                            "author": memories[mid].provenance.created_by,
+                            "exposures": exposures.get(mid, 0),
+                            "why": why(memories[mid], exposures.get(mid, 0))}
+                           for mid in ranked[:per_topic]]})
+    shown = {h["id"] for t in out_topics for h in t["highlights"]}
+    tid = {mid: (topic_of[mid] or "_other") for mid in topic_of}
+    between: dict[tuple[str, str], int] = {}
+    memory_links = []
+    for mid in topic_of:
+        for parent, _ in memories[mid].provenance.parents:
+            if parent not in topic_of:
+                continue
+            a, b = tid[parent], tid[mid]
+            if a != b:
+                pair = (min(a, b), max(a, b))
+                between[pair] = between.get(pair, 0) + 1
+            if parent in shown and mid in shown:
+                memory_links.append({"from": parent, "to": mid})
+    total_withdrawn = sum(1 for mid in ids if memories[mid].lifecycle_state.value in withdrawn)
+    disputed = sum(1 for mid in ids if memories[mid].lifecycle_state.value == "contested")
+    named = [t for t in out_topics if t["id"] != "_other"]
+    summary = []
+    if named:
+        busiest = max(named, key=lambda t: (t["exposures"], t["size"]))
+        summary.append(f"{n} memories in {len(named)} topic{'s' if len(named) != 1 else ''}. "
+                       f"Agents use \u201c{busiest['label']}\u201d most.")
+    elif n:
+        summary.append(f"{n} memories, not yet enough shared words to group them into topics.")
+    if total_withdrawn or disputed:
+        worst = max(out_topics, key=lambda t: sum(t["states"].get(s, 0) for s in withdrawn + ("contested",)))
+        summary.append(f"{total_withdrawn} withdrawn and {disputed} disputed; most of them in "
+                       f"\u201c{worst['label']}\u201d.")
+    else:
+        summary.append("Nothing has been withdrawn or disputed.")
+    if between:
+        summary.append(f"{sum(between.values())} conclusion{'s' if sum(between.values()) != 1 else ''} "
+                       "built from memories in another topic (the lines).")
+    return {"topics": out_topics, "links": [{"from": a, "to": b, "weight": w} for (a, b), w in between.items()],
+            "memory_links": memory_links, "summary": summary, "total": n}
+
+
 def agents(f: "MemoryFabric") -> list[dict[str, Any]]:
     """One row per agent: what it wrote, recalled, was refused and did."""
     from .. import events as ev

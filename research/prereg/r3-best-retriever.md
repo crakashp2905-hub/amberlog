@@ -143,3 +143,39 @@ Changes:
 - **Documents are embedded in order of length** (a product change: a batch is
   padded to its longest text). It changes speed, not vectors.
 - Job limit 340 minutes.
+
+## Amendment 3 — procedure only, registered 2026-10-26
+
+Run 40235543450 decided R3 with two families not properly measured, as its
+result says: `nomic` ran out of memory in every job, and `arctic-m` was
+embedded **without the instruction prefix the model is trained with**
+(fastembed adds none; its own model list says the prefix is "necessary"),
+scoring 0.118 alone on SciFact. Both are harness defects, not results.
+
+- `FastEmbedEmbedder` now adds each model's documented prefixes
+  (`MODEL_PREFIXES`: arctic-m's query instruction, nomic's
+  `search_query:`/`search_document:`); `bge` is unchanged, so every arm that
+  was measured correctly keeps its numbers.
+- **Only the `arctic-m` and `nomic` parts are re-run.** The decision combines
+  them with run 40235543450's other parts, and refuses to decide if any shard's
+  `lexical` disagrees with that run's.
+- Thresholds and the decision rule are unchanged. If either family now passes
+  and beats `bge-base_hybrid` by more than the 0.005 tie band, `BEST` changes;
+  otherwise it stays. The earlier arctic-m numbers stay in the record, marked
+  as measured without the prefix.
+
+## Amendment 4 — procedure only, registered 2026-10-26
+
+Under amendment 3, `arctic-m` completed every part and `nomic` completed
+SciFact, but nomic's three LongMemEval shards ran out of memory again (one
+batch asked for 19 GB): a few LongMemEval turns are pasted documents of tens of
+thousands of characters, and nomic reads up to 8,192 tokens of each.
+
+- Every text is now embedded from its **first 8,000 characters** (about 2,000
+  tokens) and batches hold at most 32,000 characters. The 512-token models
+  (bge, arctic-m) already truncate sooner, so their vectors are unchanged; only
+  nomic's longest turns are shortened. Stated here because it is a constraint
+  on nomic that the other arms do not feel.
+- Only nomic's LongMemEval shards are re-run; the decision combines them with
+  run 40391411457 (arctic-m, nomic SciFact) and run 40235543450 (the rest),
+  with the same lexical-agreement check.

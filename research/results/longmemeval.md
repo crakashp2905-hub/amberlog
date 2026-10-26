@@ -14,6 +14,12 @@ essentially never says it does not know.**
 
 ---
 
+> **Re-measured at the product's default settings** (2026-10-26, CI run 40391715822, commit
+> `725ccb2`): `lexical` turn recall **0.750**, session recall **0.919** on all 500 `s` histories, with
+> hostile-source withholding on as shipped. Before S1 that setting withheld whole histories (0.08 turn
+> recall on a sample); after it, the default costs 0.003, about what the ~0.08% of turns the screen
+> still holds would explain ([s1-screen-false-positives.md](s1-screen-false-positives.md)).
+
 ## 1. The realistic split — 500 instances, median 491 turns a history
 
 | arm | turn recall | session recall | any gold turn | returned | latency ms |

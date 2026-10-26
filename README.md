@@ -53,9 +53,9 @@ memory-fabric sandbox          # opens the Memory Control Center on localhost
 
 ![The Memory Control Center](docs/images/control-center-home.png)
 
-| the story of one fact | the knowledge graph |
+| the story of one fact | the knowledge map |
 |---|---|
-| ![The story of one fact](docs/images/control-center.png) | ![The knowledge graph](docs/images/control-center-graph.png) |
+| ![The story of one fact](docs/images/control-center.png) | ![The knowledge map](docs/images/knowledge-map.png) |
 
 `Ctrl K` finds anything; `?` lists the shortcuts.
 

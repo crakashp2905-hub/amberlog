@@ -1,0 +1,31 @@
+# LongMemEval `s`, all 500 histories, keyword retrieval with the product's
+# default settings (hostile-source withholding on, as shipped). Re-checks the
+# published headline after S1 (research/results/s1-screen-false-positives.md).
+name: lme-defaults
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - experiments/longmemeval_bench.py
+      - .github/workflows/lme-defaults.yml
+
+permissions:
+  contents: read
+
+jobs:
+  lexical:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - run: |
+          mkdir -p research/bench/longmemeval/data
+          curl -fsSL -o research/bench/longmemeval/data/longmemeval_s_cleaned.json \
+            https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned/resolve/main/longmemeval_s_cleaned.json
+      - run: python -m experiments.longmemeval_bench --split s --arms lexical oracle --json --out lme-defaults.json
+      - run: cat lme-defaults.json | head -c 4000

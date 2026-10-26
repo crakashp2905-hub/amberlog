@@ -234,3 +234,60 @@ class TestWarmBatching(unittest.TestCase):
         # short texts fill batches by count; no batch holds two long texts
         self.assertLess(max(e.sizes), 2 * 3 * BATCH_CHARS_PER_TEXT)
         self.assertEqual(e.calls, 5)
+
+
+class TestModelPrefixes(unittest.TestCase):
+    """fastembed adds no instruction prefix; models trained with one get theirs (R3: arctic-m 0.118)."""
+
+    def build(self, model: str, **kw):
+        import sys
+        import types
+
+        seen: dict[str, list[str]] = {"passage": [], "query": []}
+
+        class FakeModel:
+            def __init__(self, **_: object) -> None:
+                pass
+
+            def passage_embed(self, texts, batch_size=64):
+                seen["passage"] += list(texts)
+                return [_Vec([1.0, 0.0]) for _ in texts]
+
+            def query_embed(self, texts):
+                seen["query"] += list(texts)
+                return [_Vec([0.0, 1.0]) for _ in texts]
+
+        fake = types.ModuleType("fastembed")
+        fake.TextEmbedding = FakeModel  # type: ignore[attr-defined]
+        with mock.patch.dict(sys.modules, {"fastembed": fake}), \
+                mock.patch("sys.stderr", io.StringIO()):
+            emb = retrievers.FastEmbedEmbedder(model, **kw)
+        return emb, seen
+
+    def test_arctic_queries_get_their_instruction(self) -> None:
+        emb, seen = self.build("snowflake/snowflake-arctic-embed-m")
+        emb.embed_query("pump pressure")
+        emb.embed("The pump runs at 4 bar.")
+        self.assertEqual(seen["query"], ["Represent this sentence for searching relevant passages: pump pressure"])
+        self.assertEqual(seen["passage"], ["The pump runs at 4 bar."])
+
+    def test_nomic_prefixes_both_sides_and_keeps_its_vectors_apart(self) -> None:
+        emb, seen = self.build("nomic-ai/nomic-embed-text-v1.5")
+        emb.embed("a note")
+        emb.embed_query("q")
+        self.assertEqual(seen["passage"], ["search_document: a note"])
+        self.assertEqual(seen["query"], ["search_query: q"])
+        self.assertIn("search_document: ", emb.cache.model)
+
+    def test_unknown_models_and_bge_are_unchanged_and_prefixes_can_be_turned_off(self) -> None:
+        emb, seen = self.build("BAAI/bge-base-en-v1.5")
+        emb.embed_query("q")
+        self.assertEqual(seen["query"], ["q"])
+        emb, seen = self.build("snowflake/snowflake-arctic-embed-m", query_prefix="")
+        emb.embed_query("q")
+        self.assertEqual(seen["query"], ["q"])
+
+
+class _Vec(list):
+    def tolist(self) -> list:
+        return list(self)

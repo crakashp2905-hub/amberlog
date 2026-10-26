@@ -210,13 +210,36 @@ def _missing(package: str, extra: str = "retrieval") -> ImportError:
                        f"(or pip install {package})")
 
 
+# Prefixes the model was trained with, which fastembed does not add. Without
+# them arctic-m scored 0.118 nDCG@10 on SciFact, far below its published range
+# (R3). bge v1.5 works without one and is left as measured.
+MODEL_PREFIXES: dict[str, tuple[str, str]] = {
+    "snowflake/snowflake-arctic-embed-m": ("Represent this sentence for searching relevant passages: ", ""),
+    "snowflake/snowflake-arctic-embed-m-long": ("Represent this sentence for searching relevant passages: ", ""),
+    "nomic-ai/nomic-embed-text-v1.5": ("search_query: ", "search_document: "),
+    "nomic-ai/nomic-embed-text-v1.5-Q": ("search_query: ", "search_document: "),
+}
+"""model -> (query prefix, document prefix)."""
+
+
 class FastEmbedEmbedder(_BatchEmbedder):
-    """ONNX embedding models through `fastembed`. CPU, no PyTorch."""
+    """ONNX embedding models through `fastembed`. CPU, no PyTorch.
+
+    `query_prefix` and `document_prefix` default to the model's own (see
+    `MODEL_PREFIXES`); pass "" to turn one off.
+    """
 
     def __init__(self, model: str = DEFAULT_EMBED_MODEL, cache_path: str | None = None,
                  cache_dir: str | None = None, batch_size: int = 64,
-                 threads: int | None = None) -> None:
+                 threads: int | None = None, query_prefix: str | None = None,
+                 document_prefix: str | None = None) -> None:
+        known_query, known_document = MODEL_PREFIXES.get(model, ("", ""))
+        self.query_prefix = known_query if query_prefix is None else query_prefix
+        self.document_prefix = known_document if document_prefix is None else document_prefix
         super().__init__(model, cache_path, batch_size)
+        if self.document_prefix:
+            # Cached vectors are for one document encoding; keep them apart.
+            self.cache.model = f"{model}|{self.document_prefix}"
         try:
             from fastembed import TextEmbedding
         except ImportError as exc:
@@ -226,10 +249,11 @@ class FastEmbedEmbedder(_BatchEmbedder):
         self._model = TextEmbedding(model_name=model, cache_dir=cache_dir, threads=threads)
 
     def _documents(self, texts: list[str]) -> list[list[float]]:
-        return [v.tolist() for v in self._model.passage_embed(texts, batch_size=self.batch_size)]
+        return [v.tolist() for v in self._model.passage_embed(
+            [self.document_prefix + t for t in texts], batch_size=self.batch_size)]
 
     def _queries(self, texts: list[str]) -> list[list[float]]:
-        return [v.tolist() for v in self._model.query_embed(texts)]
+        return [v.tolist() for v in self._model.query_embed([self.query_prefix + t for t in texts])]
 
 
 class SentenceTransformerEmbedder(_BatchEmbedder):

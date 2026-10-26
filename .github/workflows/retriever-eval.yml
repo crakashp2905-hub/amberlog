@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: read
+  actions: read
 
 concurrency:
   group: retriever-eval-${{ github.ref }}
@@ -30,7 +31,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        part: [base, bge-small, bge-base, arctic-m, nomic]
+        # Amendment 3: only the two families the first run did not measure
+        # properly; `decide` reuses run 40235543450's other parts.
+        part: [arctic-m, nomic]
         # SciFact in one job; LongMemEval's 60 instances in three shards, so
         # no job embeds ~30,000 turns on its own (amendment 2).
         job: [scifact, lme0, lme1, lme2]
@@ -77,6 +80,18 @@ jobs:
           pattern: r3-part-*
           path: parts
           merge-multiple: true
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: r3-part-*
+          path: prior
+          merge-multiple: true
+          run-id: 40235543450
+          github-token: ${{ github.token }}
+      - name: Reuse the first run's parts for families not re-run
+        run: |
+          for f in prior/*.json; do
+            case "$(basename "$f")" in r3-part-arctic-m-*|r3-part-nomic-*) ;; *) cp -n "$f" parts/ ;; esac
+          done
       - name: Combine and decide
         run: |
           ls parts

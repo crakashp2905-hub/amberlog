@@ -24,6 +24,8 @@
     --low-soft: #edf1f6;
     --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
     --radius: 8px;
+    --st-active: #16a37f; --st-candidate: #8b5cf6; --st-contested: #e8a33d; --st-withdrawn: #e2553f;
+    --map-topic: #5b7cfa; --map-link: #b9bdd0; --map-sky-1: #ffffff; --map-sky-2: #eef1f8; --map-label: #1d1d1b;
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
@@ -42,6 +44,7 @@
       --medium-soft: #2c2519;
       --low: #a3b6cd;
       --low-soft: #1e242c;
+      --map-link: #4a4f63; --map-sky-1: #23252b; --map-sky-2: #15161a; --map-label: #eceae6;
     }
   }
   * { box-sizing: border-box; }
@@ -233,6 +236,7 @@ ol.story li.future { opacity: .25; }
     --high: #ff8a7a; --high-soft: #3a1d1d; --medium: #f2c46d; --medium-soft: #2e2615;
     --low: #9fb4d6; --low-soft: #1b2232;
     --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+    --map-link: #4a5068; --map-sky-1: #1b1d29; --map-sky-2: #0b0c12; --map-label: #ececf6;
   }
 }
 :root[data-theme="dark"] {
@@ -242,6 +246,7 @@ ol.story li.future { opacity: .25; }
   --high: #ff8a7a; --high-soft: #3a1d1d; --medium: #f2c46d; --medium-soft: #2e2615;
   --low: #9fb4d6; --low-soft: #1b2232;
   --shadow: 0 1px 2px rgba(0,0,0,.4), 0 10px 30px rgba(0,0,0,.35);
+  --map-link: #4a5068; --map-sky-1: #1b1d29; --map-sky-2: #0b0c12; --map-label: #ececf6;
 }
 body { font: 14px/1.55 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   background: radial-gradient(1200px 600px at 100% -10%, var(--accent-soft), transparent 60%), var(--bg);
@@ -288,10 +293,11 @@ header.top { position: sticky; top: 0; z-index: 5; padding: 14px 22px 12px; bord
   box-shadow: 0 0 0 0 rgba(20,184,166,.6); animation: pulse 2s infinite; }
 .live.off .dot { background: var(--faint); animation: none; }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(20,184,166,.55);} 70% { box-shadow: 0 0 0 9px rgba(20,184,166,0);} 100% { box-shadow: 0 0 0 0 rgba(20,184,166,0);} }
-.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-top: 12px; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 12px; }
 .tile { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 14px;
   box-shadow: var(--shadow); transition: transform .15s; }
 .tile:hover { transform: translateY(-2px); }
+button.tile { text-align: left; font: inherit; color: inherit; cursor: pointer; }
 .tile .n { font-size: 24px; font-weight: 700; background: var(--grad); -webkit-background-clip: text; background-clip: text;
   color: transparent; }
 .tile.warn .n { background: none; color: var(--high); }
@@ -325,15 +331,45 @@ button { transition: background .12s, border-color .12s; }
   border-radius: 12px; padding: 10px 14px; box-shadow: var(--shadow); max-width: 380px; font-size: 13px;
   animation: rise .2s ease both; cursor: pointer; }
 .toast.k-withdrawn, .toast.k-action_blocked, .toast.k-refused { border-left-color: var(--high); }
-.graph-bar { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 10px; }
-.graph-bar input { flex: 1 1 240px; }
-.legend span { display: inline-flex; align-items: center; gap: 5px; margin-right: 10px; font-size: 12px; color: var(--muted); }
-.legend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
-.graph-wrap { position: relative; height: 68vh; min-height: 420px; background: var(--panel); border: 1px solid var(--border);
-  border-radius: 16px; box-shadow: var(--shadow); overflow: hidden; }
-.graph-wrap canvas { width: 100%; height: 100%; display: block; cursor: grab; }
+@media (max-width: 720px) {
+  header.top { position: static; padding: 12px 14px; }
+  .tiles { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .tile { padding: 8px 10px; } .tile .n { font-size: 18px; } .tile .k { font-size: 10px; }
+  .map-stage { min-height: 0; }
+}
+.map-layout { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+@media (max-width: 980px) { .map-layout { grid-template-columns: 1fr; } }
+.map-stage { position: relative; height: min(72vh, 720px); min-height: 440px; border-radius: 18px; overflow: hidden;
+  border: 1px solid var(--border); box-shadow: var(--shadow);
+  background: radial-gradient(120% 90% at 50% 0%, var(--map-sky-1), var(--map-sky-2)); }
+.map-stage canvas { width: 100%; height: 100%; display: block; cursor: default; }
+.map-stage canvas.pointing { cursor: pointer; }
+.map-empty[hidden] { display: none; }
+.map-empty { position: absolute; inset: 0; display: grid; place-items: center; padding: 40px; text-align: center;
+  color: var(--muted); font-size: 15px; }
+.map-side { display: flex; flex-direction: column; gap: 12px; }
+.map-card { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px;
+  box-shadow: var(--shadow); }
+.map-card h3 { margin: 0 0 8px; font-size: 13px; font-weight: 650; color: var(--text); }
+.map-summary { margin: 0; padding: 0; list-style: none; display: grid; gap: 8px; font-size: 13.5px; line-height: 1.45; }
+.map-summary li { padding-left: 14px; position: relative; }
+.map-summary li::before { content: ""; position: absolute; left: 0; top: .6em; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); }
+.map-key { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; font-size: 12.5px; color: var(--muted); }
+.map-key li { display: flex; gap: 9px; align-items: center; }
+.map-key .dot { width: 11px; height: 11px; border-radius: 50%; flex: none; background: var(--c);
+  box-shadow: inset -2px -2px 3px rgba(0,0,0,.25); }
+.map-key .ball { width: 18px; height: 18px; border-radius: 50%; flex: none;
+  background: radial-gradient(circle at 35% 30%, #fff 0, var(--c) 45%, color-mix(in srgb, var(--c) 55%, #000) 100%); }
+.map-key .line { width: 18px; height: 0; border-top: 2px solid var(--map-link); flex: none; }
+.map-hint { margin: 10px 0 0; font-size: 12px; color: var(--faint); }
+.map-topics { display: flex; flex-wrap: wrap; gap: 6px; }
+.map-topics button { border: 1px solid var(--border); background: var(--panel-2); color: var(--text); border-radius: 99px;
+  padding: 4px 10px; font: inherit; font-size: 12.5px; cursor: pointer; }
+.map-topics button[aria-pressed="true"] { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.map-topics button .n { color: var(--faint); margin-left: 4px; }
 .g-tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--border);
-  border-radius: 10px; padding: 8px 10px; font-size: 12.5px; box-shadow: var(--shadow); max-width: 320px; }
+  border-radius: 10px; padding: 8px 11px; font-size: 12.5px; box-shadow: var(--shadow); max-width: 320px; z-index: 2; }
 .agent-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .agent { background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 14px; box-shadow: var(--shadow); }
 .agent .who { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
@@ -388,7 +424,7 @@ main button:not(.link):not(.copy):hover, .drawer button:not(.link):not(.copy):ho
     <button data-tab="review" aria-selected="false"><i>✓</i>Review<span class="count" id="c-review"></span></button>
     <div class="group">Knowledge</div>
     <button data-tab="memories" aria-selected="false"><i>≡</i>Memories<span class="count" id="c-memories"></span></button>
-    <button data-tab="graph" aria-selected="false"><i>✳</i>Knowledge graph</button>
+    <button data-tab="graph" aria-selected="false"><i>✳</i>Knowledge map</button>
     <button data-tab="search" aria-selected="false"><i>⌕</i>Search</button>
     <div class="group">Activity</div>
     <button data-tab="agents" aria-selected="false"><i>☺</i>Agents<span class="count" id="c-agents"></span></button>
@@ -428,15 +464,37 @@ main button:not(.link):not(.copy):hover, .drawer button:not(.link):not(.copy):ho
   </section>
 
   <section id="tab-graph" hidden>
-    <h2>Knowledge graph</h2>
-    <div class="note">Every memory as a dot, coloured by its state and sized by how often agents
-      were shown it. Lines join a conclusion to what it was built from (solid) and a copy to its
-      original (dashed). Drag to move, scroll to zoom, click a dot to open its story.</div>
-    <div class="graph-bar"><input id="g-filter" placeholder="highlight by text or agent…"
-      aria-label="Highlight memories"><span class="legend" id="g-legend"></span>
-      <span class="sub" id="g-count"></span></div>
-    <div class="graph-wrap"><canvas id="g-canvas" aria-label="Knowledge graph"></canvas>
-      <div class="g-tip" id="g-tip" hidden></div></div>
+    <h2>Knowledge map</h2>
+    <div class="map-layout">
+      <div class="map-stage" id="map-stage">
+        <canvas id="g-canvas" role="img" aria-label="Knowledge map: topics as spheres, key memories around them"></canvas>
+        <div class="g-tip" id="g-tip" hidden></div>
+        <div class="map-empty" id="map-empty" hidden>No memories yet. Once agents start remembering,
+          their knowledge appears here grouped by topic.</div>
+      </div>
+      <aside class="map-side">
+        <div class="map-card">
+          <h3>At a glance</h3>
+          <ul class="map-summary" id="map-summary"></ul>
+        </div>
+        <div class="map-card">
+          <h3>How to read it</h3>
+          <ul class="map-key">
+            <li><span class="ball" style="--c:var(--map-topic)"></span><span>A <b>topic</b>: memories that share a subject. Bigger means more memories; the ring shows their state.</span></li>
+            <li><span class="dot" style="--c:var(--st-active)"></span>In use</li>
+            <li><span class="dot" style="--c:var(--st-candidate)"></span>Waiting for review</li>
+            <li><span class="dot" style="--c:var(--st-contested)"></span>Disputed</li>
+            <li><span class="dot" style="--c:var(--st-withdrawn)"></span>Withdrawn: agents no longer see it</li>
+            <li><span class="line"></span>Built from a memory in another topic</li>
+          </ul>
+          <p class="map-hint">Point at anything for details; click a memory to read its story.</p>
+        </div>
+        <div class="map-card">
+          <h3>Topics</h3>
+          <div class="map-topics" id="map-topics"></div>
+        </div>
+      </aside>
+    </div>
   </section>
 
   <section id="tab-agents" hidden>
@@ -582,7 +640,7 @@ main button:not(.link):not(.copy):hover, .drawer button:not(.link):not(.copy):ho
     <dl class="kv"><dt><kbd>Ctrl K</kbd> or <kbd>/</kbd></dt><dd>search and commands</dd>
       <dt><kbd>g</kbd> then <kbd>h</kbd></dt><dd>start here</dd>
       <dt><kbd>g</kbd> then <kbd>m</kbd></dt><dd>memories</dd>
-      <dt><kbd>g</kbd> then <kbd>k</kbd></dt><dd>knowledge graph</dd>
+      <dt><kbd>g</kbd> then <kbd>k</kbd></dt><dd>knowledge map</dd>
       <dt><kbd>g</kbd> then <kbd>a</kbd></dt><dd>agents</dd>
       <dt><kbd>g</kbd> then <kbd>r</kbd></dt><dd>replay</dd>
       <dt><kbd>t</kbd></dt><dd>light or dark theme</dd>
@@ -636,26 +694,25 @@ let OVERVIEW = null;
 async function loadOverview() {
   const o = await api("/api/overview");
   OVERVIEW = o;
-  $("store-path").textContent = o.path;
-  $("store-meta").textContent =
-    `${o.events} events · estimator ${o.estimator} · logged policies: ` +
-    `${o.logged_policies.join(", ") || "none"}`;
+  const file = o.path.split(/[\\/]/).pop();
+  $("store-path").textContent = file;
+  $("store-meta").textContent = `${o.events} events recorded`;
+  $("store-path").parentElement.title =
+    `${o.path}\nestimator ${o.estimator} · logged policies: ${o.logged_policies.join(", ") || "none"}`;
 
-  const needsAttention = (o.by_state.quarantined || 0) + (o.by_state.contested || 0);
+  const st = o.by_state, withdrawn = (st.quarantined || 0) + (st.deprecated || 0) + (st.deleted || 0);
   const tiles = [
-    ["memories", o.total_memories, false],
-    ["needs review", needsAttention, needsAttention > 0],
-    ["episodes", o.episodes, false],
-    ["with outcome", o.episodes_with_outcome, false],
-    ["exposed", o.exposures, false],
-    ["withheld", o.withholdings, false],
-    ["no evidence", o.no_value_evidence, false],
-    ["both arms", o.memories_with_both_arms, false],
+    ["In use", st.active || 0, "", "memories", "Memories agents can be shown"],
+    ["Waiting for review", st.candidate || 0, (st.candidate || 0) ? "warn" : "", "review", "New memories no agent sees until someone approves them"],
+    ["Disputed", st.contested || 0, (st.contested || 0) ? "warn" : "", "attention", "Memories that contradict each other"],
+    ["Withdrawn", withdrawn, "", "lifecycle", "Found wrong or retired; hidden from agents"],
+    ["Times recalled", o.exposures, "", "replay", "How often agents were shown a memory"],
   ];
   $("tiles").innerHTML = tiles
-    .map(([k, n, warn]) => `<div class="tile ${warn ? "warn" : ""}">
-      <div class="n">${n}</div><div class="k">${esc(k)}</div></div>`)
+    .map(([k, n, cls, tab, help]) => `<button class="tile ${cls}" data-goto="${tab}" title="${esc(help)}">
+      <div class="n">${n}</div><div class="k">${esc(k)}</div></button>`)
     .join("");
+  for (const b of $("tiles").querySelectorAll("[data-goto]")) b.addEventListener("click", () => showTab(b.dataset.goto));
 
   $("diagnostics").innerHTML = o.diagnostics.length
     ? `<h2>What this store can and cannot tell you</h2>` +
@@ -1255,6 +1312,7 @@ function showTab(name) {
   }
   try { localStorage.setItem("mf.tab", name); } catch (_) {}
   if (name !== "graph" && G && G.stop) G.stop();
+  const foot = $("footer"); if (foot) foot.hidden = !["memories", "search", "episodes"].includes(name);
   LOADERS[name]().catch(showError);
 }
 
@@ -1349,15 +1407,18 @@ function renderHero(o, att, rev, acts) {
       <circle cx="75" cy="75" r="${r}" fill="none" stroke="url(#hg)" stroke-width="12" stroke-linecap="round"
         stroke-dasharray="${c}" stroke-dashoffset="${c}" transform="rotate(-90 75 75)" id="hero-arc"/>
       <text x="75" y="80" text-anchor="middle" font-size="34" font-weight="700" fill="var(--text)">${score}</text>
-      <text x="75" y="102" text-anchor="middle" font-size="11" fill="var(--faint)">health</text></svg>
+      <text x="75" y="102" text-anchor="middle" font-size="11" fill="var(--faint)">out of 100</text></svg>
     <div><h3>${esc(tone)}</h3>
       <p>${o.total_memories} memories from ${new Set((AGENTS_CACHE || []).map((a) => a.agent_id)).size || "your"} agent(s).
         ${bad} withdrawn or disputed, ${att.length} item(s) need a person, ${rev.length} waiting for review,
         ${blocked} action(s) blocked on evidence that no longer held.</p>
+      <p class="sub">The score is a rough guide: it falls with each withdrawn or disputed memory and each thing waiting on a person.</p>
       <p class="sub" style="margin-top:8px">Press <kbd>Ctrl K</kbd> to find anything, or open the
-        <button class="link" data-goto="graph">knowledge graph</button>.</p></div></div>`;
+        <button class="link" data-goto="graph">knowledge map</button>.</p></div></div>`;
   requestAnimationFrame(() => { const a = $("hero-arc"); if (a) { a.style.transition = "stroke-dashoffset 1s ease"; a.setAttribute("stroke-dashoffset", off); } });
   for (const b of $("hero").querySelectorAll("[data-goto]")) b.addEventListener("click", () => showTab(b.dataset.goto));
+  const waiting = document.querySelector('#tiles [data-goto="review"]');   // one number for "waiting for review"
+  if (waiting) { waiting.querySelector(".n").textContent = rev.length; waiting.classList.toggle("warn", rev.length > 0); }
 }
 
 /* ---------- agents ---------- */
@@ -1384,112 +1445,241 @@ async function loadAgents() {
     : `<div class="empty">No agent has used this store yet. Connect one with <code>memory-fabric connect --list</code>.</div>`;
 }
 
-/* ---------- knowledge graph ---------- */
+/* ---------- knowledge map ---------- */
 
-const STATE_COLOR = { active: "#14b8a6", candidate: "#8b5cf6", contested: "#f2a93b", quarantined: "#ef5b4c", deprecated: "#9394a8", deleted: "#555" };
+const STATE_VAR = { active: "--st-active", candidate: "--st-candidate", contested: "--st-contested",
+  quarantined: "--st-withdrawn", deprecated: "--st-withdrawn", deleted: "--st-withdrawn" };
+const TOPIC_HUES = ["#5b7cfa", "#14b8a6", "#a855f7", "#f59e0b", "#ec4899", "#22c55e", "#0ea5e9", "#ef7d57"];
+const WITHDRAWN = ["quarantined", "deprecated", "deleted"];
 let G = null;
 
+function mixHex(hex, other, t) {
+  const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const [a, b] = [p(hex), p(other)];
+  return "#" + a.map((v, i) => Math.round(v + (b[i] - v) * t).toString(16).padStart(2, "0")).join("");
+}
+
+function topicSub(t) {
+  const w = WITHDRAWN.reduce((n, k) => n + (t.states[k] || 0), 0), d = t.states.contested || 0;
+  const bits = [`${t.size} memor${t.size === 1 ? "y" : "ies"}`];
+  if (w) bits.push(`${w} withdrawn`);
+  if (d) bits.push(`${d} disputed`);
+  return bits.join(" · ");
+}
+
 async function loadGraph() {
-  const data = await api("/api/graph?limit=600");
-  const canvas = $("g-canvas");
-  const wrap = canvas.parentElement;
-  $("g-count").textContent = `${data.shown} of ${data.total} memories · ${data.edges.length} links`;
-  $("g-legend").innerHTML = Object.entries(STATE_COLOR).slice(0, 5).map(([k, c]) => `<span><i style="background:${c}"></i>${k}</span>`).join("");
-  const W = () => wrap.clientWidth, H = () => wrap.clientHeight;
-  const byId = new Map();
-  const nodes = data.nodes.map((n, i) => {
-    const a = (i / Math.max(1, data.nodes.length)) * Math.PI * 2 * 7;
-    const node = { ...n, x: Math.cos(a) * (40 + i * 0.9), y: Math.sin(a) * (40 + i * 0.9), vx: 0, vy: 0,
-      r: 5 + Math.min(12, Math.sqrt(n.exposures) * 2) };
-    byId.set(n.id, node); return node;
-  });
-  const edges = data.edges.filter((e) => byId.has(e.from) && byId.has(e.to)).map((e) => ({ a: byId.get(e.from), b: byId.get(e.to), kind: e.kind }));
+  const data = await api("/api/map?per_topic=3");
+  const canvas = $("g-canvas"), stage = $("map-stage"), tip = $("g-tip");
   if (G && G.stop) G.stop();
-  G = { nodes, edges, scale: 1, ox: 0, oy: 0, hover: null, filter: "", drag: null, alpha: 1 };
-  const dpr = window.devicePixelRatio || 1;
-  function resize() { canvas.width = W() * dpr; canvas.height = H() * dpr; }
-  resize();
-  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-  function step() {
-    const k = 0.02 * G.alpha;
-    for (let i = 0; i < nodes.length; i++) {
-      const p = nodes[i];
-      for (let j = i + 1; j < nodes.length; j++) {
-        const q = nodes[j]; let dx = p.x - q.x, dy = p.y - q.y; let d2 = dx * dx + dy * dy + 0.01;
-        if (d2 > 90000) continue; const f = 900 / d2; dx *= f; dy *= f;
-        p.vx += dx * k; p.vy += dy * k; q.vx -= dx * k; q.vy -= dy * k;
-      }
-      p.vx -= p.x * 0.004 * G.alpha; p.vy -= p.y * 0.004 * G.alpha;
-    }
-    for (const e of edges) {
-      const dx = e.b.x - e.a.x, dy = e.b.y - e.a.y, d = Math.sqrt(dx * dx + dy * dy) || 1;
-      const f = (d - 60) * 0.02 * G.alpha; e.a.vx += dx / d * f; e.a.vy += dy / d * f; e.b.vx -= dx / d * f; e.b.vy -= dy / d * f;
-    }
-    for (const p of nodes) { if (p === G.drag) continue; p.vx *= 0.82; p.vy *= 0.82; p.x += p.vx; p.y += p.vy; }
-    G.alpha = Math.max(0.02, G.alpha * 0.985);
-  }
+  $("map-empty").hidden = data.total > 0;
+  $("map-summary").innerHTML = data.summary.map((t) => `<li>${esc(t)}</li>`).join("") || "<li>Nothing yet.</li>";
   const css = (v) => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
-  function draw() {
-    const ctx = canvas.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    ctx.clearRect(0, 0, W(), H());
-    ctx.translate(W() / 2 + G.ox, H() / 2 + G.oy); ctx.scale(G.scale, G.scale);
-    const q = G.filter.toLowerCase();
-    const lit = (n) => !q || n.label.toLowerCase().includes(q) || n.author.toLowerCase().includes(q) || n.id.toLowerCase().includes(q);
-    ctx.lineWidth = 1 / G.scale;
-    for (const e of edges) {
-      ctx.strokeStyle = css("--border"); ctx.globalAlpha = lit(e.a) && lit(e.b) ? 0.9 : 0.15;
-      ctx.setLineDash(e.kind === "copy" ? [4 / G.scale, 4 / G.scale] : []);
-      ctx.beginPath(); ctx.moveTo(e.a.x, e.a.y); ctx.lineTo(e.b.x, e.b.y); ctx.stroke();
-    }
-    ctx.setLineDash([]);
-    for (const n of nodes) {
-      ctx.globalAlpha = lit(n) ? 1 : 0.12;
-      const c = STATE_COLOR[n.state] || "#888";
-      ctx.beginPath(); ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-      ctx.fillStyle = c; ctx.shadowColor = c; ctx.shadowBlur = n === G.hover ? 18 : 6; ctx.fill(); ctx.shadowBlur = 0;
-      if (n === G.hover || (q && lit(n))) { ctx.lineWidth = 2 / G.scale; ctx.strokeStyle = css("--text"); ctx.stroke(); }
-    }
-    if (nodes.length <= 60 || G.scale >= 1.4) {
-      ctx.font = `${11 / G.scale}px Inter, sans-serif`; ctx.fillStyle = css("--muted");
-      for (const n of nodes) { if (!lit(n)) continue;
-        ctx.globalAlpha = n === G.hover ? 1 : 0.75;
-        ctx.fillText(n.label.length > 34 ? n.label.slice(0, 33) + "…" : n.label, n.x + n.r + 4 / G.scale, n.y + 3 / G.scale); }
-    }
-    ctx.globalAlpha = 1;
+  const stateColor = (st) => css(STATE_VAR[st] || "--st-active") || "#16a37f";
+
+  // ---- scene: the largest topic at the centre, the rest on a ring facing the viewer ----
+  const topics = data.topics.map((t, i) => ({ ...t, hue: t.id === "_other" ? "#94a3b8" : TOPIC_HUES[i % TOPIC_HUES.length] }));
+  const maxSize = Math.max(1, ...topics.map((t) => t.size));
+  const maxUse = Math.max(1, ...topics.flatMap((t) => t.highlights.map((h) => h.exposures)));
+  const ringN = Math.max(1, topics.length - 1);
+  const narrow = stage.clientWidth < 560;
+  stage.style.height = narrow ? `${Math.max(320, topics.length * 215 + 40)}px` : "";
+  if (narrow) topics.forEach((t, i) => {   // a phone: a zig-zag column, still in depth
+    t.kind = "topic"; t.r = 0.16 + 0.14 * Math.sqrt(t.size / maxSize);
+    t.x = i % 2 ? 0.3 : -0.3; t.y = (i - (topics.length - 1) / 2) * 1.75; t.z = i % 2 ? -0.25 : 0.25; t.dir = -Math.PI / 2;
+  });
+  else topics.forEach((t, i) => {
+    t.kind = "topic";
+    t.r = 0.16 + 0.14 * Math.sqrt(t.size / maxSize);
+    if (i === 0) { t.x = 0; t.y = 0; t.z = 0.25; t.dir = null; return; }
+    const a = ((i - 1) / ringN) * Math.PI * 2 - Math.PI / 2 + (ringN % 2 ? 0 : Math.PI / ringN);
+    t.x = Math.cos(a) * 1.7; t.y = Math.sin(a) * 1.25; t.z = -Math.sin(a) * 0.55; t.dir = a;
+  });
+  const moons = [];
+  for (const t of topics) {
+    const m = t.highlights.length;
+    t.highlights.forEach((h, j) => {
+      // around the centre topic: all the way round; elsewhere: a fan pointing away from the centre
+      // a crown over the topic, so its caption below stays clear
+      const a = -Math.PI / 2 + (m === 1 ? 0 : (j / (m - 1) - 0.5) * 2.0);
+      const orbit = t.r + 0.16;
+      moons.push({ ...h, kind: "memory", topic: t, r: 0.04 + 0.03 * Math.sqrt(h.exposures / maxUse),
+        x: t.x + Math.cos(a) * orbit, y: t.y + Math.sin(a) * orbit, z: t.z + (j % 2 ? 0.12 : -0.12),
+        side: Math.cos(a) >= 0 ? "right" : "left",
+        important: WITHDRAWN.includes(h.state) || h.state === "contested" || h.state === "candidate" });
+    });
   }
+  const bodies = [...topics, ...moons];
+  const byTopic = new Map(topics.map((t) => [t.id, t]));
+  const byMemory = new Map(moons.map((m) => [m.id, m]));
+  const tlinks = data.links.map((l) => ({ a: byTopic.get(l.from), b: byTopic.get(l.to), w: l.weight })).filter((l) => l.a && l.b);
+  const mlinks = data.memory_links.map((l) => ({ a: byMemory.get(l.from), b: byMemory.get(l.to) })).filter((l) => l.a && l.b);
+
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const dpr = window.devicePixelRatio || 1;
+  G = { theta: 0, hover: null, focus: null, scale: 1, cx: 0, cy: 0, t0: performance.now(), paused: false, narrow };
+  const TILT = -0.12, CAM = 4.2;
+
+  function project(p, theta) {
+    const c = Math.cos(theta), s = Math.sin(theta);
+    let x = p.x * c + p.z * s, z = -p.x * s + p.z * c, y = p.y;
+    const tilt = G.narrow ? 0 : TILT, ct = Math.cos(tilt), st = Math.sin(tilt);
+    const y2 = y * ct - z * st, z2 = y * st + z * ct;
+    const k = CAM / (CAM - z2);
+    return { sx: G.cx + x * k * G.scale, sy: G.cy + y2 * k * G.scale, k, depth: z2 };
+  }
+  function fit() {
+    const W = stage.clientWidth, H = stage.clientHeight;
+    canvas.width = W * dpr; canvas.height = H * dpr;
+    G.cx = W / 2; G.cy = H / 2 - 10; G.scale = 1;
+    let minX = 1e9, maxX = -1e9, minY = 1e9, maxY = -1e9;
+    for (const th of [-0.3, 0, 0.3]) for (const b of bodies) {
+      const p = project(b, th), r = b.r * p.k;
+      minX = Math.min(minX, (p.sx - G.cx) - r); maxX = Math.max(maxX, (p.sx - G.cx) + r);
+      minY = Math.min(minY, (p.sy - G.cy) - r); maxY = Math.max(maxY, (p.sy - G.cy) + r);
+    }
+    const padX = G.narrow ? 70 : Math.min(130, W * 0.12), top = 40, bottom = 92;
+    G.scale = Math.max(40, Math.min((W - padX * 2) / Math.max(0.2, maxX - minX),
+                                    (H - top - bottom) / Math.max(0.2, maxY - minY)));
+    G.cx = W / 2 - ((minX + maxX) / 2) * G.scale; G.cy = top - minY * G.scale;
+  }
+
+  function sphere(ctx, x, y, r, color, alpha) {
+    ctx.globalAlpha = alpha;
+    const g = ctx.createRadialGradient(x - r * 0.38, y - r * 0.42, r * 0.08, x, y, r);
+    g.addColorStop(0, mixHex(color, "#ffffff", 0.75));
+    g.addColorStop(0.42, color);
+    g.addColorStop(1, mixHex(color, "#000000", 0.45));
+    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(x, y, r, 0, Math.PI * 2); ctx.fill();
+  }
+  function pill(ctx, text, x, y, align, color, alpha, placed, bold) {
+    ctx.font = `${bold ? 650 : 500} ${bold ? 14.5 : 12}px Inter, -apple-system, "Segoe UI", sans-serif`;
+    const w = ctx.measureText(text).width + 14, h = bold ? 24 : 21;
+    const left = align === "right" ? x : align === "left" ? x - w : x - w / 2, top = y - h / 2;
+    const box = [left, top, left + w, top + h];
+    if (placed && placed.some((q) => !(box[2] < q[0] || box[0] > q[2] || box[3] < q[1] || box[1] > q[3]))) return false;
+    if (placed) placed.push(box);
+    ctx.globalAlpha = alpha * 0.92; ctx.fillStyle = css("--panel");
+    ctx.beginPath(); ctx.roundRect(left, top, w, h, h / 2); ctx.fill();
+    ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.lineWidth = 1; ctx.stroke();
+    ctx.fillStyle = css("--map-label"); ctx.textBaseline = "middle"; ctx.textAlign = "left";
+    ctx.fillText(text, left + 7, y + 0.5);
+    return true;
+  }
+
+  function draw(now) {
+    const ctx = canvas.getContext("2d"); ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    const W = stage.clientWidth, H = stage.clientHeight;
+    ctx.clearRect(0, 0, W, H);
+    if (!reduce && !G.paused) G.theta = 0.28 * Math.sin((now - G.t0) / 5200);
+    const P = new Map(bodies.map((b) => [b, project(b, G.theta)]));
+    const dim = (b) => {
+      const t = b.kind === "topic" ? b : b.topic;
+      if (G.focus && t !== G.focus) return 0.22;
+      if (G.hover && G.hover !== b && G.hover !== t && (G.hover.kind !== "memory" || G.hover.topic !== t)) return 0.5;
+      return 1;
+    };
+    // a soft shadow under each topic, for depth
+    for (const t of topics) { const p = P.get(t); const r = Math.max(16, t.r * p.k * G.scale);
+      ctx.globalAlpha = 0.13 * dim(t); ctx.fillStyle = "#000";
+      ctx.beginPath(); ctx.ellipse(p.sx + r * 0.15, p.sy + r * 1.08, r * 0.95, r * 0.2, 0, 0, Math.PI * 2); ctx.fill(); }
+    // links between topics, then between memories
+    ctx.lineCap = "round";
+    for (const l of tlinks) { const a = P.get(l.a), b = P.get(l.b);
+      ctx.globalAlpha = 0.65 * Math.min(dim(l.a), dim(l.b)); ctx.strokeStyle = css("--map-link"); ctx.lineWidth = 1.5 + Math.min(4, l.w);
+      const mx = (a.sx + b.sx) / 2, my = (a.sy + b.sy) / 2 - 40;
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.quadraticCurveTo(mx, my, b.sx, b.sy); ctx.stroke(); }
+    for (const l of mlinks) { const a = P.get(l.a), b = P.get(l.b);
+      ctx.globalAlpha = 0.5 * Math.min(dim(l.a), dim(l.b)); ctx.strokeStyle = css("--map-link"); ctx.lineWidth = 1;
+      ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke(); ctx.setLineDash([]); }
+    // tethers from each memory to its topic
+    for (const m of moons) { const a = P.get(m.topic), b = P.get(m);
+      ctx.globalAlpha = 0.35 * dim(m); ctx.strokeStyle = m.topic.hue; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(a.sx, a.sy); ctx.lineTo(b.sx, b.sy); ctx.stroke(); }
+    // bodies, far to near
+    const order = [...bodies].sort((a, b) => P.get(a).depth - P.get(b).depth);
+    for (const b of order) {
+      const p = P.get(b), r = Math.max(b.kind === "topic" ? 16 : 6, b.r * p.k * G.scale);
+      const fog = 0.78 + 0.22 * Math.min(1, Math.max(0, (p.depth + 1.2) / 2.4));
+      b.screen = { x: p.sx, y: p.sy, r };
+      sphere(ctx, p.sx, p.sy, r, b.kind === "topic" ? b.hue : stateColor(b.state), fog * dim(b));
+      if (b.kind === "topic") {       // a ring around the topic: the share of its memories in each state
+        let a0 = -Math.PI / 2; const total = b.size;
+        for (const [st, key] of [["active", "active"], ["candidate", "candidate"], ["contested", "contested"],
+                                 ["quarantined", "w"], ["deprecated", "w"], ["deleted", "w"]]) {
+          const c = b.states[st] || 0; if (!c) continue;
+          const a1 = a0 + (c / total) * Math.PI * 2;
+          ctx.globalAlpha = fog * dim(b); ctx.strokeStyle = stateColor(st); ctx.lineWidth = 4;
+          ctx.beginPath(); ctx.arc(p.sx, p.sy, r + 6, a0 + 0.03, a1 - 0.03); ctx.stroke(); a0 = a1;
+        }
+      }
+      if (b === G.hover) { ctx.globalAlpha = 1; ctx.strokeStyle = css("--text"); ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(p.sx, p.sy, r + (b.kind === "topic" ? 11 : 4), 0, Math.PI * 2); ctx.stroke(); }
+    }
+    // captions: every topic's name, its counts, and the one memory a person should see first
+    for (const t of topics) {
+      const sc = { ...t.screen }, a = dim(t), y0 = sc.y + sc.r + 24;
+      sc.x = Math.min(W - 150, Math.max(150, sc.x));
+      if (W < 300) sc.x = W / 2;
+      pill(ctx, t.label, sc.x, y0, "center", t.hue, a, null, true);
+      ctx.globalAlpha = a * 0.9; ctx.font = "500 11.5px Inter, -apple-system, sans-serif"; ctx.fillStyle = css("--muted");
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText(topicSub(t), sc.x, y0 + 16);
+      const key = t.highlights.find((h) => h.state !== "active") || null;
+      if (key) {
+        const text = `${key.why}: ${key.label.length > 30 ? key.label.slice(0, 29) + "…" : key.label}`;
+        ctx.font = "500 11.5px Inter, -apple-system, sans-serif";
+        const w = ctx.measureText(text).width, x = sc.x - w / 2 + 6;
+        ctx.globalAlpha = a; ctx.fillStyle = stateColor(key.state);
+        ctx.beginPath(); ctx.arc(x - 9, y0 + 39, 3.5, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = css("--text"); ctx.textAlign = "left"; ctx.fillText(text, x, y0 + 33);
+      }
+    }
+    if (G.hover && G.hover.kind === "memory") {
+      const m = G.hover, sc = m.screen; let right = m.side === "right";
+      ctx.font = "500 12px Inter, -apple-system, sans-serif";
+      const text = `${m.label}  ·  ${m.why}`, need = ctx.measureText(text).width + 24;
+      if (right && sc.x + sc.r + need > W) right = false;
+      if (!right && sc.x - sc.r - need < 0) right = true;
+      pill(ctx, text, sc.x + (right ? sc.r + 7 : -sc.r - 7), sc.y, right ? "right" : "left", stateColor(m.state), 1, null, false);
+    }
+    ctx.globalAlpha = 1; ctx.textAlign = "left"; ctx.textBaseline = "alphabetic";
+  }
+
   let running = true;
-  function frame() { if (!running) return; if (!reduce) step(); draw(); requestAnimationFrame(frame); }
-  if (reduce) for (let i = 0; i < 300; i++) step();
-  requestAnimationFrame(frame);
+  function frame(now) { if (!running) return; draw(now); requestAnimationFrame(frame); }
   G.stop = () => { running = false; };
-  const toWorld = (ev) => { const b = canvas.getBoundingClientRect();
-    return [(ev.clientX - b.left - W() / 2 - G.ox) / G.scale, (ev.clientY - b.top - H() / 2 - G.oy) / G.scale]; };
-  const hit = (ev) => { const [x, y] = toWorld(ev); let best = null, bd = 1e9;
-    for (const n of nodes) { const d = (n.x - x) ** 2 + (n.y - y) ** 2; if (d < (n.r + 4) ** 2 && d < bd) { bd = d; best = n; } } return best; };
-  let pan = null, moved = false;
-  canvas.onmousedown = (ev) => { moved = false; const n = hit(ev); if (n) { G.drag = n; G.alpha = 0.6; } else pan = [ev.clientX - G.ox, ev.clientY - G.oy]; };
-  window.onmouseup = () => { G.drag = null; pan = null; };
+  fit(); requestAnimationFrame(frame);
+  const ro = new ResizeObserver(() => { if ((stage.clientWidth < 560) !== G.narrow && stage.clientWidth) { ro.disconnect(); loadGraph(); } else fit(); });
+  ro.observe(stage);
+
+  const hit = (ev) => { const b = canvas.getBoundingClientRect(), x = ev.clientX - b.left, y = ev.clientY - b.top;
+    const near = bodies.filter((o) => o.screen && (o.screen.x - x) ** 2 + (o.screen.y - y) ** 2 <= (o.screen.r + 5) ** 2);
+    return near.sort((a, c) => (a.kind === "memory" ? -1 : 1) - (c.kind === "memory" ? -1 : 1))[0] || null; };
   canvas.onmousemove = (ev) => {
-    moved = true;
-    if (G.drag) { const [x, y] = toWorld(ev); G.drag.x = x; G.drag.y = y; G.drag.vx = G.drag.vy = 0; return; }
-    if (pan) { G.ox = ev.clientX - pan[0]; G.oy = ev.clientY - pan[1]; return; }
-    const n = hit(ev); G.hover = n; const tip = $("g-tip");
-    if (n) { const b = canvas.getBoundingClientRect(); tip.hidden = false;
-      tip.style.left = `${Math.min(ev.clientX - b.left + 14, W() - 330)}px`; tip.style.top = `${ev.clientY - b.top + 14}px`;
-      tip.innerHTML = `<b>${esc(n.label)}</b><div class="sub">${esc(n.state)} · ${esc(n.author)} · shown ${n.exposures}×</div>`; }
-    else tip.hidden = true;
+    const o = hit(ev); G.hover = o; G.paused = !!o; canvas.classList.toggle("pointing", !!o);
+    if (!o) { tip.hidden = true; return; }
+    const b = canvas.getBoundingClientRect(); tip.hidden = false;
+    tip.style.left = `${Math.min(ev.clientX - b.left + 16, stage.clientWidth - 330)}px`;
+    tip.style.top = `${Math.min(ev.clientY - b.top + 16, stage.clientHeight - 90)}px`;
+    tip.innerHTML = o.kind === "topic"
+      ? `<b>${esc(o.label)}</b><div class="sub">${esc(topicSub(o))} · recalled ${o.exposures}× · click to focus</div>`
+      : `<b>${esc(o.label)}</b><div class="sub">${esc(o.why)} · by ${esc(o.author)} · click to read its story</div>`;
   };
-  canvas.onclick = (ev) => { const n = hit(ev); if (n && !G.dragged) openDetail(n.id); };
-  canvas.onwheel = (ev) => { ev.preventDefault(); const f = ev.deltaY < 0 ? 1.12 : 1 / 1.12; G.scale = Math.min(5, Math.max(0.2, G.scale * f)); };
-  $("g-filter").oninput = (ev) => { G.filter = ev.target.value; };
-  window.addEventListener("resize", resize);
+  canvas.onmouseleave = () => { G.hover = null; G.paused = false; tip.hidden = true; };
+  const setFocus = (t) => { G.focus = G.focus === t ? null : t;
+    document.querySelectorAll("#map-topics button").forEach((btn) => btn.setAttribute("aria-pressed", String(G.focus && btn.dataset.topic === G.focus.id))); };
+  canvas.onclick = (ev) => { const o = hit(ev); if (!o) { if (G.focus) setFocus(G.focus); return; }
+    if (o.kind === "memory") openDetail(o.id); else setFocus(o); };
+  $("map-topics").innerHTML = topics.map((t) => `<button data-topic="${esc(t.id)}" aria-pressed="false">
+    <span style="color:${t.hue}">●</span> ${esc(t.label)}<span class="n">${t.size}</span></button>`).join("");
+  $("map-topics").onclick = (ev) => { const btn = ev.target.closest("button"); if (btn) setFocus(byTopic.get(btn.dataset.topic)); };
 }
 
 /* ---------- command palette ---------- */
 
 let PAL = { items: [], sel: 0, timer: null };
 const TAB_LABELS = { start: "Start here", attention: "Needs attention", review: "Review", memories: "Memories",
-  graph: "Knowledge graph", search: "Search", agents: "Agents", replay: "Replay", actions: "Actions",
+  graph: "Knowledge map", search: "Search", agents: "Agents", replay: "Replay", actions: "Actions",
   context: "Agent context", episodes: "Episodes", lifecycle: "Lifecycle", posture: "Posture",
   changes: "Changes", capabilities: "Capabilities & limits" };
 

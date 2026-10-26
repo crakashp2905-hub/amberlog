@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Changed: a knowledge map you can read at a glance
+- **Knowledge map** replaces the dot graph: memories grouped into a few named topics drawn as shaded 3D spheres, each ringed by the state of its memories and captioned with the one memory to look at first (withdrawn or disputed). Fits the screen, needs no zooming, sways gently for depth (still under reduced motion), and becomes a column on a phone. `GET /api/map`.
+- **Plain header**: five tiles that say what they count (in use, waiting for review, disputed, withdrawn, times recalled) and open the matching view; the store's technical details moved to a tooltip.
+
 ### Added: pilots, screens and embedders
 - **`pilot-report --check`** says in plain words whether a pilot has produced enough to send and what is missing; every report now checks itself for memory text (`content_free`). `docs/PILOT_INVITE.md` is a one-page invitation for teams.
 - **`ModelScreen.using("provider:model")`**: the optional injection screen on any model `models.py` supports.

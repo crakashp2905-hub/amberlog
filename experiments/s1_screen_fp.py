@@ -220,16 +220,16 @@ def withholding(out: str, lme_path: str, limit: str = "60") -> int:
 
 
 def dump(out: str, lme: str, deepset_dir: str) -> int:
-    """M1's data: deepset test rows and 500 seeded test-split turns, printed for a model run elsewhere."""
+    """S1b's data: deepset test rows and 500 seeded test-split turns, printed for a model run elsewhere."""
     import random
 
     test = lme_turns(lme)["test"]
     sample = random.Random(1).sample(test, 500)
     data = {"deepset_test": deepset(deepset_dir), "lme_sample": sample}
     Path(out).write_text(json.dumps(data) + "\n", encoding="utf-8")
-    print("=== M1 DATA ===")
+    print("=== S1b DATA ===")
     print(json.dumps(data))
-    print("=== M1 END ===")
+    print("=== S1b END ===")
     return 0
 
 

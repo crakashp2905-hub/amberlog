@@ -16,7 +16,10 @@ answer.
 model can be wrong in both directions. The decision it feeds is the same as
 the other screens': the memory is quarantined for review, never deleted, and
 `review <id> --approve --override-screen` releases a false alarm.
-Measured on a third-party set in `research/results/injection-thirdparty.md`.
+Measured on a third-party set in `research/results/injection-thirdparty.md`,
+and with hosted models in `research/results/s1b-model-screen.md`: Sonnet
+behind the text screens caught 42 of 60 third-party injections (20 without
+it) and flagged none of 500 ordinary conversation turns; Haiku fell short.
 A client that fails or answers badly is treated as "not flagged": the screen
 never blocks a write because a model is unavailable.
 """

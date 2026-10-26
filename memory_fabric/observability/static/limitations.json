@@ -16,8 +16,8 @@
  },
  {
   "area": "Security",
-  "limitation": "The injection screens are text screens. They catch common injection patterns and instructions addressed to the reader, not every paraphrase.",
-  "what_to_do": "Treat them as a filter, not a guarantee. Review imports from untrusted sources (review). Untrusted content still cannot authorise an action at the gate."
+  "limitation": "The injection screens are text screens. They catch common injection patterns and instructions addressed to the reader, not every paraphrase: 20 of 60 in a third-party set.",
+  "what_to_do": "Treat them as a filter, not a guarantee. For more, add a model behind them, opt-in: Firewall(model_screen=ModelScreen.using(\"anthropic:<a Sonnet model>\")) caught 42 of 60 and flagged no ordinary conversation in testing; every new write then costs a model call. Review imports from untrusted sources (review). Untrusted content still cannot authorise an action at the gate."
  },
  {
   "area": "Security",

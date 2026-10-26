@@ -31,12 +31,10 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        # Amendment 3: only the two families the first run did not measure
-        # properly; `decide` reuses run 40235543450's other parts.
-        part: [arctic-m, nomic]
-        # SciFact in one job; LongMemEval's 60 instances in three shards, so
-        # no job embeds ~30,000 turns on its own (amendment 2).
-        job: [scifact, lme0, lme1, lme2]
+        # Amendment 4: only nomic's LongMemEval shards, which ran out of memory
+        # in run 40391411457; `decide` reuses that run's and run 40235543450's parts.
+        part: [nomic]
+        job: [lme0, lme1, lme2]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -87,8 +85,20 @@ jobs:
           merge-multiple: true
           run-id: 40235543450
           github-token: ${{ github.token }}
-      - name: Reuse the first run's parts for families not re-run
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: r3-part-*
+          path: prior3
+          merge-multiple: true
+          run-id: 40391411457
+          github-token: ${{ github.token }}
+      - name: Reuse earlier runs' parts for what is not re-run
         run: |
+          # amendment 3's run: arctic-m (every part) and nomic's SciFact part
+          for f in prior3/*.json; do
+            case "$(basename "$f")" in r3-part-arctic-m-*|r3-part-nomic-scifact-*) cp -n "$f" parts/ ;; esac
+          done
+          # the first run: every other family
           for f in prior/*.json; do
             case "$(basename "$f")" in r3-part-arctic-m-*|r3-part-nomic-*) ;; *) cp -n "$f" parts/ ;; esac
           done

@@ -214,6 +214,25 @@ class TestDenseScan(unittest.TestCase):
 
 
 class TestWarmBatching(unittest.TestCase):
+    def test_long_texts_are_embedded_from_their_start_and_cached_whole(self) -> None:
+        from memory_fabric.retrievers import MAX_TEXT_CHARS, _BatchEmbedder
+
+        class Fake(_BatchEmbedder):
+            def __init__(self) -> None:
+                super().__init__("fake", None, 64)
+                self.seen: list[int] = []
+
+            def _documents(self, texts: list[str]) -> list[list[float]]:
+                self.seen += [len(t) for t in texts]
+                return [[1.0] for _ in texts]
+
+        e = Fake()
+        long = "x" * (MAX_TEXT_CHARS * 4)
+        e.warm([long, "short"])
+        self.assertEqual(max(e.seen), MAX_TEXT_CHARS)
+        self.assertEqual(e.embed(long), [1.0])
+        self.assertEqual(e.calls, 1, "the whole text is the cache key; no second call")
+
     def test_warm_batches_respect_a_character_budget(self) -> None:
         from memory_fabric.retrievers import BATCH_CHARS_PER_TEXT, _BatchEmbedder
 

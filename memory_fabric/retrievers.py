@@ -125,6 +125,12 @@ class VectorCache:
 
 
 BATCH_CHARS_PER_TEXT = 2000
+MAX_BATCH_CHARS = 32_000
+MAX_TEXT_CHARS = 8_000
+"""Each text is embedded from its first 8,000 characters (about 2,000 tokens).
+Models with a 512-token window cut sooner anyway; this only bounds the long-
+context ones, where one 30,000-character pasted document asked onnxruntime for
+19 GB. The vector is still cached under the whole text."""
 
 
 class _BatchEmbedder:
@@ -159,7 +165,7 @@ class _BatchEmbedder:
         missing.sort(key=len)
         for batch in self._batches(missing):
             self.calls += 1
-            vectors = self._documents(batch)
+            vectors = self._documents([t[:MAX_TEXT_CHARS] for t in batch])
             if vectors:
                 self.dim = len(vectors[0])
             self.cache.put_many(zip(batch, vectors))
@@ -171,15 +177,16 @@ class _BatchEmbedder:
         model pads the whole batch to them: 64 texts of 8,000 tokens asked
         onnxruntime for 29 GB. The character budget keeps the long batches small.
         """
-        budget = self.batch_size * BATCH_CHARS_PER_TEXT
+        budget = min(self.batch_size * BATCH_CHARS_PER_TEXT, MAX_BATCH_CHARS)
         batch: list[str] = []
         size = 0
         for text in texts:
-            if batch and (len(batch) >= self.batch_size or size + len(text) > budget):
+            length = min(len(text), MAX_TEXT_CHARS)
+            if batch and (len(batch) >= self.batch_size or size + length > budget):
                 yield batch
                 batch, size = [], 0
             batch.append(text)
-            size += len(text)
+            size += length
         if batch:
             yield batch
 

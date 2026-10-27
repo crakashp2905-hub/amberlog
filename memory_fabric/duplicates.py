@@ -81,7 +81,7 @@ __stability__ = "stable"
 import re
 import unicodedata
 from dataclasses import dataclass
-from typing import Iterable, Mapping, Sequence
+from typing import Callable, Iterable, Mapping, Sequence
 
 from .vectors import _STOPWORDS
 
@@ -326,7 +326,9 @@ class CopyIndex:
             out |= self.anchors.get(token, set())
         return out
 
-    def find(self, content: str, *, exclude: Iterable[str] = ()) -> Match | None:
+    def find(self, content: str, *, exclude: Iterable[str] = (),
+             accept: Callable[[str], bool] | None = None) -> Match | None:
+        """The earliest indexed memory `content` copies; `accept` limits which may count (a tenant)."""
         skip = set(exclude)
         # Tokenised once. It was re-tokenised for every candidate, which on a
         # store of near-duplicates was 90% of a write's time and grew with
@@ -336,6 +338,7 @@ class CopyIndex:
             memory_id
             for memory_id in self.candidates(content, incoming)
             if memory_id not in skip and memory_id in self.terms
+            and (accept is None or accept(memory_id))
             and _is_copy_terms(incoming, self.terms[memory_id])
         ]
         if not hits:

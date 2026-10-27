@@ -1,0 +1,71 @@
+{
+ "arm": "all",
+ "budget": {},
+ "cost": {
+  "model_calls": 0,
+  "model_usd": 0.0
+ },
+ "counts": {
+  "attempted": 0,
+  "completed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "solved": 0
+ },
+ "dataset": {
+  "generator": "benchmarks/compaction.py",
+  "name": "generated"
+ },
+ "decision": "DESCRIPTIVE",
+ "model": {
+  "id": null,
+  "provider": null
+ },
+ "prereg": null,
+ "reason": "descriptive: no improvement claim registered",
+ "repo_commit": "092e200e5627",
+ "results": {
+  "invariants": {
+   "checks": 120,
+   "erased_returned_text": 0,
+   "summary_still_exposable": 0,
+   "withdrawn_resurrected": 0
+  },
+  "recovered_by_budget": {
+   "160": {
+    "oracle": 1.0,
+    "raw": 1.0,
+    "summary": 0.661,
+    "summary+drill": 1.0
+   },
+   "40": {
+    "oracle": 1.0,
+    "raw": 1.0,
+    "summary": 0.329,
+    "summary+drill": 1.0
+   },
+   "80": {
+    "oracle": 1.0,
+    "raw": 1.0,
+    "summary": 0.485,
+    "summary+drill": 1.0
+   }
+  }
+ },
+ "run_id": "int04-compaction-drilldown",
+ "schema": "mf-run-manifest/1",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "suite": "INT-04",
+ "verification": {
+  "baseline_registered": true,
+  "holdout_frozen": false,
+  "independent_replicated": false,
+  "oracle_sanity_passed": true
+ }
+}

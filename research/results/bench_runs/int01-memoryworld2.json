@@ -1,0 +1,55 @@
+{
+ "arm": "all",
+ "budget": {},
+ "cost": {
+  "model_calls": 0,
+  "model_usd": 0.0
+ },
+ "counts": {
+  "attempted": 0,
+  "completed": 0,
+  "failed": 0,
+  "skipped": 0,
+  "solved": 0
+ },
+ "dataset": {
+  "generator": "benchmarks/memoryworld2.py",
+  "name": "generated"
+ },
+ "decision": "DESCRIPTIVE",
+ "model": {
+  "id": null,
+  "provider": null
+ },
+ "prereg": null,
+ "reason": "descriptive: functional check of bitemporal answers, no improvement claim",
+ "repo_commit": "092e200e5627",
+ "results": {
+  "accuracy": {
+   "believed:bitemporal": 1.0,
+   "believed:oracle": 1.0,
+   "believed:overwrite": 0.113,
+   "believed:valid_time": 0.513,
+   "valid:bitemporal": 1.0,
+   "valid:oracle": 1.0,
+   "valid:overwrite": 0.313,
+   "valid:valid_time": 1.0
+  }
+ },
+ "run_id": "int01-memoryworld2",
+ "schema": "mf-run-manifest/1",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "suite": "INT-01",
+ "verification": {
+  "baseline_registered": true,
+  "holdout_frozen": false,
+  "independent_replicated": false,
+  "oracle_sanity_passed": true
+ }
+}

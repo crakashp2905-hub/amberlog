@@ -120,12 +120,18 @@ def main(argv: list[str] | None = None) -> int:
                                 *(["--quick"] if args.bench == "quick" else [])],
                                capture_output=True, text=True, cwd=ROOT)
         bench_ok = bench.returncode == 0
+    status = subprocess.run([sys.executable, str(ROOT / "tools" / "status_at_head.py"), "--sha", sha],
+                            capture_output=True, text=True, cwd=ROOT)
+    (out / "STATUS_AT_HEAD.md").write_text(status.stdout, encoding="utf-8")
+    consistent = subprocess.run([sys.executable, str(ROOT / "tools" / "status_at_head.py"), "--check"],
+                                capture_output=True, text=True, cwd=ROOT).returncode == 0
     for doc in ("docs/LIMITATIONS.md", "STABILITY.md"):
         shutil.copy(ROOT / doc, out / Path(doc).name)
 
     checks = {"clean tree": not dirty, "secret scan": scan.returncode == 0,
               "adversarial gate": gate.returncode == 0,
-              "tests": bool(tests.get("passed", args.skip_tests)), "benchmark": bench_ok}
+              "tests": bool(tests.get("passed", args.skip_tests)), "benchmark": bench_ok,
+              "versions consistent": consistent}
     manifest = {"commit": sha, "dirty": dirty, "package_version": project["version"],
                 "schema_version": SCHEMA_VERSION, "python": platform.python_version(),
                 "platform": platform.platform(),

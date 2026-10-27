@@ -73,6 +73,9 @@ Every document in the repository, by what you are trying to do.
 | [INVARIANTS.md](INVARIANTS.md) | Each integrity invariant and the test that holds it |
 | [AUDIT.md](AUDIT.md) | Implementation against the spec |
 | [VALIDATION.md](VALIDATION.md) | What was run and what it showed |
+| [STATUS_AT_HEAD.md](STATUS_AT_HEAD.md) | Versions, tiers, skipped tests and contradictions, generated from the tree |
+| [KNOWN_GAPS.md](KNOWN_GAPS.md) | What the masterplan asks for that is not done |
+| [RELEASE_READINESS.md](RELEASE_READINESS.md) | Hard blockers and the definition of done, checked |
 
 ## Releases
 
@@ -93,6 +96,8 @@ use the product.
 | document | for |
 |---|---|
 | [../ROADMAP.md](../ROADMAP.md) | Milestones, gates and open decisions |
+| [MASTERPLAN_TRACKER.md](MASTERPLAN_TRACKER.md) | Every masterplan item and its status |
+| [adr/0001-version-semantics.md](adr/0001-version-semantics.md) | What version numbers mean and what is released |
 | [WORKPLAN.md](WORKPLAN.md) | Work in progress, with every result and failure |
 | [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md) | What is implemented, task by task |
 | [RESEARCH_ROADMAP.md](RESEARCH_ROADMAP.md) | The research agenda |

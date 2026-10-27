@@ -1,6 +1,6 @@
 # SPEC.md — Memory Fabric Specification v0
 
-- **Schema version:** `0.12.0`
+- **Schema version:** `0.14.0`
 - **Status:** implemented. Where this document and `memory_fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
@@ -180,6 +180,20 @@ Default rules:
 6. Sensitive-data detector positive → QUARANTINE.
 
 ---
+
+### 0.14.0 — copy links stay inside a tenant
+
+No new event type, no field change; a projection rule changes, so rebuild from
+the log (VERSIONING.md: projection output changes while events stay the same).
+
+- **`MemoryCopyRecognised` across tenants is ignored on replay.** Earlier
+  versions matched copies across tenants, so identical text written in two
+  tenants was linked: the second shared the first's source root, and
+  withdrawing the first contested the second in the other tenant. The writer
+  now only matches within its own tenant, and a link recorded across tenants
+  by an older writer no longer enters `copy_of` on replay. Lifecycle events
+  already caused by such a link remain in the log, as recorded facts; an
+  operator can review and validate the affected memory again.
 
 ### 0.13.0 — context receipts and memory branches
 

@@ -32,7 +32,7 @@ Measured on a held-out world before any default changed
 
 from __future__ import annotations
 
-__stability__ = "experimental"
+__stability__ = "beta"
 
 import re
 from dataclasses import dataclass

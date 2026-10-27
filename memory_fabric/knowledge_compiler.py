@@ -11,6 +11,10 @@ import hashlib
 import re
 from typing import Any
 
+PARSER_VERSION = "markdown-2"
+"""Bumped when the same text would compile to different sections."""
+MAX_BYTES = 20_000_000
+
 
 def compile_markdown(text: str, *, doc_id: str, version: str,
                      uri: str = "") -> dict[str, Any]:
@@ -24,25 +28,43 @@ matches sections by their text before their anchor, so a section whose text
 is unchanged keeps its memory whichever of these happened. A heading with no
 text of its own (only subsections) produces no section. Fenced code is
 preserved literally. Tables remain verbatim Markdown, not inferred entities.
-No network, model, approval, or completeness claim is involved.
+Each section records `line_start`/`line_end` (1-based, inclusive, heading
+line first, trailing blank lines excluded) and `byte_start`/`byte_end` (UTF-8
+offsets into the source, end exclusive), so a citation resolves to the exact
+span. CRLF and LF sources compile to the same sections; offsets are of the
+bytes actually given. No network, model, approval, or completeness claim is
+involved.
     """
     if not doc_id.strip() or not version.strip():
         raise ValueError("doc_id and version must be non-empty")
+    raw = text.encode("utf-8")
+    if len(raw) > MAX_BYTES:
+        raise ValueError(f"document is {len(raw)} bytes; the limit is {MAX_BYTES}")
     sections: list[dict[str, Any]] = []
     stack: list[tuple[int, str]] = []
     counts: dict[str, int] = {}
-    body: list[str] = []
-    title, anchor, start = "", "preamble", 1
+    # Body lines as (line number, text, byte offset of its start, byte offset after it).
+    body: list[tuple[int, str, int, int]] = []
+    title, anchor = "", "preamble"
+    head: tuple[int, int] | None = None   # (line, byte offset) of the current heading
     fence = ""
     fence_length = 0
 
     def flush() -> None:
-        content = "\n".join(body).strip()
-        if content:
-            sections.append({"path": anchor, "title": title, "text": content,
-                             "line_start": start})
+        content = "\n".join(line for _, line, _, _ in body).strip()
+        if not content:
+            return
+        kept = [b for b in body if b[1].strip()]
+        first_line, first_byte = head if head else (kept[0][0], kept[0][2])
+        sections.append({"path": anchor, "title": title, "text": content,
+                         "line_start": first_line, "line_end": kept[-1][0],
+                         "byte_start": first_byte, "byte_end": kept[-1][3]})
 
-    for number, line in enumerate(text.splitlines(), 1):
+    offset = 0
+    for number, full in enumerate(text.splitlines(keepends=True), 1):
+        line = full.rstrip("\r\n")
+        span = (number, line, offset, offset + len(line.encode("utf-8")))
+        offset += len(full.encode("utf-8"))
         marker = re.match(r"^ {0,3}(`{3,}|~{3,})(.*)$", line)
         if marker:
             run, tail = marker.groups()
@@ -50,20 +72,25 @@ No network, model, approval, or completeness claim is involved.
                 fence, fence_length = run[0], len(run)
             elif run[0] == fence and len(run) >= fence_length and not tail.strip():
                 fence = ""
-            body.append(line)
+            body.append(span)
             continue
         atx = None if fence else re.match(r"^ {0,3}(#{1,6})\s+(.+?)\s*$", line)
         underline = None if fence or atx else re.match(r"^ {0,3}(=+|-+)\s*$", line)
         if atx:
             level, heading_text = len(atx[1]), re.sub(r"\s+#+\s*$", "", atx[2])
-        elif underline and body and body[-1].strip() and not re.match(r"^\s*([|>*+-]|\d+[.)]\s)", body[-1]):
+            heading_at = (number, span[2])
+        elif (underline and body and body[-1][1].strip()
+              and not re.match(r"^\s*([|>*+-]|\d+[.)]\s)", body[-1][1])):
             # Setext: the paragraph line above is the heading (one-line titles only).
-            level, heading_text = (1 if underline[1][0] == "=" else 2), body.pop()
+            above = body.pop()
+            level, heading_text = (1 if underline[1][0] == "=" else 2), above[1]
+            heading_at = (above[0], above[2])
         else:
-            body.append(line)
+            body.append(span)
             continue
         flush()
         body = []
+        head = heading_at
         title = heading_text.strip()
         while stack and stack[-1][0] >= level:
             stack.pop()
@@ -75,8 +102,8 @@ No network, model, approval, or completeness claim is involved.
         component = f"{len(slug)}:{slug}:{counts[base]}"
         stack.append((level, component))
         anchor = "/".join(p for _, p in stack)
-        start = number if atx else number - 1
     flush()
     return {"doc_id": doc_id, "version": version, "uri": uri,
-            "source_sha256": hashlib.sha256(text.encode("utf-8")).hexdigest(),
-            "format": "markdown-atx-v1", "sections": sections}
+            "source_sha256": hashlib.sha256(raw).hexdigest(),
+            "format": "markdown", "mime": "text/markdown", "parser_version": PARSER_VERSION,
+            "sections": sections}

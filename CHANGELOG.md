@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Security (schema 0.14.0): copy recognition no longer crosses tenants
+- **A withdrawal in one tenant could contest another tenant's memory.** Copy recognition matched identical text across tenants, so the second tenant's memory was recorded as a copy of the first's: they shared a source root, and withdrawing the first contested the second. Found by the new governance conformance suite (GOV-07). Writes now match copies only within their own tenant, and a cross-tenant link recorded by an older version is ignored when the log is replayed (SPEC.md 0.14.0). Memories already contested by such a link stay contested in the log; review and validate them again.
+
+### Added: masterplan foundation — status, benchmarks, conformance
+- **`docs/STATUS_AT_HEAD.md`** (`tools/status_at_head.py`): versions, tags, tiers, experimental defaults, skipped tests and contradictions, generated from the tree and checked on every run; `SPEC.md`'s stale schema header was the first contradiction it found. **`research/results/MANIFEST.json`** (`tools/results_manifest.py`) lists every recorded result and which provenance fields it lacks.
+- **`benchmarks/`**: a registry of 25 suites with licence and run status (`python -m benchmarks.registry validate --offline`, which also recomputes vendor tables' token reductions), one run-manifest schema with PASS/FAIL/INCONCLUSIVE/INVALID/NOT_RUN/BLOCKED, paired statistics, the AGENTS.md 8a-8d checks as code, a cost ledger whose cost per safe success is undefined when there is none, and a generated scoreboard.
+- **Imported document sections carry exact spans** (`line_start`, `line_end`, `byte_start`, `byte_end`), the parser version, MIME type and source hash; the Markdown compiler has a size limit and a CRLF/fence/unicode test matrix.
+- **`typed_query`** (experimental): exhaustive filters over writers' typed fields with a completeness certificate. Its registered study (E1) failed: alone it answered fewer enumeration queries exactly than search plus a text filter.
+- **`typedclaims` is beta**: it was on by default while experimental.
+
 ### Fixed: document re-import withdraws only what changed
 - **Re-import matches sections by text before path**: inserting a same-named heading or moving a section under a new parent no longer withdraws unchanged sections or contests what was derived from them.
 - **Markdown compiler**: headings with no text of their own no longer become empty memories; setext (underlined) headings are read.

@@ -443,6 +443,12 @@ def _on_memories_related(state: ProjectionState, event: Event) -> None:
 def _on_copy_recognised(state: ProjectionState, event: Event) -> None:
     memory_id = event.payload["memory_id"]
     original = event.payload["original_memory_id"]
+    a, b = state.memories.get(memory_id), state.memories.get(original)
+    if a is not None and b is not None and a.tenant_id != b.tenant_id:
+        # Logs written before 0.13.1 could record a copy across tenants, which
+        # let a withdrawal in one tenant contest another's memory and joined
+        # their source roots. Identical text in two tenants is two origins.
+        return
     state.copy_of[memory_id] = original
     state.copies.setdefault(original, set()).add(memory_id)
 

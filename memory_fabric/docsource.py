@@ -69,12 +69,16 @@ def read_document(path: str | Path) -> dict[str, Any]:
     return data
 
 
-def _sections(tree: Mapping[str, Any]) -> dict[str, tuple[str, str]]:
-    """path -> (content, sha256), validated."""
+SPAN_FIELDS = ("line_start", "line_end", "byte_start", "byte_end")
+TREE_FIELDS = ("format", "mime", "parser_version", "source_sha256")
+
+
+def _sections(tree: Mapping[str, Any]) -> dict[str, tuple[str, str, dict[str, Any]]]:
+    """path -> (content, sha256, span fields the section states), validated."""
     for key in ("doc_id", "version", "sections"):
         if key not in tree:
             raise ValueError(f"document has no {key!r}")
-    out: dict[str, tuple[str, str]] = {}
+    out: dict[str, tuple[str, str, dict[str, Any]]] = {}
     for i, s in enumerate(tree["sections"]):
         if not isinstance(s, Mapping) or not str(s.get("path", "")).strip() or not isinstance(s.get("text"), str):
             raise ValueError(f"section {i}: needs a path and text")
@@ -83,7 +87,8 @@ def _sections(tree: Mapping[str, Any]) -> dict[str, tuple[str, str]]:
             raise ValueError(f"section path {path!r} appears twice")
         title = str(s.get("title") or "").strip()
         content = f"{title}: {s['text'].strip()}" if title else s["text"].strip()
-        out[path] = (content, hashlib.sha256(content.encode()).hexdigest())
+        span = {k: s[k] for k in SPAN_FIELDS if isinstance(s.get(k), int)}
+        out[path] = (content, hashlib.sha256(content.encode()).hexdigest(), span)
     return out
 
 
@@ -132,7 +137,8 @@ def import_document(fabric: "MemoryFabric", tree: Mapping[str, Any], actor: str 
     for m in standing:
         by_digest.setdefault(m.context["source"].get("sha256"), []).append(m)
     kept: set[str] = set()
-    for path, (content, digest) in sections.items():
+    about = {k: str(tree[k]) for k in TREE_FIELDS if tree.get(k)}
+    for path, (content, digest, span) in sections.items():
         same = [m for m in by_digest.get(digest, []) if m.id not in kept]
         if same:
             match = next((m for m in same if m.context["source"].get("path") == path), same[0])
@@ -140,7 +146,7 @@ def import_document(fabric: "MemoryFabric", tree: Mapping[str, Any], actor: str 
             report.unchanged.append(match.id)
             continue
         source = {"doc_id": doc_id, "version": version, "path": path,
-                  "uri": str(tree.get("uri") or ""), "sha256": digest}
+                  "uri": str(tree.get("uri") or ""), "sha256": digest, **about, **span}
         mid = fabric.remember(f"docs:{doc_id}", content, context={"source": source},
                               method=ProvenanceMethod.IMPORTED, auto_activate=False,
                               scope=scope, **kwargs)

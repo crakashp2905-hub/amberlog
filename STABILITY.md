@@ -75,7 +75,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.txn`
 - `memory_fabric.vectors`
 
-## Beta (50)
+## Beta (51)
 
 - `memory_fabric.action_receipt`
 - `memory_fabric.actions`
@@ -126,9 +126,10 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.status`
 - `memory_fabric.tenancy`
 - `memory_fabric.tour`
+- `memory_fabric.typedclaims`
 - `memory_fabric.validation`
 
-## Experimental (17)
+## Experimental (16)
 
 - `memory_fabric.adapters.systemone`
 - `memory_fabric.claimcheck`
@@ -146,7 +147,6 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.receipts`
 - `memory_fabric.rulebook`
 - `memory_fabric.trust`
-- `memory_fabric.typedclaims`
 
 ## Compatibility, as tested
 

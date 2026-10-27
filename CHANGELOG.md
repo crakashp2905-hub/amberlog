@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: typed claims, topic browsing (from Sarvam's knowledge fabric)
+- **`TypedClaimChecker`** (`typedclaims.py`) holds a plain-sentence write that negates or reverses another author's established claim, with no model call. Now the default claim checker in the `personal` and `team` presets, as registered on O1 passing (held-out world: recall 1.00 against 0.00 for the built-in checks, 0.00 false holds, 5/5 seeds).
+- **`import-docs`** (`docsource.py`): a compiled document tree becomes provenance-tracked sections; re-importing a new version withdraws revised and removed sections, contests what was derived from them, and the action gate refuses actions certified on them. Guide: `docs/guides/knowledge-fabric.md`.
+- **Topic browsing**: `navigation.py` groups what a reader may see into a topic tree; `retrieve(within=…)` and `recall(within=…)` limit a retrieval to given ids; MCP `browse_topics` / `open_topic` (opt-in, `--extended-tools`). K1 found it does **not** improve recall over search on LongMemEval (0.729 vs 0.768), so it is offered for seeing what is there, not as a retriever.
+
 ### Changed: a knowledge map you can read at a glance
 - **Knowledge map** replaces the dot graph: memories grouped into a few named topics drawn as shaded 3D spheres, each ringed by the state of its memories and captioned with the one memory to look at first (withdrawn or disputed). Fits the screen, needs no zooming, sways gently for depth (still under reduced motion), and becomes a column on a phone. `GET /api/map`.
 - **Plain header**: five tiles that say what they count (in use, waiting for review, disputed, withdrawn, times recalled) and open the matching view; the store's technical details moved to a tooltip.

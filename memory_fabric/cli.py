@@ -1232,6 +1232,25 @@ def cmd_import(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_import_docs(fabric: MemoryFabric, args: argparse.Namespace) -> int:
+    """Import a compiled document tree; withdraw sections a new version changed. See `docsource.py`."""
+    from .docsource import import_document, read_document
+
+    try:
+        report = import_document(fabric, read_document(args.file), activate=args.activate,
+                                 tenant_id=args.tenant)
+    except (OSError, ValueError) as exc:
+        print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
+        return 4
+    if args.json:
+        print(json.dumps(report.to_json(), indent=2))
+        return 0
+    print(f"{report.doc_id} {report.version}: {len(report.added)} sections added, "
+          f"{len(report.unchanged)} unchanged, {len(report.withdrawn)} withdrawn "
+          f"(source document changed), {len(report.contested)} conclusions contested")
+    return 0
+
+
 def cmd_collection(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     """List collections, or change one. Every change is an audited event."""
     from .fabric import PolicyViolation
@@ -3007,6 +3026,14 @@ def build_parser() -> argparse.ArgumentParser:
                    help="author for records that do not name one")
     p.add_argument("--tenant")
 
+    p = add("import-docs", cmd_import_docs,
+            "WRITES: import a compiled document (JSON: doc_id, version, sections with path and "
+            "text); re-importing withdraws sections the new version changed or removed")
+    p.add_argument("file")
+    p.add_argument("--activate", action="store_true",
+                   help="sections are active at once (the document is the authority)")
+    p.add_argument("--tenant")
+
     p = add("collection", cmd_collection,
             "Collections: named sets of memories agents can be attached to. list, or WRITES: "
             "add/remove a memory, attach/detach an agent, grant/revoke permissions")
@@ -3192,6 +3219,7 @@ HELP: dict[tuple[str | None, str], str] = {
     ("audit-export", "--kind"): "which records to include; repeatable (default: all)",
     ("audit-export", "--since-seq"): "only events after this log sequence",
     ("import", "file"): "a text, Markdown or JSONL file to import as memories",
+    ("import-docs", "file"): "the document tree as JSON",
     ("collection", "action"): "what to do with the collection",
     ("collection", "name"): "the collection's name", ("collection", "--memory"): "memory id to add or remove",
     ("collection", "--agent"): "agent to grant or revoke",

@@ -224,6 +224,14 @@ WRITES: import another store's export (JSON list or JSONL: Mem0, LangChain docum
 - `--agent`: author for records that do not name one
 - `--tenant`: tenant id to act within
 
+### `import-docs`
+
+WRITES: import a compiled document (JSON: doc_id, version, sections with path and text); re-importing withdraws sections the new version changed or removed
+
+- `file`: the document tree as JSON
+- `--activate`: sections are active at once (the document is the authority)
+- `--tenant`: tenant id to act within
+
 ### `incident`
 
 Guided incident response: list candidates, assess one, --contain it (WRITES), --record FILE a reviewable record

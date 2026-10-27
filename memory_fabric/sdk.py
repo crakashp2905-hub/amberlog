@@ -27,7 +27,7 @@ from __future__ import annotations
 __stability__ = "stable"
 
 from dataclasses import dataclass
-from typing import Any, Mapping, Sequence
+from typing import Any, Iterable, Mapping, Sequence
 
 from .enforcement import AccessDecision, EnforcedRead, ExposureToken, RiskLevel
 from .identity import DEFAULT_TENANT, Credential
@@ -127,8 +127,11 @@ class AgentClient:
         context: Mapping[str, Any] | None = None,
         include_contested: bool = False,
         episode_id: str | None = None,
+        within: Iterable[str] | None = None,
     ) -> list[UsableMemory]:
         """Retrieve, enforced, with a token per result.
+
+        `within` limits the search to these ids (an opened topic, `navigation.py`).
 
         Goes through `fabric.retrieve`, which filters on lifecycle before the
         index is consulted, and then through the enforcement layer again for the
@@ -144,6 +147,7 @@ class AgentClient:
             episode_id=episode_id,
             include_contested=include_contested,
             tenant_id=self._tenant_id,
+            within=within,
         )
         from .conflicts import find_conflicts
 

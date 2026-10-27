@@ -331,24 +331,10 @@ def graph(f: "MemoryFabric", limit: int = 400) -> dict[str, Any]:
     return {"nodes": nodes, "edges": edges, "total": len(memories), "shown": len(nodes)}
 
 
-_MAP_STOP = frozenset(
-    "the a an is are was were be been being it its of for to in on at and or not no do does did "
-    "should would will shall may might must can could what which how why when who whom with from "
-    "this that these those there here than then also only just very more most less into onto over "
-    "under after before about above below between each every any all some such same other again "
-    "we i me my our us you your they them their he she his her has have had having use used uses "
-    "using one two three new note notes per via set sets get gets got make made run runs ran "
-    "if else so but yet because while once whenever where still now today yesterday always never "
-    "agent agents memory memories user users redacted "
-    # units and quantities name no topic
-    "bar bars psi kpa rpm degrees degree celsius hours hour minutes minute seconds second "
-    "days day weeks week percent times mbps gb mb kb".split())
-
-
 def _terms(text: str) -> set[str]:
-    import re
+    from ..navigation import terms
 
-    return {w for w in re.findall(r"[a-z][a-z0-9-]{2,}", text.lower()) if w not in _MAP_STOP}
+    return terms(text)
 
 
 def knowledge_map(f: "MemoryFabric", max_topics: int = 8, per_topic: int = 4,

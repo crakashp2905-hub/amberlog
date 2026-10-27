@@ -1,0 +1,361 @@
+{
+  "commit": "539ba81",
+  "rows": {
+    "c3": {
+      "structural": [
+        {
+          "seed": 1,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 2,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 3,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 4,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 5,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        }
+      ],
+      "typed": [
+        {
+          "seed": 1,
+          "recall": 0.75,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.75,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 2,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 3,
+          "recall": 0.625,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.625,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 4,
+          "recall": 0.75,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.75,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 5,
+          "recall": 0.75,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.75,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        }
+      ],
+      "oracle": [
+        {
+          "seed": 1,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 2,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 3,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 4,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 5,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        }
+      ]
+    },
+    "heldout": {
+      "structural": [
+        {
+          "seed": 1,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 2,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 3,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 4,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 5,
+          "recall": 0.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 0.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        }
+      ],
+      "typed": [
+        {
+          "seed": 1,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 2,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 3,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 4,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 5,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        }
+      ],
+      "oracle": [
+        {
+          "seed": 1,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 2,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 3,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 4,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        },
+        {
+          "seed": 5,
+          "recall": 1.0,
+          "false_holds": 0.0,
+          "held_by_type": {
+            "contradiction": 1.0,
+            "paraphrase": 0.0,
+            "new_detail": 0.0,
+            "other_place": 0.0
+          }
+        }
+      ]
+    }
+  },
+  "verdict": {
+    "structural_recall": 0.0,
+    "bar": 0.5,
+    "typed_recall": 1.0,
+    "typed_false_holds": 0.0,
+    "O1a": true,
+    "O1b": true,
+    "O1c": true,
+    "ceiling_ok": true
+  }
+}

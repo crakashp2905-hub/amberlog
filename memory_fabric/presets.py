@@ -9,6 +9,7 @@
 |---|---|---|---|
 | new memories | active at once | wait for review | wait for review |
 | suspicious claims held | yes | yes | yes |
+| plain-sentence contradictions held (`TypedClaimChecker`, no model call; O1) | yes | yes | no (bring `ModelClaimChecker`) |
 | source caught injecting withheld everywhere | yes | yes | yes |
 | evidence for a protected tool | 1 source | 1 source, no held or provisional claims | 2 independent sources, fresh leases for imported evidence, no provisional claims |
 | content encryption profile | default | default | production (AES-256-GCM, `cryptography` required) |
@@ -49,7 +50,13 @@ def _mode(mode: str) -> str:
 
 
 def store_settings(mode: str) -> dict[str, Any]:
-    return dict(_STORE[_mode(mode)])
+    settings = dict(_STORE[_mode(mode)])
+    if mode in ("personal", "team"):
+        # Registered consequence of O1 passing (research/results/o1-typed-claims.md).
+        from .typedclaims import TypedClaimChecker
+
+        settings["claim_checker"] = TypedClaimChecker()
+    return settings
 
 
 def open_store(path: str, mode: str, **overrides: Any) -> Any:

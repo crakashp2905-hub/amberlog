@@ -430,8 +430,14 @@ class RetrievalMixin(FabricCore):
         objective: Any = None,
         profile: str | None = None,
         method: str | None = None,
+        within: Iterable[str] | None = None,
     ) -> RetrievalResult:
         """Retrieve, decide exposure, log both, return what was exposed.
+
+        `within` limits the search to these memory ids (a topic an agent opened,
+        `navigation.py`), at the same chokepoint as tenancy and lifecycle: it can
+        only narrow what the agent may see, and what it returns is ranked,
+        decided and logged like any other retrieval.
 
         `profile` names a workload setting (`retrieval_profiles.PROFILES`:
         `precise`, `conversational`, `semantic`, `multi_hop`, `audit`), and
@@ -512,6 +518,10 @@ class RetrievalMixin(FabricCore):
         # in a policy.
         eligible = self._applicable_at(eligible, as_of, until)
         eligible = self._without_hostile_sources(eligible, reader=agent_id)
+        if within is not None:
+            allowed = frozenset(within)
+            eligible = (eligible.narrow(lambda m: m.id in allowed) if isinstance(eligible, Eligible)
+                        else {m for m in eligible if m in allowed})
         if objective is not None:
             # The session's own statement of relevance, at the same chokepoint
             # as tenancy and lifecycle, for the same reason: an excluded memory

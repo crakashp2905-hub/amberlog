@@ -3039,7 +3039,8 @@ def build_parser() -> argparse.ArgumentParser:
             "WRITES: import a compiled document (JSON: doc_id, version, sections with path and "
             "text); re-importing withdraws sections the new version changed or removed")
     p.add_argument("file")
-    p.add_argument("--format", choices=["json", "markdown"], default="json")
+    p.add_argument("--format", choices=["json", "markdown"], default="json",
+                   help="source format: compiled JSON tree or local Markdown")
     p.add_argument("--doc-id", help="stable document identity for Markdown")
     p.add_argument("--source-version", help="explicit source revision for Markdown")
     p.add_argument("--source-uri", help="optional source citation URI; never fetched")

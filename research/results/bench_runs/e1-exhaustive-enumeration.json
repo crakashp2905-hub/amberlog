@@ -1,0 +1,56 @@
+{
+ "arm": "all",
+ "budget": {},
+ "cost": {
+  "model_calls": 0,
+  "model_usd": 0.0
+ },
+ "counts": {
+  "attempted": 300,
+  "completed": 300,
+  "failed": 0,
+  "skipped": 0,
+  "solved": 30
+ },
+ "dataset": {
+  "generator": "benchmarks/enumeration.py",
+  "name": "generated",
+  "seeds": [
+   1,
+   2,
+   3,
+   4,
+   5
+  ]
+ },
+ "decision": "FAIL",
+ "model": {
+  "id": null,
+  "provider": null
+ },
+ "prereg": "research/prereg/e1-exhaustive-enumeration.md",
+ "reason": "",
+ "repo_commit": "8fde780d6ab6",
+ "results": {
+  "bar": 0.768,
+  "lexical": 0.6133,
+  "primary_metric": "set_exact",
+  "typed": 0.1
+ },
+ "run_id": "e1-exhaustive-enumeration",
+ "schema": "mf-run-manifest/1",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "suite": "INT-03",
+ "verification": {
+  "baseline_registered": true,
+  "holdout_frozen": true,
+  "independent_replicated": false,
+  "oracle_sanity_passed": true
+ }
+}

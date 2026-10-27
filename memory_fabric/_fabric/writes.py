@@ -191,7 +191,12 @@ class WritesMixin(FabricCore):
         # names a memory that exists.
         copy_of = None
         if self.recognise_copies:
-            copy_of = self.copy_index.find(content)
+            # Only within the writer's tenant: the same text in another tenant
+            # is a separate origin, and linking them let a withdrawal in one
+            # tenant reach the other (masterplan GOV-07).
+            memories = self.state.memories
+            copy_of = self.copy_index.find(
+                content, accept=lambda mid: mid in memories and memories[mid].tenant_id == tenant_id)
 
         # Writing at a wider scope skips the firewall that `share` runs, which
         # is fine for host code except where a rule is absolute: a restricted

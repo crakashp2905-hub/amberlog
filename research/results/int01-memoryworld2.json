@@ -1,0 +1,22 @@
+{
+ "commit": "8fde780d6ab6",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "keys": 20,
+ "wrong_share": 0.3,
+ "accuracy": {
+  "valid:overwrite": 0.313,
+  "valid:valid_time": 1.0,
+  "valid:bitemporal": 1.0,
+  "valid:oracle": 1.0,
+  "believed:overwrite": 0.113,
+  "believed:valid_time": 0.513,
+  "believed:bitemporal": 1.0,
+  "believed:oracle": 1.0
+ }
+}

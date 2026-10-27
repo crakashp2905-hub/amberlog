@@ -1,0 +1,45 @@
+{
+ "commit": "8fde780d6ab6",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "tasks": 8,
+ "steps": 30,
+ "budgets_words": [
+  40,
+  80,
+  160
+ ],
+ "recovered": {
+  "40": {
+   "raw": 1.0,
+   "summary": 0.329,
+   "summary+drill": 1.0,
+   "oracle": 1.0
+  },
+  "80": {
+   "raw": 1.0,
+   "summary": 0.485,
+   "summary+drill": 1.0,
+   "oracle": 1.0
+  },
+  "160": {
+   "raw": 1.0,
+   "summary": 0.661,
+   "summary+drill": 1.0,
+   "oracle": 1.0
+  }
+ },
+ "invariants": {
+  "withdrawn_resurrected": 0,
+  "erased_returned_text": 0,
+  "summary_still_exposable": 0,
+  "checks": 120
+ },
+ "summary_words": 345.1,
+ "raw_words": 342.1
+}

@@ -1,15 +1,15 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 100,
+ "results": 103,
  "missing_field_counts": {
   "git_sha": 33,
-  "prereg": 33,
-  "dataset_digest": 100,
-  "model_id": 68,
-  "prompt_hash": 100,
+  "prereg": 34,
+  "dataset_digest": 103,
+  "model_id": 71,
+  "prompt_hash": 103,
   "seed": 44,
-  "cost": 84,
-  "verdict": 65
+  "cost": 87,
+  "verdict": 67
  },
  "rows": [
   {
@@ -424,10 +424,46 @@
    "parsable": true
   },
   {
+   "experiment_id": "e1-exhaustive-enumeration",
+   "file": "research/results/e1-exhaustive-enumeration.json",
+   "file_sha256": "03db58ad72c4fdaafc40e8cb8d4b077b4e722cd0f944ab19055a2aa22febf42f",
+   "prereg": "research/prereg/e1-exhaustive-enumeration.md",
+   "git_sha": "8fde780d6ab6",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "config": null,
+   "cost": null,
+   "verdict": {
+    "B_arm": "lexical",
+    "B": 0.6133,
+    "O": 1.0,
+    "bar_E1a": 0.768,
+    "typed_seed_wins": 0,
+    "E1a": false,
+    "E1b": true,
+    "sanity": {
+     "arms_above_oracle": [],
+     "baselines_at_ceiling": [],
+     "ok": true
+    },
+    "decision": "FAIL"
+   },
+   "parsable": true
+  },
+  {
    "experiment_id": "e1-exposure-cost",
    "file": "research/results/e1-exposure-cost.json",
    "file_sha256": "bef2a59c786e446bbf5c0e1801d0f59da3915d51b517995a0efb0afbcb59b286",
-   "prereg": null,
+   "prereg": "research/prereg/e1-exhaustive-enumeration.md",
    "git_sha": "a502d4e",
    "git_sha_source": "json",
    "dataset_digest": null,
@@ -710,6 +746,50 @@
    "model_id": null,
    "prompt_hash": null,
    "seed": null,
+   "config": null,
+   "cost": null,
+   "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "int01-memoryworld2",
+   "file": "research/results/int01-memoryworld2.json",
+   "file_sha256": "851ceb582aa736d3eb2a2f05eff6f61a0a5e677d80425faa49487070e9b0ee76",
+   "prereg": null,
+   "git_sha": "8fde780d6ab6",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "config": null,
+   "cost": null,
+   "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "int04-compaction-drilldown",
+   "file": "research/results/int04-compaction-drilldown.json",
+   "file_sha256": "1494015b4b1636254e541becfe10c649d4825b71b9d3962cc5096ba10b7c6ba1",
+   "prereg": null,
+   "git_sha": "8fde780d6ab6",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
    "config": null,
    "cost": null,
    "verdict": null,

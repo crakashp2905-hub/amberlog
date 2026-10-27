@@ -3,4 +3,4 @@ name: memory-fabric
 description: Memory Fabric - governed memory for AI agents (dashboard and agent HTTP API)
 type: application
 version: 0.1.0
-appVersion: "0.13.0"
+appVersion: "0.14.0"

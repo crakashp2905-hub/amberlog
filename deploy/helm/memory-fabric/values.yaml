@@ -1,6 +1,6 @@
 image:
   repository: memory-fabric
-  tag: "0.13.0"
+  tag: "0.14.0"
   pullPolicy: IfNotPresent
 
 # personal | team | regulated (docs/QUICKSTART.md)

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "memory-fabric"
-version = "0.13.0"
+version = "0.14.0"
 description = "Memory for AI agents that you can audit, correct and trust: provenance, cross-store retraction, and evidence-gated actions."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -87,7 +87,7 @@ select = ["E4", "E7", "E9", "F"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["memory_fabric", "memeval"]
+files = ["memory_fabric", "memeval", "benchmarks"]
 # psycopg, anthropic and cryptography are optional; their absence must not
 # fail a check of the zero-dependency core.
 ignore_missing_imports = true

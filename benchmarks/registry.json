@@ -1,0 +1,381 @@
+{
+ "schema": "mf-benchmark-registry/1",
+ "note": "Every suite the masterplan names (docs/MASTERPLAN_TRACKER.md). run_status is NOT_RUN until a manifest under research/results/bench_runs/ records a run; vendor_reported numbers are theirs, never ours.",
+ "suites": [
+  {
+   "id": "PUB-01",
+   "name": "Harvey LAB firm-knowledge",
+   "url": "https://github.com/harveyai/harvey-labs/tree/main/tasks/firm-knowledge",
+   "version": null,
+   "license": "unreviewed",
+   "access": "public-repo, synthetic corpus ~108M tokens",
+   "run_status": "NOT_RUN",
+   "reason": "license unreviewed; full run needs an agent model at 0.86M-3.79M tokens/task (vendor figures) — needs budget approval",
+   "vendor_reported": {
+    "source": "https://www.sarvam.ai/blogs/knowledge-fabric-enterprise-agents",
+    "model": "GLM 5.3",
+    "tasks": 250,
+    "arms": {
+     "flat_agentic_rag": {
+      "rubric_pct": 55.1,
+      "solved": 72,
+      "unanswered": 9,
+      "tokens_per_task_m": 1.8,
+      "cost_per_task_usd": 0.64
+     },
+     "knowledge_tree": {
+      "rubric_pct": 74.4,
+      "solved": 92,
+      "unanswered": 7,
+      "tokens_per_task_m": 3.79,
+      "cost_per_task_usd": 1.18
+     },
+     "tree_ontology": {
+      "rubric_pct": 84.2,
+      "solved": 109,
+      "unanswered": 0,
+      "tokens_per_task_m": 0.86,
+      "cost_per_task_usd": 0.28
+     }
+    }
+   }
+  },
+  {
+   "id": "PUB-02",
+   "name": "tau-knowledge",
+   "url": "https://github.com/sierra-research/tau2-bench",
+   "version": null,
+   "license": "unreviewed",
+   "access": "public-repo, grader changes over time — pin a release",
+   "run_status": "NOT_RUN",
+   "reason": "needs an agent model for 97 all-or-nothing tasks; budget approval and release pin",
+   "vendor_reported": {
+    "source": "https://www.sarvam.ai/blogs/knowledge-fabric-enterprise-agents",
+    "model": "GLM 5.2",
+    "tasks": 97,
+    "arms": {
+     "baseline": {
+      "solved": 38,
+      "total_tokens_m": 288.1
+     },
+     "knowledge_fabric": {
+      "solved": 39,
+      "total_tokens_m": 102.4
+     }
+    },
+    "stated_token_reduction_pct": 64
+   }
+  },
+  {
+   "id": "PUB-03",
+   "name": "WideSearch",
+   "url": "https://widesearch-seed.github.io/",
+   "version": null,
+   "license": "unreviewed",
+   "access": "public task set (200: 100 en, 100 zh); live-web dependent",
+   "run_status": "NOT_RUN",
+   "reason": "requires live web search and an agent model; no frozen snapshot available here",
+   "vendor_reported": {
+    "source": "https://raw.githubusercontent.com/TencentCloud/TencentDB-Agent-Memory/main/README.md",
+    "arms": {
+     "without": {
+      "pct": 33,
+      "total_tokens_m": 221.31
+     },
+     "with": {
+      "pct": 50,
+      "total_tokens_m": 85.64
+     }
+    },
+    "stated_token_reduction_pct": 61.38
+   }
+  },
+  {
+   "id": "PUB-04",
+   "name": "SWE-bench (continuous 50-task)",
+   "url": "https://www.swebench.com/verified",
+   "version": null,
+   "license": "MIT (harness); repos vary",
+   "access": "public; Docker images per task",
+   "run_status": "NOT_RUN",
+   "reason": "vendor subset not identified; needs Docker-in-CI and a coding agent model at billions of tokens (vendor totals)",
+   "vendor_reported": {
+    "source": "https://raw.githubusercontent.com/TencentCloud/TencentDB-Agent-Memory/main/README.md",
+    "arms": {
+     "without": {
+      "pct": 58.4,
+      "total_tokens_m": 3474.1
+     },
+     "with": {
+      "pct": 64.2,
+      "total_tokens_m": 2375.4
+     }
+    },
+    "stated_token_reduction_pct": 33.09
+   }
+  },
+  {
+   "id": "PUB-05",
+   "name": "AA-LCR",
+   "url": "https://artificialanalysis.ai/evaluations/artificial-analysis-long-context-reasoning",
+   "version": null,
+   "license": "unreviewed",
+   "access": "~100 questions, 10k-100k tokens",
+   "run_status": "NOT_RUN",
+   "reason": "dataset rights unreviewed; needs a long-context model",
+   "vendor_reported": {
+    "source": "https://raw.githubusercontent.com/TencentCloud/TencentDB-Agent-Memory/main/README.md",
+    "arms": {
+     "without": {
+      "pct": 44.0,
+      "total_tokens_m": 112.0
+     },
+     "with": {
+      "pct": 47.5,
+      "total_tokens_m": 77.3
+     }
+    }
+   }
+  },
+  {
+   "id": "PUB-06",
+   "name": "PersonaMem",
+   "url": "https://github.com/bowen-upenn/PersonaMem",
+   "version": null,
+   "license": "unreviewed",
+   "access": "public (Hugging Face)",
+   "run_status": "NOT_RUN",
+   "reason": "answering needs a model (multiple choice); hosted-model evaluation is on hold by owner instruction",
+   "vendor_reported": {
+    "source": "https://raw.githubusercontent.com/TencentCloud/TencentDB-Agent-Memory/main/README.md",
+    "arms": {
+     "without": {
+      "pct": 48
+     },
+     "with": {
+      "pct": 76
+     }
+    }
+   }
+  },
+  {
+   "id": "PUB-07",
+   "name": "BrowseComp-Plus",
+   "url": "https://github.com/texttron/BrowseComp-Plus",
+   "version": null,
+   "license": "unreviewed",
+   "access": "fixed ~100k-document corpus",
+   "run_status": "NOT_RUN",
+   "reason": "cited by Sarvam, not run by them; needs an agent model",
+   "vendor_reported": null
+  },
+  {
+   "id": "PUB-08",
+   "name": "BRIGHT-Pro",
+   "url": "https://github.com/yale-nlp/Bright-Pro",
+   "version": null,
+   "license": "unreviewed",
+   "access": "public",
+   "run_status": "NOT_RUN",
+   "reason": "cited by Sarvam, not run by them; retrieval-only arm is feasible once licence reviewed",
+   "vendor_reported": null
+  },
+  {
+   "id": "PUB-09",
+   "name": "FinanceBench",
+   "url": "https://github.com/patronus-ai/financebench",
+   "version": null,
+   "license": "unreviewed",
+   "access": "public subset",
+   "run_status": "NOT_RUN",
+   "reason": "needs PDF parsing (no PDF adapter yet) and an answer model",
+   "vendor_reported": null
+  },
+  {
+   "id": "PUB-10",
+   "name": "OfficeQA Pro",
+   "url": "https://arxiv.org/abs/2603.08655",
+   "version": null,
+   "license": "unreviewed",
+   "access": "see paper",
+   "run_status": "NOT_RUN",
+   "reason": "needs PDF/table parsing and an answer model",
+   "vendor_reported": null
+  },
+  {
+   "id": "PUB-11",
+   "name": "LongMemEval (s, cleaned)",
+   "url": "https://huggingface.co/datasets/xiaowu0162/longmemeval-cleaned",
+   "version": "longmemeval_s_cleaned.json",
+   "license": "MIT",
+   "access": "public",
+   "run_status": "RUN",
+   "reason": "retrieval arms run in CI (r3-eval, k1-eval); answer accuracy needs a model",
+   "results": [
+    "research/results/r3-best-retriever.md",
+    "research/results/k1-topic-navigation.md",
+    "research/results/bench_runs/"
+   ],
+   "vendor_reported": null
+  },
+  {
+   "id": "PUB-12",
+   "name": "LoCoMo",
+   "url": "https://github.com/snap-research/locomo",
+   "version": null,
+   "license": "unreviewed",
+   "access": "public",
+   "run_status": "NOT_RUN",
+   "reason": "licence review pending; retrieval-only arm feasible in CI after review",
+   "vendor_reported": null,
+   "url_verified": false
+  },
+  {
+   "id": "PUB-13",
+   "name": "MemoryAgentBench",
+   "url": "https://github.com/HUST-AI-HYZ/MemoryAgentBench",
+   "version": null,
+   "license": "unreviewed",
+   "access": "public",
+   "run_status": "NOT_RUN",
+   "reason": "needs an agent model",
+   "vendor_reported": null,
+   "url_verified": false
+  },
+  {
+   "id": "PUB-14",
+   "name": "SciFact (BEIR)",
+   "url": "https://huggingface.co/datasets/BeIR/scifact",
+   "version": "BEIR scifact test",
+   "license": "CC BY-NC 2.0",
+   "access": "public",
+   "run_status": "RUN",
+   "reason": "retrieval arms run in CI (r3-eval)",
+   "results": [
+    "research/results/r3-best-retriever.md"
+   ],
+   "vendor_reported": null
+  },
+  {
+   "id": "PUB-15",
+   "name": "Public agent-memory leaderboard task sets",
+   "url": null,
+   "version": null,
+   "license": "unreviewed",
+   "access": "varies",
+   "run_status": "NOT_RUN",
+   "reason": "optional P3; none selected",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-01",
+   "name": "MemoryWorld 2 changing-knowledge QA",
+   "url": null,
+   "version": "benchmarks/memoryworld2.py",
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "RUN",
+   "reason": "deterministic, no model",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-02",
+   "name": "MemoryWorld 2 multi-agent federation",
+   "url": null,
+   "version": null,
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "NOT_RUN",
+   "reason": "existing federation worlds (P3, S1, PB) cover parts; a combined world is pending",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-03",
+   "name": "Exhaustive enumeration: tree vs typed filter",
+   "url": null,
+   "version": "benchmarks/enumeration.py",
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "RUN",
+   "reason": "deterministic, no model",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-04",
+   "name": "Compaction with reversible drill-down",
+   "url": null,
+   "version": "benchmarks/compaction.py",
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "RUN",
+   "reason": "deterministic, no model",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-05",
+   "name": "Continuous 50-task mixed agent run",
+   "url": null,
+   "version": null,
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "NOT_RUN",
+   "reason": "needs an agent model; L1 long-running study covers the memory side",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-06",
+   "name": "Adversarial memory injections",
+   "url": null,
+   "version": "tools/adversarial_gate.py",
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "RUN",
+   "reason": "adversarial gate on every PR",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-07",
+   "name": "Compliance/access-governance matrix (GOV-01..24)",
+   "url": null,
+   "version": "tests/test_gov_conformance.py",
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "RUN",
+   "reason": "every PR",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-08",
+   "name": "Concurrency/crash/distribution",
+   "url": null,
+   "version": "tests/ fault matrix, multihost CI jobs",
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "RUN",
+   "reason": "single physical host only; multi-physical-host is BLOCKED (no second host)",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-09",
+   "name": "SDK/MCP/operator onboarding",
+   "url": null,
+   "version": "tools/fresh_machine.py",
+   "license": "proprietary (this repo)",
+   "access": "CI fresh-machine jobs",
+   "run_status": "RUN",
+   "reason": "automated install only; a human onboarding study is BLOCKED (needs participants)",
+   "vendor_reported": null
+  },
+  {
+   "id": "INT-10",
+   "name": "Economic and environment benchmark",
+   "url": null,
+   "version": "benchmarks/cost.py",
+   "license": "proprietary (this repo)",
+   "access": "generated",
+   "run_status": "RUN",
+   "reason": "ledger applied to every local run; no billed model calls in them",
+   "vendor_reported": null
+  }
+ ]
+}

@@ -13,7 +13,7 @@ moment it acts.
 ![MCP](https://img.shields.io/badge/MCP-stdio%20server-purple)
 ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
-> **Status: alpha, 0.13.0** (baseline pinned in the
+> **Status: alpha, 0.14.0 in development** (the last pinned baseline is 0.13.0, in the
 > [release notes](docs/RELEASE_NOTES_0.13.0.md)). Working name; not yet on PyPI.
 > What is stable and what is experimental: [STABILITY.md](STABILITY.md).
 
@@ -268,7 +268,7 @@ python tools/check.py           # regenerate docs, lint, type-check, doc tests, 
 python tools/check.py --full    # and the full suite, which needs no dependencies
 ```
 
-**2128 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
+**2173 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
 a multi-store fault matrix and an adversarial release gate run
 in CI on Linux, macOS and Windows. Read [AGENTS.md](AGENTS.md), the rules for
 everyone who changes this repository, humans and AI agents alike, and

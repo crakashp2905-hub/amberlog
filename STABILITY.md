@@ -129,7 +129,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.typedclaims`
 - `memory_fabric.validation`
 
-## Experimental (16)
+## Experimental (17)
 
 - `memory_fabric.adapters.systemone`
 - `memory_fabric.claimcheck`
@@ -147,6 +147,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.receipts`
 - `memory_fabric.rulebook`
 - `memory_fabric.trust`
+- `memory_fabric.typed_query`
 
 ## Compatibility, as tested
 

@@ -91,4 +91,4 @@ def write(m: Manifest, directory: Path = RUNS) -> Path:
 
 
 def read_all(directory: Path = RUNS) -> list[dict[str, Any]]:
-    return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(directory.glob("*.json"))]
+    return [json.loads(p.read_text(encoding="utf-8")) for p in sorted(directory.glob("*.json"), key=lambda p: p.name)]

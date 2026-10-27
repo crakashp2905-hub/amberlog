@@ -31,7 +31,7 @@ def _prereg(stem: str) -> str | None:
     else the longest experiment id (the name's first part) it starts with. Ties break by name,
     so the answer never depends on directory order."""
     def best(key: Callable[[Path], str]) -> Path | None:
-        found = [p for p in sorted(PREREG.glob("*.md"))
+        found = [p for p in sorted(PREREG.glob("*.md"), key=lambda p: p.name)
                  if stem == key(p) or stem.startswith(key(p) + "-")]
         return max(found, key=lambda p: (len(key(p)), p.name), default=None)
 
@@ -80,7 +80,7 @@ def entry(path: Path) -> dict[str, Any]:
 
 
 def build() -> dict[str, Any]:
-    rows = [entry(p) for p in sorted(RESULTS.glob("*.json")) if p.name != OUT.name]
+    rows = [entry(p) for p in sorted(RESULTS.glob("*.json"), key=lambda p: p.name) if p.name != OUT.name]
     missing = {k: sum(1 for r in rows if r[k] is None)
                for k in ("git_sha", "prereg", "dataset_digest", "model_id", "prompt_hash", "seed", "cost", "verdict")}
     return {"generated_by": "tools/results_manifest.py", "results": len(rows),

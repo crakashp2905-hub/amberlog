@@ -54,7 +54,7 @@ def tags() -> list[str]:
 
 def tiers() -> dict[str, list[str]]:
     out: dict[str, list[str]] = {}
-    for path in sorted((ROOT / "memory_fabric").rglob("*.py")):
+    for path in sorted((ROOT / "memory_fabric").rglob("*.py"), key=lambda p: p.as_posix()):
         if "__pycache__" in path.parts:
             continue
         match = re.search(r'(?m)^__stability__ = "(\w+)"', path.read_text(encoding="utf-8"))
@@ -75,7 +75,7 @@ def preset_experimental(experimental: list[str]) -> list[str]:
 def skips() -> list[str]:
     found = []
     pattern = re.compile(r"skip(?:Unless|If)\((.+?),\s*[\"'](.+?)[\"']\)")
-    for path in sorted((ROOT / "tests").glob("test_*.py")):
+    for path in sorted((ROOT / "tests").glob("test_*.py"), key=lambda p: p.name):
         for match in pattern.finditer(path.read_text(encoding="utf-8")):
             found.append(f"`{path.name}`: {match[2]}")
     return sorted(set(found))
@@ -90,7 +90,10 @@ def test_count() -> int:
 
 def results() -> tuple[list[str], list[str]]:
     pinned, unpinned = [], []
-    for path in sorted((ROOT / "research" / "results").glob("*.json")):
+    # Sorted by name, not by Path: Windows compares paths case-insensitively.
+    for path in sorted((ROOT / "research" / "results").glob("*.json"), key=lambda p: p.name):
+        if path.name == "MANIFEST.json":   # the index of results, not a result
+            continue
         try:
             data: Any = json.loads(path.read_text(encoding="utf-8"))
         except ValueError:

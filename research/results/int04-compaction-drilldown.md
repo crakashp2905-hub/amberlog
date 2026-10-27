@@ -1,6 +1,6 @@
 # INT-04 — compaction with reversible drill-down (descriptive)
 
-Produced by `python -m benchmarks.compaction` at commit `8fde780d6ab6`; seeds 1, 2, 3, 4, 5; 8 task
+Produced by `python -m benchmarks.compaction` at commit `092e200e5627`; seeds 1, 2, 3, 4, 5; 8 task
 logs of 30 steps each, every step carrying one critical detail (a limit with its unit, a
 prohibition, or a date). No model; no improvement claim is registered, so this is a description.
 Raw numbers: [int04-compaction-drilldown.json](int04-compaction-drilldown.json).

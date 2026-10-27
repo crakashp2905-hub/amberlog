@@ -30,7 +30,7 @@
  },
  "prereg": "research/prereg/e1-exhaustive-enumeration.md",
  "reason": "",
- "repo_commit": "8fde780d6ab6",
+ "repo_commit": "092e200e5627",
  "results": {
   "bar": 0.768,
   "lexical": 0.6133,

@@ -1,7 +1,7 @@
 # E1 — exhaustive enumeration: typed filter vs search (INT-03)
 
 Registered in [e1-exhaustive-enumeration.md](../prereg/e1-exhaustive-enumeration.md). Produced by
-`python -m benchmarks.enumeration` at commit `8fde780d6ab6`; seeds 1, 2, 3, 4, 5; 1000 records,
+`python -m benchmarks.enumeration` at commit `092e200e5627`; seeds 1, 2, 3, 4, 5; 1000 records,
 10% written untyped, k = 50 for the search arms. No model. Raw numbers:
 [e1-exhaustive-enumeration.json](e1-exhaustive-enumeration.json).
 

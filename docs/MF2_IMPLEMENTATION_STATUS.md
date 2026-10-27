@@ -74,10 +74,12 @@ shape. It neither writes a second database nor approves extracted claims.
 `import_document` remains the event-writing boundary; event replay reconstructs
 the governed source memories. No event-schema migration is required.
 
-Markdown support is explicitly ATX-heading based, not a complete CommonMark
-parser. Tables remain literal content; no semantic extraction, PDF parsing or
+Markdown support reads ATX (`#`) and one-line setext (`===`/`---`) headings; it
+is not a complete CommonMark parser. Headings with no text of their own produce
+no section. Tables remain literal content; no semantic extraction, PDF parsing or
 completeness claim is provided. Duplicate sibling headings use occurrence
-suffixes, so inserting a duplicate may change later duplicate anchors.
+suffixes, so inserting a duplicate or re-parenting a heading changes anchors;
+re-import matches sections by text first, so such edits withdraw nothing.
 Unchanged sections retain their original source revision, as existing imports
 do. Line positions in compiler output are advisory and are not persisted by
 the current importer. Empty-document import withdraws existing sections.

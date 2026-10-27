@@ -101,3 +101,8 @@ use the product.
 | [../RESEARCH.md](../RESEARCH.md), [../EVALUATION.md](../EVALUATION.md) | Research design and evaluation method |
 | [BRANCHES.md](BRANCHES.md) | Branches and how they are protected |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md), [../AGENTS.md](../AGENTS.md) | How to change this repository |
+
+## Memory Fabric 2 roadmap
+
+- [Product and research masterplan](MEMORY_FABRIC_2_PRODUCT_RESEARCH_MASTERPLAN.md)
+- [Implementation status and compiler ADR](MF2_IMPLEMENTATION_STATUS.md)

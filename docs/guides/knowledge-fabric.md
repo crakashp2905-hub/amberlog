@@ -42,3 +42,25 @@ wing is safe") for review, with no model call (O1).
 
 Python: `memory_fabric.docsource.import_document`, `memory_fabric.navigation`,
 `memory_fabric.typedclaims`.
+
+## 5. Compile local Markdown
+
+The optional experimental compiler accepts local Markdown without downloads,
+model calls or additional dependencies:
+
+```bash
+python -m memory_fabric --db project.db --create import-docs examples/project-handbook.md --format markdown --doc-id project-handbook --source-version v1
+```
+
+Sections wait for review. Use the existing `review` workflow; `--activate` is an
+explicit operator approval and should only be used for approved source material.
+Re-import a changed file with the same document ID and a new source version to
+withdraw revised or removed sections and contest dependent conclusions.
+Use `--tenant` to select a tenant and `--source-uri` for an optional citation URI
+(the URI is never fetched).
+
+Python callers can use `knowledge_compiler.compile_markdown` then pass its tree
+to `docsource.import_document`. Heading paths are deterministic and hierarchical.
+Fenced code and tables are preserved as text. This does not extract typed entities,
+interpret tables, support PDF pages, or establish corpus completeness. See the
+[implementation status and ADR](../MF2_IMPLEMENTATION_STATUS.md).

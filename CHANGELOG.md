@@ -5,6 +5,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: local Markdown document compilation
+- Experimental `knowledge_compiler.compile_markdown` and `import-docs --format markdown`
+  compile heading-based source sections through the existing governed importer.
+  Explicit document identity and revision are required; review remains the default.
+- Memory Fabric 2 masterplan, implementation status and local performance baseline.
+
+### Fixed: document revision tenant boundary
+- Importing a document without an explicit tenant now compares only the default
+  tenant's sections, preventing withdrawal of another tenant's same-named document.
+
 ### Added: typed claims, topic browsing (from Sarvam's knowledge fabric)
 - **`TypedClaimChecker`** (`typedclaims.py`) holds a plain-sentence write that negates or reverses another author's established claim, with no model call. Now the default claim checker in the `personal` and `team` presets, as registered on O1 passing (held-out world: recall 1.00 against 0.00 for the built-in checks, 0.00 false holds, 5/5 seeds).
 - **`import-docs`** (`docsource.py`): a compiled document tree becomes provenance-tracked sections; re-importing a new version withdraws revised and removed sections, contests what was derived from them, and the action gate refuses actions certified on them. Guide: `docs/guides/knowledge-fabric.md`.

@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping
 
 from .model import EXPOSABLE_STATES, LifecycleState, ProvenanceMethod, WithdrawalBasis
+from .identity import DEFAULT_TENANT
 
 if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
@@ -110,7 +111,9 @@ def import_document(fabric: "MemoryFabric", tree: Mapping[str, Any], actor: str 
     sections = _sections(tree)
     doc_id, version = str(tree["doc_id"]), str(tree["version"])
     report = DocumentReport(doc_id, version)
-    before = current_sections(fabric, doc_id, tenant_id)
+    # An omitted tenant means the default tenant on writes, never every tenant.
+    # Otherwise an import could withdraw another tenant's same-named document.
+    before = current_sections(fabric, doc_id, tenant_id or DEFAULT_TENANT)
     kwargs: dict[str, Any] = {"tenant_id": tenant_id} if tenant_id is not None else {}
     for path, (content, digest) in sections.items():
         old = before.get(path)

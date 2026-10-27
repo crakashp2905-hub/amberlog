@@ -1,0 +1,81 @@
+{
+  "benchmark": "product_bench",
+  "seed": 7,
+  "quick": true,
+  "python": "3.13.5",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "points": [
+    {
+      "memories": 500,
+      "quality": {
+        "queries": 100,
+        "recall_at_1": 0.14,
+        "recall_at_5": 0.98,
+        "mrr": 0.436
+      },
+      "latency_ms": {
+        "remember": {
+          "p50": 57.075,
+          "p95": 864.152,
+          "p99": 1092.076
+        },
+        "retrieve": {
+          "p50": 23.24,
+          "p95": 34.357,
+          "p99": 113.687
+        }
+      },
+      "throughput_per_s": {
+        "remember": 6.6,
+        "retrieve": 39.1
+      },
+      "growth": {
+        "disk_bytes_per_memory": 3924,
+        "heap_bytes_per_memory": 11779
+      },
+      "false_blocks": {
+        "benign_writes": 200,
+        "blocked": 0,
+        "rate": 0.0,
+        "examples": []
+      },
+      "seconds": 95.2
+    },
+    {
+      "memories": 2000,
+      "quality": {
+        "queries": 100,
+        "recall_at_1": 0.1,
+        "recall_at_5": 0.96,
+        "mrr": 0.404
+      },
+      "latency_ms": {
+        "remember": {
+          "p50": 48.535,
+          "p95": 80.564,
+          "p99": 149.795
+        },
+        "retrieve": {
+          "p50": 11.822,
+          "p95": 27.706,
+          "p99": 100.444
+        }
+      },
+      "throughput_per_s": {
+        "remember": 18.6,
+        "retrieve": 59.9
+      },
+      "growth": {
+        "disk_bytes_per_memory": 1907,
+        "heap_bytes_per_memory": 9913
+      },
+      "false_blocks": {
+        "benign_writes": 200,
+        "blocked": 0,
+        "rate": 0.0,
+        "examples": []
+      },
+      "seconds": 119.1
+    }
+  ]
+}

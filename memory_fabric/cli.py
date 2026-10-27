@@ -1237,7 +1237,16 @@ def cmd_import_docs(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     from .docsource import import_document, read_document
 
     try:
-        report = import_document(fabric, read_document(args.file), activate=args.activate,
+        if args.format == "markdown":
+            from .knowledge_compiler import compile_markdown
+            if not args.doc_id or not args.source_version:
+                raise ValueError("Markdown requires --doc-id and --source-version")
+            tree = compile_markdown(Path(args.file).read_text(encoding="utf-8"),
+                                    doc_id=args.doc_id, version=args.source_version,
+                                    uri=args.source_uri or "")
+        else:
+            tree = read_document(args.file)
+        report = import_document(fabric, tree, activate=args.activate,
                                  tenant_id=args.tenant)
     except (OSError, ValueError) as exc:
         print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
@@ -3030,6 +3039,11 @@ def build_parser() -> argparse.ArgumentParser:
             "WRITES: import a compiled document (JSON: doc_id, version, sections with path and "
             "text); re-importing withdraws sections the new version changed or removed")
     p.add_argument("file")
+    p.add_argument("--format", choices=["json", "markdown"], default="json",
+                   help="source format: compiled JSON tree or local Markdown")
+    p.add_argument("--doc-id", help="stable document identity for Markdown")
+    p.add_argument("--source-version", help="explicit source revision for Markdown")
+    p.add_argument("--source-uri", help="optional source citation URI; never fetched")
     p.add_argument("--activate", action="store_true",
                    help="sections are active at once (the document is the authority)")
     p.add_argument("--tenant")

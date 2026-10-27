@@ -5,6 +5,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Fixed: document re-import withdraws only what changed
+- **Re-import matches sections by text before path**: inserting a same-named heading or moving a section under a new parent no longer withdraws unchanged sections or contests what was derived from them.
+- **Markdown compiler**: headings with no text of their own no longer become empty memories; setext (underlined) headings are read.
+
 ### Added: local Markdown document compilation
 - Experimental `knowledge_compiler.compile_markdown` and `import-docs --format markdown`
   compile heading-based source sections through the existing governed importer.

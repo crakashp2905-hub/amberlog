@@ -13,9 +13,10 @@ it, and what must stop when the section changes.
 
 Each section becomes one memory authored by `docs:<doc_id>`, with
 `context.source = {doc_id, version, path, uri, sha256}`. Importing the
-document again compares sections by path:
+document again compares sections by their text:
 
-- **unchanged** sections are left alone (same memory, no new event);
+- **unchanged** sections are left alone (same memory, no new event), even if
+  they moved to a new path;
 - **changed** sections get a new memory, and the old one is withdrawn with
   basis `retracted_at_origin` and reason "source document changed";
 - **removed** sections are withdrawn the same way.
@@ -86,11 +87,11 @@ def _sections(tree: Mapping[str, Any]) -> dict[str, tuple[str, str]]:
     return out
 
 
-def current_sections(fabric: "MemoryFabric", doc_id: str, tenant_id: str | None = None) -> dict[str, Any]:
-    """path -> the memory currently standing for that section of `doc_id`."""
+def _standing(fabric: "MemoryFabric", doc_id: str, tenant_id: str | None) -> list[Any]:
+    """Every memory currently standing for a section of `doc_id`, oldest first."""
     from .conflicts import author
 
-    out: dict[str, Any] = {}
+    out = []
     for m in fabric.state.memories.values():
         # Only the document's own sections: a conclusion derived from one inherits its context.
         if author(m) != f"docs:{doc_id}":
@@ -100,8 +101,17 @@ def current_sections(fabric: "MemoryFabric", doc_id: str, tenant_id: str | None 
                 and (tenant_id is None or m.tenant_id == tenant_id)
                 and (m.lifecycle_state in EXPOSABLE_STATES
                      or m.lifecycle_state is LifecycleState.CANDIDATE)):
-            out[str(src.get("path"))] = m
-    return out
+            out.append(m)
+    return sorted(out, key=lambda m: m.created_at)
+
+
+def current_sections(fabric: "MemoryFabric", doc_id: str, tenant_id: str | None = None) -> dict[str, Any]:
+    """path -> the memory standing for that section of `doc_id`.
+
+    The path is the one recorded when the memory was written: a section that
+    later moved without changing keeps its memory and its original path.
+    """
+    return {str(m.context["source"].get("path")): m for m in _standing(fabric, doc_id, tenant_id)}
 
 
 def import_document(fabric: "MemoryFabric", tree: Mapping[str, Any], actor: str = "docs-import",
@@ -113,12 +123,21 @@ def import_document(fabric: "MemoryFabric", tree: Mapping[str, Any], actor: str 
     report = DocumentReport(doc_id, version)
     # An omitted tenant means the default tenant on writes, never every tenant.
     # Otherwise an import could withdraw another tenant's same-named document.
-    before = current_sections(fabric, doc_id, tenant_id or DEFAULT_TENANT)
+    standing = _standing(fabric, doc_id, tenant_id or DEFAULT_TENANT)
     kwargs: dict[str, Any] = {"tenant_id": tenant_id} if tenant_id is not None else {}
+    # Match by content first: a section whose text is unchanged keeps its
+    # memory even if its path moved (renumbered duplicate heading, new parent),
+    # so a harmless edit elsewhere never withdraws it or contests what rests on it.
+    by_digest: dict[str, list[Any]] = {}
+    for m in standing:
+        by_digest.setdefault(m.context["source"].get("sha256"), []).append(m)
+    kept: set[str] = set()
     for path, (content, digest) in sections.items():
-        old = before.get(path)
-        if old is not None and old.context["source"].get("sha256") == digest:
-            report.unchanged.append(old.id)
+        same = [m for m in by_digest.get(digest, []) if m.id not in kept]
+        if same:
+            match = next((m for m in same if m.context["source"].get("path") == path), same[0])
+            kept.add(match.id)
+            report.unchanged.append(match.id)
             continue
         source = {"doc_id": doc_id, "version": version, "path": path,
                   "uri": str(tree.get("uri") or ""), "sha256": digest}
@@ -128,11 +147,12 @@ def import_document(fabric: "MemoryFabric", tree: Mapping[str, Any], actor: str 
         if activate and fabric.state.memories[mid].lifecycle_state is LifecycleState.CANDIDATE:
             fabric.validate(mid, actor=actor, reason=f"{doc_id} {version} §{path}")
         report.added.append(mid)
-    for path, old in before.items():
-        if path in sections and old.id in report.unchanged:
+    for old in standing:
+        if old.id in kept:
             continue
+        path = str(old.context["source"].get("path"))
         why = (f"{CHANGED}: {doc_id} §{path} " +
-               ("removed" if path not in sections else "revised") + f" in {version}")
+               ("revised" if path in sections else "removed") + f" in {version}")
         report.contested += fabric.quarantine(old.id, reason=why, actor=actor,
                                               basis=WithdrawalBasis.RETRACTED_AT_ORIGIN)
         report.withdrawn.append(old.id)

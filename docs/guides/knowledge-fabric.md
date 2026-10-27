@@ -19,7 +19,7 @@ Each section becomes a memory authored by `docs:sop-12`, carrying
 
 ## 2. Re-import when the document changes
 
-Run the same command on the new version. Unchanged sections are left as they are;
+Run the same command on the new version. Sections whose text is unchanged are left as they are, even if they moved;
 revised and removed sections are **withdrawn** ("source document changed",
 basis `retracted_at_origin`). Withdrawal propagates: conclusions derived from the
 old section are contested, and an action whose evidence certificate cites it is

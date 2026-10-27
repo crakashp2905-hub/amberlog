@@ -79,3 +79,45 @@ class CompilerTests(unittest.TestCase):
         default = import_document(fabric, compile_doc("# Release\nRequire two reviewers.", "2"))
         self.assertEqual(default.withdrawn, [])
         self.assertIs(fabric.get(other.added[0]).lifecycle_state, LifecycleState.ACTIVE)
+
+
+class ReviewRegressions(unittest.TestCase):
+    """Edits that change no section's text withdraw nothing."""
+
+    def setUp(self):
+        self.fabric = MemoryFabric(":memory:")
+        self.addCleanup(self.fabric.close)
+
+    def reimport(self, old, new):
+        first = import_document(self.fabric, compile_doc(old), activate=True)
+        child = self.fabric.derive("planner", "Follow the notes.", parents=first.added[:1], scope="team")
+        self.fabric.validate(child, actor="reviewer")
+        return first, import_document(self.fabric, compile_doc(new, "2"), activate=True), child
+
+    def test_inserting_a_same_named_heading_withdraws_nothing(self):
+        first, second, child = self.reimport("# A\n## Notes\nx\n## Notes\ny",
+                                             "# A\n## Notes\nnew\n## Notes\nx\n## Notes\ny")
+        self.assertEqual(second.withdrawn, [])
+        self.assertEqual(sorted(second.unchanged), sorted(first.added))
+        self.assertEqual(len(second.added), 1)
+        self.assertIs(self.fabric.get(child).lifecycle_state, LifecycleState.ACTIVE)
+
+    def test_moving_a_section_under_a_new_parent_withdraws_nothing(self):
+        first, second, child = self.reimport("# Ops\n## Release\nReview it.",
+                                             "# Ops\n# Deploy\n## Release\nReview it.")
+        self.assertEqual((second.withdrawn, second.added), ([], []))
+        self.assertIs(self.fabric.get(child).lifecycle_state, LifecycleState.ACTIVE)
+        # A later real edit at the new path still withdraws the old memory.
+        third = import_document(self.fabric, compile_doc("# Ops\n# Deploy\n## Release\nSkip it.", "3"))
+        self.assertEqual(third.withdrawn, first.added)
+
+    def test_headings_without_text_make_no_section(self):
+        tree = compile_doc("# Ops\n## Release\nReview it.\n# Empty\n")
+        self.assertEqual([s["title"] for s in tree["sections"]], ["Release"])
+
+    def test_setext_headings(self):
+        tree = compile_doc("Guide\n=====\nIntro.\n\nRelease\n-------\nReview it.\n\n- item\n---\n")
+        self.assertEqual([s["title"] for s in tree["sections"]], ["Guide", "Release"])
+        self.assertEqual(tree["sections"][1]["path"].count("/"), 1)
+        self.assertEqual(tree["sections"][1]["line_start"], 5)
+        self.assertIn("- item", tree["sections"][1]["text"])

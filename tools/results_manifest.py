@@ -18,7 +18,7 @@ import json
 import re
 import sys
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parents[1]
 RESULTS = ROOT / "research" / "results"
@@ -27,13 +27,16 @@ OUT = RESULTS / "MANIFEST.json"
 
 
 def _prereg(stem: str) -> str | None:
-    """The registration whose id is the longest prefix of this result's name."""
-    best = None
-    for path in PREREG.glob("*.md"):
-        sid = path.stem.split("-")[0]
-        if (stem == sid or stem.startswith(sid + "-")) and (best is None or len(sid) > len(best[0])):
-            best = (sid, path)
-    return f"research/prereg/{best[1].name}" if best else None
+    """The registration this result belongs to: the longest registration name it starts with,
+    else the longest experiment id (the name's first part) it starts with. Ties break by name,
+    so the answer never depends on directory order."""
+    def best(key: Callable[[Path], str]) -> Path | None:
+        found = [p for p in sorted(PREREG.glob("*.md"))
+                 if stem == key(p) or stem.startswith(key(p) + "-")]
+        return max(found, key=lambda p: (len(key(p)), p.name), default=None)
+
+    path = best(lambda p: p.stem) or best(lambda p: p.stem.split("-")[0])
+    return f"research/prereg/{path.name}" if path else None
 
 
 def _first(data: dict[str, Any], *keys: str) -> Any:

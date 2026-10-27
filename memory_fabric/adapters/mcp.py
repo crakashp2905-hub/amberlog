@@ -157,6 +157,43 @@ TOOLS: list[dict[str, Any]] = [
 # server enforces that whatever the model is told.
 EXTENDED_TOOLS: list[dict[str, Any]] = [
     {
+        "name": "browse_topics",
+        "description": (
+            "See what long-term memory holds, by topic, without searching: each topic "
+            "is a word most of its memories share, with how many memories it holds. "
+            "Pass a topic's path to see its subtopics. Names and counts only; read a "
+            "topic with open_topic."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "array", "items": {"type": "string"}, "maxItems": 4,
+                         "description": "A topic path from a previous browse_topics (default: the top level)."},
+            },
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": True, "openWorldHint": False},
+    },
+    {
+        "name": "open_topic",
+        "description": (
+            "Read the memories in one topic from browse_topics, ranked by an optional "
+            "query. Returns the same usable memories, warnings and trust as recall."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "path": {"type": "array", "items": {"type": "string"}, "minItems": 1, "maxItems": 4},
+                "query": {"type": "string", "description": "What you are looking for inside it."},
+                "k": {"type": "integer", "minimum": 1, "maximum": 20,
+                      "description": "Maximum memories to return (default 10)."},
+            },
+            "required": ["path"],
+            "additionalProperties": False,
+        },
+        "annotations": {"readOnlyHint": False, "openWorldHint": False},
+    },
+    {
         "name": "build_context",
         "description": (
             "Assemble the memories relevant to a task under a token budget, as "
@@ -366,6 +403,8 @@ class McpServer:
         self.extended = extended
         if extended:
             self._handlers.update({
+            "browse_topics": self._browse_topics,
+            "open_topic": self._open_topic,
             "build_context": self._build_context,
             "explain_context": self._explain_context,
             "trace_provenance": self._trace_provenance,
@@ -481,6 +520,42 @@ class McpServer:
             raise _ToolError("include_contested must be a boolean")
         hits = self.client.recall(query, k=k, include_contested=include_contested)
         return {"memories": [self._with_trust(self._present(m)) for m in hits]}
+
+    def _path(self, args: Mapping[str, Any], required: bool) -> list[str]:
+        path = args.get("path", [])
+        if (not isinstance(path, list) or len(path) > 4
+                or not all(isinstance(p, str) and p.strip() for p in path)):
+            raise _ToolError("path must be a list of up to 4 topic names from browse_topics")
+        if required and not path:
+            raise _ToolError("path names the topic to open, e.g. [\"valve\"]")
+        return path
+
+    def _browse_topics(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        from ..navigation import topics
+
+        path = self._path(args, required=False)
+        found = topics(self._fabric, self.client.agent_id, path,
+                       tenant_id=getattr(self.client, "_tenant_id", None))
+        return {"path": path, "topics": found,
+                "hint": "open_topic with a path to read one; browse_topics with a path to go deeper"}
+
+    def _open_topic(self, args: Mapping[str, Any]) -> dict[str, Any]:
+        from ..navigation import members, topic_query
+
+        path = self._path(args, required=True)
+        query = args.get("query", "")
+        if not isinstance(query, str):
+            raise _ToolError("query must be a string")
+        k = args.get("k", 10)
+        if not isinstance(k, int) or isinstance(k, bool) or not 1 <= k <= 20:
+            raise _ToolError("k must be an integer from 1 to 20")
+        ids = members(self._fabric, self.client.agent_id, path,
+                      tenant_id=getattr(self.client, "_tenant_id", None))
+        if not ids:
+            return {"path": path, "memories": [], "note": "no such topic now; browse_topics again"}
+        hits = self.client.recall(query.strip() or topic_query(self._fabric, ids, path), k=k, within=ids)
+        return {"path": path, "size": len(ids),
+                "memories": [self._with_trust(self._present(m)) for m in hits]}
 
     def _with_trust(self, shown: dict[str, Any]) -> dict[str, Any]:
         # One line beside each memory: source, independent sources, age,

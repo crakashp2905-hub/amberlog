@@ -1,0 +1,14 @@
+{
+ "decision": "INCONCLUSIVE_NO_HEADROOM",
+ "attainable_headroom": false,
+ "threshold": null,
+ "headroom_share": 0.4,
+ "metric": "set_exact",
+ "read_budget": 12,
+ "split": "dev",
+ "best_baseline": "lexical",
+ "baseline": 1.0,
+ "oracle": 1.0,
+ "dataset_sha256": "043a07f82c0a3da3c473fbdb2bbbdd1d9caac379fc0aa36ae36c7550885d518a",
+ "reason": "No attainable headroom on the frozen primary metric. No improvement threshold registered. Held-out run is diagnostic only; do not tune or claim promotion."
+}

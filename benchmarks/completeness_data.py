@@ -11,7 +11,7 @@ import random
 from typing import Any
 
 SPLITS = {"dev": (11, 23, 37, 41, 53), "test": (101, 127, 149, 163, 181)}
-CONFIG = {"version": "ecv1-data/1", "records": 48, "budget": 12,
+CONFIG: dict[str, Any] = {"version": "ecv1-data/1", "records": 48, "budget": 12,
           "fields": ["kind", "status"], "queries": [["sensor", "open"], ["door", "closed"]]}
 
 
@@ -19,7 +19,7 @@ def generate(seed: int, split: str) -> dict[str, Any]:
     if seed not in SPLITS[split]:
         raise ValueError("seed does not belong to the frozen split")
     rng = random.Random(seed)
-    records = []
+    records: list[dict[str, Any]] = []
     for i in range(CONFIG["records"]):
         kind, status = rng.choice(("sensor", "door", "pump")), rng.choice(("open", "closed"))
         rid = f"{split}-{seed}-{i}"

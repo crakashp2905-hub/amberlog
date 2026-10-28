@@ -1,0 +1,1254 @@
+{
+ "commit": "212c1759fa4d29faed2421e895271e1679398ebc",
+ "split": "dev",
+ "dataset_sha256": "043a07f82c0a3da3c473fbdb2bbbdd1d9caac379fc0aa36ae36c7550885d518a",
+ "config": {
+  "version": "ecv1-data/1",
+  "records": 48,
+  "budget": 12,
+  "fields": [
+   "kind",
+   "status"
+  ],
+  "queries": [
+   [
+    "sensor",
+    "open"
+   ],
+   [
+    "door",
+    "closed"
+   ]
+  ]
+ },
+ "seeds": [
+  11,
+  23,
+  37,
+  41,
+  53
+ ],
+ "arms": [
+  "lexical",
+  "typed",
+  "typed+fallback",
+  "oracle"
+ ],
+ "rows": {
+  "11": {
+   "lexical": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 4.489,
+     "matched": [
+      "dev-11-11",
+      "dev-11-12",
+      "dev-11-25",
+      "dev-11-29",
+      "dev-11-31",
+      "dev-11-40",
+      "dev-11-41",
+      "dev-11-42",
+      "dev-11-44",
+      "dev-11-6"
+     ],
+     "gold": [
+      "dev-11-11",
+      "dev-11-12",
+      "dev-11-25",
+      "dev-11-29",
+      "dev-11-31",
+      "dev-11-40",
+      "dev-11-41",
+      "dev-11-42",
+      "dev-11-44",
+      "dev-11-6"
+     ],
+     "coverage": 0.25
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 1.92,
+     "matched": [
+      "dev-11-0",
+      "dev-11-14",
+      "dev-11-20",
+      "dev-11-28",
+      "dev-11-33",
+      "dev-11-38",
+      "dev-11-43",
+      "dev-11-47"
+     ],
+     "gold": [
+      "dev-11-0",
+      "dev-11-14",
+      "dev-11-20",
+      "dev-11-28",
+      "dev-11-33",
+      "dev-11-38",
+      "dev-11-43",
+      "dev-11-47"
+     ],
+     "coverage": 0.25
+    }
+   ],
+   "typed": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.3,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.43,
+     "matched": [
+      "dev-11-12",
+      "dev-11-40",
+      "dev-11-44"
+     ],
+     "gold": [
+      "dev-11-11",
+      "dev-11-12",
+      "dev-11-25",
+      "dev-11-29",
+      "dev-11-31",
+      "dev-11-40",
+      "dev-11-41",
+      "dev-11-42",
+      "dev-11-44",
+      "dev-11-6"
+     ],
+     "coverage": 0.5208333333333333
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.375,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.383,
+     "matched": [
+      "dev-11-0",
+      "dev-11-20",
+      "dev-11-28"
+     ],
+     "gold": [
+      "dev-11-0",
+      "dev-11-14",
+      "dev-11-20",
+      "dev-11-28",
+      "dev-11-33",
+      "dev-11-38",
+      "dev-11-43",
+      "dev-11-47"
+     ],
+     "coverage": 0.5416666666666667
+    }
+   ],
+   "typed+fallback": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.7,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 3.148,
+     "matched": [
+      "dev-11-12",
+      "dev-11-29",
+      "dev-11-31",
+      "dev-11-40",
+      "dev-11-41",
+      "dev-11-42",
+      "dev-11-44"
+     ],
+     "gold": [
+      "dev-11-11",
+      "dev-11-12",
+      "dev-11-25",
+      "dev-11-29",
+      "dev-11-31",
+      "dev-11-40",
+      "dev-11-41",
+      "dev-11-42",
+      "dev-11-44",
+      "dev-11-6"
+     ],
+     "coverage": 0.7291666666666667
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.875,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 2.86,
+     "matched": [
+      "dev-11-0",
+      "dev-11-20",
+      "dev-11-28",
+      "dev-11-33",
+      "dev-11-38",
+      "dev-11-43",
+      "dev-11-47"
+     ],
+     "gold": [
+      "dev-11-0",
+      "dev-11-14",
+      "dev-11-20",
+      "dev-11-28",
+      "dev-11-33",
+      "dev-11-38",
+      "dev-11-43",
+      "dev-11-47"
+     ],
+     "coverage": 0.75
+    }
+   ],
+   "oracle": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 2.892,
+     "matched": [
+      "dev-11-11",
+      "dev-11-12",
+      "dev-11-25",
+      "dev-11-29",
+      "dev-11-31",
+      "dev-11-40",
+      "dev-11-41",
+      "dev-11-42",
+      "dev-11-44",
+      "dev-11-6"
+     ],
+     "gold": [
+      "dev-11-11",
+      "dev-11-12",
+      "dev-11-25",
+      "dev-11-29",
+      "dev-11-31",
+      "dev-11-40",
+      "dev-11-41",
+      "dev-11-42",
+      "dev-11-44",
+      "dev-11-6"
+     ],
+     "coverage": 0.7291666666666667
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 2.7,
+     "matched": [
+      "dev-11-0",
+      "dev-11-14",
+      "dev-11-20",
+      "dev-11-28",
+      "dev-11-33",
+      "dev-11-38",
+      "dev-11-43",
+      "dev-11-47"
+     ],
+     "gold": [
+      "dev-11-0",
+      "dev-11-14",
+      "dev-11-20",
+      "dev-11-28",
+      "dev-11-33",
+      "dev-11-38",
+      "dev-11-43",
+      "dev-11-47"
+     ],
+     "coverage": 0.75
+    }
+   ]
+  },
+  "23": {
+   "lexical": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 2.191,
+     "matched": [
+      "dev-23-13",
+      "dev-23-26",
+      "dev-23-30",
+      "dev-23-39",
+      "dev-23-4",
+      "dev-23-6",
+      "dev-23-8"
+     ],
+     "gold": [
+      "dev-23-13",
+      "dev-23-26",
+      "dev-23-30",
+      "dev-23-39",
+      "dev-23-4",
+      "dev-23-6",
+      "dev-23-8"
+     ],
+     "coverage": 0.25
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 2.001,
+     "matched": [
+      "dev-23-2",
+      "dev-23-36",
+      "dev-23-5"
+     ],
+     "gold": [
+      "dev-23-2",
+      "dev-23-36",
+      "dev-23-5"
+     ],
+     "coverage": 0.25
+    }
+   ],
+   "typed": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.2857142857142857,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.424,
+     "matched": [
+      "dev-23-4",
+      "dev-23-8"
+     ],
+     "gold": [
+      "dev-23-13",
+      "dev-23-26",
+      "dev-23-30",
+      "dev-23-39",
+      "dev-23-4",
+      "dev-23-6",
+      "dev-23-8"
+     ],
+     "coverage": 0.5208333333333333
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.3333333333333333,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.369,
+     "matched": [
+      "dev-23-36"
+     ],
+     "gold": [
+      "dev-23-2",
+      "dev-23-36",
+      "dev-23-5"
+     ],
+     "coverage": 0.5833333333333333
+    }
+   ],
+   "typed+fallback": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.7142857142857143,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 2.785,
+     "matched": [
+      "dev-23-26",
+      "dev-23-30",
+      "dev-23-39",
+      "dev-23-4",
+      "dev-23-8"
+     ],
+     "gold": [
+      "dev-23-13",
+      "dev-23-26",
+      "dev-23-30",
+      "dev-23-39",
+      "dev-23-4",
+      "dev-23-6",
+      "dev-23-8"
+     ],
+     "coverage": 0.7291666666666667
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.3333333333333333,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 4.035,
+     "matched": [
+      "dev-23-36"
+     ],
+     "gold": [
+      "dev-23-2",
+      "dev-23-36",
+      "dev-23-5"
+     ],
+     "coverage": 0.7916666666666666
+    }
+   ],
+   "oracle": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 2.953,
+     "matched": [
+      "dev-23-13",
+      "dev-23-26",
+      "dev-23-30",
+      "dev-23-39",
+      "dev-23-4",
+      "dev-23-6",
+      "dev-23-8"
+     ],
+     "gold": [
+      "dev-23-13",
+      "dev-23-26",
+      "dev-23-30",
+      "dev-23-39",
+      "dev-23-4",
+      "dev-23-6",
+      "dev-23-8"
+     ],
+     "coverage": 0.7708333333333334
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 2.816,
+     "matched": [
+      "dev-23-2",
+      "dev-23-36",
+      "dev-23-5"
+     ],
+     "gold": [
+      "dev-23-2",
+      "dev-23-36",
+      "dev-23-5"
+     ],
+     "coverage": 0.7916666666666666
+    }
+   ]
+  },
+  "37": {
+   "lexical": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 2.39,
+     "matched": [
+      "dev-37-16",
+      "dev-37-18",
+      "dev-37-21",
+      "dev-37-32",
+      "dev-37-37",
+      "dev-37-38",
+      "dev-37-45",
+      "dev-37-46",
+      "dev-37-8"
+     ],
+     "gold": [
+      "dev-37-16",
+      "dev-37-18",
+      "dev-37-21",
+      "dev-37-32",
+      "dev-37-37",
+      "dev-37-38",
+      "dev-37-45",
+      "dev-37-46",
+      "dev-37-8"
+     ],
+     "coverage": 0.25
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 1.861,
+     "matched": [
+      "dev-37-11",
+      "dev-37-26",
+      "dev-37-31",
+      "dev-37-36",
+      "dev-37-6"
+     ],
+     "gold": [
+      "dev-37-11",
+      "dev-37-26",
+      "dev-37-31",
+      "dev-37-36",
+      "dev-37-6"
+     ],
+     "coverage": 0.25
+    }
+   ],
+   "typed": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.3333333333333333,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.5,
+     "matched": [
+      "dev-37-16",
+      "dev-37-32",
+      "dev-37-8"
+     ],
+     "gold": [
+      "dev-37-16",
+      "dev-37-18",
+      "dev-37-21",
+      "dev-37-32",
+      "dev-37-37",
+      "dev-37-38",
+      "dev-37-45",
+      "dev-37-46",
+      "dev-37-8"
+     ],
+     "coverage": 0.5208333333333333
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.2,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.393,
+     "matched": [
+      "dev-37-36"
+     ],
+     "gold": [
+      "dev-37-11",
+      "dev-37-26",
+      "dev-37-31",
+      "dev-37-36",
+      "dev-37-6"
+     ],
+     "coverage": 0.5833333333333333
+    }
+   ],
+   "typed+fallback": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.7777777777777778,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 11,
+     "latency_ms": 2.998,
+     "matched": [
+      "dev-37-16",
+      "dev-37-32",
+      "dev-37-37",
+      "dev-37-38",
+      "dev-37-45",
+      "dev-37-46",
+      "dev-37-8"
+     ],
+     "gold": [
+      "dev-37-16",
+      "dev-37-18",
+      "dev-37-21",
+      "dev-37-32",
+      "dev-37-37",
+      "dev-37-38",
+      "dev-37-45",
+      "dev-37-46",
+      "dev-37-8"
+     ],
+     "coverage": 0.75
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.6,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 7,
+     "latency_ms": 2.607,
+     "matched": [
+      "dev-37-26",
+      "dev-37-31",
+      "dev-37-36"
+     ],
+     "gold": [
+      "dev-37-11",
+      "dev-37-26",
+      "dev-37-31",
+      "dev-37-36",
+      "dev-37-6"
+     ],
+     "coverage": 0.7291666666666667
+    }
+   ],
+   "oracle": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 11,
+     "latency_ms": 3.1,
+     "matched": [
+      "dev-37-16",
+      "dev-37-18",
+      "dev-37-21",
+      "dev-37-32",
+      "dev-37-37",
+      "dev-37-38",
+      "dev-37-45",
+      "dev-37-46",
+      "dev-37-8"
+     ],
+     "gold": [
+      "dev-37-16",
+      "dev-37-18",
+      "dev-37-21",
+      "dev-37-32",
+      "dev-37-37",
+      "dev-37-38",
+      "dev-37-45",
+      "dev-37-46",
+      "dev-37-8"
+     ],
+     "coverage": 0.75
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 8,
+     "latency_ms": 2.691,
+     "matched": [
+      "dev-37-11",
+      "dev-37-26",
+      "dev-37-31",
+      "dev-37-36",
+      "dev-37-6"
+     ],
+     "gold": [
+      "dev-37-11",
+      "dev-37-26",
+      "dev-37-31",
+      "dev-37-36",
+      "dev-37-6"
+     ],
+     "coverage": 0.75
+    }
+   ]
+  },
+  "41": {
+   "lexical": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 2.226,
+     "matched": [
+      "dev-41-1",
+      "dev-41-10",
+      "dev-41-15",
+      "dev-41-16",
+      "dev-41-17",
+      "dev-41-24",
+      "dev-41-29",
+      "dev-41-30",
+      "dev-41-36",
+      "dev-41-43",
+      "dev-41-5"
+     ],
+     "gold": [
+      "dev-41-1",
+      "dev-41-10",
+      "dev-41-15",
+      "dev-41-16",
+      "dev-41-17",
+      "dev-41-24",
+      "dev-41-29",
+      "dev-41-30",
+      "dev-41-36",
+      "dev-41-43",
+      "dev-41-5"
+     ],
+     "coverage": 0.25
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 1.72,
+     "matched": [
+      "dev-41-0",
+      "dev-41-11",
+      "dev-41-2",
+      "dev-41-23",
+      "dev-41-31",
+      "dev-41-32",
+      "dev-41-44"
+     ],
+     "gold": [
+      "dev-41-0",
+      "dev-41-11",
+      "dev-41-2",
+      "dev-41-23",
+      "dev-41-31",
+      "dev-41-32",
+      "dev-41-44"
+     ],
+     "coverage": 0.25
+    }
+   ],
+   "typed": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.2727272727272727,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.403,
+     "matched": [
+      "dev-41-16",
+      "dev-41-24",
+      "dev-41-36"
+     ],
+     "gold": [
+      "dev-41-1",
+      "dev-41-10",
+      "dev-41-15",
+      "dev-41-16",
+      "dev-41-17",
+      "dev-41-24",
+      "dev-41-29",
+      "dev-41-30",
+      "dev-41-36",
+      "dev-41-43",
+      "dev-41-5"
+     ],
+     "coverage": 0.5
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.42857142857142855,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.37,
+     "matched": [
+      "dev-41-0",
+      "dev-41-32",
+      "dev-41-44"
+     ],
+     "gold": [
+      "dev-41-0",
+      "dev-41-11",
+      "dev-41-2",
+      "dev-41-23",
+      "dev-41-31",
+      "dev-41-32",
+      "dev-41-44"
+     ],
+     "coverage": 0.6458333333333333
+    }
+   ],
+   "typed+fallback": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.5454545454545454,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 9,
+     "latency_ms": 2.784,
+     "matched": [
+      "dev-41-16",
+      "dev-41-24",
+      "dev-41-29",
+      "dev-41-30",
+      "dev-41-36",
+      "dev-41-43"
+     ],
+     "gold": [
+      "dev-41-1",
+      "dev-41-10",
+      "dev-41-15",
+      "dev-41-16",
+      "dev-41-17",
+      "dev-41-24",
+      "dev-41-29",
+      "dev-41-30",
+      "dev-41-36",
+      "dev-41-43",
+      "dev-41-5"
+     ],
+     "coverage": 0.6875
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.7142857142857143,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 3.232,
+     "matched": [
+      "dev-41-0",
+      "dev-41-23",
+      "dev-41-31",
+      "dev-41-32",
+      "dev-41-44"
+     ],
+     "gold": [
+      "dev-41-0",
+      "dev-41-11",
+      "dev-41-2",
+      "dev-41-23",
+      "dev-41-31",
+      "dev-41-32",
+      "dev-41-44"
+     ],
+     "coverage": 0.8541666666666666
+    }
+   ],
+   "oracle": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 2.804,
+     "matched": [
+      "dev-41-1",
+      "dev-41-10",
+      "dev-41-15",
+      "dev-41-16",
+      "dev-41-17",
+      "dev-41-24",
+      "dev-41-29",
+      "dev-41-30",
+      "dev-41-36",
+      "dev-41-43",
+      "dev-41-5"
+     ],
+     "gold": [
+      "dev-41-1",
+      "dev-41-10",
+      "dev-41-15",
+      "dev-41-16",
+      "dev-41-17",
+      "dev-41-24",
+      "dev-41-29",
+      "dev-41-30",
+      "dev-41-36",
+      "dev-41-43",
+      "dev-41-5"
+     ],
+     "coverage": 0.75
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 2.621,
+     "matched": [
+      "dev-41-0",
+      "dev-41-11",
+      "dev-41-2",
+      "dev-41-23",
+      "dev-41-31",
+      "dev-41-32",
+      "dev-41-44"
+     ],
+     "gold": [
+      "dev-41-0",
+      "dev-41-11",
+      "dev-41-2",
+      "dev-41-23",
+      "dev-41-31",
+      "dev-41-32",
+      "dev-41-44"
+     ],
+     "coverage": 0.8541666666666666
+    }
+   ]
+  },
+  "53": {
+   "lexical": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 2.96,
+     "matched": [
+      "dev-53-11",
+      "dev-53-19",
+      "dev-53-24",
+      "dev-53-25",
+      "dev-53-31",
+      "dev-53-5",
+      "dev-53-8"
+     ],
+     "gold": [
+      "dev-53-11",
+      "dev-53-19",
+      "dev-53-24",
+      "dev-53-25",
+      "dev-53-31",
+      "dev-53-5",
+      "dev-53-8"
+     ],
+     "coverage": 0.25
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 12,
+     "latency_ms": 3.048,
+     "matched": [
+      "dev-53-1",
+      "dev-53-18",
+      "dev-53-27"
+     ],
+     "gold": [
+      "dev-53-1",
+      "dev-53-18",
+      "dev-53-27"
+     ],
+     "coverage": 0.25
+    }
+   ],
+   "typed": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.2857142857142857,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.442,
+     "matched": [
+      "dev-53-24",
+      "dev-53-8"
+     ],
+     "gold": [
+      "dev-53-11",
+      "dev-53-19",
+      "dev-53-24",
+      "dev-53-25",
+      "dev-53-31",
+      "dev-53-5",
+      "dev-53-8"
+     ],
+     "coverage": 0.47916666666666663
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.0,
+     "precision": 0.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 0,
+     "latency_ms": 0.379,
+     "matched": [],
+     "gold": [
+      "dev-53-1",
+      "dev-53-18",
+      "dev-53-27"
+     ],
+     "coverage": 0.5833333333333333
+    }
+   ],
+   "typed+fallback": [
+    {
+     "query": 0,
+     "exact": false,
+     "recall": 0.42857142857142855,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 11,
+     "latency_ms": 2.883,
+     "matched": [
+      "dev-53-24",
+      "dev-53-31",
+      "dev-53-8"
+     ],
+     "gold": [
+      "dev-53-11",
+      "dev-53-19",
+      "dev-53-24",
+      "dev-53-25",
+      "dev-53-31",
+      "dev-53-5",
+      "dev-53-8"
+     ],
+     "coverage": 0.7083333333333333
+    },
+    {
+     "query": 1,
+     "exact": false,
+     "recall": 0.6666666666666666,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 9,
+     "latency_ms": 2.648,
+     "matched": [
+      "dev-53-18",
+      "dev-53-27"
+     ],
+     "gold": [
+      "dev-53-1",
+      "dev-53-18",
+      "dev-53-27"
+     ],
+     "coverage": 0.7708333333333334
+    }
+   ],
+   "oracle": [
+    {
+     "query": 0,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 11,
+     "latency_ms": 2.877,
+     "matched": [
+      "dev-53-11",
+      "dev-53-19",
+      "dev-53-24",
+      "dev-53-25",
+      "dev-53-31",
+      "dev-53-5",
+      "dev-53-8"
+     ],
+     "gold": [
+      "dev-53-11",
+      "dev-53-19",
+      "dev-53-24",
+      "dev-53-25",
+      "dev-53-31",
+      "dev-53-5",
+      "dev-53-8"
+     ],
+     "coverage": 0.7083333333333333
+    },
+    {
+     "query": 1,
+     "exact": true,
+     "recall": 1.0,
+     "precision": 1.0,
+     "complete": false,
+     "false_complete": false,
+     "reads": 10,
+     "latency_ms": 4.183,
+     "matched": [
+      "dev-53-1",
+      "dev-53-18",
+      "dev-53-27"
+     ],
+     "gold": [
+      "dev-53-1",
+      "dev-53-18",
+      "dev-53-27"
+     ],
+     "coverage": 0.7916666666666666
+    }
+   ]
+  }
+ },
+ "summary": {
+  "lexical": {
+   "exact": 1.0,
+   "recall": 1.0,
+   "precision": 1.0,
+   "complete": 0.0,
+   "false_complete": 0.0,
+   "reads": 12.0,
+   "latency_ms": 2.4806,
+   "coverage": 0.25,
+   "per_seed_exact": {
+    "11": 1.0,
+    "23": 1.0,
+    "37": 1.0,
+    "41": 1.0,
+    "53": 1.0
+   }
+  },
+  "typed": {
+   "exact": 0.0,
+   "recall": 0.2814,
+   "precision": 0.9,
+   "complete": 0.0,
+   "false_complete": 0.0,
+   "reads": 0.0,
+   "latency_ms": 0.4093,
+   "coverage": 0.5479,
+   "per_seed_exact": {
+    "11": 0.0,
+    "23": 0.0,
+    "37": 0.0,
+    "41": 0.0,
+    "53": 0.0
+   }
+  },
+  "typed+fallback": {
+   "exact": 0.0,
+   "recall": 0.6355,
+   "precision": 1.0,
+   "complete": 0.0,
+   "false_complete": 0.0,
+   "reads": 9.7,
+   "latency_ms": 2.998,
+   "coverage": 0.75,
+   "per_seed_exact": {
+    "11": 0.0,
+    "23": 0.0,
+    "37": 0.0,
+    "41": 0.0,
+    "53": 0.0
+   }
+  },
+  "oracle": {
+   "exact": 1.0,
+   "recall": 1.0,
+   "precision": 1.0,
+   "complete": 0.0,
+   "false_complete": 0.0,
+   "reads": 10.4,
+   "latency_ms": 2.9637,
+   "coverage": 0.7646,
+   "per_seed_exact": {
+    "11": 1.0,
+    "23": 1.0,
+    "37": 1.0,
+    "41": 1.0,
+    "53": 1.0
+   }
+  }
+ },
+ "decision": "DESCRIPTIVE",
+ "threshold": null,
+ "oracle_violations": [],
+ "cost": {
+  "model_calls": 0,
+  "model_usd": 0,
+  "hardware_usd": null,
+  "note": "reads and latency measured; local hardware cost unpriced"
+ }
+}

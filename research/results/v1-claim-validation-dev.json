@@ -1,7 +1,7 @@
 {
   "split": "dev",
   "seeds": 3,
-  "commit": "773c042",
+  "commit": "3b2b35b",
   "families": {
     "reassert_corrected": {
       "n": 24,
@@ -44,5 +44,6 @@
       "provisional_or_worse": 1.0
     }
   },
-  "honest_false_suspicious": 0.015
+  "honest_false_suspicious": 0.015,
+  "hold_suspicious": false
 }

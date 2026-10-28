@@ -83,7 +83,13 @@ def _same_claim(a: tuple, b: tuple) -> bool:
     if not ids_a or ids_a != ids_b:
         return False
     need = min(2, len(words_a), len(words_b))
-    return len(words_a & words_b) >= max(1, need)
+    if len(words_a & words_b) < max(1, need):
+        return False
+    # A word each side has and the other lacks names a different context:
+    # "tug-1 requires 2.4 m at the coastal site" and "... at the inland site"
+    # are two facts, not one fact with two values. One side may add detail
+    # ("relief pressure" against "relief"), as in typed claims (O1).
+    return words_a <= words_b or words_b <= words_a
 
 
 def _same_parameter(a: tuple, b: tuple) -> bool:

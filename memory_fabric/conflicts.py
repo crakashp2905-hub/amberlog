@@ -68,6 +68,9 @@ _CODE = re.compile(r"(?<![a-z0-9])([a-z]{1,6})[-_/]([0-9][a-z0-9]*)(?![a-z0-9])"
 _NAME = re.compile(r"(?<![a-z0-9\-_])([a-z][a-z0-9]*(?:[-_][a-z][a-z0-9]*)+)(?![a-z0-9\-_])")
 
 
+_PLACE = re.compile(r"\b(?:at|in|on|near|from|inside|outside|within)(?:\s+the)?\s+$", re.I)
+
+
 def claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
     """(identifiers, content words, numeric values) of a memory's text.
 
@@ -96,7 +99,17 @@ def claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]
 
     def code(match: "re.Match[str]") -> str:
         joined = match.group(1) + match.group(2)
-        (identifiers if match.start() < cut else values).add(joined)
+        if match.start() < cut:
+            identifiers.add(joined)
+            return " "
+        # A code after a place preposition is where, not what: "requires 2.4 m
+        # at the depot-7 site" states 2.4 m, and depot-7 is part of what the
+        # claim is about (it is read back as a subject code). Read as a value,
+        # the same unit at depot-7 and at depot-12 became one claim with two
+        # values (P3b at HEAD: valid facts invalidated across sites).
+        if _PLACE.search(text[max(0, match.start() - 12):match.start()]):
+            return f" {joined} "
+        values.add(joined)
         return " "
 
     text = _CODE.sub(code, text)

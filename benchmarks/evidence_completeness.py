@@ -66,7 +66,9 @@ def run_seed(seed: int, split: str, arms: tuple[str, ...]) -> dict[str, Any]:
                             min_relevance=0.0, expand_lineage=0, group_by_source_root=False).exposed
                     else:
                         exposed = []
-                        for mid in candidates[:budget]:
+                        for mid in candidates:
+                            if len(exposed) >= budget:
+                                break
                             exposed.extend(f.retrieve("reader", query, within=[mid], k=1,
                                 min_relevance=0.0, expand_lineage=0, group_by_source_root=False).exposed)
                     reads = len(exposed)

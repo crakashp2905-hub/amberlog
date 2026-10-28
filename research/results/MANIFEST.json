@@ -1,12 +1,12 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 104,
+ "results": 105,
  "missing_field_counts": {
   "git_sha": 33,
   "prereg": 34,
   "dataset_digest": 103,
-  "model_id": 72,
-  "prompt_hash": 104,
+  "model_id": 73,
+  "prompt_hash": 105,
   "seed": 44,
   "cost": 87,
   "verdict": 67
@@ -494,9 +494,9 @@
   {
    "experiment_id": "ecv1-dev",
    "file": "research/results/ecv1-dev.json",
-   "file_sha256": "ad07a25251132dbc4e9eafa9fd33bbd0879c2316b628642c0ae6386ddecff29f",
+   "file_sha256": "16e4b963d4ca17819c414a2f0de55d2a04c1656a5a6c0ae9ab22aa078d4f22b2",
    "prereg": "research/prereg/ecv1-design.md",
-   "git_sha": "212c1759fa4d29faed2421e895271e1679398ebc",
+   "git_sha": "bf0c4a50a7e9062f408c458f9eab4e220b7b0b61",
    "git_sha_source": "json",
    "dataset_digest": "043a07f82c0a3da3c473fbdb2bbbdd1d9caac379fc0aa36ae36c7550885d518a",
    "model_id": null,
@@ -534,6 +534,51 @@
     "note": "reads and latency measured; local hardware cost unpriced"
    },
    "verdict": "DESCRIPTIVE",
+   "parsable": true
+  },
+  {
+   "experiment_id": "ecv1-test",
+   "file": "research/results/ecv1-test.json",
+   "file_sha256": "5a974e8ff006fb839c62ade0cc673ca619a1df42c475f702df5f418aff2894a3",
+   "prereg": "research/prereg/ecv1-design.md",
+   "git_sha": "bf0c4a50a7e9062f408c458f9eab4e220b7b0b61",
+   "git_sha_source": "json",
+   "dataset_digest": "79efb4a14720ea1840e2ca0acadb4cb53b9be5f808f738c51c75bfdad14186de",
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    101,
+    127,
+    149,
+    163,
+    181
+   ],
+   "config": {
+    "version": "ecv1-data/1",
+    "records": 48,
+    "budget": 12,
+    "fields": [
+     "kind",
+     "status"
+    ],
+    "queries": [
+     [
+      "sensor",
+      "open"
+     ],
+     [
+      "door",
+      "closed"
+     ]
+    ]
+   },
+   "cost": {
+    "model_calls": 0,
+    "model_usd": 0,
+    "hardware_usd": null,
+    "note": "reads and latency measured; local hardware cost unpriced"
+   },
+   "verdict": "INCONCLUSIVE",
    "parsable": true
   },
   {

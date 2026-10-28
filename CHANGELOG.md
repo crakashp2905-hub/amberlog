@@ -5,6 +5,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: experimental Evidence Completeness v1
+- Three-valued exhaustive classification and bounded fallback through enforced,
+  propensity-logged retrieval. Coverage certificates state bounded corpus,
+  evaluator assumptions and unresolved records; they never authorize actions.
+- Frozen independent-gold development/test corpus, five-arm fixed-budget
+  evaluation and explicit INCONCLUSIVE no-headroom gate. No default promotion.
+
 ### Security (schema 0.14.0): copy recognition no longer crosses tenants
 - **A withdrawal in one tenant could contest another tenant's memory.** Copy recognition matched identical text across tenants, so the second tenant's memory was recorded as a copy of the first's: they shared a source root, and withdrawing the first contested the second. Found by the new governance conformance suite (GOV-07). Writes now match copies only within their own tenant, and a cross-tenant link recorded by an older version is ignored when the log is replayed (SPEC.md 0.14.0). Memories already contested by such a link stay contested in the log; review and validate them again.
 

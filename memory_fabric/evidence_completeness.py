@@ -8,6 +8,8 @@ from __future__ import annotations
 __stability__ = "experimental"
 
 from dataclasses import dataclass, field
+import hashlib
+import json
 from typing import TYPE_CHECKING, Any, Callable, Iterable, Mapping
 
 from .navigation import _visible
@@ -30,6 +32,9 @@ class Coverage:
     fallback_nonmatches: list[str] = field(default_factory=list)
     changed: bool = False
     evaluator: str | None = None
+    where: dict[str, Any] = field(default_factory=dict)
+    tenant_id: str = ""
+    corpus_sha256: str = ""
 
     @property
     def ids(self) -> list[str]:
@@ -41,6 +46,7 @@ class Coverage:
 
     def certificate(self) -> dict[str, Any]:
         return {"schema": "evidence-coverage/1", "considered": self.considered,
+                "where": self.where, "tenant_id": self.tenant_id, "corpus_sha256": self.corpus_sha256,
                 "typed_matches": len(self.matches), "typed_nonmatches": len(self.nonmatches),
                 "fallback_matches": len(self.fallback_matches),
                 "fallback_nonmatches": len(self.fallback_nonmatches),
@@ -63,9 +69,13 @@ def classify(fabric: "MemoryFabric", agent_id: str, where: Mapping[str, Any], *,
            and (allowed is None or mid in allowed)]
     included = set(ids)
     classified = set(selection.ids) | set(selection.unknown)
-    return Coverage([m for m in selection.ids if m in included],
+    result = Coverage([m for m in selection.ids if m in included],
                     [mid for mid in ids if mid not in classified],
                     [m for m in selection.unknown if m in included], len(ids))
+    result.where, result.tenant_id = dict(where), tenant_id
+    result.corpus_sha256 = hashlib.sha256(json.dumps(sorted(
+        (mid, fabric.state.memories[mid].version) for mid in ids)).encode()).hexdigest()
+    return result
 
 
 def exhaustive(fabric: "MemoryFabric", agent_id: str, where: Mapping[str, Any], *,

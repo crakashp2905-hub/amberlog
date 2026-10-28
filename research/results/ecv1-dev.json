@@ -1,5 +1,5 @@
 {
- "commit": "212c1759fa4d29faed2421e895271e1679398ebc",
+ "commit": "bf0c4a50a7e9062f408c458f9eab4e220b7b0b61",
  "split": "dev",
  "dataset_sha256": "043a07f82c0a3da3c473fbdb2bbbdd1d9caac379fc0aa36ae36c7550885d518a",
  "config": {
@@ -45,7 +45,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 4.489,
+     "latency_ms": 4.487,
      "matched": [
       "dev-11-11",
       "dev-11-12",
@@ -80,7 +80,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 1.92,
+     "latency_ms": 1.969,
      "matched": [
       "dev-11-0",
       "dev-11-14",
@@ -113,7 +113,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.43,
+     "latency_ms": 0.513,
      "matched": [
       "dev-11-12",
       "dev-11-40",
@@ -141,7 +141,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.383,
+     "latency_ms": 0.447,
      "matched": [
       "dev-11-0",
       "dev-11-20",
@@ -164,14 +164,15 @@
     {
      "query": 0,
      "exact": false,
-     "recall": 0.7,
+     "recall": 0.8,
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 3.148,
+     "reads": 12,
+     "latency_ms": 3.933,
      "matched": [
       "dev-11-12",
+      "dev-11-25",
       "dev-11-29",
       "dev-11-31",
       "dev-11-40",
@@ -191,7 +192,7 @@
       "dev-11-44",
       "dev-11-6"
      ],
-     "coverage": 0.7291666666666667
+     "coverage": 0.7708333333333334
     },
     {
      "query": 1,
@@ -200,8 +201,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 2.86,
+     "reads": 12,
+     "latency_ms": 4.753,
      "matched": [
       "dev-11-0",
       "dev-11-20",
@@ -221,7 +222,7 @@
       "dev-11-43",
       "dev-11-47"
      ],
-     "coverage": 0.75
+     "coverage": 0.7916666666666666
     }
    ],
    "oracle": [
@@ -232,8 +233,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 2.892,
+     "reads": 12,
+     "latency_ms": 3.435,
      "matched": [
       "dev-11-11",
       "dev-11-12",
@@ -258,7 +259,7 @@
       "dev-11-44",
       "dev-11-6"
      ],
-     "coverage": 0.7291666666666667
+     "coverage": 0.7708333333333334
     },
     {
      "query": 1,
@@ -267,8 +268,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 2.7,
+     "reads": 12,
+     "latency_ms": 3.291,
      "matched": [
       "dev-11-0",
       "dev-11-14",
@@ -289,7 +290,7 @@
       "dev-11-43",
       "dev-11-47"
      ],
-     "coverage": 0.75
+     "coverage": 0.7916666666666666
     }
    ]
   },
@@ -303,7 +304,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 2.191,
+     "latency_ms": 2.273,
      "matched": [
       "dev-23-13",
       "dev-23-26",
@@ -332,7 +333,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 2.001,
+     "latency_ms": 2.225,
      "matched": [
       "dev-23-2",
       "dev-23-36",
@@ -355,7 +356,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.424,
+     "latency_ms": 0.627,
      "matched": [
       "dev-23-4",
       "dev-23-8"
@@ -379,7 +380,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.369,
+     "latency_ms": 0.449,
      "matched": [
       "dev-23-36"
      ],
@@ -399,8 +400,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 2.785,
+     "reads": 12,
+     "latency_ms": 3.525,
      "matched": [
       "dev-23-26",
       "dev-23-30",
@@ -417,7 +418,7 @@
       "dev-23-6",
       "dev-23-8"
      ],
-     "coverage": 0.7291666666666667
+     "coverage": 0.7708333333333334
     },
     {
      "query": 1,
@@ -426,8 +427,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 4.035,
+     "reads": 12,
+     "latency_ms": 3.55,
      "matched": [
       "dev-23-36"
      ],
@@ -436,7 +437,7 @@
       "dev-23-36",
       "dev-23-5"
      ],
-     "coverage": 0.7916666666666666
+     "coverage": 0.8333333333333334
     }
    ],
    "oracle": [
@@ -448,7 +449,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 2.953,
+     "latency_ms": 3.568,
      "matched": [
       "dev-23-13",
       "dev-23-26",
@@ -476,8 +477,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 2.816,
+     "reads": 12,
+     "latency_ms": 3.475,
      "matched": [
       "dev-23-2",
       "dev-23-36",
@@ -488,7 +489,7 @@
       "dev-23-36",
       "dev-23-5"
      ],
-     "coverage": 0.7916666666666666
+     "coverage": 0.8333333333333334
     }
    ]
   },
@@ -502,7 +503,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 2.39,
+     "latency_ms": 2.405,
      "matched": [
       "dev-37-16",
       "dev-37-18",
@@ -535,7 +536,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 1.861,
+     "latency_ms": 1.86,
      "matched": [
       "dev-37-11",
       "dev-37-26",
@@ -562,7 +563,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.5,
+     "latency_ms": 0.483,
      "matched": [
       "dev-37-16",
       "dev-37-32",
@@ -589,7 +590,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.393,
+     "latency_ms": 0.438,
      "matched": [
       "dev-37-36"
      ],
@@ -611,8 +612,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 11,
-     "latency_ms": 2.998,
+     "reads": 12,
+     "latency_ms": 3.325,
      "matched": [
       "dev-37-16",
       "dev-37-32",
@@ -633,18 +634,19 @@
       "dev-37-46",
       "dev-37-8"
      ],
-     "coverage": 0.75
+     "coverage": 0.7708333333333334
     },
     {
      "query": 1,
      "exact": false,
-     "recall": 0.6,
+     "recall": 0.8,
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 7,
-     "latency_ms": 2.607,
+     "reads": 12,
+     "latency_ms": 3.793,
      "matched": [
+      "dev-37-11",
       "dev-37-26",
       "dev-37-31",
       "dev-37-36"
@@ -656,7 +658,7 @@
       "dev-37-36",
       "dev-37-6"
      ],
-     "coverage": 0.7291666666666667
+     "coverage": 0.8333333333333334
     }
    ],
    "oracle": [
@@ -667,8 +669,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 11,
-     "latency_ms": 3.1,
+     "reads": 12,
+     "latency_ms": 3.309,
      "matched": [
       "dev-37-16",
       "dev-37-18",
@@ -691,7 +693,7 @@
       "dev-37-46",
       "dev-37-8"
      ],
-     "coverage": 0.75
+     "coverage": 0.7708333333333334
     },
     {
      "query": 1,
@@ -700,8 +702,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 8,
-     "latency_ms": 2.691,
+     "reads": 12,
+     "latency_ms": 3.691,
      "matched": [
       "dev-37-11",
       "dev-37-26",
@@ -716,7 +718,7 @@
       "dev-37-36",
       "dev-37-6"
      ],
-     "coverage": 0.75
+     "coverage": 0.8333333333333334
     }
    ]
   },
@@ -730,7 +732,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 2.226,
+     "latency_ms": 2.832,
      "matched": [
       "dev-41-1",
       "dev-41-10",
@@ -767,7 +769,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 1.72,
+     "latency_ms": 2.085,
      "matched": [
       "dev-41-0",
       "dev-41-11",
@@ -798,7 +800,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.403,
+     "latency_ms": 1.254,
      "matched": [
       "dev-41-16",
       "dev-41-24",
@@ -827,7 +829,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.37,
+     "latency_ms": 1.193,
      "matched": [
       "dev-41-0",
       "dev-41-32",
@@ -849,14 +851,15 @@
     {
      "query": 0,
      "exact": false,
-     "recall": 0.5454545454545454,
+     "recall": 0.6363636363636364,
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 9,
-     "latency_ms": 2.784,
+     "reads": 12,
+     "latency_ms": 5.812,
      "matched": [
       "dev-41-16",
+      "dev-41-17",
       "dev-41-24",
       "dev-41-29",
       "dev-41-30",
@@ -876,19 +879,20 @@
       "dev-41-43",
       "dev-41-5"
      ],
-     "coverage": 0.6875
+     "coverage": 0.75
     },
     {
      "query": 1,
      "exact": false,
-     "recall": 0.7142857142857143,
+     "recall": 0.8571428571428571,
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 3.232,
+     "reads": 12,
+     "latency_ms": 3.708,
      "matched": [
       "dev-41-0",
+      "dev-41-11",
       "dev-41-23",
       "dev-41-31",
       "dev-41-32",
@@ -903,7 +907,7 @@
       "dev-41-32",
       "dev-41-44"
      ],
-     "coverage": 0.8541666666666666
+     "coverage": 0.8958333333333334
     }
    ],
    "oracle": [
@@ -915,7 +919,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 2.804,
+     "latency_ms": 5.005,
      "matched": [
       "dev-41-1",
       "dev-41-10",
@@ -951,8 +955,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 2.621,
+     "reads": 12,
+     "latency_ms": 3.441,
      "matched": [
       "dev-41-0",
       "dev-41-11",
@@ -971,7 +975,7 @@
       "dev-41-32",
       "dev-41-44"
      ],
-     "coverage": 0.8541666666666666
+     "coverage": 0.8958333333333334
     }
    ]
   },
@@ -985,7 +989,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 2.96,
+     "latency_ms": 2.338,
      "matched": [
       "dev-53-11",
       "dev-53-19",
@@ -1014,7 +1018,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 12,
-     "latency_ms": 3.048,
+     "latency_ms": 2.163,
      "matched": [
       "dev-53-1",
       "dev-53-18",
@@ -1037,7 +1041,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.442,
+     "latency_ms": 0.475,
      "matched": [
       "dev-53-24",
       "dev-53-8"
@@ -1061,7 +1065,7 @@
      "complete": false,
      "false_complete": false,
      "reads": 0,
-     "latency_ms": 0.379,
+     "latency_ms": 0.433,
      "matched": [],
      "gold": [
       "dev-53-1",
@@ -1079,8 +1083,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 11,
-     "latency_ms": 2.883,
+     "reads": 12,
+     "latency_ms": 3.583,
      "matched": [
       "dev-53-24",
       "dev-53-31",
@@ -1095,7 +1099,7 @@
       "dev-53-5",
       "dev-53-8"
      ],
-     "coverage": 0.7083333333333333
+     "coverage": 0.7291666666666667
     },
     {
      "query": 1,
@@ -1104,8 +1108,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 9,
-     "latency_ms": 2.648,
+     "reads": 12,
+     "latency_ms": 3.837,
      "matched": [
       "dev-53-18",
       "dev-53-27"
@@ -1115,7 +1119,7 @@
       "dev-53-18",
       "dev-53-27"
      ],
-     "coverage": 0.7708333333333334
+     "coverage": 0.8333333333333334
     }
    ],
    "oracle": [
@@ -1126,8 +1130,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 11,
-     "latency_ms": 2.877,
+     "reads": 12,
+     "latency_ms": 3.255,
      "matched": [
       "dev-53-11",
       "dev-53-19",
@@ -1146,7 +1150,7 @@
       "dev-53-5",
       "dev-53-8"
      ],
-     "coverage": 0.7083333333333333
+     "coverage": 0.7291666666666667
     },
     {
      "query": 1,
@@ -1155,8 +1159,8 @@
      "precision": 1.0,
      "complete": false,
      "false_complete": false,
-     "reads": 10,
-     "latency_ms": 4.183,
+     "reads": 12,
+     "latency_ms": 3.534,
      "matched": [
       "dev-53-1",
       "dev-53-18",
@@ -1167,7 +1171,7 @@
       "dev-53-18",
       "dev-53-27"
      ],
-     "coverage": 0.7916666666666666
+     "coverage": 0.8333333333333334
     }
    ]
   }
@@ -1180,7 +1184,7 @@
    "complete": 0.0,
    "false_complete": 0.0,
    "reads": 12.0,
-   "latency_ms": 2.4806,
+   "latency_ms": 2.4637,
    "coverage": 0.25,
    "per_seed_exact": {
     "11": 1.0,
@@ -1197,7 +1201,7 @@
    "complete": 0.0,
    "false_complete": 0.0,
    "reads": 0.0,
-   "latency_ms": 0.4093,
+   "latency_ms": 0.6312,
    "coverage": 0.5479,
    "per_seed_exact": {
     "11": 0.0,
@@ -1209,13 +1213,13 @@
   },
   "typed+fallback": {
    "exact": 0.0,
-   "recall": 0.6355,
+   "recall": 0.6889,
    "precision": 1.0,
    "complete": 0.0,
    "false_complete": 0.0,
-   "reads": 9.7,
-   "latency_ms": 2.998,
-   "coverage": 0.75,
+   "reads": 12.0,
+   "latency_ms": 3.9819,
+   "coverage": 0.7979,
    "per_seed_exact": {
     "11": 0.0,
     "23": 0.0,
@@ -1230,9 +1234,9 @@
    "precision": 1.0,
    "complete": 0.0,
    "false_complete": 0.0,
-   "reads": 10.4,
-   "latency_ms": 2.9637,
-   "coverage": 0.7646,
+   "reads": 12.0,
+   "latency_ms": 3.6004,
+   "coverage": 0.7979,
    "per_seed_exact": {
     "11": 1.0,
     "23": 1.0,

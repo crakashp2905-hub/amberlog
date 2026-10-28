@@ -81,8 +81,13 @@ def build(seed: int, withdraw: str | None = None) -> tuple[MemoryFabric, dict[st
 
     derived = [n for n in order if n.startswith("derived")]
     evidence = derived[-1:] if rng.random() < 0.6 else derived[-2:]
+    # Ground truth is the registered rule, support under the recorded justification
+    # structure (`incident.CAVEAT`). Origin-bound authority (added after P9 was
+    # recorded) also refuses evidence with *any* withdrawn ancestor, alternatives
+    # included; it is a separate check, switched off here so it does not redefine
+    # "necessary". Found by tools/reverify.py.
     gate = ActionGate(fabric, ActionPolicy(
-        tools={"act": ToolRule("act")}, grants={"actor": frozenset({"act"})}))
+        tools={"act": ToolRule("act", min_authority="untrusted")}, grants={"actor": frozenset({"act"})}))
     if withdraw is not None:
         fabric.quarantine(label[withdraw], reason="counterfactual withdrawal",
                           basis="contradicted")

@@ -1,0 +1,31 @@
+name: browsecomp-eval
+
+# PUB-07: BrowseComp-Plus retrieval against evidence documents
+# (benchmarks/browsecomp_plus.py). No model; descriptive; subsampled corpus.
+
+on:
+  push:
+    paths: ["benchmarks/browsecomp_plus.py", ".github/workflows/browsecomp-eval.yml"]
+  workflow_dispatch:
+
+jobs:
+  bcp:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . pyarrow
+      - name: Fetch BrowseComp-Plus (MIT)
+        run: |
+          mkdir -p bcp/q bcp/c
+          for i in 0 1 2 3 4 5; do
+            curl -fsSL -o "bcp/q/test-$i.parquet" "https://huggingface.co/datasets/Tevatron/browsecomp-plus/resolve/main/data/test-0000$i-of-00006.parquet"
+          done
+          for i in 0 1 2 3 4 5 6; do
+            curl -fsSL -o "bcp/c/train-$i.parquet" "https://huggingface.co/datasets/Tevatron/browsecomp-plus-corpus/resolve/main/data/train-0000$i-of-00007.parquet"
+          done
+          du -sh bcp/*
+      - run: python -m benchmarks.browsecomp_plus --queries bcp/q --corpus bcp/c --max-docs 30000

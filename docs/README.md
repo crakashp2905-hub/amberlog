@@ -109,5 +109,7 @@ use the product.
 
 ## Memory Fabric 2 roadmap
 
+- [Operator import preview and atomic batches](IMPORT_PREVIEW.md)
+
 - [Product and research masterplan](MEMORY_FABRIC_2_PRODUCT_RESEARCH_MASTERPLAN.md)
 - [Implementation status and compiler ADR](MF2_IMPLEMENTATION_STATUS.md)

@@ -233,6 +233,10 @@ WRITES: import a compiled document (JSON: doc_id, version, sections with path an
 - `--doc-id`: stable document identity for local formats
 - `--source-version`: explicit source revision for local formats
 - `--source-uri`: optional source citation URI; never fetched
+- `--batch`: read a JSON list of compiled documents; commit atomically
+- `--dry-run`: preview source revisions and potential dependencies without writing
+- `--expected-head`: refuse import if the store head differs from the reviewed preview
+- `--expected-plan`: refuse import if compiled inputs differ from this preview SHA-256
 - `--activate`: sections are active at once (the document is the authority)
 - `--tenant`: tenant id to act within
 

@@ -89,7 +89,7 @@ TencentDB's stated token reductions disagree with their own displayed totals (Wi
 | Epic | Status | Done | Not done |
 |---|---|---|---|
 | E0 baseline and debt | DONE | status page, manifest, ADR, release-bundle stamp, version-consistency check | — |
-| E1 knowledge ingestion v2 | PARTIAL | spans, parser version, MIME, size limit, crash-recoverable re-import, tenant property test, HTML/PDF/DOCX/CSV adapters, CSV cells and DOCX table rows | PDF table extraction, HTML DOM fidelity, batch import with preview |
+| E1 knowledge ingestion v2 | PARTIAL | spans, parser version, MIME, size limit, tenant tests, format adapters, CSV cells/DOCX rows; operator dry-run, reviewed head/input guards, atomic batches and idempotent retry | PDF table extraction, HTML DOM fidelity, indexed large-store previews and richer operator UX |
 | E2 typed knowledge | PARTIAL | typed filter / count / distinct / group / join with completeness certificate | entity/relation/qualifier types, extraction, promotion workflow; E1 failed |
 | E3 retrieval and evidence | NOT_RUN | — | fixed-budget downstream evaluation needs a model |
 | E4 collective belief | NOT_RUN | (existing hypothesis sets kept) | real-agent experiments |

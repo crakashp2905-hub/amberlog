@@ -2,7 +2,7 @@ name: dataset-probe
 
 # Reads the licence and layout of datasets the benchmark registry lists before
 # any adapter ingests them (masterplan §7A.2 licence gate). Prints licence
-# lines, file names and sizes, and field names of a first record; no content.
+# text heads, file names and sizes, and field names; no dataset content.
 
 on:
   push:
@@ -14,44 +14,64 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - name: GitHub licences and READMEs
+      - name: Licences
+        continue-on-error: true
         run: |
-          set +e
-          for repo in snap-research/locomo harveyai/harvey-labs sierra-research/tau2-bench texttron/BrowseComp-Plus \
-                      yale-nlp/Bright-Pro patronus-ai/financebench HUST-AI-HYZ/MemoryAgentBench ByteDance-Seed/WideSearch \
-                      SWE-bench/SWE-bench; do
+          for repo in snap-research/locomo harveyai/harvey-labs sierra-research/tau2-bench; do
             echo "=== $repo"
-            curl -fsSL "https://api.github.com/repos/$repo" | python3 -c "import json,sys; d=json.load(sys.stdin); print('licence:', (d.get('license') or {}).get('spdx_id'), '| size KB:', d.get('size'))"
-            curl -fsSL "https://raw.githubusercontent.com/$repo/HEAD/README.md" | grep -inE "licen[cs]e|cc[- ]by|non-commercial|terms of use" | head -8
+            curl -fsSL "https://api.github.com/repos/$repo" | python3 -c "import json,sys; d=json.load(sys.stdin); print('licence:', (d.get('license') or {}).get('spdx_id'))" || true
+            for f in LICENSE LICENSE.md LICENSE.txt; do
+              curl -fsSL "https://raw.githubusercontent.com/$repo/HEAD/$f" 2>/dev/null | head -4 && break
+            done
+            curl -fsSL "https://raw.githubusercontent.com/$repo/HEAD/README.md" | grep -inE "licen[cs]e|cc[- ]by|non-?commercial|terms" | head -6 || true
           done
-      - name: Hugging Face dataset cards
+          echo "=== WideSearch LICENSE"
+          curl -fsSL "https://huggingface.co/datasets/ByteDance-Seed/WideSearch/resolve/main/LICENSE" | head -12 || true
+      - name: Layouts
+        continue-on-error: true
         run: |
-          set +e
-          for ds in Tevatron/browsecomp-plus-corpus Tevatron/browsecomp-plus yale-nlp/BRIGHT-Pro xlangai/BRIGHT PatronusAI/financebench \
-                    ai-hyz/MemoryAgentBench ByteDance-Seed/WideSearch princeton-nlp/SWE-bench_Verified ArtificialAnalysis/AA-LCR \
-                    Salesforce/LoCoMo snap-research/locomo; do
-            echo "=== $ds"
-            curl -fsSL "https://huggingface.co/api/datasets/$ds" | python3 -c "
-          import json,sys
-          d=json.load(sys.stdin)
-          print('gated:', d.get('gated'), '| licence tags:', [t for t in d.get('tags',[]) if t.startswith('license')])
-          print('files:', [s['rfilename'] for s in d.get('siblings',[])][:25])"
-          done
-      - name: tau2-bench knowledge domain layout
+          pip install -q pyarrow
+          python3 - <<'PY'
+          import io, json, urllib.request
+          def get(u):
+              return urllib.request.urlopen(u, timeout=60).read()
+          import pyarrow.parquet as pq
+          for name, url in [
+              ("BRIGHT-Pro examples/biology", "https://huggingface.co/datasets/yale-nlp/BRIGHT-Pro/resolve/main/examples/biology.parquet"),
+              ("BRIGHT-Pro documents/biology", "https://huggingface.co/datasets/yale-nlp/BRIGHT-Pro/resolve/main/documents/biology.parquet"),
+              ("BRIGHT-Pro aspects/biology", "https://huggingface.co/datasets/yale-nlp/BRIGHT-Pro/resolve/main/aspects/biology.parquet"),
+              ("MemoryAgentBench Conflict_Resolution", "https://huggingface.co/datasets/ai-hyz/MemoryAgentBench/resolve/main/data/Conflict_Resolution-00000-of-00001.parquet"),
+              ("MemoryAgentBench Accurate_Retrieval", "https://huggingface.co/datasets/ai-hyz/MemoryAgentBench/resolve/main/data/Accurate_Retrieval-00000-of-00001.parquet"),
+              ("BrowseComp-Plus queries", "https://huggingface.co/datasets/Tevatron/browsecomp-plus/resolve/main/data/test-00000-of-00006.parquet"),
+          ]:
+              try:
+                  t = pq.read_table(io.BytesIO(get(url)))
+                  row = t.slice(0, 1).to_pylist()[0]
+                  print(f"=== {name}: rows {t.num_rows}, columns {t.column_names}")
+                  print("   first-row value types/lengths:", {k: (type(v).__name__, len(v) if hasattr(v, '__len__') else v if isinstance(v, (int, float)) else '') for k, v in row.items()})
+              except Exception as e:
+                  print(f"=== {name}: error {e}")
+          try:
+              import csv
+              rows = list(csv.DictReader(io.StringIO(get("https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR/resolve/main/AA-LCR_Dataset.csv").decode("utf-8"))))
+              print("=== AA-LCR:", len(rows), "rows; columns", list(rows[0]))
+          except Exception as e:
+              print("AA-LCR error", e)
+          try:
+              lines = get("https://huggingface.co/datasets/ByteDance-Seed/WideSearch/resolve/main/widesearch.jsonl").decode().splitlines()
+              print("=== WideSearch:", len(lines), "tasks; keys", sorted(json.loads(lines[0])))
+          except Exception as e:
+              print("WideSearch error", e)
+          PY
+      - name: tau2 and harvey layouts
+        continue-on-error: true
         run: |
-          set +e
           curl -fsSL "https://api.github.com/repos/sierra-research/tau2-bench/git/trees/main?recursive=1" | python3 -c "
           import json,sys
           t=json.load(sys.stdin).get('tree',[])
-          paths=[x['path'] for x in t]
-          print(len(paths),'paths')
-          print([p for p in paths if 'knowledge' in p.lower() or 'banking' in p.lower()][:40])"
-      - name: harvey-labs firm-knowledge layout
-        run: |
-          set +e
+          print('tau2', len(t),'paths;', [x['path'] for x in t if 'knowledge' in x['path'].lower() or 'banking' in x['path'].lower()][:30])"
           curl -fsSL "https://api.github.com/repos/harveyai/harvey-labs/git/trees/main?recursive=1" | python3 -c "
           import json,sys
           t=json.load(sys.stdin).get('tree',[])
           fk=[x for x in t if 'firm-knowledge' in x['path']]
-          print(len(fk),'firm-knowledge paths; total bytes', sum(x.get('size',0) for x in fk))
-          print([x['path'] for x in fk][:30])"
+          print('harvey firm-knowledge', len(fk),'paths; bytes', sum(x.get('size',0) for x in fk)); print([x['path'] for x in fk][:25])"

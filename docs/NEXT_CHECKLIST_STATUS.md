@@ -12,7 +12,10 @@ tests exist; exact-head CI and review remain merge gates. PRs are not releases.
 | N09 | IMPLEMENTED in PR #18 | Unknown-only enforced/logged reads, explicit budget, ambiguity and snapshot-change certificates; no superiority claim |
 | N10–N13 | OPEN | Typed extraction schema, verification flow, indexed/paginated scale runs and full E2 metrics still required |
 | N14 | DESIGN COMPLETE | [ADR 0002](adr/0002-historical-belief-reads.md) separates valid time, transaction sequence and current authorization; defines safe receipts and bounded replay. |
-| N15–N18 | OPEN | Existing replay helper is not a supported historical agent API; implementation, oracle parity and qualification remain open. |
+| N15 | IMPLEMENTED, CI pending | `history_query.query`: separate opt-in explicit-ID read with inclusive transaction sequence and optional valid time; stable `as_of` unchanged |
+| N16 | PARTIAL | Current/historical authorization intersection, canonical erasure checks, original sealed replay and hard replay/ID limits; checkpoint acceleration remains open |
+| N17 | IMPLEMENTED, CI pending | Archival receipts include original/current versions, recording event time/sequence, valid interval, permitted lineage, supersession/redaction, replay work and latency; no action credential |
+| N18 | PARTIAL | Six focused tests and five seeded latent-oracle scenarios cover late correction, current retraction/erasure, private/foreign scope, time windows and old certificate refusal. More partition/import/rollback/independent-source scenarios remain open. |
 | N19 | PARTIAL | Existing compiled-tree contract records format/span/digest/version; versioned nodes, permissions and unresolved-block contract remains open. |
 | N20 | IMPLEMENTED in PR #17 | Local CSV/HTML/DOCX, optional PDF; real fixtures, no core runtime dependencies |
 | N21 | PARTIAL | CSV physical rows and PDF page anchors; merged cells, footnotes, OCR and full layout fidelity remain open and documented. |

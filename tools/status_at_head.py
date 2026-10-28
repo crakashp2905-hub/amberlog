@@ -121,7 +121,9 @@ def render(sha: str | None = None) -> str:
     defaults = preset_experimental(experimental)
     pinned, unpinned = results()
     found = contradictions(v)
-    released = tags()
+    # Tag availability depends on shallow checkout/fetch settings, not source.
+    # Only stamped runtime release evidence should inspect the checkout refs.
+    released = tags() if sha else []
     lines = [
         "# Status at HEAD",
         "",
@@ -131,7 +133,10 @@ def render(sha: str | None = None) -> str:
         f"- **Commit:** {f'`{sha}`' if sha else 'stamped by CI (`--sha`)'}",
         f"- **Package version:** `{v['package']}`; **schema:** `{v['schema']}`; "
         f"**SPEC.md header:** `{v['spec_header']}`",
-        f"- **Released tags:** {', '.join(f'`{x}`' for x in released) if released else 'none — nothing is tagged or published'}",
+        f"- **Released tags:** " + (
+            ', '.join(f'`{x}`' for x in released) if released else
+            'none visible in this checkout (not proof of publication status)' if sha else
+            'not enumerated in the deterministic tree report; inspect stamped release evidence'),
         f"- **Latest release notes:** `{v['latest_release_notes']}` (they pin their own baseline commit; "
         "work merged since is not part of that release)",
         f"- **Tests CI collects:** {test_count()}",

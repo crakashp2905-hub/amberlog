@@ -1,4 +1,4 @@
-"""INT-05 pilot: tau2-bench banking_knowledge with Memory Fabric behind `KB_search` (local model, descriptive).
+"""PUB-02 (tau-knowledge) pilot: tau2-bench banking_knowledge with Memory Fabric behind `KB_search` (local model, descriptive).
 
     python -m benchmarks.tau2_knowledge --tau2 DIR --arm fabric --model ollama/qwen2.5:3b --num-tasks 15
     python -m benchmarks.tau2_knowledge --summarise RESULTS_DIR
@@ -74,7 +74,7 @@ def run(args: argparse.Namespace) -> int:
     sys.argv = ["tau2", "run", "--benchmark", "none", "--domain", "banking_knowledge",
                 "--retrieval-config", TAU2_ARMS[args.arm], "--agent-llm", args.model, "--user-llm", args.model,
                 "--communicate-scorer", "substring", "--num-tasks", str(args.num_tasks), "--num-trials", "1",
-                "--seed", "1", "--max-concurrency", "1", "--max-steps", "40", "--save-to", f"int05-{args.arm}"]
+                "--seed", "1", "--max-concurrency", "1", "--max-steps", "40", "--save-to", f"pub02-{args.arm}"]
     try:
         tau2_main()
     except SystemExit as exc:
@@ -102,7 +102,7 @@ def summarise(results: Path) -> int:
 
     arms: dict[str, dict[str, float]] = {}
     for f in sorted(results.rglob("*.json")):
-        arm = next((a for a in TAU2_ARMS if f"int05-{a}" in str(f)), None)
+        arm = next((a for a in TAU2_ARMS if f"pub02-{a}" in str(f)), None)
         if arm:
             arms.setdefault(arm, {}).update(dict(rewards(json.loads(f.read_text(encoding="utf-8")))))
     common = set.intersection(*(set(v) for v in arms.values())) if arms else set()
@@ -110,13 +110,13 @@ def summarise(results: Path) -> int:
                  if common else None} for a, v in sorted(arms.items())}
     commit = head()[:12]
     data = {"commit": commit, "common_tasks": len(common), "arms": table, "seeds": [1]}
-    print("=== INT05 JSON ===")
+    print("=== PUB02 JSON ===")
     print(json.dumps(data))
-    print("=== INT05 END ===")
-    (ROOT / "research" / "results" / "int05-tau2-knowledge-local.json").write_text(
+    print("=== PUB02 END ===")
+    (ROOT / "research" / "results" / "pub02-tau2-knowledge-local.json").write_text(
         json.dumps(data, indent=1) + "\n", encoding="utf-8")
     write_manifest(Manifest(
-        run_id="int05-tau2-knowledge-local", suite="INT-05", arm=",".join(sorted(arms)), decision="DESCRIPTIVE",
+        run_id="pub02-tau2-knowledge-local", suite="PUB-02", arm=",".join(sorted(arms)), decision="DESCRIPTIVE",
         repo_commit=commit, reason="pilot; local 3B agent and user simulator, substring communicate scorer",
         dataset={"name": "tau2-bench banking_knowledge (MIT)"}, model={"provider": "ollama", "id": "qwen2.5:3b"},
         seeds=[1], counts={"attempted": len(common), "completed": len(common), "solved": 0, "skipped": 0, "failed": 0},

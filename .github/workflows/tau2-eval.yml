@@ -1,6 +1,6 @@
 name: tau2-eval
 
-# INT-05 pilot: tau2-bench banking_knowledge (MIT) with a local model for both
+# PUB-02 (tau-knowledge) pilot: tau2-bench banking_knowledge (MIT) with a local model for both
 # agent and simulated user; arms differ only in the knowledge tool
 # (benchmarks/tau2_knowledge.py). $0; descriptive.
 
@@ -41,12 +41,12 @@ jobs:
         if: always()
         run: |
           mkdir -p out
-          find . -path ./out -prune -o -name "*int05-${{ matrix.arm }}*" -print | tee found.txt
+          find . -path ./out -prune -o -name "*pub02-${{ matrix.arm }}*" -print | tee found.txt
           while read -r f; do if [ -d "$f" ]; then cp -r "$f" out/; else cp "$f" out/; fi; done < found.txt
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: int05-${{ matrix.arm }}
+          name: pub02-${{ matrix.arm }}
           path: out
   summarise:
     needs: arm

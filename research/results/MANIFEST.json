@@ -539,9 +539,9 @@
   {
    "experiment_id": "ecv1-test",
    "file": "research/results/ecv1-test.json",
-   "file_sha256": "5a974e8ff006fb839c62ade0cc673ca619a1df42c475f702df5f418aff2894a3",
+   "file_sha256": "0ac367dc24eacddedb6dc89e89435dfb5d39d766b24d18ef88da4ec2c141e24b",
    "prereg": "research/prereg/ecv1-design.md",
-   "git_sha": "bf0c4a50a7e9062f408c458f9eab4e220b7b0b61",
+   "git_sha": "a92f84ec538979d5e3a2b89fbc0bcb8f4d9b787e",
    "git_sha_source": "json",
    "dataset_digest": "79efb4a14720ea1840e2ca0acadb4cb53b9be5f808f738c51c75bfdad14186de",
    "model_id": null,

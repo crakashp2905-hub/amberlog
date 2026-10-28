@@ -1,6 +1,8 @@
 # ADR 0002: historical belief reads retain current authorization
 
-Status: accepted design; implementation and security qualification pending (N14).
+Status: accepted design (N14). Initial explicit-ID implementation and seeded
+qualification exist; checkpoint acceleration and expanded security qualification
+remain pending. See `docs/HISTORICAL_READS.md` for implemented limits.
 
 Use a separate experimental `history.query` surface rather than change stable
 `retrieve(as_of=...)`. `valid_at` asks when a fact applies; `known_at` is an

@@ -1,12 +1,12 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 104,
+ "results": 105,
  "missing_field_counts": {
   "git_sha": 33,
-  "prereg": 35,
-  "dataset_digest": 104,
-  "model_id": 72,
-  "prompt_hash": 104,
+  "prereg": 36,
+  "dataset_digest": 105,
+  "model_id": 73,
+  "prompt_hash": 105,
   "seed": 44,
   "cost": 88,
   "verdict": 68
@@ -730,6 +730,33 @@
    "config": null,
    "cost": null,
    "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "historical-read-qualification",
+   "file": "research/results/historical-read-qualification.json",
+   "file_sha256": "5c2ea8571050b9f13d72e19722dcbd982b79d9ac3ff3a9b7cb1fa0b3c6e3fb75",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": null,
+   "git_sha": "5ce98534b0c38fb59162cd74550447d05f536802",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    401,
+    409,
+    419,
+    421,
+    431
+   ],
+   "config": null,
+   "cost": {
+    "model_calls": 0,
+    "model_usd": 0,
+    "hardware_usd": null
+   },
+   "verdict": "DESCRIPTIVE",
    "parsable": true
   },
   {

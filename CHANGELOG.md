@@ -5,6 +5,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: experimental historical explicit-ID reads
+- `history_query.query` replays a bounded log snapshot, intersects historical and
+  current authorization, and returns archival receipts with logged exposures.
+  Current erasure/withdrawal wins; no historical action credentials are issued.
+
 ### Fixed: experimental typed-query completeness and privacy
 - Missing join and aggregate keys no longer yield falsely complete results.
   Aggregates preserve caller filters; incomparable predicate values remain unknown.

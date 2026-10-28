@@ -1,0 +1,47 @@
+{
+ "arm": "chain/star",
+ "budget": {},
+ "cost": {
+  "model_calls": 0,
+  "model_usd": 0.0
+ },
+ "counts": {
+  "attempted": 10,
+  "completed": 10,
+  "failed": 0
+ },
+ "dataset": {
+  "generator": "benchmarks/federation_world.py",
+  "topologies": [
+   "chain",
+   "star"
+  ]
+ },
+ "decision": "DESCRIPTIVE",
+ "model": {
+  "id": null,
+  "provider": null
+ },
+ "prereg": null,
+ "reason": "functional regression world; no superiority hypothesis",
+ "repo_commit": "a514df95ef24f46fd3e27b6669ff61527f838362",
+ "results": {
+  "invariant_violations": 0
+ },
+ "run_id": "int02-federation-world",
+ "schema": "mf-run-manifest/1",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "suite": "INT-02",
+ "verification": {
+  "baseline_registered": false,
+  "holdout_frozen": false,
+  "independent_replicated": false,
+  "oracle_sanity_passed": false
+ }
+}

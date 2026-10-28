@@ -5,7 +5,7 @@ the tracker row that says why. Product limitations for users are in [LIMITATIONS
 
 ## Engineering
 
-- **No HTML, PDF, DOCX or CSV import.** Documents arrive as Markdown or as a compiled JSON tree (MF-007).
+- **Format adapters have bounded fidelity.** CSV preserves cells and physical source spans; HTML extracts text without browser/CSS layout; DOCX covers body paragraphs and table rows; optional PDF extracts page text and refuses textless pages. OCR, PDF tables, DOCX headers/footers and visual layout verification remain open (MF-007).
 - **No `retrieve(known_at=τ)`.** "What did the store believe at τ" needs `incident.replay_until`; valid-time `as_of` is in the product path (MF-017).
 - **Typed queries cover writer-typed fields only.** No extraction of entities or relations; the exhaustive-filter study failed (MF-010, MF-039).
   Join/aggregate completeness now includes missing or malformed scalar keys rather than silently dropping them. These experimental queries do not establish real-world truth.

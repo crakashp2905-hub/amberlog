@@ -1237,17 +1237,38 @@ def cmd_import_docs(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     from .docsource import import_document, read_document
 
     try:
-        if args.format == "markdown":
-            from .knowledge_compiler import compile_markdown
+        trees = []
+        if args.batch:
+            from .import_preview import read_batch
+            if args.format != "json":
+                raise ValueError("--batch expects a compiled JSON list; compile local formats first")
+            trees = read_batch(args.file)
+        elif args.format != "json":
+            from .document_formats import compile_file
             if not args.doc_id or not args.source_version:
-                raise ValueError("Markdown requires --doc-id and --source-version")
-            tree = compile_markdown(Path(args.file).read_text(encoding="utf-8"),
+                raise ValueError("Document formats require --doc-id and --source-version")
+            tree = compile_file(args.file, format=args.format,
                                     doc_id=args.doc_id, version=args.source_version,
                                     uri=args.source_uri or "")
         else:
             tree = read_document(args.file)
-        report = import_document(fabric, tree, activate=args.activate,
-                                 tenant_id=args.tenant)
+        if args.batch or args.dry_run or args.expected_head is not None or args.expected_plan:
+            from .import_preview import plan_batch, apply_batch
+            if not args.batch:
+                trees = [tree]
+            if args.dry_run:
+                print(json.dumps(plan_batch(fabric, trees, tenant_id=args.tenant or DEFAULT_TENANT).to_json(), indent=2))
+                return 0
+            reports = apply_batch(fabric, trees, tenant_id=args.tenant or DEFAULT_TENANT,
+                                  activate=args.activate, expected_head=args.expected_head,
+                                  expected_plan=args.expected_plan)
+            if args.batch:
+                print(json.dumps({"reports": [r.to_json() for r in reports]}, indent=2))
+                return 0
+            report = reports[0]
+        else:
+            report = import_document(fabric, tree, activate=args.activate,
+                                     tenant_id=args.tenant)
     except (OSError, ValueError) as exc:
         print(f"{C.RED}{exc}{C.RESET}", file=sys.stderr)
         return 4
@@ -3039,11 +3060,15 @@ def build_parser() -> argparse.ArgumentParser:
             "WRITES: import a compiled document (JSON: doc_id, version, sections with path and "
             "text); re-importing withdraws sections the new version changed or removed")
     p.add_argument("file")
-    p.add_argument("--format", choices=["json", "markdown"], default="json",
-                   help="source format: compiled JSON tree or local Markdown")
-    p.add_argument("--doc-id", help="stable document identity for Markdown")
-    p.add_argument("--source-version", help="explicit source revision for Markdown")
+    p.add_argument("--format", choices=["json", "markdown", "csv", "html", "docx", "pdf"],
+                   default="json", help="source format: JSON, Markdown, CSV, HTML, DOCX, or PDF")
+    p.add_argument("--doc-id", help="stable document identity for local formats")
+    p.add_argument("--source-version", help="explicit source revision for local formats")
     p.add_argument("--source-uri", help="optional source citation URI; never fetched")
+    p.add_argument("--batch", action="store_true", help="read a JSON list of compiled documents; commit atomically")
+    p.add_argument("--dry-run", action="store_true", help="preview source revisions and potential dependencies without writing")
+    p.add_argument("--expected-head", type=int, help="refuse import if the store head differs from the reviewed preview")
+    p.add_argument("--expected-plan", help="refuse import if compiled inputs differ from this preview SHA-256")
     p.add_argument("--activate", action="store_true",
                    help="sections are active at once (the document is the authority)")
     p.add_argument("--tenant")

@@ -229,10 +229,14 @@ WRITES: import another store's export (JSON list or JSONL: Mem0, LangChain docum
 WRITES: import a compiled document (JSON: doc_id, version, sections with path and text); re-importing withdraws sections the new version changed or removed
 
 - `file`: the document tree as JSON
-- `--format`: source format: compiled JSON tree or local Markdown
-- `--doc-id`: stable document identity for Markdown
-- `--source-version`: explicit source revision for Markdown
+- `--format`: source format: JSON, Markdown, CSV, HTML, DOCX, or PDF
+- `--doc-id`: stable document identity for local formats
+- `--source-version`: explicit source revision for local formats
 - `--source-uri`: optional source citation URI; never fetched
+- `--batch`: read a JSON list of compiled documents; commit atomically
+- `--dry-run`: preview source revisions and potential dependencies without writing
+- `--expected-head`: refuse import if the store head differs from the reviewed preview
+- `--expected-plan`: refuse import if compiled inputs differ from this preview SHA-256
 - `--activate`: sections are active at once (the document is the authority)
 - `--tenant`: tenant id to act within
 

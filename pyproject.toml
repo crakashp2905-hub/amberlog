@@ -35,6 +35,7 @@ classifiers = [
 dependencies = []
 
 [project.optional-dependencies]
+documents = ["pypdf>=6.0,<7"]
 # Adapters only. `ollama` needs nothing — it speaks HTTP over urllib.
 claude = ["anthropic>=0.40"]
 # Optional storage backend for writers on more than one machine. The core and

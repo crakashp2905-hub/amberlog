@@ -1,15 +1,15 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 104,
+ "results": 105,
  "missing_field_counts": {
   "git_sha": 33,
-  "prereg": 35,
-  "dataset_digest": 104,
-  "model_id": 72,
-  "prompt_hash": 104,
-  "seed": 44,
-  "cost": 88,
-  "verdict": 68
+  "prereg": 36,
+  "dataset_digest": 105,
+  "model_id": 73,
+  "prompt_hash": 105,
+  "seed": 45,
+  "cost": 89,
+  "verdict": 69
  },
  "rows": [
   {
@@ -801,6 +801,23 @@
     4,
     5
    ],
+   "config": null,
+   "cost": null,
+   "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "int02-federation-world",
+   "file": "research/results/int02-federation-world.json",
+   "file_sha256": "7db5fc7609badaaea01894754758ed07efd480ce5f85d3722a40a479072c979c",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": null,
+   "git_sha": "a514df95ef24f46fd3e27b6669ff61527f838362",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": null,
    "config": null,
    "cost": null,
    "verdict": null,

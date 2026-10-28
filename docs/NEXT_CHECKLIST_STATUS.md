@@ -20,8 +20,8 @@ tests exist; exact-head CI and review remain merge gates. PRs are not releases.
 | N20 | IMPLEMENTED in PR #17 | Local CSV/HTML/DOCX, optional PDF; real fixtures, no core runtime dependencies |
 | N21 | PARTIAL | CSV physical rows and PDF page anchors; merged cells, footnotes, OCR and full layout fidelity remain open and documented. |
 | N22 | IMPLEMENTED in PR #17 | Existing screened candidate importer, revision invalidation and cross-tenant regression; more cross-format collision fixtures remain useful. |
-| N23 | OPEN | Batch preview, resume, dependent-action impact and rollback/repair workflows |
-| N24 | IMPLEMENTED, qualification pending | Optional exact phrase-dictionary summarizer, bounded decoding and extractive fallback; no default switch or model-token claim |
+| N23 | IMPLEMENTED in PR #22 | Operator dry-run and potential action/dependency impact; reviewed head/digest guards, atomic compiled batches, idempotent retry, rollback and repair procedures; richer UI/large-store indexing remain open |
+| N24 | IMPLEMENTED in PR #21 | Optional exact phrase-dictionary summarizer, bounded decoding, numeric-token preservation and extractive fallback; five seeded exact reconstruction/byte/erasure fixtures; no default or model-token claim |
 | N25–N26 | OPEN | Independent QA, matched-context/model comparisons, actual tokenization and full cost accounting remain required. Seeded fixtures measure content bytes and retain all sources. |
 | N27 | PARTIAL | Compaction scope/tenant checks, source-change fences and erasure of `compaction_of` summaries added; existing authority/dispute/correction tests retained. Independent safety/accuracy study remains open. |
 | N28 | DRAFT COMPLETE | [Procedural asset contract](adr/0003-procedural-asset-draft.md); schema review and implementation remain gated on pilot demand. |
@@ -35,7 +35,7 @@ tests exist; exact-head CI and review remain merge gates. PRs are not releases.
 | N38–N42 | OPEN / resource-gated | Dataset-specific rights, pinned revisions, adapters, local model resources and paid-evaluation approvals; vendor scores remain vendor scores. |
 | N43 | IMPLEMENTED | Existing registry, raw run manifests and generated scoreboard; no duplicate framework introduced |
 | N44–N47 | OPEN | Portable tombstones, unified collateral report, governed skills and additional distributed/upgrade scenarios remain required. GOV-20 requires additional physical hosts. |
-| N48 | PARTIAL | Local release checks and full suites; exact-head CI failures in #17/#18 repaired for tag/ref availability and LF-normalized result digests. Complete alpha qualification, bundle and integration evidence still required. |
+| N48 | INTEGRATION QUALIFICATION IN PROGRESS | All feature branches integrated locally with regenerated evidence; release reporting distinguishes skipped tests/benchmarks from passing checks and does not invent an external CI result. Exact-candidate bundle, full combined suite and optional CI matrix still required. |
 | N49 | EXTERNAL | Independent security reviewer and independent replicating team are required. Internal passing tests are not substitutes. |
 | N50 | EXTERNAL | Usability participants and pilot partners are required; no adoption or willingness-to-pay numbers invented. |
 | N51 | PACKET PREPARED / owner decisions pending | `docs/product/decisions/2026-10-28-packaging-options.md` covers onboarding/contracts, editions, isolation, support, opt-in telemetry, residency, erasure, license/pricing experiments and a cost worksheet. Final choices require workload/pilot/owner evidence; no terms or certification claims changed. |

@@ -84,7 +84,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--wheel", type=Path, nargs="*", default=[])
     parser.add_argument("--allow-dirty", action="store_true")
     parser.add_argument("--skip-tests", action="store_true",
-                        help="when CI has just run the suite on this commit")
+                        help="generate incomplete rehearsal evidence without tests; does not qualify the bundle")
     parser.add_argument("--bench", choices=["none", "quick", "full"], default="none",
                         help="run experiments.product_bench into the bundle")
     args = parser.parse_args(argv)
@@ -113,7 +113,7 @@ def main(argv: list[str] | None = None) -> int:
     if args.wheel:
         (out / "wheel.sha256").write_text(
             "".join(f"{sha256(w)}  {w.name}\n" for w in args.wheel), encoding="utf-8")
-    bench_ok = True
+    bench_ok = None
     if args.bench != "none":
         bench = subprocess.run([sys.executable, "-m", "experiments.product_bench",
                                 "--out", str(out / "product-bench.json"),
@@ -130,7 +130,7 @@ def main(argv: list[str] | None = None) -> int:
 
     checks = {"clean tree": not dirty, "secret scan": scan.returncode == 0,
               "adversarial gate": gate.returncode == 0,
-              "tests": bool(tests.get("passed", args.skip_tests)), "benchmark": bench_ok,
+              "tests": None if args.skip_tests else bool(tests.get("passed")), "benchmark": bench_ok,
               "versions consistent": consistent}
     manifest = {"commit": sha, "dirty": dirty, "package_version": project["version"],
                 "schema_version": SCHEMA_VERSION, "python": platform.python_version(),
@@ -144,9 +144,9 @@ def main(argv: list[str] | None = None) -> int:
 
     (out / "RELEASE_REPORT.md").write_text(render(out), encoding="utf-8")
     for name, ok in checks.items():
-        print(("PASS " if ok else "FAIL ") + name)
+        print(("SKIPPED " if ok is None else "PASS " if ok else "FAIL ") + name)
     print(f"bundle: {out}")
-    return 0 if all(checks.values()) else 1
+    return 0 if all(value is True for value in checks.values()) else 1
 
 
 if __name__ == "__main__":

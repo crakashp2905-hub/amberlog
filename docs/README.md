@@ -2,11 +2,11 @@
 
 **New here? Three steps, in order:**
 
-1. `memory-fabric tour` — the idea in sixty seconds, in your terminal.
-2. [QUICKSTART.md](QUICKSTART.md) — ten minutes with your own store.
+1. `memory-fabric tour` â€” the idea in sixty seconds, in your terminal.
+2. [QUICKSTART.md](QUICKSTART.md) â€” ten minutes with your own store.
 3. [Any agent, any model](guides/any-agent-any-model.md): connect your tool and pick your
-   model in two commands. Or a guide for your stack: [Claude Code and Desktop](guides/claude.md) ·
-   [LangGraph](guides/langgraph.md) · [OpenAI Agents SDK](guides/openai-agents.md) ·
+   model in two commands. Or a guide for your stack: [Claude Code and Desktop](guides/claude.md) Â·
+   [LangGraph](guides/langgraph.md) Â· [OpenAI Agents SDK](guides/openai-agents.md) Â·
    [CrewAI](guides/crewai.md).
 
 Then [CONCEPTS.md](CONCEPTS.md) when you want the why, and
@@ -60,7 +60,7 @@ Every document in the repository, by what you are trying to do.
 
 | document | for |
 |---|---|
-| [../SECURITY.md](../SECURITY.md) | The threat model, T1–T12, and how to report a vulnerability |
+| [../SECURITY.md](../SECURITY.md) | The threat model, T1â€“T12, and how to report a vulnerability |
 | [SAFETY_AND_SECURITY.md](SAFETY_AND_SECURITY.md) | The safety model |
 | [LIMITATIONS.md](LIMITATIONS.md) | What it does not do |
 | [CRYPTOGRAPHY.md](CRYPTOGRAPHY.md) | Every cryptographic and key-management decision, written for review |
@@ -109,4 +109,16 @@ use the product.
 
 ## Memory Fabric 2 roadmap
 
+- [Product and research masterplan](MEMORY_FABRIC_2_PRODUCT_RESEARCH_MASTERPLAN.md)
+- [Implementation status and compiler ADR](MF2_IMPLEMENTATION_STATUS.md)
+
+## Current checklist work
+
+- [Experimental evidence completeness](EVIDENCE_COMPLETENESS.md)
+- [Experimental historical reads](HISTORICAL_READS.md)
+- [Operator import preview and atomic batches](IMPORT_PREVIEW.md)
 - [Optional lossless phrase compaction](LOSSLESS_COMPACTION.md)
+- [Checklist execution status](NEXT_CHECKLIST_STATUS.md)
+- [Historical read security design](adr/0002-historical-belief-reads.md)
+- [Procedural asset schema draft](adr/0003-procedural-asset-draft.md)
+- [Product decision packet](product/decisions/2026-10-28-packaging-options.md)

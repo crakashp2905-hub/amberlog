@@ -106,6 +106,15 @@ def run_domain(data: Path, domain: str, max_docs: int | None) -> dict[str, Any]:
         for did, text in docs.items():
             id_of[f.remember("corpus", text or " ", scope="team")] = did
         ingest_s = time.time() - started
+        from collections import Counter as _C
+        print("diagnose:", domain, "lifecycle", dict(_C(m.lifecycle_state.value for m in f.state.memories.values())),
+              flush=True)
+        for e in examples[:2]:
+            r = f.retrieve("reader", e["query"], k=100, min_relevance=0.0)
+            raw = f._search(e["query"], 400, f._eligible_ids(include_contested=False, tenant_id=None,
+                                                            agent_id="reader"), 0.0)
+            print("diagnose: exposed", len(r.exposed), "withheld", len(r.withheld), "raw hits", len(raw),
+                  "known ids", sum(m.id in id_of for m in r.exposed), flush=True)
         rows = []
         for e in examples:
             gold = {str(g) for g in e["gold_ids"]} & set(docs)

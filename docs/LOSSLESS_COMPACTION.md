@@ -7,11 +7,12 @@ from memory_fabric.lossless_compaction import dictionary_summary
 report = compact_session(fabric, episode_id, "writer", summarise=dictionary_summary)
 ```
 
-This opt-in summarizer factors repeated phrases into a dictionary and preserves
-each source record exactly. It verifies decoding before returning an encoding,
+When dictionary encoding is selected, this opt-in summarizer factors repeated
+phrases and preserves each source record exactly. It verifies decoding before returning an encoding,
 has input/output/expansion limits, and falls back to the existing extractive
 summarizer when no content-byte savings are available or disputes need explicit
-display. Literal marker text is preserved. No default behavior switches to this
+display. That existing extractive fallback can omit chatter; raw sources remain
+available for authorized drill-down. Literal marker text is preserved. No default behavior switches to this
 codec, no external model is called, and no runtime dependency is added.
 
 Consumers must understand the dictionary or use `decode_records` on an authorized

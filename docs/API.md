@@ -305,7 +305,7 @@ Proposals and adoptions of objective changes, recorded in the store's log.
 ### `compaction.compact_session` (experimental)
 
 ```python
-compact_session(fabric: MemoryFabric, episode_id: str, agent_id: str, summarise: Callable[[Sequence[Memory], Sequence[Sequence[Memory]]], str] | None = None, scope: str | None = None) -> CompactionReport
+compact_session(fabric: MemoryFabric, episode_id: str, agent_id: str, summarise: Callable[[Sequence[Memory], Sequence[Sequence[Memory]]], str] | None = None, scope: str | None = None, tenant_id: str = 'tn_default') -> CompactionReport
 ```
 
 Write one governed summary of an episode. Returns what was used and left out.

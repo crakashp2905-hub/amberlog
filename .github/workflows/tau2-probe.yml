@@ -1,0 +1,34 @@
+name: tau2-probe
+
+# Installs tau2-bench (MIT) with the knowledge extra and prints how its
+# banking_knowledge retrieval is wired, so a Memory Fabric retriever can be
+# placed behind the same tool. Prints code structure only.
+
+on:
+  push:
+    paths: [".github/workflows/tau2-probe.yml"]
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install tau2
+        run: |
+          git clone --depth 1 https://github.com/sierra-research/tau2-bench.git tau2
+          cd tau2 && git log -1 --format="%H %cd" && pip install -q -e ".[knowledge]" 2>&1 | tail -3
+      - name: Layout
+        continue-on-error: true
+        run: |
+          cd tau2
+          find src/tau2/knowledge -name "*.py" | sort
+          grep -rn "class .*BM25\|class .*Retriev\|def retrieve\|def search\|KB_search" src/tau2/knowledge src/tau2/domains/banking_knowledge | head -40
+          grep -rn "\"bm25\"\|'bm25'\|golden_retrieval\|no_knowledge" src/tau2 | head -20
+          ls data/tau2/domains/banking_knowledge | head; ls data/tau2/domains/banking_knowledge/documents | wc -l
+          python -c "import json; d=json.load(open('data/tau2/domains/banking_knowledge/tasks.json')) if __import__('os').path.exists('data/tau2/domains/banking_knowledge/tasks.json') else None; print('tasks', len(d) if d else 'tasks.json missing')"
+          ls data/tau2/domains/banking_knowledge/
+          tau2 run --help | head -80

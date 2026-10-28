@@ -235,7 +235,7 @@ WRITES: import another store's export (JSON list or JSONL: Mem0, LangChain docum
 WRITES: import a compiled document (JSON: doc_id, version, sections with path and text); re-importing withdraws sections the new version changed or removed
 
 - `file`: the document tree as JSON
-- `--format`: source format: a compiled JSON tree, or a local Markdown, HTML, CSV or .docx file
+- `--format`: source format: a compiled JSON tree, or a local Markdown, HTML, CSV, .docx or PDF file (PDF needs the [pdf] extra)
 - `--key`: CSV only: the column that identifies a row across versions
 - `--doc-id`: stable document identity (all formats but json)
 - `--source-version`: explicit source revision (all formats but json)

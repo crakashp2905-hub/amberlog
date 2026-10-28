@@ -297,3 +297,75 @@ def compile_docx(data: bytes, *, doc_id: str, version: str, uri: str = "") -> di
     flush(index)
     return _tree(doc_id, version, uri, data, "docx",
                  "application/vnd.openxmlformats-officedocument.wordprocessingml.document", sections)
+
+
+def compile_pdf(data: bytes, *, doc_id: str, version: str, uri: str = "") -> dict[str, Any]:
+    """Sections from a PDF: one per outline entry when the PDF has an outline, else one per page.
+
+    Needs `pypdf` (`pip install "memory-fabric[pdf]"`); the core stays
+    dependency-free. Text is what the PDF's text layer says, not OCR: a
+    scanned page with no text layer yields no section, and the tree records
+    `pages_without_text` so that absence is visible rather than silent.
+    Each section's `line_start`/`line_end` are page numbers (1-based). No
+    JavaScript, form action or embedded file is evaluated.
+    """
+    import io
+
+    try:
+        from pypdf import PdfReader
+        from pypdf.errors import PdfReadError
+    except ImportError as exc:  # pragma: no cover - exercised only without the extra
+        raise ValueError('PDF import needs pypdf: pip install "memory-fabric[pdf]"') from exc
+    if len(data) > MAX_BYTES:
+        raise ValueError(f"document is {len(data)} bytes; the limit is {MAX_BYTES}")
+    try:
+        reader = PdfReader(io.BytesIO(data))
+        pages = [(p.extract_text() or "") for p in reader.pages]
+    except (PdfReadError, ValueError, KeyError) as exc:
+        raise ValueError(f"not a readable PDF: {exc}") from exc
+    empty = [i for i, t in enumerate(pages, 1) if not t.strip()]
+    starts: list[tuple[int, int, str]] = []   # (first page, level, title)
+
+    def walk(items: Any, level: int) -> None:
+        for item in items:
+            if isinstance(item, list):
+                walk(item, level + 1)
+                continue
+            try:
+                page = reader.get_destination_page_number(item) + 1
+            except Exception:  # noqa: BLE001 - an outline entry without a page is skipped
+                continue
+            starts.append((page, level, str(getattr(item, "title", "") or "").strip()))
+
+    try:
+        walk(reader.outline, 1)
+    except Exception:  # noqa: BLE001 - a broken outline falls back to pages
+        starts = []
+    sections: list[dict[str, Any]] = []
+    if starts:
+        starts.sort(key=lambda s: s[0])
+        stack: list[tuple[int, str]] = []
+        counts: dict[str, int] = {}
+        for i, (first, level, title) in enumerate(starts):
+            # Ends on the page before the next entry starts (or that same page when the
+            # next entry starts on it too); the last entry runs to the end.
+            last = max(first, starts[i + 1][0] - 1) if i + 1 < len(starts) else len(pages)
+            while stack and stack[-1][0] >= level:
+                stack.pop()
+            slug = re.sub(r"[^\w-]+", "-", title.lower()).strip("-") or "section"
+            base = "/".join([p for _, p in stack] + [f"{len(slug)}:{slug}"])
+            counts[base] = counts.get(base, 0) + 1
+            stack.append((level, f"{len(slug)}:{slug}:{counts[base]}"))
+            text = "\n".join(pages[first - 1:last]).strip()
+            if text:
+                sections.append({"path": "/".join(p for _, p in stack), "title": title, "text": text,
+                                 "line_start": first, "line_end": last})
+    else:
+        for n, text in enumerate(pages, 1):
+            if text.strip():
+                sections.append({"path": f"page:{n}", "title": f"Page {n}", "text": text.strip(),
+                                 "line_start": n, "line_end": n})
+    tree = _tree(doc_id, version, uri, data, "pdf", "application/pdf", sections)
+    tree["pages"] = len(pages)
+    tree["pages_without_text"] = empty
+    return tree

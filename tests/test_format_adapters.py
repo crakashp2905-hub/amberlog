@@ -114,3 +114,69 @@ class Cli(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+def pdf(pages: list[str], outline: list[tuple[str, int]] | None = None) -> bytes:
+    """A real PDF with a text layer, built with pypdf's writer."""
+    from pypdf import PdfWriter
+    from pypdf.generic import DecodedStreamObject, DictionaryObject, NameObject
+
+    w = PdfWriter()
+    for text in pages:
+        page = w.add_blank_page(width=612, height=792)
+        lines = text.split("\n")
+        ops = "BT /F1 12 Tf 72 720 Td " + " ".join(
+            f"({line.replace('(', '').replace(')', '')}) Tj 0 -14 Td" for line in lines) + " ET"
+        stream = DecodedStreamObject()
+        stream.set_data(ops.encode("latin-1"))
+        page[NameObject("/Contents")] = w._add_object(stream)
+        font = DictionaryObject({NameObject("/Type"): NameObject("/Font"),
+                                 NameObject("/Subtype"): NameObject("/Type1"),
+                                 NameObject("/BaseFont"): NameObject("/Helvetica")})
+        page[NameObject("/Resources")] = DictionaryObject({
+            NameObject("/Font"): DictionaryObject({NameObject("/F1"): w._add_object(font)})})
+    for title, page_index in outline or []:
+        w.add_outline_item(title, page_index)
+    buf = io.BytesIO()
+    w.write(buf)
+    return buf.getvalue()
+
+
+try:
+    import pypdf  # noqa: F401
+    HAVE_PYPDF = True
+except ImportError:  # pragma: no cover
+    HAVE_PYPDF = False
+
+
+@unittest.skipUnless(HAVE_PYPDF, "pypdf not installed (the [pdf] extra)")
+class Pdf(unittest.TestCase):
+    def test_pages_become_sections_and_empty_pages_are_reported(self) -> None:
+        from memory_fabric.knowledge_compiler import compile_pdf
+
+        t = compile_pdf(pdf(["Relief valve set to 12 bar.", "", "Inspect seals monthly."]), **ID)
+        self.assertEqual([s["path"] for s in t["sections"]], ["page:1", "page:3"])
+        self.assertIn("12 bar", t["sections"][0]["text"])
+        self.assertEqual((t["pages"], t["pages_without_text"]), (3, [2]))
+        self.assertEqual(t["mime"], "application/pdf")
+
+    def test_an_outline_gives_named_sections_spanning_pages(self) -> None:
+        from memory_fabric.knowledge_compiler import compile_pdf
+
+        t = compile_pdf(pdf(["Intro text.", "Valves part one.", "Valves part two.", "Seals text."],
+                            outline=[("Introduction", 0), ("Valves", 1), ("Seals", 3)]), **ID)
+        self.assertEqual([s["title"] for s in t["sections"]], ["Introduction", "Valves", "Seals"])
+        valves = t["sections"][1]
+        self.assertEqual((valves["line_start"], valves["line_end"]), (2, 3))
+        self.assertIn("part two", valves["text"])
+
+    def test_garbage_is_refused_and_imports_through_the_governed_path(self) -> None:
+        from memory_fabric.knowledge_compiler import compile_pdf
+
+        with self.assertRaises(ValueError):
+            compile_pdf(b"%PDF-1.4 not really", **ID)
+        f = MemoryFabric(":memory:")
+        self.addCleanup(f.close)
+        r = import_document(f, compile_pdf(pdf(["Doors lock at 8 pm."]), **ID))
+        self.assertEqual(len(r.added), 1)
+        self.assertEqual(f.get(r.added[0]).context["source"]["mime"], "application/pdf")

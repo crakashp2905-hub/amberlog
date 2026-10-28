@@ -1244,6 +1244,8 @@ def cmd_import_docs(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             ident = {"doc_id": args.doc_id, "version": args.source_version, "uri": args.source_uri or ""}
             if args.format == "docx":
                 tree = kc.compile_docx(Path(args.file).read_bytes(), **ident)
+            elif args.format == "pdf":
+                tree = kc.compile_pdf(Path(args.file).read_bytes(), **ident)
             elif args.format == "csv":
                 tree = kc.compile_csv(Path(args.file).read_text(encoding="utf-8"), key=args.key, **ident)
             else:
@@ -3069,8 +3071,9 @@ def build_parser() -> argparse.ArgumentParser:
             "WRITES: import a compiled document (JSON: doc_id, version, sections with path and "
             "text); re-importing withdraws sections the new version changed or removed")
     p.add_argument("file")
-    p.add_argument("--format", choices=["json", "markdown", "html", "csv", "docx"], default="json",
-                   help="source format: a compiled JSON tree, or a local Markdown, HTML, CSV or .docx file")
+    p.add_argument("--format", choices=["json", "markdown", "html", "csv", "docx", "pdf"], default="json",
+                   help="source format: a compiled JSON tree, or a local Markdown, HTML, CSV, .docx or PDF "
+                        "file (PDF needs the [pdf] extra)")
     p.add_argument("--key", help="CSV only: the column that identifies a row across versions")
     p.add_argument("--doc-id", help="stable document identity (all formats but json)")
     p.add_argument("--source-version", help="explicit source revision (all formats but json)")

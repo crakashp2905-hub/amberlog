@@ -45,6 +45,8 @@ langchain = ["langchain-core>=0.3"]
 # AES-256-GCM from a maintained library; required by the production crypto
 # profile (MEMORY_FABRIC_CRYPTO_PROFILE=production).
 crypto = ["cryptography>=42"]
+# PDF import (knowledge_compiler.compile_pdf): the text layer, no OCR.
+pdf = ["pypdf>=4"]
 # Trained retrieval (memory_fabric.retrievers): ONNX models on CPU, no PyTorch.
 retrieval = ["fastembed>=0.5"]
 # The same with sentence-transformers, for teams already on PyTorch or a GPU.

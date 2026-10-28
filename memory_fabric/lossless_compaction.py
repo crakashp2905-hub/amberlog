@@ -35,18 +35,21 @@ def encode_records(texts: Sequence[str]) -> str:
             for width in range(3, 9):
                 for start in range(len(spans) - width + 1):
                     phrase = text[spans[start].start():spans[start + width - 1].end()]
+                    if any(ch.isdigit() for ch in phrase):
+                        continue  # keep every numeric token/identifier visible to existing fact checks
                     if len(candidates) < 50_000 or phrase in candidates:
                         candidates[phrase] += 1
         ranked = sorted(candidates, key=lambda p: (-(len(p) - 3) * candidates[p] + len(p), p))
         for phrase in ranked:
             if len(dictionary) == 16:
                 break
-            occurrences = sum(t.count(phrase) for t in encoded)
+            pattern = re.compile(r"(?<!\S)" + re.escape(phrase) + r"(?!\S)")
+            occurrences = sum(len(list(pattern.finditer(t))) for t in encoded)
             if occurrences < 3 or (len(phrase) - 3) * occurrences <= len(phrase) + 12:
                 continue
             code = chr(ord("A") + len(dictionary))
             dictionary[code] = phrase
-            encoded = [t.replace(phrase, f"~{code}~") for t in encoded]
+            encoded = [pattern.sub(f"~{code}~", t) for t in encoded]
 
     def dump(d: dict[str, str], rows: list[str]) -> str:
         return json.dumps({"dictionary": d, "records": rows}, ensure_ascii=False, separators=(",", ":"))

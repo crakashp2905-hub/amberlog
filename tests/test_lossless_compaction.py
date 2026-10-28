@@ -54,6 +54,14 @@ class LosslessCompaction(unittest.TestCase):
         payload = encode_records(source)
         self.assertEqual(decode_records(payload), source)
         self.assertLess(len(payload.encode()), len(" ".join(source).encode()))
+        # Prefix-like numeric values must remain directly visible to the
+        # existing compaction fact guard, not split into dictionary fragments.
+        from memory_fabric.conflicts import claim
+        edge = [f"Unit P{i} limit is {value} bar. It must not be restarted before verification."
+                for i, value in enumerate([5, 50, 51, 6, 60, 61] * 3)]
+        packed = encode_records(edge)
+        self.assertEqual(decode_records(packed), edge)
+        self.assertTrue(set().union(*(claim(t)[2] for t in edge)) <= claim(packed)[2])
 
     def test_unicode_whitespace_negation_and_literal_reference_markers_survive(self):
         source = ["Café\r\n must not open at 1.25 bar", "~A~ is a literal marker."]

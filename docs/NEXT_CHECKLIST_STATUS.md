@@ -11,16 +11,21 @@ tests exist; exact-head CI and review remain merge gates. PRs are not releases.
 | N08 | PARTIAL | Three-valued record evaluation exists; explicit per-predicate reason/provenance result API remains open. |
 | N09 | IMPLEMENTED in PR #18 | Unknown-only enforced/logged reads, explicit budget, ambiguity and snapshot-change certificates; no superiority claim |
 | N10–N13 | OPEN | Typed extraction schema, verification flow, indexed/paginated scale runs and full E2 metrics still required |
-| N14–N18 | OPEN | Existing replay helper is not a supported historical agent API. Requires current-policy enforcement, receipts and bounded replay design. |
+| N14 | DESIGN COMPLETE | [ADR 0002](adr/0002-historical-belief-reads.md) separates valid time, transaction sequence and current authorization; defines safe receipts and bounded replay. |
+| N15–N18 | OPEN | Existing replay helper is not a supported historical agent API; implementation, oracle parity and qualification remain open. |
 | N19 | PARTIAL | Existing compiled-tree contract records format/span/digest/version; versioned nodes, permissions and unresolved-block contract remains open. |
 | N20 | IMPLEMENTED in PR #17 | Local CSV/HTML/DOCX, optional PDF; real fixtures, no core runtime dependencies |
 | N21 | PARTIAL | CSV physical rows and PDF page anchors; merged cells, footnotes, OCR and full layout fidelity remain open and documented. |
 | N22 | IMPLEMENTED in PR #17 | Existing screened candidate importer, revision invalidation and cross-tenant regression; more cross-format collision fixtures remain useful. |
 | N23 | OPEN | Batch preview, resume, dependent-action impact and rollback/repair workflows |
 | N24–N27 | OPEN | Existing compaction is not evidence of actual compression savings. Optional compressor and paired cost/safety study required. |
-| N28–N30 | GATED / OPEN | Skill draft and verified asset flow not implemented; execution/publication waits for the stated pilot-demand gate. |
+| N28 | DRAFT COMPLETE | [Procedural asset contract](adr/0003-procedural-asset-draft.md); schema review and implementation remain gated on pilot demand. |
+| N29–N30 | GATED / OPEN | Verified asset flow, execution/publication and comparisons wait for the stated pilot-demand gate. |
 | N31 | PARTIAL in PR #17 | INT-02 five-store chain/star correction world exists; role-specific conflicts, source laundering, contradictory timestamps and longitudinal decisions remain open. |
-| N32–N36 | OPEN | Fifty-task registration, full metrics, minority/causal/retention studies require separate designs and binding-budget checks; H2 remains negative. |
+| N32 | PROTOCOL DRAFTED | `research/prereg/int05-continuous-design.md`: frozen seed allocation and 50-task protocol; generator/baseline pilot and improvement-threshold registration remain open. |
+| N33–N34 | OPEN | Full role/task metrics and minority studies remain required. |
+| N35 | DESIGN COMPLETE | `research/prereg/causal-intervention-design.md` separates intervention identification from lineage, includes randomized assignments and negative controls; no study run or product claim. |
+| N36 | GATED / OPEN | H2b needs independently registered binding-budget evidence; H2 remains negative. |
 | N37 | ON HOLD | Hosted model arms require explicit budget authorization; scripted tests do not count as model evaluations. |
 | N38–N42 | OPEN / resource-gated | Dataset-specific rights, pinned revisions, adapters, local model resources and paid-evaluation approvals; vendor scores remain vendor scores. |
 | N43 | IMPLEMENTED | Existing registry, raw run manifests and generated scoreboard; no duplicate framework introduced |

@@ -110,6 +110,8 @@ use the product.
 ## Memory Fabric 2 roadmap
 
 - [Next checklist execution status](NEXT_CHECKLIST_STATUS.md)
+- [Historical read security design](adr/0002-historical-belief-reads.md)
+- [Procedural asset schema draft](adr/0003-procedural-asset-draft.md)
 
 - [Product and research masterplan](MEMORY_FABRIC_2_PRODUCT_RESEARCH_MASTERPLAN.md)
 - [Implementation status and compiler ADR](MF2_IMPLEMENTATION_STATUS.md)

@@ -95,11 +95,13 @@ def main(argv: list[str]) -> int:
                      for arm, r in ranked.items()})
     f.close()
     metrics = ("evidence_recall@10", "evidence_recall@100", "evidence_ndcg@10", "gold_recall@100")
-    mean = {arm: {m: round(sum(r[arm][m] for r in rows if r[arm][m] is not None)
-                           / max(1, sum(1 for r in rows if r[arm][m] is not None)), 4) for m in metrics}
-            for arm in ("bm25", "fabric")}
-    paired = paired_bootstrap([r["bm25"]["evidence_recall@100"] for r in rows],
-                              [r["fabric"]["evidence_recall@100"] for r in rows], seed=1)
+    def avg(values: list[float | None]) -> float:
+        present = [v for v in values if v is not None]
+        return round(sum(present) / len(present), 4) if present else 0.0
+
+    mean = {arm: {m: avg([r[arm][m] for r in rows]) for m in metrics} for arm in ("bm25", "fabric")}
+    paired = paired_bootstrap([float(r["bm25"]["evidence_recall@100"] or 0.0) for r in rows],
+                              [float(r["fabric"]["evidence_recall@100"] or 0.0) for r in rows], seed=1)
     commit = head()[:12]
     data = {"commit": commit, "queries": len(rows), "documents": len(corpus), "max_docs": args.max_docs,
             "ingest_seconds": ingest_s, "arms": mean, "paired_evidence_recall100_fabric_minus_bm25": paired,

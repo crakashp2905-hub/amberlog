@@ -494,9 +494,9 @@
   {
    "experiment_id": "ecv1-dev",
    "file": "research/results/ecv1-dev.json",
-   "file_sha256": "16e4b963d4ca17819c414a2f0de55d2a04c1656a5a6c0ae9ab22aa078d4f22b2",
+   "file_sha256": "eea6d48a00551c8e4b6a82b4b5f08bf54f44c01196f0e87ff0a457ada8359631",
    "prereg": "research/prereg/ecv1-design.md",
-   "git_sha": "bf0c4a50a7e9062f408c458f9eab4e220b7b0b61",
+   "git_sha": "f5a3b8b822cf903245503ca773b7bdb00c841c45",
    "git_sha_source": "json",
    "dataset_digest": "043a07f82c0a3da3c473fbdb2bbbdd1d9caac379fc0aa36ae36c7550885d518a",
    "model_id": null,
@@ -539,9 +539,9 @@
   {
    "experiment_id": "ecv1-test",
    "file": "research/results/ecv1-test.json",
-   "file_sha256": "0ac367dc24eacddedb6dc89e89435dfb5d39d766b24d18ef88da4ec2c141e24b",
+   "file_sha256": "c204fcfc03a697c3b2d9be9689ed2ee90c03bdc5c16696803a90fae36699de29",
    "prereg": "research/prereg/ecv1-design.md",
-   "git_sha": "a92f84ec538979d5e3a2b89fbc0bcb8f4d9b787e",
+   "git_sha": "f5a3b8b822cf903245503ca773b7bdb00c841c45",
    "git_sha_source": "json",
    "dataset_digest": "79efb4a14720ea1840e2ca0acadb4cb53b9be5f808f738c51c75bfdad14186de",
    "model_id": null,

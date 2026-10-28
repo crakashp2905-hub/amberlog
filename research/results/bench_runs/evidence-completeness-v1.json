@@ -28,7 +28,7 @@
  },
  "prereg": "research/prereg/ecv1-design.md",
  "reason": "development lexical baseline saturates oracle; no attainable threshold registered",
- "repo_commit": "a92f84ec538979d5e3a2b89fbc0bcb8f4d9b787e",
+ "repo_commit": "f5a3b8b822cf903245503ca773b7bdb00c841c45",
  "results": {
   "summary": {
    "lexical": {
@@ -36,7 +36,7 @@
     "coverage": 0.25,
     "exact": 0.9,
     "false_complete": 0.0,
-    "latency_ms": 4.2268,
+    "latency_ms": 4.0613,
     "per_seed_exact": {
      "101": 1.0,
      "127": 1.0,
@@ -53,7 +53,7 @@
     "coverage": 0.7833,
     "exact": 1.0,
     "false_complete": 0.0,
-    "latency_ms": 6.3206,
+    "latency_ms": 4.8893,
     "per_seed_exact": {
      "101": 1.0,
      "127": 1.0,
@@ -70,7 +70,7 @@
     "coverage": 0.7833,
     "exact": 0.2,
     "false_complete": 0.0,
-    "latency_ms": 7.243,
+    "latency_ms": 6.4624,
     "per_seed_exact": {
      "101": 0.0,
      "127": 0.5,
@@ -87,7 +87,7 @@
     "coverage": 0.5333,
     "exact": 0.0,
     "false_complete": 0.0,
-    "latency_ms": 0.8474,
+    "latency_ms": 0.751,
     "per_seed_exact": {
      "101": 0.0,
      "127": 0.0,
@@ -104,7 +104,7 @@
     "coverage": 0.7833,
     "exact": 0.2,
     "false_complete": 0.0,
-    "latency_ms": 7.2699,
+    "latency_ms": 6.1759,
     "per_seed_exact": {
      "101": 0.0,
      "127": 0.5,

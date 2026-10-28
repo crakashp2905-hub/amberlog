@@ -60,6 +60,14 @@ class Coverage:
 def classify(fabric: "MemoryFabric", agent_id: str, where: Mapping[str, Any], *,
              tenant_id: str | None = None, within: Iterable[str] | None = None) -> Coverage:
     """Partition every eligible scoped ID: typed match, definite nonmatch, unknown."""
+    # Hold the existing transaction fence only for metadata classification,
+    # never across arbitrary evaluator callbacks or the full fallback scan.
+    with fabric._transaction():
+        return _classify(fabric, agent_id, where, tenant_id=tenant_id, within=within)
+
+
+def _classify(fabric: "MemoryFabric", agent_id: str, where: Mapping[str, Any], *,
+              tenant_id: str | None, within: Iterable[str] | None) -> Coverage:
     allowed = frozenset(within) if within is not None else None
     tenant_id = tenant_id or DEFAULT_TENANT
     fabric.refresh()
@@ -97,8 +105,6 @@ not an agent's assertion of truth. Stable APIs and event schemas are unchanged.
     tenant_id = tenant_id or DEFAULT_TENANT
     coverage = classify(fabric, agent_id, where, tenant_id=tenant_id, within=allowed)
     coverage.evaluator = evaluator_id
-    all_ids = coverage.matches + coverage.nonmatches + coverage.unknown
-    before = {mid: fabric.state.memories[mid].version for mid in all_ids}
     # Retrieve separately to recheck policy before each callback. This also
     # avoids handing the callback a batch of content revoked by its first call.
     unresolved = []
@@ -122,12 +128,13 @@ not an agent's assertion of truth. Stable APIs and event schemas are unchanged.
         else:
             unresolved.append(mid)
     coverage.unknown = unresolved
-    fabric.refresh()
-    visible_now = set(_visible(fabric, agent_id, tenant_id)) - fabric.state.erased
-    if allowed is not None:
-        visible_now.intersection_update(allowed)
-    after = {mid: fabric.state.memories[mid].version for mid in visible_now}
-    coverage.changed = before != after
+    with fabric._transaction():
+        visible_now = set(_visible(fabric, agent_id, tenant_id)) - fabric.state.erased
+        if allowed is not None:
+            visible_now.intersection_update(allowed)
+        after_digest = hashlib.sha256(json.dumps(sorted(
+            (mid, fabric.state.memories[mid].version) for mid in visible_now)).encode()).hexdigest()
+    coverage.changed = coverage.corpus_sha256 != after_digest
     # Never return IDs that ceased to be eligible during evaluation.
     coverage.matches = [m for m in coverage.matches if m in visible_now]
     coverage.fallback_matches = [m for m in coverage.fallback_matches if m in visible_now]

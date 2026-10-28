@@ -1,0 +1,567 @@
+{
+ "commit": "a514df95ef24f46fd3e27b6669ff61527f838362",
+ "rows": [
+  {
+   "seed": 1,
+   "topology": "chain",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 4,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 1,
+     "quarantined": 2
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 1,
+     "quarantined": 3
+    },
+    {
+     "step": "delivery",
+     "pass": 3,
+     "attempted": 2,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 4,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 1,
+   "topology": "star",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 2,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 4,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 2,
+   "topology": "chain",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 4,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 1,
+     "quarantined": 2
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 2,
+     "quarantined": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 3,
+     "attempted": 1,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 4,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 2,
+   "topology": "star",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 2,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 4,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 3,
+   "topology": "chain",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 4,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 2,
+     "quarantined": 3
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 1,
+     "quarantined": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 3,
+     "attempted": 1,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 4,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 3,
+   "topology": "star",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 2,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 4,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 4,
+   "topology": "chain",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 4,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 1,
+     "quarantined": 2
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 1,
+     "quarantined": 3
+    },
+    {
+     "step": "delivery",
+     "pass": 3,
+     "attempted": 2,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 4,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 4,
+   "topology": "star",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 2,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 4,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 5,
+   "topology": "chain",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 4,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 1,
+     "quarantined": 2
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 1,
+     "quarantined": 3
+    },
+    {
+     "step": "delivery",
+     "pass": 3,
+     "attempted": 2,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 4,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  },
+  {
+   "seed": 5,
+   "topology": "star",
+   "copies": 5,
+   "allowed_before": 5,
+   "stale_during_partition": 4,
+   "withdrawn_after_rejoin": 5,
+   "contested_derivatives": 5,
+   "independent_survivors": 5,
+   "stale_actions_after_rejoin": 0,
+   "scheduler_passes": 2,
+   "trace": [
+    {
+     "step": "before",
+     "reason_codes": [
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ],
+      [
+       "allowed"
+      ]
+     ]
+    },
+    {
+     "step": "partition",
+     "stale_copies": 4
+    },
+    {
+     "step": "delivery",
+     "pass": 1,
+     "attempted": 4,
+     "quarantined": 5
+    },
+    {
+     "step": "delivery",
+     "pass": 2,
+     "attempted": 0,
+     "quarantined": 5
+    }
+   ]
+  }
+ ],
+ "invariant_violations": 0,
+ "scope": "single-process scheduled partition; no models or network SLO claim"
+}

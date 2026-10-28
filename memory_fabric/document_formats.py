@@ -157,6 +157,10 @@ deletions, embedded objects and layout interpretation are outside this adapter.
             if archive.namelist().count("word/document.xml") != 1:
                 raise ValueError("DOCX needs exactly one word/document.xml")
             xml = archive.read("word/document.xml")
+        # Reject UTF-16/32 rather than let declaration checks inspect a different
+        # encoding from the XML parser. OOXML UTF-8 is this adapter's contract.
+        if b"\x00" in xml:
+            raise ValueError("DOCX document XML must be UTF-8")
         if b"<!DOCTYPE" in xml.upper() or b"<!ENTITY" in xml.upper():
             raise ValueError("DOCX entity declarations are not supported")
         root = ET.fromstring(xml)
@@ -193,10 +197,11 @@ and output bounds do not bound the parser's intermediate allocations.
     """
     tree = _tree(raw, doc_id, version, uri, "pdf", "application/pdf", [])
     try:
-        from pypdf import PdfReader
+        from pypdf import PdfReader, __version__ as pdf_version
     except ImportError as exc:
         raise ValueError('PDF support requires pip install ".[documents]"') from exc
     try:
+        tree["parser_version"] = f"pdf-1/pypdf-{pdf_version}"
         reader = PdfReader(io.BytesIO(raw), strict=True)
         if reader.is_encrypted:
             raise ValueError("encrypted PDF is not supported; supply an approved decrypted source")

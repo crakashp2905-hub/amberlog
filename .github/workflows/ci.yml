@@ -372,6 +372,16 @@ jobs:
       - run: pip install "langchain-core>=0.3"
       - run: python -m unittest tests.test_integrations -v
 
+  document-formats:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: pip install ".[documents]"
+      - run: python -m unittest tests.test_document_formats tests.test_ingest_hardening -v
+
   secrets:
     # The project ships a sensitive-data detector. Pointing it at the repo is
     # both a smoke test of the detector and a guard on what gets committed.

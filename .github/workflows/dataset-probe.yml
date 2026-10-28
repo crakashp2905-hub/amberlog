@@ -1,0 +1,56 @@
+name: dataset-probe
+
+# Reads the licence and file layout of datasets the benchmark registry lists
+# before any adapter ingests them (masterplan §7A.2 licence gate). Prints
+# only the dataset card's licence lines, file names, sizes, and the field
+# names of the first record -- no content.
+
+on:
+  push:
+    paths: [".github/workflows/dataset-probe.yml"]
+  workflow_dispatch:
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Probe
+        run: |
+          set +e
+          for repo in bowen-upenn/PersonaMem snap-research/locomo; do
+            echo "=== $repo"
+            curl -fsSL "https://huggingface.co/api/datasets/$repo" | python3 -c "import json,sys; d=json.load(sys.stdin); print('license tags:', [t for t in d.get('tags',[]) if t.startswith('license')]); [print(' ', s['rfilename']) for s in d.get('siblings',[])]"
+            curl -fsSL "https://api.github.com/repos/$repo" | python3 -c "import json,sys; d=json.load(sys.stdin); print('github license:', (d.get('license') or {}).get('spdx_id'))"
+          done
+          echo "=== locomo files"
+          curl -fsSL "https://api.github.com/repos/snap-research/locomo/contents/data" | python3 -c "import json,sys; [print(' ', f['name'], f['size']) for f in json.load(sys.stdin)]"
+          curl -fsSL -o locomo10.json https://raw.githubusercontent.com/snap-research/locomo/main/data/locomo10.json && python3 - <<'PY'
+          import json
+          d = json.load(open("locomo10.json"))
+          print("locomo samples:", len(d), "keys:", sorted(d[0]))
+          print("conversation keys:", sorted(d[0]["conversation"])[:12])
+          print("qa[0] keys:", sorted(d[0]["qa"][0]), "categories:", sorted({q.get("category") for s in d for q in s["qa"]}))
+          s1 = d[0]["conversation"]["session_1"][0]
+          print("turn keys:", sorted(s1))
+          PY
+          echo "=== PersonaMem files"
+          for f in questions_32k.csv shared_contexts_32k.jsonl; do
+            curl -fsSL -o "$f" "https://huggingface.co/datasets/bowen-upenn/PersonaMem/resolve/main/$f" && ls -la "$f" && head -c 600 "$f" | python3 -c "import sys; t=sys.stdin.read(); print(t[:600].split('\n')[0][:600])"
+          done
+          python3 - <<'PY'
+          import csv, json
+          try:
+              rows = list(csv.DictReader(open("questions_32k.csv", encoding="utf-8")))
+              print("questions:", len(rows), "columns:", list(rows[0]))
+              print("question types:", sorted({r.get("question_type") for r in rows}))
+          except Exception as e:
+              print("csv error", e)
+          try:
+              first = json.loads(open("shared_contexts_32k.jsonl", encoding="utf-8").readline())
+              k = list(first)[0]
+              print("context jsonl: key sample", str(k)[:40], "value type", type(first[k]).__name__,
+                    "len", len(first[k]), "item keys", sorted(first[k][0]) if isinstance(first[k], list) and isinstance(first[k][0], dict) else "")
+          except Exception as e:
+              print("jsonl error", e)
+          PY

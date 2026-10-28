@@ -1,12 +1,12 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 105,
+ "results": 107,
  "missing_field_counts": {
   "git_sha": 33,
   "prereg": 36,
   "dataset_digest": 105,
-  "model_id": 73,
-  "prompt_hash": 105,
+  "model_id": 75,
+  "prompt_hash": 107,
   "seed": 45,
   "cost": 89,
   "verdict": 69
@@ -508,6 +508,98 @@
    "config": null,
    "cost": null,
    "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "ecv1-dev",
+   "file": "research/results/ecv1-dev.json",
+   "file_sha256": "7be6ed8acc8df2d6c97d2cb821d86852cb229335669bd6076c83dc3065ef5dbd",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": "research/prereg/ecv1-design.md",
+   "git_sha": "f5a3b8b822cf903245503ca773b7bdb00c841c45",
+   "git_sha_source": "json",
+   "dataset_digest": "043a07f82c0a3da3c473fbdb2bbbdd1d9caac379fc0aa36ae36c7550885d518a",
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    11,
+    23,
+    37,
+    41,
+    53
+   ],
+   "config": {
+    "version": "ecv1-data/1",
+    "records": 48,
+    "budget": 12,
+    "fields": [
+     "kind",
+     "status"
+    ],
+    "queries": [
+     [
+      "sensor",
+      "open"
+     ],
+     [
+      "door",
+      "closed"
+     ]
+    ]
+   },
+   "cost": {
+    "model_calls": 0,
+    "model_usd": 0,
+    "hardware_usd": null,
+    "note": "reads and latency measured; local hardware cost unpriced"
+   },
+   "verdict": "DESCRIPTIVE",
+   "parsable": true
+  },
+  {
+   "experiment_id": "ecv1-test",
+   "file": "research/results/ecv1-test.json",
+   "file_sha256": "b4ded2c046a7f2d683ec28bf2afac4703eca7d08870ff8318ebd330ad679ea95",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": "research/prereg/ecv1-design.md",
+   "git_sha": "f5a3b8b822cf903245503ca773b7bdb00c841c45",
+   "git_sha_source": "json",
+   "dataset_digest": "79efb4a14720ea1840e2ca0acadb4cb53b9be5f808f738c51c75bfdad14186de",
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    101,
+    127,
+    149,
+    163,
+    181
+   ],
+   "config": {
+    "version": "ecv1-data/1",
+    "records": 48,
+    "budget": 12,
+    "fields": [
+     "kind",
+     "status"
+    ],
+    "queries": [
+     [
+      "sensor",
+      "open"
+     ],
+     [
+      "door",
+      "closed"
+     ]
+    ]
+   },
+   "cost": {
+    "model_calls": 0,
+    "model_usd": 0,
+    "hardware_usd": null,
+    "note": "reads and latency measured; local hardware cost unpriced"
+   },
+   "verdict": "INCONCLUSIVE",
    "parsable": true
   },
   {

@@ -1,0 +1,138 @@
+{
+ "arm": "all",
+ "budget": {
+  "content_reads_per_query": 12,
+  "model_calls": 0
+ },
+ "cost": {
+  "hardware_usd": null,
+  "model_calls": 0,
+  "model_usd": 0,
+  "note": "reads and latency measured; local hardware cost unpriced"
+ },
+ "counts": {
+  "attempted": 10,
+  "completed": 10,
+  "failed": 0,
+  "skipped": 0,
+  "solved": 2
+ },
+ "dataset": {
+  "sha256": "79efb4a14720ea1840e2ca0acadb4cb53b9be5f808f738c51c75bfdad14186de",
+  "split": "test"
+ },
+ "decision": "INCONCLUSIVE",
+ "model": {
+  "id": null,
+  "provider": null
+ },
+ "prereg": "research/prereg/ecv1-design.md",
+ "reason": "development lexical baseline saturates oracle; no attainable threshold registered",
+ "repo_commit": "f5a3b8b822cf903245503ca773b7bdb00c841c45",
+ "results": {
+  "summary": {
+   "lexical": {
+    "complete": 0.0,
+    "coverage": 0.25,
+    "exact": 0.9,
+    "false_complete": 0.0,
+    "latency_ms": 4.0613,
+    "per_seed_exact": {
+     "101": 1.0,
+     "127": 1.0,
+     "149": 0.5,
+     "163": 1.0,
+     "181": 1.0
+    },
+    "precision": 1.0,
+    "reads": 12.0,
+    "recall": 0.98
+   },
+   "oracle": {
+    "complete": 0.0,
+    "coverage": 0.7833,
+    "exact": 1.0,
+    "false_complete": 0.0,
+    "latency_ms": 4.8893,
+    "per_seed_exact": {
+     "101": 1.0,
+     "127": 1.0,
+     "149": 1.0,
+     "163": 1.0,
+     "181": 1.0
+    },
+    "precision": 1.0,
+    "reads": 12.0,
+    "recall": 1.0
+   },
+   "selective": {
+    "complete": 0.0,
+    "coverage": 0.7833,
+    "exact": 0.2,
+    "false_complete": 0.0,
+    "latency_ms": 6.4624,
+    "per_seed_exact": {
+     "101": 0.0,
+     "127": 0.5,
+     "149": 0.5,
+     "163": 0.0,
+     "181": 0.0
+    },
+    "precision": 1.0,
+    "reads": 12.0,
+    "recall": 0.73
+   },
+   "typed": {
+    "complete": 0.0,
+    "coverage": 0.5333,
+    "exact": 0.0,
+    "false_complete": 0.0,
+    "latency_ms": 0.751,
+    "per_seed_exact": {
+     "101": 0.0,
+     "127": 0.0,
+     "149": 0.0,
+     "163": 0.0,
+     "181": 0.0
+    },
+    "precision": 0.9,
+    "reads": 0.0,
+    "recall": 0.2017
+   },
+   "typed+fallback": {
+    "complete": 0.0,
+    "coverage": 0.7833,
+    "exact": 0.2,
+    "false_complete": 0.0,
+    "latency_ms": 6.1759,
+    "per_seed_exact": {
+     "101": 0.0,
+     "127": 0.5,
+     "149": 0.5,
+     "163": 0.0,
+     "181": 0.0
+    },
+    "precision": 1.0,
+    "reads": 12.0,
+    "recall": 0.73
+   }
+  },
+  "threshold": null
+ },
+ "run_id": "evidence-completeness-v1",
+ "schema": "mf-run-manifest/1",
+ "seeds": [
+  101,
+  127,
+  149,
+  163,
+  181
+ ],
+ "suite": "INT-03",
+ "verification": {
+  "baseline_registered": true,
+  "holdout_frozen": true,
+  "independent_replicated": false,
+  "oracle_sanity_passed": true
+ }
+}

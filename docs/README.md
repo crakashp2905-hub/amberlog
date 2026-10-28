@@ -109,6 +109,8 @@ use the product.
 
 ## Memory Fabric 2 roadmap
 
+- [Optional lossless phrase compaction](LOSSLESS_COMPACTION.md)
+
 - [Next checklist execution status](NEXT_CHECKLIST_STATUS.md)
 - [Historical read security design](adr/0002-historical-belief-reads.md)
 - [Procedural asset schema draft](adr/0003-procedural-asset-draft.md)

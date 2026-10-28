@@ -5,6 +5,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: optional exact phrase-dictionary compaction
+- Lossless, bounded phrase factoring for repetitive session text with verified
+  reconstruction and extractive fallback; no model-token or task-success claim.
+- Compaction enforces current source scope/tenant, prevents visibility widening
+  and refuses stale-source commits. Erasure now also reaches compaction summaries.
+
 ### Fixed: experimental typed-query completeness and privacy
 - Missing join and aggregate keys no longer yield falsely complete results.
   Aggregates preserve caller filters; incomparable predicate values remain unknown.

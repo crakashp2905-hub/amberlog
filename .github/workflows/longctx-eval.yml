@@ -1,0 +1,48 @@
+name: longctx-eval
+
+# PUB-13 MemoryAgentBench (Conflict_Resolution, MIT) and PUB-05 AA-LCR
+# (Apache-2.0) against a small local model on the runner (benchmarks/longctx.py).
+# $0; descriptive. Each prints its result JSON between markers.
+
+on:
+  push:
+    paths: ["benchmarks/longctx.py", ".github/workflows/longctx-eval.yml"]
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Ollama model"
+        default: "qwen2.5:3b"
+
+jobs:
+  run:
+    strategy:
+      fail-fast: false
+      matrix:
+        suite: [mab, aalcr]
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      MODEL: ${{ github.event.inputs.model || 'qwen2.5:3b' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . pyarrow
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (OLLAMA_CONTEXT_LENGTH=4096 ollama serve > ollama.log 2>&1 &)
+          for i in $(seq 1 30); do curl -s localhost:11434/api/tags && break; sleep 2; done
+          ollama pull "$MODEL"
+      - name: Fetch data
+        run: |
+          mkdir -p lc
+          if [ "${{ matrix.suite }}" = mab ]; then
+            curl -fsSL -o lc/Conflict_Resolution.parquet "https://huggingface.co/datasets/ai-hyz/MemoryAgentBench/resolve/main/data/Conflict_Resolution-00000-of-00001.parquet"
+          else
+            curl -fsSL -o lc/AA-LCR_Dataset.csv "https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR/resolve/main/AA-LCR_Dataset.csv"
+            curl -fsSL -o lc/AA-LCR_extracted-text.zip "https://huggingface.co/datasets/ArtificialAnalysis/AA-LCR/resolve/main/extracted_text/AA-LCR_extracted-text.zip"
+          fi
+          sha256sum lc/*
+      - run: python -m benchmarks.longctx --suite ${{ matrix.suite }} --data lc --model "ollama:$MODEL" --limit ${{ matrix.suite == 'mab' && 120 || 100 }}

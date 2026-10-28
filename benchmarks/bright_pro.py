@@ -104,7 +104,7 @@ def run_domain(data: Path, domain: str, max_docs: int | None) -> dict[str, Any]:
     id_of: dict[str, str] = {}
     try:
         for did, text in docs.items():
-            id_of[f.remember("corpus", text or " ")] = did
+            id_of[f.remember("corpus", text or " ", scope="team")] = did
         ingest_s = time.time() - started
         rows = []
         for e in examples:

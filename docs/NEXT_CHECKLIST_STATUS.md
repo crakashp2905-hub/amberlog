@@ -33,7 +33,7 @@ tests exist; exact-head CI and review remain merge gates. PRs are not releases.
 | N48 | PARTIAL | Local release checks and full suites; exact-head CI failures in #17/#18 repaired for tag/ref availability and LF-normalized result digests. Complete alpha qualification, bundle and integration evidence still required. |
 | N49 | EXTERNAL | Independent security reviewer and independent replicating team are required. Internal passing tests are not substitutes. |
 | N50 | EXTERNAL | Usability participants and pilot partners are required; no adoption or willingness-to-pay numbers invented. |
-| N51 | OPEN / owner decisions | Existing product/pilot materials are inputs, not finalized license/pricing/hosting/SLA decisions. No license or compliance claim changed. |
+| N51 | PACKET PREPARED / owner decisions pending | `docs/product/decisions/2026-10-28-packaging-options.md` covers onboarding/contracts, editions, isolation, support, opt-in telemetry, residency, erasure, license/pricing experiments and a cost worksheet. Final choices require workload/pilot/owner evidence; no terms or certification claims changed. |
 
 ## Correctness contract
 

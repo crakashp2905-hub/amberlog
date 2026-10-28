@@ -225,7 +225,7 @@ def compile_csv(text: str, *, doc_id: str, version: str, uri: str = "",
         cells = dict(zip(header, row))
         path = f"row:{cells[key]}" if key else f"row:{number}"
         if path in seen:
-            raise ValueError(f"duplicate key {cells.get(key)!r} at line {number}")
+            raise ValueError(f"duplicate row {path!r} at line {number}")
         seen.add(path)
         sections.append({"path": path, "title": "", "line_start": number, "line_end": number,
                          "text": "; ".join(f"{h}: {v}" for h, v in zip(header, row)),
@@ -259,7 +259,8 @@ def compile_docx(data: bytes, *, doc_id: str, version: str, uri: str = "") -> di
     sections: list[dict[str, Any]] = []
     stack: list[tuple[int, str]] = []
     counts: dict[str, int] = {}
-    anchor, title, start, buf, index = "preamble", "", 0, [], 0
+    anchor, title, start, index = "preamble", "", 0, 0
+    buf: list[str] = []
 
     def flush(end: int) -> None:
         content = "\n".join(b for b in buf if b.strip()).strip()

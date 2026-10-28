@@ -141,11 +141,11 @@
    "id": "PUB-06",
    "name": "PersonaMem",
    "url": "https://github.com/bowen-upenn/PersonaMem",
-   "version": null,
-   "license": "unreviewed",
+   "version": "32k split",
+   "license": "MIT (dataset card, read in CI 2026-10-28)",
    "access": "public (Hugging Face)",
-   "run_status": "NOT_RUN",
-   "reason": "answering needs a model (multiple choice); hosted-model evaluation is on hold by owner instruction",
+   "run_status": "RUN",
+   "reason": "local model only (qwen2.5:3b via Ollama, $0); descriptive: no gold evidence, so no oracle",
    "vendor_reported": {
     "source": "https://raw.githubusercontent.com/TencentCloud/TencentDB-Agent-Memory/main/README.md",
     "arms": {
@@ -156,7 +156,10 @@
       "pct": 76
      }
     }
-   }
+   },
+   "results": [
+    "research/results/pm1-personamem-local.md"
+   ]
   },
   {
    "id": "PUB-07",
@@ -223,10 +226,10 @@
    "name": "LoCoMo",
    "url": "https://github.com/snap-research/locomo",
    "version": null,
-   "license": "unreviewed",
+   "license": "NOASSERTION on GitHub (no licence file recognised)",
    "access": "public",
-   "run_status": "NOT_RUN",
-   "reason": "licence review pending; retrieval-only arm feasible in CI after review",
+   "run_status": "BLOCKED",
+   "reason": "licence not established; not ingested until someone with authority confirms it",
    "vendor_reported": null,
    "url_verified": false
   },

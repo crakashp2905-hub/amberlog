@@ -46,21 +46,24 @@ GOV: dict[str, tuple[str, list[str], str]] = {
                            "test_a_consistent_rewrite_is_caught_by_an_earlier_anchor"], ""),
     "GOV-15": ("COVERED", ["test_an_erased_memory_is_not_resurrected_by_a_restored_key",
                            "test_erasing_a_source_erases_its_summaries"], ""),
-    "GOV-16": ("PARTIAL", ["test_the_copy_replays_to_the_same_state", "test_restore_brings_back_readable_content_keys_and_config"],
-               "backup/restore round-trips everything; a cross-store export/import that keeps tombstones is not built"),
+    "GOV-16": ("PARTIAL", ["test_round_trip_keeps_every_state",
+                           "test_damaged_or_truncated_exports_and_non_empty_targets_are_refused",
+                           "test_the_copy_replays_to_the_same_state"],
+               "export/import keeps tombstones, versions, erasures and tenancy for unencrypted stores; "
+               "encrypted content is sealed to its store and is refused (backup/restore moves it)"),
     "GOV-17": ("COVERED", ["test_an_instruction_is_never_evidence",
                            "test_preamble_frames_memories_as_evidence_not_instructions"], ""),
-    "GOV-18": ("PARTIAL", ["test_the_stated_false_positive_is_pinned"],
-               "false-hold rates are measured per screen (S1, O1, C3 results); no single collateral-damage report"),
+    "GOV-18": ("COVERED", ["test_the_stated_false_positive_is_pinned", "test_collateral_report_is_current"], ""),
     "GOV-19": ("COVERED", ["test_concurrent_writers_serialise_without_losing_writes",
                            "test_a_retraction_killed_mid_transaction_leaves_no_trace"], ""),
     "GOV-20": ("BLOCKED", ["test_partition_bounds_staleness_to_one_lease_lifetime"],
                "simulated on one host; multi-physical-host faults need a second machine"),
     "GOV-21": ("COVERED", ["test_a_contradiction_keeps_both_sides_and_deletes_neither"], ""),
     "GOV-22": ("COVERED", ["test_as_of_gives_the_state_at_that_moment",
-                           "test_believed_at_differs_from_true_at_after_a_correction"], ""),
-    "GOV-23": ("PARTIAL", ["test_the_proposer_cannot_verify_its_own_rules"],
-               "no procedural-skill asset exists yet; rulebook revisions are gated and reviewed"),
+                           "test_believed_at_differs_from_true_at_after_a_correction",
+                           "test_a_correction_after_tau_does_not_change_what_was_believed"], ""),
+    "GOV-23": ("COVERED", ["test_a_withdrawn_prerequisite_stops_it", "test_a_skill_grants_no_tool",
+                           "test_a_revision_needs_its_own_approval_and_retires_the_old_one"], ""),
     "GOV-24": ("COVERED", ["test_the_full_path_is_reconstructed", "test_writers_are_named_and_decoys_are_not_on_the_path"], ""),
 }
 
@@ -79,6 +82,17 @@ class Map(unittest.TestCase):
                 self.assertTrue(why, f"{gid} {status} needs a reason")
             for name in names:
                 self.assertIn(name, defined, f"{gid}: {name} no longer exists")
+
+
+class Reports(unittest.TestCase):
+    def test_collateral_report_is_current(self) -> None:
+        import sys
+
+        sys.path.insert(0, str(ROOT / "tools"))
+        import collateral_report
+
+        self.assertEqual(collateral_report.OUT.read_text(encoding="utf-8"), collateral_report.render(),
+                         "regenerate: python tools/collateral_report.py --write")
 
 
 class Direct(unittest.TestCase):

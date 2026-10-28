@@ -193,6 +193,12 @@ What an erasure of one memory reached, kept, and could not reach
 
 - `id`: the memory whose erasure you are scoping
 
+### `export-events`
+
+Write every event, withdrawals and erasures included, to a portable file with a verifying manifest (move a store between machines or backends)
+
+- `--out`: file to write (JSON lines plus a manifest line)
+
 ### `federate`
 
 WRITES: receive signed retractions and notices from peers over HTTP, and deliver this store's to them (the background manager)
@@ -229,12 +235,19 @@ WRITES: import another store's export (JSON list or JSONL: Mem0, LangChain docum
 WRITES: import a compiled document (JSON: doc_id, version, sections with path and text); re-importing withdraws sections the new version changed or removed
 
 - `file`: the document tree as JSON
-- `--format`: source format: compiled JSON tree or local Markdown
-- `--doc-id`: stable document identity for Markdown
-- `--source-version`: explicit source revision for Markdown
+- `--format`: source format: a compiled JSON tree, or a local Markdown, HTML, CSV or .docx file
+- `--key`: CSV only: the column that identifies a row across versions
+- `--doc-id`: stable document identity (all formats but json)
+- `--source-version`: explicit source revision (all formats but json)
 - `--source-uri`: optional source citation URI; never fetched
 - `--activate`: sections are active at once (the document is the authority)
 - `--tenant`: tenant id to act within
+
+### `import-events`
+
+WRITES: load an export-events file into an empty store and replay it
+
+- `file`: a file written by export-events
 
 ### `incident`
 

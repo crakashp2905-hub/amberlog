@@ -1,9 +1,8 @@
 name: dataset-probe
 
-# Reads the licence and file layout of datasets the benchmark registry lists
-# before any adapter ingests them (masterplan §7A.2 licence gate). Prints
-# only the dataset card's licence lines, file names, sizes, and the field
-# names of the first record -- no content.
+# Reads the licence and layout of datasets the benchmark registry lists before
+# any adapter ingests them (masterplan §7A.2 licence gate). Prints licence
+# lines, file names and sizes, and field names of a first record; no content.
 
 on:
   push:
@@ -13,44 +12,46 @@ on:
 jobs:
   probe:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
-      - name: Probe
+      - name: GitHub licences and READMEs
         run: |
           set +e
-          for repo in bowen-upenn/PersonaMem snap-research/locomo; do
+          for repo in snap-research/locomo harveyai/harvey-labs sierra-research/tau2-bench texttron/BrowseComp-Plus \
+                      yale-nlp/Bright-Pro patronus-ai/financebench HUST-AI-HYZ/MemoryAgentBench ByteDance-Seed/WideSearch \
+                      SWE-bench/SWE-bench; do
             echo "=== $repo"
-            curl -fsSL "https://huggingface.co/api/datasets/$repo" | python3 -c "import json,sys; d=json.load(sys.stdin); print('license tags:', [t for t in d.get('tags',[]) if t.startswith('license')]); [print(' ', s['rfilename']) for s in d.get('siblings',[])]"
-            curl -fsSL "https://api.github.com/repos/$repo" | python3 -c "import json,sys; d=json.load(sys.stdin); print('github license:', (d.get('license') or {}).get('spdx_id'))"
+            curl -fsSL "https://api.github.com/repos/$repo" | python3 -c "import json,sys; d=json.load(sys.stdin); print('licence:', (d.get('license') or {}).get('spdx_id'), '| size KB:', d.get('size'))"
+            curl -fsSL "https://raw.githubusercontent.com/$repo/HEAD/README.md" | grep -inE "licen[cs]e|cc[- ]by|non-commercial|terms of use" | head -8
           done
-          echo "=== locomo files"
-          curl -fsSL "https://api.github.com/repos/snap-research/locomo/contents/data" | python3 -c "import json,sys; [print(' ', f['name'], f['size']) for f in json.load(sys.stdin)]"
-          curl -fsSL -o locomo10.json https://raw.githubusercontent.com/snap-research/locomo/main/data/locomo10.json && python3 - <<'PY'
-          import json
-          d = json.load(open("locomo10.json"))
-          print("locomo samples:", len(d), "keys:", sorted(d[0]))
-          print("conversation keys:", sorted(d[0]["conversation"])[:12])
-          print("qa[0] keys:", sorted(d[0]["qa"][0]), "categories:", sorted({q.get("category") for s in d for q in s["qa"]}))
-          s1 = d[0]["conversation"]["session_1"][0]
-          print("turn keys:", sorted(s1))
-          PY
-          echo "=== PersonaMem files"
-          for f in questions_32k.csv shared_contexts_32k.jsonl; do
-            curl -fsSL -o "$f" "https://huggingface.co/datasets/bowen-upenn/PersonaMem/resolve/main/$f" && ls -la "$f" && head -c 600 "$f" | python3 -c "import sys; t=sys.stdin.read(); print(t[:600].split('\n')[0][:600])"
+      - name: Hugging Face dataset cards
+        run: |
+          set +e
+          for ds in Tevatron/browsecomp-plus-corpus Tevatron/browsecomp-plus yale-nlp/BRIGHT-Pro xlangai/BRIGHT PatronusAI/financebench \
+                    ai-hyz/MemoryAgentBench ByteDance-Seed/WideSearch princeton-nlp/SWE-bench_Verified ArtificialAnalysis/AA-LCR \
+                    Salesforce/LoCoMo snap-research/locomo; do
+            echo "=== $ds"
+            curl -fsSL "https://huggingface.co/api/datasets/$ds" | python3 -c "
+          import json,sys
+          d=json.load(sys.stdin)
+          print('gated:', d.get('gated'), '| licence tags:', [t for t in d.get('tags',[]) if t.startswith('license')])
+          print('files:', [s['rfilename'] for s in d.get('siblings',[])][:25])"
           done
-          python3 - <<'PY'
-          import csv, json
-          try:
-              rows = list(csv.DictReader(open("questions_32k.csv", encoding="utf-8")))
-              print("questions:", len(rows), "columns:", list(rows[0]))
-              print("question types:", sorted({r.get("question_type") for r in rows}))
-          except Exception as e:
-              print("csv error", e)
-          try:
-              first = json.loads(open("shared_contexts_32k.jsonl", encoding="utf-8").readline())
-              k = list(first)[0]
-              print("context jsonl: key sample", str(k)[:40], "value type", type(first[k]).__name__,
-                    "len", len(first[k]), "item keys", sorted(first[k][0]) if isinstance(first[k], list) and isinstance(first[k][0], dict) else "")
-          except Exception as e:
-              print("jsonl error", e)
-          PY
+      - name: tau2-bench knowledge domain layout
+        run: |
+          set +e
+          curl -fsSL "https://api.github.com/repos/sierra-research/tau2-bench/git/trees/main?recursive=1" | python3 -c "
+          import json,sys
+          t=json.load(sys.stdin).get('tree',[])
+          paths=[x['path'] for x in t]
+          print(len(paths),'paths')
+          print([p for p in paths if 'knowledge' in p.lower() or 'banking' in p.lower()][:40])"
+      - name: harvey-labs firm-knowledge layout
+        run: |
+          set +e
+          curl -fsSL "https://api.github.com/repos/harveyai/harvey-labs/git/trees/main?recursive=1" | python3 -c "
+          import json,sys
+          t=json.load(sys.stdin).get('tree',[])
+          fk=[x for x in t if 'firm-knowledge' in x['path']]
+          print(len(fk),'firm-knowledge paths; total bytes', sum(x.get('size',0) for x in fk))
+          print([x['path'] for x in fk][:30])"

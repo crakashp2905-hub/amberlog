@@ -149,3 +149,17 @@ class PersonaMemHelpers(unittest.TestCase):
         self.assertEqual(len(picked), 6)
         self.assertEqual(sorted({r["question_type"] for r in picked}), ["x", "y", "z"])
         self.assertEqual(pm.sample(rows, 6), picked)   # seeded
+
+
+class BrightScoring(unittest.TestCase):
+    def test_bm25_ndcg_recall(self) -> None:
+        from benchmarks.bright_pro import BM25, ndcg, recall
+
+        docs = {"a": "the heart pumps blood through arteries", "b": "plants make sugar from light",
+                "c": "blood pressure and the heart rate", "d": "rocks erode over time"}
+        ranked = BM25(docs).search("heart blood", 4)
+        self.assertEqual(set(ranked[:2]), {"a", "c"})
+        self.assertNotIn("d", ranked)
+        self.assertAlmostEqual(ndcg(["a", "c"], {"a", "c"}), 1.0)
+        self.assertAlmostEqual(ndcg(["x", "a"], {"a"}), 1 / __import__("math").log2(3))
+        self.assertEqual(recall(["a", "x"], {"a", "c"}, 10), 0.5)

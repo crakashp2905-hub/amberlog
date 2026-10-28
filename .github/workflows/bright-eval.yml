@@ -1,0 +1,30 @@
+name: bright-eval
+
+# PUB-08: BRIGHT-Pro retrieval against gold evidence (benchmarks/bright_pro.py).
+# No model; descriptive. Prints the result JSON between markers.
+
+on:
+  push:
+    paths: ["benchmarks/bright_pro.py", ".github/workflows/bright-eval.yml"]
+  workflow_dispatch:
+
+jobs:
+  bright:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e . pyarrow
+      - name: Fetch BRIGHT-Pro (MIT)
+        run: |
+          mkdir -p bright/documents bright/examples
+          for d in biology earth_science economics psychology robotics stackoverflow sustainable_living; do
+            for part in documents examples; do
+              curl -fsSL -o "bright/$part/$d.parquet" "https://huggingface.co/datasets/yale-nlp/BRIGHT-Pro/resolve/main/$part/$d.parquet"
+            done
+          done
+          du -sh bright/*
+      - run: python -m benchmarks.bright_pro --data bright

@@ -134,3 +134,18 @@ class Scoreboard(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PersonaMemHelpers(unittest.TestCase):
+    def test_parsing_and_budget(self) -> None:
+        from benchmarks import personamem as pm
+
+        self.assertEqual(pm.options_of("['(a) tea', '(b) coffee']"), ["(a) tea", "(b) coffee"])
+        self.assertEqual(pm.letter("The answer is (B)."), "b")
+        self.assertIsNone(pm.letter("no idea"))
+        self.assertEqual(len(pm.fit(["one two three", "four five"], 4).split()), 4)
+        rows = [{"question_type": t, "i": str(i)} for t in "xyz" for i in range(10)]
+        picked = pm.sample(rows, 6)
+        self.assertEqual(len(picked), 6)
+        self.assertEqual(sorted({r["question_type"] for r in picked}), ["x", "y", "z"])
+        self.assertEqual(pm.sample(rows, 6), picked)   # seeded

@@ -1,0 +1,45 @@
+name: personamem-eval
+
+# PUB-06 (research/prereg/pm1-personamem-local.md): PersonaMem against a small
+# local model served by Ollama on the runner. $0; descriptive, no claim.
+# Prints the result JSON between markers; commit it from the log.
+
+on:
+  push:
+    paths: ["benchmarks/personamem.py", ".github/workflows/personamem-eval.yml"]
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Ollama model"
+        default: "qwen2.5:3b"
+      limit:
+        description: "questions"
+        default: "120"
+
+jobs:
+  pm1:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    env:
+      MODEL: ${{ github.event.inputs.model || 'qwen2.5:3b' }}
+      LIMIT: ${{ github.event.inputs.limit || '120' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e .
+      - name: Install and start Ollama
+        run: |
+          curl -fsSL https://ollama.com/install.sh | sh
+          (OLLAMA_CONTEXT_LENGTH=4096 ollama serve > ollama.log 2>&1 &)
+          for i in $(seq 1 30); do curl -s localhost:11434/api/tags && break; sleep 2; done
+          ollama pull "$MODEL"
+      - name: Fetch PersonaMem 32k (MIT)
+        run: |
+          mkdir -p pmdata
+          for f in questions_32k.csv shared_contexts_32k.jsonl; do
+            curl -fsSL -o "pmdata/$f" "https://huggingface.co/datasets/bowen-upenn/PersonaMem/resolve/main/$f"
+          done
+          sha256sum pmdata/*
+      - run: python -m benchmarks.personamem --data pmdata --model "ollama:$MODEL" --limit "$LIMIT"

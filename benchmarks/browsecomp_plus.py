@@ -6,8 +6,9 @@ Tevatron/browsecomp-plus (queries, MIT) and Tevatron/browsecomp-plus-corpus
 (MIT). Arms as in PUB-08: an independent BM25 and Memory Fabric's lexical
 retrieval. Scored on `evidence_docs` (documents that support the answer) and
 `gold_docs`: recall@10, recall@100, nDCG@10. The corpus is subsampled for a CI
-runner -- every evidence, gold and listed negative document, plus seeded
-distractors up to `--max-docs` -- and the result says so.
+runner -- every evidence and gold document, plus seeded distractors up to
+`--max-docs` -- and the result says so. Query rows obfuscated with the
+dataset's canary (BrowseComp's scheme) are decoded in memory only.
 """
 
 from __future__ import annotations
@@ -27,6 +28,47 @@ OUT_MD = ROOT / "research" / "results" / "pub07-browsecomp-plus.md"
 OUT_JSON = ROOT / "research" / "results" / "pub07-browsecomp-plus.json"
 
 
+def _decrypt(text: str, canary: str) -> str:
+    """BrowseComp's published obfuscation (base64, XOR with a SHA-256 stream of the canary).
+
+    Returns the text unchanged when it does not decode to readable UTF-8: fields
+    that were never obfuscated pass through.
+    """
+    import base64
+    import hashlib
+
+    if len(text) < 8 or text.isdigit():  # ids and short tokens are never obfuscated
+        return text
+    try:
+        raw = base64.b64decode(text, validate=True)
+    except ValueError:
+        return text
+    key = hashlib.sha256(canary.encode()).digest()
+    key = key * (len(raw) // len(key)) + key[:len(raw) % len(key)]
+    try:
+        out = bytes(a ^ b for a, b in zip(raw, key)).decode("utf-8")
+    except UnicodeDecodeError:
+        return text
+    return out if out.isprintable() or "\n" in out else text
+
+
+def deobfuscate(row: dict[str, Any]) -> dict[str, Any]:
+    canary = row.get("canary")
+    if not canary:
+        return row
+
+    def walk(x: Any) -> Any:
+        if isinstance(x, str):
+            return _decrypt(x, canary)
+        if isinstance(x, dict):
+            return {k: (v if k == "canary" else walk(v)) for k, v in x.items()}
+        if isinstance(x, list):
+            return [walk(v) for v in x]
+        return x
+
+    return {k: (v if k == "canary" else walk(v)) for k, v in row.items()}
+
+
 def ids(value: Any) -> list[str]:
     out = []
     for v in value or []:
@@ -40,8 +82,11 @@ def ids(value: Any) -> list[str]:
 def load(qdir: Path, cdir: Path, max_docs: int) -> tuple[list[dict[str, Any]], dict[str, str]]:
     import pyarrow.parquet as pq
 
-    queries = [r for f in sorted(qdir.glob("*.parquet")) for r in pq.read_table(f).to_pylist()]
-    needed = {d for q in queries for key in ("evidence_docs", "gold_docs", "negative_docs") for d in ids(q.get(key))}
+    queries = [deobfuscate(r) for f in sorted(qdir.glob("*.parquet")) for r in pq.read_table(f).to_pylist()]
+    q0 = queries[0]
+    print("query keys:", sorted(q0), "| query:", str(q0.get("query"))[:80],
+          "| evidence ids:", ids(q0.get("evidence_docs"))[:3], flush=True)
+    needed = {d for q in queries for key in ("evidence_docs", "gold_docs") for d in ids(q.get(key))}
     first = pq.read_table(sorted(cdir.glob("*.parquet"))[0])
     cols = first.column_names
     id_col = next(c for c in ("docid", "doc_id", "id") if c in cols)
@@ -102,6 +147,9 @@ def main(argv: list[str]) -> int:
     mean = {arm: {m: avg([r[arm][m] for r in rows]) for m in metrics} for arm in ("bm25", "fabric")}
     paired = paired_bootstrap([float(r["bm25"]["evidence_recall@100"] or 0.0) for r in rows],
                               [float(r["fabric"]["evidence_recall@100"] or 0.0) for r in rows], seed=1)
+    if not rows:
+        sample = sorted(corpus)[:3]
+        raise SystemExit(f"no query has evidence in the corpus; corpus ids look like {sample}")
     commit = head()[:12]
     data = {"commit": commit, "queries": len(rows), "documents": len(corpus), "max_docs": args.max_docs,
             "ingest_seconds": ingest_s, "arms": mean, "paired_evidence_recall100_fabric_minus_bm25": paired,
@@ -123,8 +171,8 @@ def main(argv: list[str]) -> int:
     OUT_MD.write_text(f"""# PUB-07 — BrowseComp-Plus retrieval, no model (descriptive)
 
 `python -m benchmarks.browsecomp_plus` at commit `{commit}` in CI. Tevatron/browsecomp-plus (MIT), {len(rows)}
-queries with evidence documents; corpus **subsampled** to {len(corpus):,} documents (every evidence, gold and
-listed negative document, plus seeded distractors), documents truncated to {MAX_CHARS:,} characters. No
+queries with evidence documents; corpus **subsampled** to {len(corpus):,} documents (every evidence and gold
+document, plus seeded distractors), documents truncated to {MAX_CHARS:,} characters. No
 model, no claim. Raw numbers: [pub07-browsecomp-plus.json](pub07-browsecomp-plus.json).
 
 | arm | evidence recall@10 | evidence recall@100 | evidence nDCG@10 | gold recall@100 |
@@ -132,7 +180,7 @@ model, no claim. Raw numbers: [pub07-browsecomp-plus.json](pub07-browsecomp-plus
 {table}
 
 Paired difference in evidence recall@100 (Fabric − BM25, bootstrap, seed 1): {paired['diff']:+.3f}
-[{paired['lo']:+.3f}, {paired['hi']:+.3f}]. With every hard negative kept and most of the 100k corpus left out,
+[{paired['lo']:+.3f}, {paired['hi']:+.3f}]. With most of the 100k corpus left out,
 these numbers are easier than the full benchmark; compare arms with each other, not with published scores.
 """, encoding="utf-8")
     return 0

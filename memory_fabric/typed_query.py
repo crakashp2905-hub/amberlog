@@ -29,6 +29,17 @@ Fields come from the writer (`remember(..., structured={...})`); nothing here
 extracts or invents them. Operators: equality, `$ne`, `$in`, `$nin`, `$gt`,
 `$gte`, `$lt`, `$lte`, `$exists`. `count`, `distinct`, `group_by` and `join`
 build on `select`.
+
+Completeness is coverage of the currently eligible, unerased corpus in the
+requested tenant (default tenant when omitted), optionally narrowed by IDs.
+It is conditional on writer-provided fields, not truth or action authority.
+False conjuncts justify exclusion; missing or incomparable required values are
+unknown. Aggregates also require their scalar keys to be evaluable. Join keys
+compare numbers numerically without coercing strings or booleans; explicit null
+is known but never joins (SQL-style). Missing/composite/nonfinite keys make the
+result incomplete. Selection and joins return IDs; exposing content still
+requires the existing enforced read path. Metadata operations use a short
+transaction fence so records cannot change between selection and aggregation.
 """
 
 from __future__ import annotations
@@ -36,7 +47,9 @@ from __future__ import annotations
 __stability__ = "experimental"
 
 from dataclasses import dataclass, field
+import math
 from typing import TYPE_CHECKING, Any, Iterable, Mapping
+from .identity import DEFAULT_TENANT
 
 if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
@@ -71,7 +84,7 @@ def _test(value: Any, cond: Any) -> bool | None:
                 "$lt": lambda a: value < a, "$lte": lambda a: value <= a,
             }[op](arg) for op, arg in rest.items())
         except TypeError:
-            return False   # incomparable types are a non-match, not an error
+            return None   # incomparable values cannot justify excluding a record
     if isinstance(cond, Mapping) and any(str(k).startswith("$") for k in cond):
         raise ValueError(f"unknown operator in {dict(cond)}; supported: {', '.join(OPERATORS)}")
     if value is _MISSING:
@@ -103,12 +116,21 @@ class Selection:
 def select(fabric: "MemoryFabric", agent_id: str, where: Mapping[str, Any],
            tenant_id: str | None = None, within: Iterable[str] | None = None) -> Selection:
     """Every visible memory whose `structured` fields satisfy `where` (all conditions)."""
+    with fabric._transaction():
+        return _select(fabric, agent_id, where, tenant_id=tenant_id, within=within)
+
+
+def _select(fabric: "MemoryFabric", agent_id: str, where: Mapping[str, Any],
+            tenant_id: str | None, within: Iterable[str] | None) -> Selection:
     from .navigation import _visible
 
     allowed = frozenset(within) if within is not None else None
     sel = Selection(dict(where))
     memories = fabric.state.memories
-    for mid in _visible(fabric, agent_id, tenant_id):
+    # A missing tenant is the default tenant, never an all-tenant inspection.
+    for mid in _visible(fabric, agent_id, tenant_id or DEFAULT_TENANT):
+        if mid in fabric.state.erased:
+            continue
         if allowed is not None and mid not in allowed:
             continue
         sel.considered += 1
@@ -130,33 +152,81 @@ def count(fabric: "MemoryFabric", agent_id: str, where: Mapping[str, Any], **kw:
 
 def distinct(fabric: "MemoryFabric", agent_id: str, key: str, where: Mapping[str, Any] | None = None,
              **kw: Any) -> tuple[list[Any], bool]:
-    sel = select(fabric, agent_id, {**(where or {}), key: {"$exists": True}}, **kw)
-    values = {repr(v): v for v in (_get(fabric.state.memories[m].structured or {}, key) for m in sel.ids)}
-    return [values[k] for k in sorted(values)], sel.complete
+    with fabric._transaction():
+        sel = select(fabric, agent_id, where or {}, **kw)
+        values: dict[Any, Any] = {}
+        complete = sel.complete
+        for mid in sel.ids:
+            value = _get(fabric.state.memories[mid].structured or {}, key)
+            normalized = _key(value)
+            if normalized is _MISSING:
+                complete = False
+            else:
+                values.setdefault(normalized, value)
+        return sorted(values.values(), key=repr), complete
 
 
 def group_by(fabric: "MemoryFabric", agent_id: str, key: str, where: Mapping[str, Any] | None = None,
              **kw: Any) -> tuple[dict[str, list[str]], bool]:
-    sel = select(fabric, agent_id, {**(where or {}), key: {"$exists": True}}, **kw)
-    out: dict[str, list[str]] = {}
-    for mid in sel.ids:
-        out.setdefault(repr(_get(fabric.state.memories[mid].structured or {}, key)), []).append(mid)
-    return out, sel.complete
+    with fabric._transaction():
+        sel = select(fabric, agent_id, where or {}, **kw)
+        out: dict[str, list[str]] = {}
+        names: dict[Any, str] = {}
+        complete = sel.complete
+        for mid in sel.ids:
+            value = _get(fabric.state.memories[mid].structured or {}, key)
+            normalized = _key(value)
+            if normalized is _MISSING:
+                complete = False
+                continue
+            name = names.setdefault(normalized, repr(value))
+            out.setdefault(name, []).append(mid)
+        return out, complete
+
+
+def _key(value: Any) -> Any:
+    """Scalar keys: numbers compare numerically; strings/bools stay distinct.
+
+    Missing, nonfinite or composite keys cannot justify a complete aggregate.
+    Explicit null is known (one distinct/group value), but never joins, as in SQL.
+    """
+    if value is None:
+        return ("null",)
+    if type(value) is bool:
+        return ("bool", value)
+    if isinstance(value, (int, float)):
+        return ("number", value) if not isinstance(value, float) or math.isfinite(value) else _MISSING
+    if isinstance(value, str):
+        return ("string", value)
+    return _MISSING
 
 
 def join(fabric: "MemoryFabric", agent_id: str, left: Mapping[str, Any], right: Mapping[str, Any],
          on: tuple[str, str], **kw: Any) -> tuple[list[tuple[str, str]], bool]:
     """Pairs (left id, right id) whose `on` fields are equal. Complete only if both sides are."""
+    with fabric._transaction():
+        return _join(fabric, agent_id, left, right, on, **kw)
+
+
+def _join(fabric: "MemoryFabric", agent_id: str, left: Mapping[str, Any], right: Mapping[str, Any],
+          on: tuple[str, str], **kw: Any) -> tuple[list[tuple[str, str]], bool]:
     lsel, rsel = select(fabric, agent_id, left, **kw), select(fabric, agent_id, right, **kw)
     mem = fabric.state.memories
-    index: dict[str, list[str]] = {}
+    index: dict[Any, list[str]] = {}
+    complete = lsel.complete and rsel.complete
     for rid in rsel.ids:
         v = _get(mem[rid].structured or {}, on[1])
-        if v is not _MISSING:
-            index.setdefault(repr(v), []).append(rid)
+        key = _key(v)
+        if key is _MISSING:
+            complete = False
+        elif v is not None:
+            index.setdefault(key, []).append(rid)
     pairs = []
     for lid in lsel.ids:
         v = _get(mem[lid].structured or {}, on[0])
-        if v is not _MISSING:
-            pairs += [(lid, rid) for rid in index.get(repr(v), [])]
-    return pairs, lsel.complete and rsel.complete
+        key = _key(v)
+        if key is _MISSING:
+            complete = False
+        elif v is not None:
+            pairs += [(lid, rid) for rid in index.get(key, [])]
+    return pairs, complete

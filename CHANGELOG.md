@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Fixed: experimental typed-query completeness and privacy
+- Missing join and aggregate keys no longer yield falsely complete results.
+  Aggregates preserve caller filters; incomparable predicate values remain unknown.
+- Default queries stay in the default tenant and exclude crypto-erased records.
+  Scalar join semantics distinguish booleans/strings from numbers and do not join nulls.
+- Generated status reports no longer depend on locally fetched tags; result
+  digests use explicitly documented LF-normalized bytes across platform checkouts.
+
 ### Security (schema 0.14.0): copy recognition no longer crosses tenants
 - **A withdrawal in one tenant could contest another tenant's memory.** Copy recognition matched identical text across tenants, so the second tenant's memory was recorded as a copy of the first's: they shared a source root, and withdrawing the first contested the second. Found by the new governance conformance suite (GOV-07). Writes now match copies only within their own tenant, and a cross-tenant link recorded by an older version is ignored when the log is replayed (SPEC.md 0.14.0). Memories already contested by such a link stay contested in the log; review and validate them again.
 

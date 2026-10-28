@@ -1237,11 +1237,11 @@ def cmd_import_docs(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     from .docsource import import_document, read_document
 
     try:
-        if args.format == "markdown":
-            from .knowledge_compiler import compile_markdown
+        if args.format != "json":
+            from .document_formats import compile_file
             if not args.doc_id or not args.source_version:
-                raise ValueError("Markdown requires --doc-id and --source-version")
-            tree = compile_markdown(Path(args.file).read_text(encoding="utf-8"),
+                raise ValueError("Document formats require --doc-id and --source-version")
+            tree = compile_file(args.file, format=args.format,
                                     doc_id=args.doc_id, version=args.source_version,
                                     uri=args.source_uri or "")
         else:
@@ -3039,10 +3039,10 @@ def build_parser() -> argparse.ArgumentParser:
             "WRITES: import a compiled document (JSON: doc_id, version, sections with path and "
             "text); re-importing withdraws sections the new version changed or removed")
     p.add_argument("file")
-    p.add_argument("--format", choices=["json", "markdown"], default="json",
-                   help="source format: compiled JSON tree or local Markdown")
-    p.add_argument("--doc-id", help="stable document identity for Markdown")
-    p.add_argument("--source-version", help="explicit source revision for Markdown")
+    p.add_argument("--format", choices=["json", "markdown", "csv", "html", "docx", "pdf"],
+                   default="json", help="source format: JSON, Markdown, CSV, HTML, DOCX, or PDF")
+    p.add_argument("--doc-id", help="stable document identity for local formats")
+    p.add_argument("--source-version", help="explicit source revision for local formats")
     p.add_argument("--source-uri", help="optional source citation URI; never fetched")
     p.add_argument("--activate", action="store_true",
                    help="sections are active at once (the document is the authority)")

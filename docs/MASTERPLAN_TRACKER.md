@@ -23,13 +23,13 @@ The generated companions are [STATUS_AT_HEAD.md](STATUS_AT_HEAD.md),
 | MF-004 | Document import / tenant regression | DONE | `tests/test_ingest_hardening.py` (randomised tenant property test) |
 | MF-005 | Source span fidelity | DONE | sections carry `line_start/line_end/byte_start/byte_end`, parser version, MIME, source hash; span tests resolve every span to the exact source bytes |
 | MF-006 | Markdown parser hardening | DONE | fence/CRLF/unicode/escape/size-limit/determinism matrix in `tests/test_ingest_hardening.py` |
-| MF-007 | Format adapter contract (HTML/PDF/DOCX/CSV) | NOT_RUN | needs parser dependencies kept out of the zero-dependency core; the compiled-tree JSON contract (`import-docs`) is the seam |
+| MF-007 | Format adapter contract (HTML/PDF/DOCX/CSV) | DONE | `document_formats`, `tests/test_document_formats.py`: local adapters through the compiled-tree boundary; PDF is optional (`documents` extra). Text/layout/OCR limits documented in the knowledge-fabric guide. |
 | MF-008 | Evidence benchmark prereg + harness | PARTIAL | harness and E1 registration done; a cross-domain public evidence benchmark needs licensed data (PUB-07..10) |
 | MF-009 | Retrieval profiles at fixed budget | PARTIAL | profiles exist (R3); fixed-budget downstream gain needs an answer model |
 | MF-010 | Typed entity projection | PARTIAL | `typed_query` (experimental) over writer-typed fields; E1 **failed**; no extraction |
 | MF-011 | Conflict display and review | PARTIAL | contested sets kept and shown in the Control Center; GOV-21 test; no new UI this round |
 | MF-012 | Answerability audit | NOT_RUN | A1 found the prompt already saturated; a new ambiguous-evidence benchmark needs a model |
-| MF-013 | Multi-agent MemoryWorld | PARTIAL | INT-01 (changing knowledge, bitemporal) runs; INT-02 (federation world) not built |
+| MF-013 | Multi-agent MemoryWorld | PARTIAL | INT-01 and INT-02 (`benchmarks.federation_world`) run without models; INT-02 checks five stores in chain/star schedules, stale partitions, independent support and action authorization after correction. Real-agent studies remain open. |
 | MF-014 | Real-agent evaluation | NOT_RUN | hosted-model evaluation is on hold by owner instruction |
 | MF-015 | Action-fence regression | DONE | GOV-12/13 map to existing fence and crash tests |
 | MF-016 | Restore and retention audit | DONE | backup/restore and erasure tests (GOV-15/16 map) |
@@ -89,7 +89,7 @@ TencentDB's stated token reductions disagree with their own displayed totals (Wi
 | Epic | Status | Done | Not done |
 |---|---|---|---|
 | E0 baseline and debt | DONE | status page, manifest, ADR, release-bundle stamp, version-consistency check | — |
-| E1 knowledge ingestion v2 | PARTIAL | spans, parser version, MIME, size limit, crash-recoverable re-import, tenant property test | HTML/PDF/DOCX/CSV adapters, tables as cells, batch import with preview |
+| E1 knowledge ingestion v2 | PARTIAL | spans, parser version, MIME, size limit, crash-recoverable re-import, tenant property test, HTML/PDF/DOCX/CSV adapters, CSV cells and DOCX table rows | PDF table extraction, HTML DOM fidelity, batch import with preview |
 | E2 typed knowledge | PARTIAL | typed filter / count / distinct / group / join with completeness certificate | entity/relation/qualifier types, extraction, promotion workflow; E1 failed |
 | E3 retrieval and evidence | NOT_RUN | — | fixed-budget downstream evaluation needs a model |
 | E4 collective belief | NOT_RUN | (existing hypothesis sets kept) | real-agent experiments |

@@ -211,6 +211,14 @@ def prepare_offer(source: "MemoryFabric", memory_id: str, target_store_id: str,
     from .independence import Independence, global_ref
 
     root_store, root_id = global_ref(source, memory_id)
+    # The root's version travels with every re-share, so a recipient can tell
+    # the origin's newer revision from a stale copy of an older one even when
+    # it arrives through an intermediary (which re-numbers its own copy).
+    prior = memory.context.get(ORIGIN_KEY) if isinstance(memory.context, dict) else None
+    if isinstance(prior, dict):
+        root_version = (prior.get("root") or {}).get("version", prior.get("version"))
+    else:
+        root_version = memory.version
     informed = sorted(Independence(source).informed_by(memory_id))
     context = dict(memory.context)
     context[ORIGIN_KEY] = {
@@ -225,7 +233,7 @@ def prepare_offer(source: "MemoryFabric", memory_id: str, target_store_id: str,
         # The original observation, named the same in every store, and the
         # originals its author had been shown before writing it: what lets a
         # recipient tell a laundered copy from an independent report (S2).
-        "root": {"store": root_store, "memory_id": root_id},
+        "root": {"store": root_store, "memory_id": root_id, "version": root_version},
         "informed_by": [list(ref) for ref in informed],
         # The origin's verdict on the memory's authority. The recipient
         # treats it as a floor: it can lower trust there, never raise it.

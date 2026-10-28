@@ -40,7 +40,8 @@ TIMING = re.compile(r"(_ms|_s|_ms_p\d+|_s_p\d+|_per_s|_wait_\w+)$")
 # harness takes --out, else the harness writes research/results/<recorded>.json itself)
 ENTRIES: dict[str, tuple[str, list[str]]] = {
     "s1": ("s1-correction-sim", ["-m", "experiments.s1_correction_sim", "--seeds", "20", "--out", "{out}"]),
-    "s2": ("s2-launder-sim", ["-m", "experiments.s2_launder_sim", "--split", "test", "--out", "{out}"]),
+    "s2": ("s2-launder-sim", ["-m", "experiments.s2_launder_sim", "--split", "test", "--tau", "overlap@0.9",
+                                 "--out", "{out}"]),
     "s2-dev": ("s2-launder-sim-dev", ["-m", "experiments.s2_launder_sim", "--split", "dev", "--out", "{out}"]),
     "s4": ("s4-transfer-sim", ["-m", "experiments.s4_transfer_sim", "--split", "test", "--out", "{out}"]),
     "s5": ("s5-receipt-leakage-after-f13", ["-m", "experiments.s5_receipt_leakage", "--out", "{out}"]),

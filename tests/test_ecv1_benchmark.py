@@ -11,6 +11,7 @@ class EvaluationTests(unittest.TestCase):
         self.assertFalse(set(SPLITS["dev"]) & set(SPLITS["test"]))
         self.assertEqual(digest("dev"), "043a07f82c0a3da3c473fbdb2bbbdd1d9caac379fc0aa36ae36c7550885d518a")
         self.assertNotEqual(digest("dev"), digest("test"))
+        self.assertEqual(digest("test"), "79efb4a14720ea1840e2ca0acadb4cb53b9be5f808f738c51c75bfdad14186de")
 
     def test_positive_certificates_match_independent_gold_at_full_diagnostic_budget(self):
         # Not the registered primary read budget. This is a certificate audit:

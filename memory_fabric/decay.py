@@ -302,7 +302,8 @@ def erase_summaries_of(fabric: "MemoryFabric", memory_id: str, actor: str) -> li
     """Erase every summary written from this memory. Called by `erase_content`."""
     done = []
     for m in list(fabric.state.memories.values()):
-        if SUMMARY_KEY in (m.context or {}) and memory_id in dict(m.provenance.parents) \
+        if (SUMMARY_KEY in (m.context or {}) or "compaction_of" in (m.context or {})) \
+                and memory_id in dict(m.provenance.parents) \
                 and m.id not in fabric.state.erased:
             fabric.erase_content(m.id, reason=f"a source ({memory_id}) was erased", actor=actor)
             done.append(m.id)

@@ -5,15 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
-### Added: experimental historical explicit-ID reads
-- `history_query.query` replays a bounded log snapshot, intersects historical and
-  current authorization, and returns archival receipts with logged exposures.
-  Current erasure/withdrawal wins; no historical action credentials are issued.
-
-### Fixed: experimental typed-query completeness and privacy
-- Missing join and aggregate keys no longer yield falsely complete results.
-  Aggregates preserve caller filters; incomparable predicate values remain unknown.
-- Default queries stay in the default tenant and exclude crypto-erased records.
-  Scalar join semantics distinguish booleans/strings from numbers and do not join nulls.
-- Generated status reports no longer depend on locally fetched tags; result
-  digests use explicitly documented LF-normalized bytes across platform checkouts.
+### Added: optional exact phrase-dictionary compaction
+- Lossless, bounded phrase factoring for repetitive session text with verified
+  reconstruction and extractive fallback; no model-token or task-success claim.
+- Compaction enforces current source scope/tenant, prevents visibility widening
+  and refuses stale-source commits. Erasure now also reaches compaction summaries.

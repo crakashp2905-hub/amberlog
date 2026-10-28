@@ -21,7 +21,9 @@ tests exist; exact-head CI and review remain merge gates. PRs are not releases.
 | N21 | PARTIAL | CSV physical rows and PDF page anchors; merged cells, footnotes, OCR and full layout fidelity remain open and documented. |
 | N22 | IMPLEMENTED in PR #17 | Existing screened candidate importer, revision invalidation and cross-tenant regression; more cross-format collision fixtures remain useful. |
 | N23 | OPEN | Batch preview, resume, dependent-action impact and rollback/repair workflows |
-| N24–N27 | OPEN | Existing compaction is not evidence of actual compression savings. Optional compressor and paired cost/safety study required. |
+| N24 | IMPLEMENTED, qualification pending | Optional exact phrase-dictionary summarizer, bounded decoding and extractive fallback; no default switch or model-token claim |
+| N25–N26 | OPEN | Independent QA, matched-context/model comparisons, actual tokenization and full cost accounting remain required. Seeded fixtures measure content bytes and retain all sources. |
+| N27 | PARTIAL | Compaction scope/tenant checks, source-change fences and erasure of `compaction_of` summaries added; existing authority/dispute/correction tests retained. Independent safety/accuracy study remains open. |
 | N28 | DRAFT COMPLETE | [Procedural asset contract](adr/0003-procedural-asset-draft.md); schema review and implementation remain gated on pilot demand. |
 | N29–N30 | GATED / OPEN | Verified asset flow, execution/publication and comparisons wait for the stated pilot-demand gate. |
 | N31 | PARTIAL in PR #17 | INT-02 five-store chain/star correction world exists; role-specific conflicts, source laundering, contradictory timestamps and longitudinal decisions remain open. |

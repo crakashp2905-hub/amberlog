@@ -129,7 +129,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.typedclaims`
 - `memory_fabric.validation`
 
-## Experimental (21)
+## Experimental (22)
 
 - `memory_fabric.adapters.systemone`
 - `memory_fabric.claimcheck`
@@ -144,6 +144,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.import_preview`
 - `memory_fabric.independence`
 - `memory_fabric.knowledge_compiler`
+- `memory_fabric.lossless_compaction`
 - `memory_fabric.mental_models`
 - `memory_fabric.navigation`
 - `memory_fabric.objective`

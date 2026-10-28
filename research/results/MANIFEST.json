@@ -1,12 +1,12 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 108,
+ "results": 109,
  "missing_field_counts": {
   "git_sha": 33,
-  "prereg": 37,
-  "dataset_digest": 106,
-  "model_id": 76,
-  "prompt_hash": 108,
+  "prereg": 38,
+  "dataset_digest": 107,
+  "model_id": 77,
+  "prompt_hash": 109,
   "seed": 45,
   "cost": 89,
   "verdict": 69
@@ -1095,6 +1095,33 @@
    "config": null,
    "cost": null,
    "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "lossless-compression-qualification",
+   "file": "research/results/lossless-compression-qualification.json",
+   "file_sha256": "6da8273eb7641a94e01efda3d53cd2f97d37e08dba6934d844b1a90ed9d7fa7c",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": null,
+   "git_sha": "9490f490a6700de15bd9ff271553f39e8741b944",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    503,
+    509,
+    521,
+    523,
+    541
+   ],
+   "config": null,
+   "cost": {
+    "model_calls": 0,
+    "model_usd": 0,
+    "hardware_usd": null
+   },
+   "verdict": "DESCRIPTIVE",
    "parsable": true
   },
   {

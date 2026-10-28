@@ -41,7 +41,8 @@ from typing import TYPE_CHECKING, Callable, Sequence
 
 from .conflicts import author, claim, find_conflicts
 from .events import EventType
-from .model import EXPOSABLE_STATES, ProvenanceMethod
+from .model import EXPOSABLE_STATES, ProvenanceMethod, Scope, visible_to
+from .identity import DEFAULT_TENANT
 
 if TYPE_CHECKING:  # pragma: no cover
     from .fabric import MemoryFabric
@@ -115,15 +116,24 @@ def extractive(memories: Sequence["Memory"], disputes: Sequence[Sequence["Memory
 
 def compact_session(fabric: "MemoryFabric", episode_id: str, agent_id: str,
                     summarise: Callable[[Sequence["Memory"], Sequence[Sequence["Memory"]]], str]
-                    | None = None, scope: str | None = None) -> CompactionReport:
+                    | None = None, scope: str | None = None,
+                    tenant_id: str = DEFAULT_TENANT) -> CompactionReport:
     """Write one governed summary of an episode. Returns what was used and left out."""
     report = CompactionReport(episode_id=episode_id, summary_id=None)
     usable = []
-    for memory in session_memories(fabric, episode_id):
-        if memory.lifecycle_state in EXPOSABLE_STATES:
-            usable.append(memory)
-        else:
-            report.left_out[memory.id] = memory.lifecycle_state.value
+    from .navigation import _visible
+
+    if not agent_id or not tenant_id:
+        raise CompactionRefused("compaction requires agent and tenant identities")
+    with fabric._transaction():
+        eligible = set(_visible(fabric, agent_id, tenant_id)) - fabric.state.erased
+        for memory in session_memories(fabric, episode_id):
+            if memory.tenant_id != tenant_id or not visible_to(memory, agent_id, fabric.state):
+                continue   # no hidden IDs or counts in the report
+            if memory.id in eligible:
+                usable.append(memory)
+            elif memory.lifecycle_state not in EXPOSABLE_STATES:
+                report.left_out[memory.id] = memory.lifecycle_state.value
     if not usable:
         raise CompactionRefused(f"episode {episode_id} has no usable memories to compact")
     disputes = find_conflicts(usable)
@@ -140,11 +150,17 @@ def compact_session(fabric: "MemoryFabric", episode_id: str, agent_id: str,
             if not set(claim(m.content)[2]) <= set(stated):
                 raise CompactionRefused("the summary resolves a dispute instead of keeping it")
     narrowest = min((m.scope for m in usable), key=lambda s: s.rank)
-    report.summary_id = fabric.derive(
-        agent_id, text, parents=[m.id for m in usable],
-        method=ProvenanceMethod.CONSOLIDATED,
-        context={"kind": "derived_claim", "compaction_of": episode_id},
-        scope=scope or narrowest)
+    if scope is not None and Scope(scope).rank > narrowest.rank:
+        raise CompactionRefused("a summary cannot widen its sources' visibility")
+    with fabric._transaction():
+        eligible = set(_visible(fabric, agent_id, tenant_id)) - fabric.state.erased
+        if any(m.id not in eligible or fabric.state.memories[m.id].version != m.version for m in usable):
+            raise CompactionRefused("compaction sources changed during summarization; retry with current evidence")
+        report.summary_id = fabric.derive(
+            agent_id, text, parents=[m.id for m in usable],
+            method=ProvenanceMethod.CONSOLIDATED,
+            context={"kind": "derived_claim", "compaction_of": episode_id},
+            scope=scope or narrowest)
     report.inputs = [m.id for m in usable]
     return report
 

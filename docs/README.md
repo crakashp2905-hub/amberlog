@@ -109,8 +109,4 @@ use the product.
 
 ## Memory Fabric 2 roadmap
 
-- [Experimental historical explicit-ID reads](HISTORICAL_READS.md)
-
-- [Next checklist execution status](NEXT_CHECKLIST_STATUS.md)
-- [Historical read security design](adr/0002-historical-belief-reads.md)
-- [Procedural asset schema draft](adr/0003-procedural-asset-draft.md)
+- [Optional lossless phrase compaction](LOSSLESS_COMPACTION.md)

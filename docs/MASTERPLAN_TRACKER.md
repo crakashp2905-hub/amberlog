@@ -23,20 +23,20 @@ The generated companions are [STATUS_AT_HEAD.md](STATUS_AT_HEAD.md),
 | MF-004 | Document import / tenant regression | DONE | `tests/test_ingest_hardening.py` (randomised tenant property test) |
 | MF-005 | Source span fidelity | DONE | sections carry `line_start/line_end/byte_start/byte_end`, parser version, MIME, source hash; span tests resolve every span to the exact source bytes |
 | MF-006 | Markdown parser hardening | DONE | fence/CRLF/unicode/escape/size-limit/determinism matrix in `tests/test_ingest_hardening.py` |
-| MF-007 | Format adapter contract (HTML/PDF/DOCX/CSV) | NOT_RUN | needs parser dependencies kept out of the zero-dependency core; the compiled-tree JSON contract (`import-docs`) is the seam |
+| MF-007 | Format adapter contract (HTML/PDF/DOCX/CSV) | PARTIAL | HTML, CSV (verbatim cells, keyed rows) and .docx compile with the standard library (`import-docs --format html|csv|docx`, `tests/test_format_adapters.py`); PDF needs a third-party parser and stays out of the zero-dependency core |
 | MF-008 | Evidence benchmark prereg + harness | PARTIAL | harness and E1 registration done; a cross-domain public evidence benchmark needs licensed data (PUB-07..10) |
 | MF-009 | Retrieval profiles at fixed budget | PARTIAL | profiles exist (R3); fixed-budget downstream gain needs an answer model |
 | MF-010 | Typed entity projection | PARTIAL | `typed_query` (experimental) over writer-typed fields; E1 **failed**; no extraction |
 | MF-011 | Conflict display and review | PARTIAL | contested sets kept and shown in the Control Center; GOV-21 test; no new UI this round |
 | MF-012 | Answerability audit | NOT_RUN | A1 found the prompt already saturated; a new ambiguous-evidence benchmark needs a model |
 | MF-013 | Multi-agent MemoryWorld | PARTIAL | INT-01 (changing knowledge, bitemporal) runs; INT-02 (federation world) not built |
-| MF-014 | Real-agent evaluation | NOT_RUN | hosted-model evaluation is on hold by owner instruction |
+| MF-014 | Real-agent evaluation | PARTIAL | local model only, by owner decision ($0): PersonaMem with qwen2.5:3b (PM1); hosted models remain on hold |
 | MF-015 | Action-fence regression | DONE | GOV-12/13 map to existing fence and crash tests |
 | MF-016 | Restore and retention audit | DONE | backup/restore and erasure tests (GOV-15/16 map) |
-| MF-017 | Bitemporal query validation | PARTIAL | INT-01 shows both questions answered; `retrieve(known_at=)` API not built (replay helper only) |
+| MF-017 | Bitemporal query validation | DONE | `history.believed_at` (what the store would have shown at log position τ, with the version then and the same visibility rule); INT-01; `tests/test_history.py` |
 | MF-018 | Minority belief experiment | NOT_RUN | needs real agent teams (model budget) |
 | MF-019 | Source identity calibration | NOT_RUN | S2 result stands; recalibration needs new data |
-| MF-020 | Governed skills | NOT_RUN | no skill asset type; GOV-23 PARTIAL |
+| MF-020 | Governed skills | DONE | `skills.py`: candidate on proposal, approval by another reviewer with every check passed, a new approval per version, no permission conferred, stops when a prerequisite is withdrawn (`tests/test_skills.py`) |
 | MF-021 | Multi-physical-host federation | BLOCKED | needs a second physical machine |
 | MF-022 | External security review | BLOCKED | needs an independent reviewer |
 | MF-023 | DX onboarding user study | BLOCKED | needs participants; automated fresh-machine install runs in CI |
@@ -51,7 +51,7 @@ The generated companions are [STATUS_AT_HEAD.md](STATUS_AT_HEAD.md),
 | MF-032 | Global manifest and trace schema | DONE | `benchmarks/manifest.py`; `research/results/MANIFEST.json` for past results |
 | MF-033 | Strong baselines and oracle falsification | DONE | `benchmarks/checks.py` (8a–8d), used by E1 |
 | MF-034 | Cost / token instrumentation | DONE | `benchmarks/cost.py` ledger; model calls already logged by the one client wrapper |
-| MF-035 | PersonaMem adapter | NOT_RUN | answering needs a model; on hold |
+| MF-035 | PersonaMem adapter | DONE | `benchmarks/personamem.py`, CI `personamem-eval`, local model, descriptive ([PM1](../research/results/pm1-personamem-local.md)) |
 | MF-036 | Harvey LAB adapter | NOT_RUN | licence review and budget (0.86–3.79M tokens/task, vendor figures) |
 | MF-037 | τ-knowledge adapter | NOT_RUN | budget and release pin |
 | MF-038 | Context offload / compression ablation | PARTIAL | INT-04 harness runs; the default summariser does not compress, so savings need a compressing summariser |
@@ -60,7 +60,7 @@ The generated companions are [STATUS_AT_HEAD.md](STATUS_AT_HEAD.md),
 | MF-041 | WideSearch harness | NOT_RUN | live web + model |
 | MF-042 | Continuous SWE-bench arm | NOT_RUN | Docker + coding model at billions of tokens |
 | MF-043 | AA-LCR adapter | NOT_RUN | dataset rights + long-context model |
-| MF-044 | Public QA retrieval expansion | NOT_RUN | licence reviews pending; PDF parsing absent |
+| MF-044 | Public QA retrieval expansion | NOT_RUN | licence reviews pending (LoCoMo: no licence recognised, BLOCKED); PDF parsing absent |
 | MF-045 | Security / fault long-horizon world | PARTIAL | GOV conformance suite; a long-horizon combined world is not built |
 | MF-046 | Multi-physical-host stress | BLOCKED | needs machines |
 | MF-047 | Scorecard + generated release report | DONE | `python -m benchmarks.scoreboard`; release bundle report |
@@ -71,16 +71,18 @@ The generated companions are [STATUS_AT_HEAD.md](STATUS_AT_HEAD.md),
 ## Governance conformance GOV-01 – GOV-24
 
 Mapped test by test in `tests/test_gov_conformance.py` (which fails if a mapped test disappears).
-**20 COVERED, 3 PARTIAL (GOV-16 export/import of tombstones, GOV-18 single collateral report,
-GOV-23 skills), 1 BLOCKED (GOV-20 multi-physical-host).** Writing it found a **tenant-isolation bug**
+**22 COVERED, 1 PARTIAL (GOV-16: export/import keeps every tombstone for unencrypted stores;
+encrypted content is sealed to its store and is refused), 1 BLOCKED (GOV-20 multi-physical-host).**
+GOV-18's single collateral-damage report is `research/results/collateral-damage.md`. Writing it found a **tenant-isolation bug**
 (GOV-07): copy recognition linked identical text across tenants, so a withdrawal in one tenant
 contested another's memory. Fixed in schema 0.14.0.
 
 ## Benchmark suites PUB-01 – PUB-15, INT-01 – INT-10
 
 See [the scoreboard](../research/results/BENCHMARK_SCOREBOARD.md): each suite's source, licence
-state, the vendor's number kept as theirs, and our run or the reason there is none. Run this round:
-INT-01 (descriptive), INT-03 (E1, **FAIL**), INT-04 (descriptive). Vendor-table arithmetic: two of
+state, the vendor's number kept as theirs, and our run or the reason there is none. Run: INT-01
+(descriptive), INT-03 (E1, **FAIL**), INT-04 (descriptive), PUB-06 PersonaMem with a local 3B model
+(PM1, descriptive). PUB-12 LoCoMo is **BLOCKED**: GitHub recognises no licence for it. Vendor-table arithmetic: two of
 TencentDB's stated token reductions disagree with their own displayed totals (WideSearch 61.38% vs
 61.30%, SWE-bench 33.09% vs 31.63%), as the masterplan noted.
 
@@ -100,7 +102,7 @@ TencentDB's stated token reductions disagree with their own displayed totals (Wi
 
 ## Research questions RQ1 – RQ10
 
-RQ3 (bitemporal) has a working harness (INT-01); RQ1 has its first study (E1, failed). RQ2, RQ4–RQ10
+RQ3 (bitemporal) is answered by `history.believed_at` with INT-01 as its acceptance test; RQ1 has its first study (E1, failed). RQ2, RQ4–RQ10
 are **NOT_RUN**: each needs real model runs, which are on hold, or outside participants.
 
 ## Product, operations, legal (§8, §11–§13)

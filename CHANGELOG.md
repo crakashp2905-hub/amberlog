@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
+### Added: completing the masterplan's buildable items
+- **`history.believed_at`**: what the store would have shown at a past log position τ — the version that stood then, under the same visibility rule as `retrieve`; erased content returns no text.
+- **HTML, CSV and .docx import** (`import-docs --format html|csv|docx`), standard library only: headings become sections with source spans; CSV cells are kept verbatim and rows can be keyed so a moved row is the same section; scripts, styles and navigation are dropped and nothing is executed.
+- **`export-events` / `import-events`**: move a store between machines or backends with every withdrawal, erasure, version and tenant intact, verified by a manifest digest; encrypted content is refused (it is sealed to its store).
+- **Governed skills** (`skills.py`): procedural memories that land as candidates, need another reviewer and passing checks for every version, confer no tool permission, and stop when a prerequisite is withdrawn.
+- **`research/results/collateral-damage.md`**: every safety mechanism's false-hold rate on one page, zeros with their 95% bound.
+- **PersonaMem with a local model** (`benchmarks/personamem.py`, CI `personamem-eval`): descriptive, $0.
+
 ### Security (schema 0.14.0): copy recognition no longer crosses tenants
 - **A withdrawal in one tenant could contest another tenant's memory.** Copy recognition matched identical text across tenants, so the second tenant's memory was recorded as a copy of the first's: they shared a source root, and withdrawing the first contested the second. Found by the new governance conformance suite (GOV-07). Writes now match copies only within their own tenant, and a cross-tenant link recorded by an older version is ignored when the log is replayed (SPEC.md 0.14.0). Memories already contested by such a link stay contested in the log; review and validate them again.
 

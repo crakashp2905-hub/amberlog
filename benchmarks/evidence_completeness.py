@@ -144,6 +144,11 @@ def main() -> int:
     if args.split == "test":
         write(Manifest(run_id="evidence-completeness-v1", suite="INT-03", arm="all", decision=decision,
                        repo_commit=head(), prereg="research/prereg/ecv1-design.md",
+                       reason="development lexical baseline saturates oracle; no attainable threshold registered",
+                       budget={"content_reads_per_query": CONFIG["budget"], "model_calls": 0},
+                       counts={"attempted": len(runs) * 2, "completed": len(runs) * 2,
+                               "solved": round(table["selective"]["exact"] * len(runs) * 2),
+                               "failed": 0, "skipped": 0},
                        dataset={"sha256": digest(args.split), "split": args.split}, seeds=list(SPLITS[args.split]),
                        results={"summary": table, "threshold": threshold}, cost=data["cost"],
                        verification={"baseline_registered": True, "oracle_sanity_passed": not above,

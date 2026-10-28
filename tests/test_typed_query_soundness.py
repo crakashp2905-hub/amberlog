@@ -8,6 +8,13 @@ from memory_fabric import typed_query as query
 
 
 class QuerySoundness(unittest.TestCase):
+    def test_join_uses_identical_scope_for_both_sides_of_one_shot_iterable(self):
+        left = self.record({"side": "left", "key": "A"})
+        right = self.record({"side": "right", "key": "A"})
+        self.assertEqual(query.join(self.f, "reader", {"side": "left"}, {"side": "right"},
+                                    on=("key", "key"), within=iter([left, right])),
+                         ([(left, right)], True))
+
     def test_explicit_null_and_missing_aggregate_fixtures(self):
         self.record({"kind": "sensor", "value": None})
         self.assertEqual(query.distinct(self.f, "reader", "value"), ([None], True))

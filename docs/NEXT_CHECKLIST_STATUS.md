@@ -37,6 +37,11 @@ tests exist; exact-head CI and review remain merge gates. PRs are not releases.
 
 ## Correctness contract
 
+All five original E1 seed/arm tables were reproduced without changing the
+historical artifacts: `research/results/n01-e1-regression.json` records an
+identical comparison and the exact source commit. This is a compatibility
+regression check, not a new retrieval improvement claim.
+
 For this experimental API, complete means every currently eligible, unerased
 record in the selected tenant/ID corpus can be included or excluded under the
 query and aggregation key semantics. It does not certify real-world truth,

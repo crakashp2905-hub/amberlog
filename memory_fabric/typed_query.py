@@ -210,6 +210,8 @@ def join(fabric: "MemoryFabric", agent_id: str, left: Mapping[str, Any], right: 
 
 def _join(fabric: "MemoryFabric", agent_id: str, left: Mapping[str, Any], right: Mapping[str, Any],
           on: tuple[str, str], **kw: Any) -> tuple[list[tuple[str, str]], bool]:
+    if kw.get("within") is not None:
+        kw["within"] = tuple(kw["within"])
     lsel, rsel = select(fabric, agent_id, left, **kw), select(fabric, agent_id, right, **kw)
     mem = fabric.state.memories
     index: dict[Any, list[str]] = {}

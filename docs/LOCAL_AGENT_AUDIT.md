@@ -1,6 +1,8 @@
 # Local agent and conformance audit — 29 October 2026
 
-Source protocol/code: `d87ec015f9e084b6861f3d77c4fda1273931b7f0`.
+Protocol/conformance/retrieval source: `d87ec015f9e084b6861f3d77c4fda1273931b7f0`.
+Three-agent source including logged initial exposures:
+`3be32dd2694a11b59cbe6807d443d930f88becc3`.
 Raw results are in `research/results/local-three-agent.json`,
 `local-conformance-audit.json`, and `local-retrieval-partition-audit.json`.
 The subtest failure-ID reporting correction is separate from the mechanisms
@@ -37,10 +39,10 @@ p95 is nearest-rank, throughput is the mean of five whole-run rates):
 
 | Arm | Decision p50 ms | Decision p95 ms | Decisions/s | Content bytes | Events |
 |---|---:|---:|---:|---:|---:|
-| shared cached | 0.0019 | 0.0068 | 237.53 | 326 | 31 |
-| shared current-metadata recheck | 0.0190 | 0.0692 | 309.40 | 326 | 31 |
-| governed certificate | 1.3546 | 6.6867 | 203.47 | 326 | 67 |
-| truth oracle | 0.0024 | 0.0078 | 377.83 | 326 | 31 |
+| shared cached | 0.0027 | 0.0064 | 277.99 | 326 | 103 |
+| shared current-metadata recheck | 0.0177 | 0.0406 | 337.89 | 326 | 103 |
+| governed certificate | 1.3179 | 5.6691 | 203.64 | 326 | 139 |
+| truth oracle | 0.0028 | 0.0067 | 276.84 | 326 | 103 |
 
 These tiny sequential runs include warmup/order and machine-load effects, have
 no confidence interval, and cannot establish a performance ranking. The action

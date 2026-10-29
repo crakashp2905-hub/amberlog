@@ -68,13 +68,13 @@ def run(seed: int, arm: str) -> dict[str, Any]:
                 counts["abstention"] += int(not allowed)
                 counts["correct_abstention"] += int(not allowed and corrected)
                 trace.append(dict(case=case, agent=agent, corrected=corrected,
-                                  allowed=allowed, latency_ms=(time.perf_counter()-tick)*1000))
+                                  allowed=allowed, latency_ms=round((time.perf_counter()-tick)*1000, 6)))
         elapsed = time.perf_counter() - started
         # Content bytes only: not disk size, encryption, indexes or log overhead.
         content_bytes = sum(len(m.content.encode("utf-8")) for m in f.state.memories.values())
         event_count = f.log.head_seq
     return dict(seed=seed, arm=arm, counts=counts, trace=trace,
-                elapsed_s=elapsed, decisions_per_second=counts["attempted"]/elapsed,
+                elapsed_s=round(elapsed, 6), decisions_per_second=round(counts["attempted"]/elapsed, 6),
                 retained_content_bytes=content_bytes, event_count=event_count,
                 model_calls=0, model_tokens=None, model_usd=0)
 

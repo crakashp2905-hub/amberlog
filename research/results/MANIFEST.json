@@ -1134,10 +1134,10 @@
   {
    "experiment_id": "local-three-agent",
    "file": "research/results/local-three-agent.json",
-   "file_sha256": "671b4ab297826d85e9ae2ceed0d34f69a655c0f66b01f30aaff890f9f5be2254",
+   "file_sha256": "7f6e32fa2b97d156671b6706ee5287983aeb10a4921e2f21b11570ed053b0e14",
    "file_sha256_basis": "UTF-8 file bytes with LF line endings",
    "prereg": "research/prereg/local-three-agent-audit.md",
-   "git_sha": "d87ec015f9e084b6861f3d77c4fda1273931b7f0",
+   "git_sha": "3be32dd2694a11b59cbe6807d443d930f88becc3",
    "git_sha_source": "json",
    "dataset_digest": null,
    "model_id": null,

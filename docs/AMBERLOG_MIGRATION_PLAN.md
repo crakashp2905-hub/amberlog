@@ -1,7 +1,8 @@
 # Amberlog migration plan
 
-Status: implementation authorized for the current source tree; no publication,
-remote rename, history rewrite, or account changes are part of this change.
+Original scope: implementation authorized for the current source tree, without
+publication, history rewrite, or account changes. The owner later separately
+approved the remote rename and About update; both are now complete.
 The user's complete-removal request takes precedence over the attached brief's
 transition aliases. Canonical distribution, import, command, class and
 environment prefix become `amberlog`, `amberlog`, `amberlog`, `Amberlog` and

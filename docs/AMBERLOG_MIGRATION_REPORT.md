@@ -48,10 +48,12 @@ The initial CI rollback failure was caused by the renamed launcher targeting
 the historical checkout; it was not hidden or waived. Corrected-head CI remains
 a separate merge gate. No unrun check is a pass.
 
-Publication is **NO-GO**: name clearance, target repository URLs, index account
+Publication is **NO-GO**: name clearance, index account
 setup, trusted publishers, protected environments, independent review, pilot and
-all other required release gates remain owner/external actions. No upload,
-external rename or tag has been performed. The recommended local migration
+all other required release gates remain owner/external actions. The owner later
+approved and completed the remote rename and About update; destination URLs now
+match `crakashp2905-hub/amberlog`. No index upload or tag has been performed.
+The recommended local migration
 candidate remains 0.14.0; choose a final published version only after those gates.
 
 See [migration plan](AMBERLOG_MIGRATION_PLAN.md),

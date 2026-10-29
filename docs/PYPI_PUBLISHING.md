@@ -1,7 +1,8 @@
 # Amberlog publishing
 
 **NO-GO for publication.** Nothing has been uploaded, no release tag has been
-created, and no remote/account settings have been changed.
+created. The owner approved the GitHub rename to `crakashp2905-hub/amberlog`;
+that rename and the About update are complete. Index accounts remain unchanged.
 
 ## Name investigation — 29 October 2026
 
@@ -11,15 +12,15 @@ HTTP 404. This is absence of a visible project, not a reservation, permission to
 register, or trademark clearance. An existing software company identifies its
 brand as Amberlog on its [own website](https://amberlog.cc/). Domain and product
 usage therefore need owner review. No alternative name is silently substituted.
-GitHub destination links in package metadata are target URLs; the remote has
-not been renamed. No ownership of a domain, organization or mark is claimed.
+GitHub destination links now match the renamed repository. No ownership of a
+domain, organization or mark is claimed.
 
 A second official-index check on the same date also returned HTTP 404 from
 `https://pypi.org/simple/amberlog/`; pip's explicit official-index lookup,
 including prereleases and ignoring Python-version filters, reported no matching
-distribution. The owner reports an existing package; its page has been requested
-for verification. These observations do not validate availability. Treat the
-candidate name as unresolved and do not rename the remote or publish a package.
+distribution. The owner subsequently clarified that no conflicting package page
+was known and chose to retain the candidate name. These observations still do
+not validate registration rights. Publication remains on hold.
 
 ## Local preparation
 
@@ -44,11 +45,16 @@ Resolve naming rights and package-index acceptance first. Configure distinct
 deployment restrictions to approved version tags. Verify those protections
 exist; a workflow declaration does not create review rules.
 
+A read-only settings check on 29 October 2026 found no GitHub environments
+configured. The workflow and this guide are preparation, not completed publisher
+setup. Do not enable approval variables or create a version tag during a
+preparation-only task: the separate release workflow also reacts to tags.
+
 On each index, configure a trusted publisher (or pending publisher) with:
 
 - Project: `amberlog`, only if accepted by the index.
-- Owner: the actual GitHub account owning this repository.
-- Repository: the actual repository name after the approved remote decision.
+- Owner: `crakashp2905-hub`.
+- Repository: `amberlog`.
 - Workflow: `publish-pypi.yml`.
 - Environment: `testpypi` or `pypi`, matching the corresponding index.
 

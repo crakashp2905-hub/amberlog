@@ -1,6 +1,5 @@
 {
   "scope": "local migration qualification; not release approval",
-  "code_commit": "9ab8228e92dcfb85baa6a21b4f24a5deef9abcbe",
   "baseline_tests": 56,
   "full_local_suite": {
     "run": 2231,
@@ -48,5 +47,6 @@
     "existing_software_usage": "https://amberlog.cc/",
     "owner_package_link_requested": true
   },
-  "ci": "corrected-head CI remains a separate merge gate"
+  "ci": "corrected-head CI remains a separate merge gate",
+  "repo_commit": "9ab8228e92dcfb85baa6a21b4f24a5deef9abcbe"
 }

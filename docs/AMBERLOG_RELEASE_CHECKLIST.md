@@ -29,5 +29,5 @@ python tools/fresh_machine.py dist/amberlog-0.14.0-py3-none-any.whl
 
 Run `doctor` with a real initialized database, not an unrelated empty path.
 `amberlog init ./memory` prepares one; `amberlog --db ./memory/store.db --keys
-./memory/keys doctor` checks it. Do not invent an unsupported `sandbox` command;
-the current interactive introduction is `amberlog tour`.
+./memory/keys doctor` checks it. `amberlog sandbox --help` describes the separate
+seeded sandbox, and `amberlog tour` provides the interactive introduction.

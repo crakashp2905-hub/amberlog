@@ -19,8 +19,8 @@ claim came from, withdraw incorrect knowledge, and verify evidence before acting
 > The import, command and environment namespace changed. See
 > [migration](docs/MIGRATING_TO_AMBERLOG.md) and
 > [release readiness](docs/AMBERLOG_RELEASE_CHECKLIST.md).
-> Hosted repository links describe the target location; the remote rename is
-> still an owner action and has not been performed by this migration.
+> The repository rename is complete. Package-index publication remains pending
+> name/account readiness and the release gates above.
 
 ---
 

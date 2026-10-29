@@ -28,7 +28,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-from memory_fabric import MemoryFabric
+from amberlog import Amberlog
 
 ROOT = Path(__file__).resolve().parent.parent
 SIZES = (2_000, 10_000, 100_000)
@@ -42,7 +42,7 @@ def cumulative(stats: pstats.Stats, suffix: str) -> float:
 def run(size: int) -> dict[str, Any]:
     rng = random.Random(size)
     with tempfile.TemporaryDirectory() as tmp:
-        fabric = MemoryFabric(os.path.join(tmp, "e1.db"), auto_activate=True)
+        fabric = Amberlog(os.path.join(tmp, "e1.db"), auto_activate=True)
         for i in range(size):
             fabric.remember("ag", f"Pump P-{i}: the relief pressure is {rng.randrange(6, 48)} bar "
                                   f"at site {i % 40}.", scope="team")

@@ -1,7 +1,7 @@
 # Historical explicit-ID reads (experimental)
 
 ```python
-from memory_fabric.history_query import query
+from amberlog.history_query import query
 
 receipt = query(fabric, "reader", [memory_id], known_at=log_sequence,
                 valid_at=event_time, max_events=10_000)

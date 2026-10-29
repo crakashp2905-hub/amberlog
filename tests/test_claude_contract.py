@@ -29,8 +29,8 @@ try:
 except ImportError:  # pragma: no cover - depends on the environment
     anthropic = None
 
-from memory_fabric import MemoryFabric
-from memory_fabric.adapters.claude import DEFAULT_MODEL, FALLBACK_BETA, ClaudeMemoryAgent
+from amberlog import Amberlog
+from amberlog.adapters.claude import DEFAULT_MODEL, FALLBACK_BETA, ClaudeMemoryAgent
 
 
 # Placeholder: the transport is stubbed, so no request leaves the process.
@@ -73,7 +73,7 @@ class TestAgainstTheRealSdk(unittest.TestCase):
         # correctly invisible to `ag_claude`, which is how this test failed in
         # CI while skipping locally (no SDK) -- tests/test_adapters.py now
         # covers that recall path without the SDK.
-        self.fabric = MemoryFabric()
+        self.fabric = Amberlog()
         self.addCleanup(self.fabric.close)
         seed = self.fabric.remember("ag_seed", "E01 at coastal sites: swap the pilot cable.",
                                     scope="team")

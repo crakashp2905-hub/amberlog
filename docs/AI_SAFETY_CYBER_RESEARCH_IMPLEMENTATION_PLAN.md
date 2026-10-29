@@ -1,8 +1,8 @@
-# Memory Fabric: AI Safety, Cybersecurity, Novel Research, and IDE Implementation Plan
+# Amberlog: AI Safety, Cybersecurity, Novel Research, and IDE Implementation Plan
 
-**Repository:** https://github.com/crakashp2905-hub/memory-fabric\
+**Repository:** https://github.com/crakashp2905-hub/amberlog\
 **Purpose:** An end-to-end specification for an IDE coding agent to
-inspect, implement, test, and document Memory Fabric improvements.\
+inspect, implement, test, and document Amberlog improvements.\
 **Status:** Proposed roadmap. Validate all descriptions against the
 checked-out repository before editing.
 
@@ -56,12 +56,12 @@ docs → report honestly.
 
 ## 1. Executive summary and product thesis
 
-Memory Fabric should aim to become a **governed integrity and correction
+Amberlog should aim to become a **governed integrity and correction
 layer for shared agent knowledge**, rather than trying to outperform
 every memory engine at every feature.
 
 > When invalid, outdated, malicious, or unauthorized knowledge enters a
-> multi-agent system, Memory Fabric should limit its propagation,
+> multi-agent system, Amberlog should limit its propagation,
 > prevent inappropriate downstream reliance, preserve valid independent
 > evidence, and provide an auditable explanation of what changed.
 
@@ -72,7 +72,7 @@ Potential division of responsibilities:
 -   **Memory engine:** stores and retrieves memories, extracts facts,
     synthesizes observations, and performs semantic, lexical, temporal,
     or graph retrieval.
--   **Memory Fabric:** tracks provenance, dependencies, integrity
+-   **Amberlog:** tracks provenance, dependencies, integrity
     revisions, policy decisions, access constraints, corrections, and
     auditable state transitions.
 -   **Agent runtime:** plans tasks, uses tools, and reassesses decisions
@@ -80,7 +80,7 @@ Potential division of responsibilities:
 -   **Action-policy layer:** independently authorizes consequential
     actions. A memory result must never grant tool permission by itself.
 
-Memory Fabric may integrate with systems such as Hindsight rather than
+Amberlog may integrate with systems such as Hindsight rather than
 replacing them. Do not assume another system lacks evidence tracking or
 security features; compare actual behavior.
 
@@ -532,7 +532,7 @@ Measure false inclusion and false omission separately.
 1.  Local-only agent memory.
 2.  Shared, ungoverned memory.
 3.  Simple governance: provenance plus graph traversal.
-4.  Memory Fabric candidate.
+4.  Amberlog candidate.
 5.  Hindsight or another relevant external system, if a fair comparable
     integration is feasible.
 6.  Oracle diagnostic for upper-bound analysis only; never call it
@@ -877,7 +877,7 @@ multi-hop context assembly.
 
 Build around one thesis:
 
-> **Memory Fabric governs the evidential integrity of shared agent
+> **Amberlog governs the evidential integrity of shared agent
 > knowledge across its lifecycle---from ingestion and derivation through
 > retrieval, correction, and consequential use.**
 

@@ -13,8 +13,8 @@ import unittest
 from experiments.contexts import build_contexts, true_value_in
 from experiments.h3 import ARMS, H3_WORLD, Cell, experiment_firewall, run_cell, verdict
 from experiments.ruleworld import WorldConfig
-from memory_fabric import LifecycleState, MemoryFabric, Scope
-from memory_fabric.federation import offer_many
+from amberlog import LifecycleState, Amberlog, Scope
+from amberlog.federation import offer_many
 
 
 class TestContexts(unittest.TestCase):
@@ -65,8 +65,8 @@ class TestSharingVolume(unittest.TestCase):
         `full` arm carried double the memories it should have — penalising the
         arm that is meant to represent 'share everything'.
         """
-        a = MemoryFabric(auto_activate=True, seed=1, firewall=experiment_firewall())
-        b = MemoryFabric(auto_activate=True, seed=2, firewall=experiment_firewall())
+        a = Amberlog(auto_activate=True, seed=1, firewall=experiment_firewall())
+        b = Amberlog(auto_activate=True, seed=2, firewall=experiment_firewall())
         try:
             for index in range(5):
                 a.remember("agent", f"Fact {index} about deploys from A.")

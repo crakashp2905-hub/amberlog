@@ -5,8 +5,8 @@ from __future__ import annotations
 import unittest
 from types import SimpleNamespace
 
-from memory_fabric.governance.firewall import Firewall, FirewallDecision
-from memory_fabric.governance.model_screen import ModelScreen
+from amberlog.governance.firewall import Firewall, FirewallDecision
+from amberlog.governance.model_screen import ModelScreen
 
 
 class FakeCompletion:

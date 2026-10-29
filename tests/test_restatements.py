@@ -8,12 +8,12 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
+from amberlog import Amberlog
 
 
 class Restatements(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False)
+        self.f = Amberlog(":memory:", auto_activate=True, hold_suspicious=False)
         self.addCleanup(self.f.close)
         self.fact = self.f.remember("ops", "Pump P1-ROT pressurised to 40 bar at Rotterdam.",
                                     scope="team")
@@ -55,7 +55,7 @@ class Restatements(unittest.TestCase):
         self.assertEqual(self.state(self.repeat), "active")
 
     def test_off_switch(self) -> None:
-        f = MemoryFabric(":memory:", auto_activate=True, contest_restatements=False)
+        f = Amberlog(":memory:", auto_activate=True, contest_restatements=False)
         self.addCleanup(f.close)
         fact = f.remember("ops", "Pump P1-ROT pressurised to 40 bar at Rotterdam.", scope="team")
         repeat = f.remember("crew", "Measured again: P1-ROT pressurised to 40 bar.", scope="team")

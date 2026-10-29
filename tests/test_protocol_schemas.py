@@ -16,7 +16,7 @@ import json
 import unittest
 from pathlib import Path
 
-from memory_fabric.model import SCHEMA_VERSION, WithdrawalBasis
+from amberlog.model import SCHEMA_VERSION, WithdrawalBasis
 
 PROTOCOL_DIR = Path(__file__).resolve().parent.parent / "docs" / "protocol"
 
@@ -171,7 +171,7 @@ class TestTheAuditTellsTheTruth(unittest.TestCase):
     """
 
     def test_the_outbox_now_exists_and_is_durable(self) -> None:
-        from memory_fabric.outbox import Outbox
+        from amberlog.outbox import Outbox
 
         self.assertTrue(hasattr(Outbox, "enqueue"))
         self.assertTrue(hasattr(Outbox, "due"))
@@ -184,7 +184,7 @@ class TestTheAuditTellsTheTruth(unittest.TestCase):
         documented for what they are in docs/AUDIT.md §3."""
         import inspect
 
-        from memory_fabric.federation import propagate_retraction
+        from amberlog.federation import propagate_retraction
 
         self.assertIn("targets", inspect.signature(propagate_retraction).parameters)
 
@@ -193,13 +193,13 @@ class TestTheAuditTellsTheTruth(unittest.TestCase):
         opaque store id, so it cannot require them to be in this process."""
         import inspect
 
-        from memory_fabric.fabric import MemoryFabric
+        from amberlog.fabric import Amberlog
 
-        signature = inspect.signature(MemoryFabric.request_retraction)
+        signature = inspect.signature(Amberlog.request_retraction)
         self.assertIn("recipients", signature.parameters)
         annotation = str(signature.parameters["recipients"].annotation)
         self.assertIn("str", annotation)
-        self.assertNotIn("MemoryFabric", annotation)
+        self.assertNotIn("Amberlog", annotation)
 
 
 if __name__ == "__main__":  # pragma: no cover

@@ -1,6 +1,6 @@
 # Troubleshooting
 
-Start with `memory-fabric --db <store> doctor`. Every warning and failure it
+Start with `amberlog --db <store> doctor`. Every warning and failure it
 prints carries the fix. The exit codes are meant for scripts: **0** sound,
 **1** sound with warnings, **5** not sound. Below are the symptoms people
 actually report, each with the cause and the fix. Incident procedures (an
@@ -12,7 +12,7 @@ integrity failure, an erasure request) are in
 Check these in order:
 
 1. **It is a candidate.** New writes wait for review unless the store
-   auto-activates. Find it with `memory-fabric --db <store> review`, then
+   auto-activates. Find it with `amberlog --db <store> review`, then
    approve it: `review <id> --approve --actor <you>`.
 2. **It is private to the agent that wrote it** (0.10.0 and later). A
    private memory is visible to its writer only, and to agents with `read`
@@ -39,13 +39,13 @@ CI (`experiments/rollback_drill.py`).
 
 - **No peers are configured.** Since 0.12.0 the background manager delivers
   retractions, but only with a peer list: `--peers peers.json` or
-  `MEMORY_FABRIC_PEERS`. `maintain --status` shows `"skipped": "no peers
+  `AMBERLOG_PEERS`. `maintain --status` shows `"skipped": "no peers
   configured"` and the count still pending.
 - **The peer is offline.** Delivery retries with backoff. A failed delivery
   shows in `doctor` and in `attention`. The peer catches up when it
   reconnects.
 - **No manager is running.** `doctor` reports "background manager … has
-  stopped". Start `memory-fabric maintain`, or any server, for the store.
+  stopped". Start `amberlog maintain`, or any server, for the store.
 
 ## "The database is locked" / writes time out
 
@@ -76,7 +76,7 @@ so a script can alert on it. 0 means nothing high.
 
 Retention found memories its policy would delete. Deletion is terminal, so
 the background manager applies it only with `--retention-delete`. To review
-them first: `memory-fabric --db <store> retention`.
+them first: `amberlog --db <store> retention`.
 
 ## "Two answers for the same thing / DISPUTED notes"
 
@@ -89,7 +89,7 @@ by validating the right one and withdrawing the other, with a reason.
 
 - Run the exact command from the client's configuration in a terminal: it
   must print nothing to stdout before the first request.
-- `memory-fabric init` prints a working configuration.
+- `amberlog init` prints a working configuration.
 - `--agent` is required. The store path in the configuration is relative to
   the client's working directory, so prefer an absolute path.
 
@@ -171,12 +171,12 @@ Share from a store nearer the origin.
 
 ## "My memory was quarantined on write"
 
-An ingest screen flagged it. `memory-fabric --db store.db review <id>`
+An ingest screen flagged it. `amberlog --db store.db review <id>`
 shows the screen and its signals. For a false alarm:
 `review <id> --approve --override-screen --reason "<why>"`.
 
 ## Still stuck
 
-`memory-fabric --db <store> overview` and `doctor --json` are what to attach
+`amberlog --db <store> overview` and `doctor --json` are what to attach
 to a report. Neither contains memory content. Security problems go to the maintainer by
 email, privately ([SECURITY.md](../SECURITY.md#reporting)).

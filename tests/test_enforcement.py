@@ -15,8 +15,8 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
-from memory_fabric.enforcement import (
+from amberlog import LifecycleState, Amberlog, WithdrawalBasis
+from amberlog.enforcement import (
     ACTIVE,
     BLOCKED_LIFECYCLE,
     CANDIDATE_UNVALIDATED,
@@ -36,7 +36,7 @@ from memory_fabric.enforcement import (
 
 class EnforcementCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:")
+        self.fabric = Amberlog(":memory:")
         self.addCleanup(self.fabric.close)
         self.memory_id = self.fabric.remember("ag_a", "E01 at coastal: swap the cable.")
         self.fabric.validate(self.memory_id, actor="supervisor")
@@ -250,7 +250,7 @@ class TestActionTimeVerification(EnforcementCase):
         self.assertEqual(verdict.reason_code, TOKEN_EXPIRED)
 
     def test_a_token_from_another_store_is_refused(self) -> None:
-        other = MemoryFabric(":memory:")
+        other = Amberlog(":memory:")
         self.addCleanup(other.close)
         foreign = ExposureToken(
             memory_id=self.memory_id, version=1, agent_id="ag_a",
@@ -312,15 +312,15 @@ class TestEndToEnd(unittest.TestCase):
     """
 
     def test_retraction_at_origin_blocks_a_stale_action_at_the_recipient(self) -> None:
-        from memory_fabric.dispatcher import Dispatcher
-        from memory_fabric.federation import offer
-        from memory_fabric.governance.firewall import (
+        from amberlog.dispatcher import Dispatcher
+        from amberlog.federation import offer
+        from amberlog.governance.firewall import (
             Firewall,
             rule_capabilities_must_be_granted,
             rule_must_be_active,
             rule_restricted_stays_private,
         )
-        from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
+        from amberlog.transport import InProcessTransport, Peer, PeerRegistry
 
         permissive = Firewall(
             rules=(
@@ -329,8 +329,8 @@ class TestEndToEnd(unittest.TestCase):
                 rule_capabilities_must_be_granted,
             )
         )
-        origin = MemoryFabric(":memory:", firewall=permissive)
-        recipient = MemoryFabric(":memory:", firewall=permissive)
+        origin = Amberlog(":memory:", firewall=permissive)
+        recipient = Amberlog(":memory:", firewall=permissive)
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
 

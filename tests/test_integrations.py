@@ -13,18 +13,18 @@ import os
 import tempfile
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.integrations.tools import FabricTools
-from memory_fabric.migrate import import_records, read_records
-from memory_fabric.model import LifecycleState
-from memory_fabric.sdk import agent, operator
+from amberlog import Amberlog
+from amberlog.integrations.tools import FabricTools
+from amberlog.migrate import import_records, read_records
+from amberlog.model import LifecycleState
+from amberlog.sdk import agent, operator
 
 HAS_LANGCHAIN = importlib.util.find_spec("langchain_core") is not None
 
 
 class Store(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:")
+        self.fabric = Amberlog(":memory:")
         self.addCleanup(self.fabric.close)
         self.op = operator(self.fabric, "reviewer")
         self.mine = agent(self.fabric, "ana").remember("pump 3 needs a new seal kit")
@@ -79,7 +79,7 @@ class LangChainRetriever(Store):
     def test_it_returns_documents_with_ids_and_is_enforced(self) -> None:
         from langchain_core.documents import Document
 
-        from memory_fabric.integrations.langchain import fabric_retriever
+        from amberlog.integrations.langchain import fabric_retriever
 
         docs = fabric_retriever(agent(self.fabric, "ben")).invoke("pump 3 seal")
         self.assertTrue(all(isinstance(d, Document) for d in docs))
@@ -88,7 +88,7 @@ class LangChainRetriever(Store):
         self.assertNotIn(self.theirs, ids)
 
     def test_verify_before_acting_catches_a_retraction(self) -> None:
-        from memory_fabric.integrations.langchain import fabric_retriever
+        from amberlog.integrations.langchain import fabric_retriever
 
         retriever = fabric_retriever(agent(self.fabric, "ben"))
         retriever.invoke("pump 3 seal")
@@ -99,7 +99,7 @@ class LangChainRetriever(Store):
     def test_it_composes_in_a_chain(self) -> None:
         from langchain_core.runnables import RunnableLambda
 
-        from memory_fabric.integrations.langchain import fabric_retriever
+        from amberlog.integrations.langchain import fabric_retriever
 
         chain = fabric_retriever(agent(self.fabric, "ben")) | RunnableLambda(
             lambda docs: [d.page_content for d in docs])
@@ -108,7 +108,7 @@ class LangChainRetriever(Store):
 
 class ImportFromOtherStores(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:", auto_activate=True)
+        self.fabric = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.fabric.close)
 
     def run_import(self, lines: list) -> object:

@@ -1,6 +1,6 @@
 # Baseline and gap report (blueprint Phase 0)
 
-Audit of the repository against `memory_fabric_end_to_end_blueprint.md`,
+Audit of the repository against `amberlog_end_to_end_blueprint.md`,
 20 October 2026. The capability registry
 ([CAPABILITY_REGISTRY.md](CAPABILITY_REGISTRY.md), generated from
 `product/capabilities.json` and checked against the code by

@@ -3,7 +3,7 @@
 Preview a normal compiled JSON document or any supported local format:
 
 ```bash
-python -m memory_fabric --db project.db import-docs handbook.md --format markdown --doc-id handbook --source-version v2 --dry-run
+python -m amberlog --db project.db import-docs handbook.md --format markdown --doc-id handbook --source-version v2 --dry-run
 ```
 
 The JSON plan includes the store head, compiled-input digest, added section
@@ -46,4 +46,4 @@ screening costs, if explicitly configured, are not refunded by a DB rollback.
 Preview scans current metadata and action receipts; large-store indexing and
 preview UX remain separate performance work. The plan is not a completeness or
 action-authority certificate. Python callers can use `plan_batch` and
-`apply_batch` from `memory_fabric.import_preview`.
+`apply_batch` from `amberlog.import_preview`.

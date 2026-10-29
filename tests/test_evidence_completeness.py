@@ -1,12 +1,12 @@
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.evidence_completeness import classify, exhaustive
+from amberlog import Amberlog
+from amberlog.evidence_completeness import classify, exhaustive
 
 
 class CompletenessTests(unittest.TestCase):
     def setUp(self):
-        self.f = MemoryFabric(":memory:", recognise_copies=False)
+        self.f = Amberlog(":memory:", recognise_copies=False)
         self.addCleanup(self.f.close)
 
     def remember(self, fields=None, **kw):

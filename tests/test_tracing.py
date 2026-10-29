@@ -26,8 +26,8 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from memory_fabric.adapters.ollama import CallRecord, OllamaClient  # noqa: E402
-from memory_fabric.adapters.tracing import JsonlSink, _is_local  # noqa: E402
+from amberlog.adapters.ollama import CallRecord, OllamaClient  # noqa: E402
+from amberlog.adapters.tracing import JsonlSink, _is_local  # noqa: E402
 
 RECORD = CallRecord(
     model="qwen2.5:1.5b",
@@ -176,7 +176,7 @@ class TestSummarise(unittest.TestCase):
                 "completion_tokens": 50}
 
     def test_the_spread_is_reported_not_just_the_mean(self):
-        from memory_fabric.adapters.tracing import summarise
+        from amberlog.adapters.tracing import summarise
 
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "t.jsonl"
@@ -195,7 +195,7 @@ class TestSummarise(unittest.TestCase):
         """They are not comparable -- measured at +49% to +54% wall time for
         identical output -- so averaging across them would invent a figure
         describing neither."""
-        from memory_fabric.adapters.tracing import summarise
+        from amberlog.adapters.tracing import summarise
 
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "t.jsonl"
@@ -207,7 +207,7 @@ class TestSummarise(unittest.TestCase):
             self.assertEqual(out["m (free-form)"]["seconds_mean"], 20.0)
 
     def test_tokens_are_totalled_per_bucket(self):
-        from memory_fabric.adapters.tracing import summarise
+        from amberlog.adapters.tracing import summarise
 
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "t.jsonl"
@@ -219,7 +219,7 @@ class TestSummarise(unittest.TestCase):
     def test_a_torn_line_does_not_lose_the_rest_of_the_trace(self):
         """A run long enough to need a trace is long enough to be killed
         mid-write, and one bad line should cost one call, not the file."""
-        from memory_fabric.adapters.tracing import summarise
+        from amberlog.adapters.tracing import summarise
 
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "t.jsonl"
@@ -230,7 +230,7 @@ class TestSummarise(unittest.TestCase):
             self.assertEqual(summarise(path)["m (constrained)"]["calls"], 2)
 
     def test_a_single_call_does_not_index_out_of_range(self):
-        from memory_fabric.adapters.tracing import summarise
+        from amberlog.adapters.tracing import summarise
 
         with tempfile.TemporaryDirectory() as tmp:
             path = pathlib.Path(tmp) / "t.jsonl"

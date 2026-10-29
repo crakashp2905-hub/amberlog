@@ -20,8 +20,8 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
-from memory_fabric.justification import (
+from amberlog import LifecycleState, Amberlog, WithdrawalBasis
+from amberlog.justification import (
     CONTESTED,
     JUSTIFIED,
     UNSUPPORTED,
@@ -32,7 +32,7 @@ from memory_fabric.justification import (
 
 class JustificationCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:")
+        self.fabric = Amberlog(":memory:")
         self.addCleanup(self.fabric.close)
 
     def observe(self, agent: str, content: str) -> str:
@@ -199,8 +199,8 @@ class TestCopiesAreNotCorroboration(JustificationCase):
     def test_an_import_is_a_copy_whatever_the_caller_said(self) -> None:
         """An import is a copy of its origin by construction, so it can never be
         independent corroboration even if a caller claims otherwise."""
-        from memory_fabric.federation import offer
-        from memory_fabric.governance.firewall import (
+        from amberlog.federation import offer
+        from amberlog.governance.firewall import (
             Firewall,
             rule_capabilities_must_be_granted,
             rule_must_be_active,
@@ -214,8 +214,8 @@ class TestCopiesAreNotCorroboration(JustificationCase):
                 rule_capabilities_must_be_granted,
             )
         )
-        origin = MemoryFabric(":memory:", firewall=permissive)
-        recipient = MemoryFabric(":memory:", firewall=permissive)
+        origin = Amberlog(":memory:", firewall=permissive)
+        recipient = Amberlog(":memory:", firewall=permissive)
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
 
@@ -380,15 +380,15 @@ class TestRegressions(JustificationCase):
         The guard is the provenance method. `descendants_of` has carried it
         since Phase B; `_imports_of` was added in Phase 1 without it.
         """
-        from memory_fabric.dispatcher import Dispatcher
-        from memory_fabric.federation import offer
-        from memory_fabric.governance.firewall import (
+        from amberlog.dispatcher import Dispatcher
+        from amberlog.federation import offer
+        from amberlog.governance.firewall import (
             Firewall,
             rule_capabilities_must_be_granted,
             rule_must_be_active,
             rule_restricted_stays_private,
         )
-        from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
+        from amberlog.transport import InProcessTransport, Peer, PeerRegistry
 
         permissive = Firewall(
             rules=(
@@ -397,8 +397,8 @@ class TestRegressions(JustificationCase):
                 rule_capabilities_must_be_granted,
             )
         )
-        origin = MemoryFabric(":memory:", firewall=permissive)
-        recipient = MemoryFabric(":memory:", firewall=permissive)
+        origin = Amberlog(":memory:", firewall=permissive)
+        recipient = Amberlog(":memory:", firewall=permissive)
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
 

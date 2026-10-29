@@ -17,9 +17,9 @@ import sys
 from dataclasses import dataclass, field
 from typing import Sequence
 
-from memory_fabric import MemoryFabric
-from memory_fabric.cli import configure_output
-from memory_fabric.exposure import EpsilonGreedyPolicy, TopKPolicy
+from amberlog import Amberlog
+from amberlog.cli import configure_output
+from amberlog.exposure import EpsilonGreedyPolicy, TopKPolicy
 
 from . import stats
 from .retention_arms import ARMS, BASELINES, CHALLENGER, make_oracle, prune
@@ -86,7 +86,7 @@ def _rngs(seed: int) -> dict[str, random.Random]:
 
 
 def _play(
-    fabric: MemoryFabric,
+    fabric: Amberlog,
     world: RuleWorld,
     symptoms: Sequence[str],
     rng_agent: random.Random,
@@ -137,7 +137,7 @@ def run_seed(seed: int, arms: Sequence[str], quick: bool = False, budget: int = 
     for arm in arms:
         rngs = _rngs(seed)
         world = RuleWorld(H2_WORLD, rngs["world"])
-        fabric = MemoryFabric(
+        fabric = Amberlog(
             auto_activate=True,
             seed=seed,
             exposure_policy=EpsilonGreedyPolicy(epsilon=EPSILON, rank_by="relevance"),

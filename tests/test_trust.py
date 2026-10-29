@@ -5,17 +5,17 @@ from __future__ import annotations
 import random
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.exposure import Candidate, TransferGatePolicy
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog
+from amberlog.exposure import Candidate, TransferGatePolicy
+from amberlog.federation import offer
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.model import Scope, ValueEstimate
-from memory_fabric.trust import DEFAULT, TransferTrust, origin_of
+from amberlog.model import Scope, ValueEstimate
+from amberlog.trust import DEFAULT, TransferTrust, origin_of
 
 
-def store() -> MemoryFabric:
-    return MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=(
+def store() -> Amberlog:
+    return Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=(
         rule_restricted_stays_private, rule_must_be_active, rule_capabilities_must_be_granted)))
 
 

@@ -10,8 +10,8 @@ from typing import Any
 
 from benchmarks.completeness_data import CONFIG, SPLITS, digest, generate
 from benchmarks.manifest import Manifest, head, write
-from memory_fabric import MemoryFabric
-from memory_fabric.evidence_completeness import classify, exhaustive
+from amberlog import Amberlog
+from amberlog.evidence_completeness import classify, exhaustive
 
 ARMS = ("lexical", "typed", "typed+fallback", "selective", "oracle")
 ROOT = Path(__file__).resolve().parents[1]
@@ -29,7 +29,7 @@ def evaluate(memory: Any, where: Any) -> bool | None:
 
 def run_seed(seed: int, split: str, arms: tuple[str, ...]) -> dict[str, Any]:
     data = generate(seed, split)
-    f = MemoryFabric(":memory:", retrieval="lexical", recognise_copies=False)
+    f = Amberlog(":memory:", retrieval="lexical", recognise_copies=False)
     rid_of, records = {}, {}
     try:
         for row in data["records"]:

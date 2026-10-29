@@ -6,10 +6,10 @@ import os
 import tempfile
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.agent_api import AgentApi, RateLimit, _ApiError, encode_credential, load_agents, register_all
-from memory_fabric.sdk import agent, operator
-from memory_fabric.service import MemoryService
+from amberlog import Amberlog
+from amberlog.agent_api import AgentApi, RateLimit, _ApiError, encode_credential, load_agents, register_all
+from amberlog.sdk import agent, operator
+from amberlog.service import MemoryService
 
 
 class VerifyUnfetched(unittest.TestCase):
@@ -19,7 +19,7 @@ class VerifyUnfetched(unittest.TestCase):
         path = os.path.join(tmp.name, "agents")
         with open(path, "w") as fh:
             fh.write(f"ag_a:tn_acme:{'aa' * 32}\nag_g:tn_globex:{'cc' * 32}\n")
-        self.f = MemoryFabric(":memory:")
+        self.f = Amberlog(":memory:")
         self.addCleanup(self.f.close)
         writer = agent(self.f, "ag_seed", "tn_acme")
         self.mid = writer.remember("Pump P-14: the relief valve is set to 12 bar.")

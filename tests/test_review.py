@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.model import LifecycleState, Scope
-from memory_fabric.review import ReviewError, decide, queue
-from memory_fabric.status import labels
+from amberlog import Amberlog
+from amberlog.model import LifecycleState, Scope
+from amberlog.review import ReviewError, decide, queue
+from amberlog.status import labels
 
 
 class Queue(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:")
+        self.fabric = Amberlog(":memory:")
         self.addCleanup(self.fabric.close)
 
     def test_candidates_wait_oldest_first_and_active_ones_do_not(self) -> None:
@@ -34,7 +34,7 @@ class Queue(unittest.TestCase):
 
 class Decisions(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:")
+        self.fabric = Amberlog(":memory:")
         self.addCleanup(self.fabric.close)
         self.mid = self.fabric.remember("ana", "pump 3 needs a new seal")
 
@@ -90,9 +90,9 @@ class Decisions(unittest.TestCase):
 
 class TheDashboardShowsTheQueue(unittest.TestCase):
     def test_the_review_route_lists_it_and_writes_nothing(self) -> None:
-        from memory_fabric.observability.server import Api
+        from amberlog.observability.server import Api
 
-        fabric = MemoryFabric(":memory:")
+        fabric = Amberlog(":memory:")
         self.addCleanup(fabric.close)
         mid = fabric.remember("ana", "pump 3 needs a new seal")
         before = fabric.log.head_seq

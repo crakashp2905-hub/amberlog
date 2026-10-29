@@ -25,11 +25,11 @@ The rest are below.
 
 1. Revoke it. Paste the token on stdin so it does not reach shell history:
    ```bash
-   memory-fabric --db store.db agent-api-revoke --agents-file agents.txt --token -
+   amberlog --db store.db agent-api-revoke --agents-file agents.txt --token -
    ```
    If you do not have the token itself, cut the agent off entirely:
    ```bash
-   memory-fabric --db store.db agent-api-revoke --agents-file agents.txt --agent <agent-id>
+   amberlog --db store.db agent-api-revoke --agents-file agents.txt --agent <agent-id>
    ```
    Revocations are rows in the store. A running `agent-api` on the same store
    refuses the credential **on its next request**; nothing needs restarting
@@ -38,10 +38,10 @@ The rest are below.
    Revoking credentials does not stop the key minting new ones.
 3. Find what it wrote. Every memory records the agent that created it:
    ```bash
-   memory-fabric --db store.db list --agent <agent-id> --limit 0
+   amberlog --db store.db list --agent <agent-id> --limit 0
    ```
    and the full event history of any one of them with
-   `memory-fabric --db store.db audit <memory-id>`.
+   `amberlog --db store.db audit <memory-id>`.
 4. Treat its writes as suspect: §4.
 
 ## 2. Rotating an agent's signing key
@@ -57,7 +57,7 @@ once.
    across the restart.
 3. Issue the agent a new credential:
    ```bash
-   memory-fabric --db store.db agent-api-issue --agents-file agents.txt --agent <agent-id>
+   amberlog --db store.db agent-api-issue --agents-file agents.txt --agent <agent-id>
    ```
 4. Old credentials now fail signature verification and are refused with the same
    401 as any other failure.
@@ -85,7 +85,7 @@ a new key id.
 2. **Origin second.** In the origin's peers file, switch its entry for the
    recipient to `k2` and the new key. Restart it. Retractions still in the
    outbox are signed when they are sent, so they go out under k2.
-3. **Check.** `memory-fabric --db <origin> maintain --status`: no failed
+3. **Check.** `amberlog --db <origin> maintain --status`: no failed
    deliveries to that peer. `doctor` on both stores.
 4. **Retire the old key.** Remove `previous_keys` from the recipient's entry
    and restart it. A message signed with k1, including one from someone who
@@ -102,24 +102,24 @@ conclusions that have independent support.
 
 1. Quarantine it, with the reason:
    ```bash
-   memory-fabric --db store.db quarantine <memory-id> --reason "<what is wrong>" --actor <you>
+   amberlog --db store.db quarantine <memory-id> --reason "<what is wrong>" --actor <you>
    ```
    Quarantine propagates: conclusions that rest *only* on it become contested
    and are withheld; conclusions with independent support stay active. A
    retraction is queued to every store it was shared with.
 2. See what it touched:
    ```bash
-   memory-fabric --db store.db lineage <memory-id>
-   memory-fabric --db store.db attention
+   amberlog --db store.db lineage <memory-id>
+   amberlog --db store.db attention
    ```
 3. Confirm the retraction left: `doctor` reports any delivery that has failed
    permanently; `attention` lists what is still pending.
 4. Follow the guided workflow, which does steps 1–3 in order and records them:
    ```bash
-   memory-fabric --db store.db incident                    # candidates, with why
-   memory-fabric --db store.db incident <memory-id>        # spread, blast radius, actions that used it
-   memory-fabric --db store.db incident <memory-id> --contain --reason "<why>" --actor <you>
-   memory-fabric --db store.db incident <memory-id> --record incident.md
+   amberlog --db store.db incident                    # candidates, with why
+   amberlog --db store.db incident <memory-id>        # spread, blast radius, actions that used it
+   amberlog --db store.db incident <memory-id> --contain --reason "<why>" --actor <you>
+   amberlog --db store.db incident <memory-id> --record incident.md
    ```
    The assessment lists the author's other active memories (a bad source
    rarely writes one bad memory) and every gated action that used this one,
@@ -132,7 +132,7 @@ conclusions that have independent support.
 ## 5. Content keys
 
 - **Moving keys out of the database** (the production default):
-  `memory-fabric --db store.db migrate-keys <dir>`. It copies, proves a full
+  `amberlog --db store.db migrate-keys <dir>`. It copies, proves a full
   replay reads every memory with only the directory, and only then clears the
   database copy. If the proof fails nothing is cleared.
 - **Backing up keys:** the key directory needs its own backup, separate from the
@@ -149,7 +149,7 @@ conclusions that have independent support.
 - **Append-only:** triggers refuse `UPDATE`, `DELETE` and `TRUNCATE` on the
   event log and the hash chain. A role that can disable triggers can still
   rewrite history; the defence against that is an external checkpoint
-  (`memory-fabric --db <url> checkpoint`), kept somewhere that role cannot write.
+  (`amberlog --db <url> checkpoint`), kept somewhere that role cannot write.
 - **Credentials in URLs:** displayed and logged forms are redacted. Prefer a
   password file or the `PGPASSWORD` environment of the service over a URL on
   a command line.
@@ -170,7 +170,7 @@ conclusions that have independent support.
 Take backups with custody of everything needed to read them:
 
 ```bash
-memory-fabric --db store.db --keys ./keys backup /backups/store.bak --with-keys   --include agents.txt --include ./checkpoints
+amberlog --db store.db --keys ./keys backup /backups/store.bak --with-keys   --include agents.txt --include ./checkpoints
 ```
 
 This writes `store.bak`, `store.bak.keys/`, `store.bak.config/` and
@@ -180,19 +180,19 @@ chain head). Keep the key copy as protected as the original.
 To restore:
 
 ```bash
-memory-fabric restore /backups/store.bak ./restored
+amberlog restore /backups/store.bak ./restored
 ```
 
 It refuses a backup whose files do not match the manifest (exit 5), refuses
 to write into an existing directory (exit 4), and replays the restored log
 to check the event count and chain head. Then:
 
-1. `memory-fabric --db ./restored/store.db --keys ./restored/keys doctor`
+1. `amberlog --db ./restored/store.db --keys ./restored/keys doctor`
 2. Compare the chain head with your latest off-host checkpoint
    (`--checkpoint-dir`). A restored store *behind* the checkpoint has lost
    events since the backup: say so in the incident record.
 3. Peers may hold retractions the restored store no longer remembers
-   sending. Run `memory-fabric maintain --once` with `--peers` so the
+   sending. Run `amberlog maintain --once` with `--peers` so the
    outbox is re-dispatched; delivery is idempotent at the recipient.
 
 The drill is `tests/test_backup_custody.py`, which runs on every CI build.

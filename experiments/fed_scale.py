@@ -27,22 +27,22 @@ import subprocess
 import time
 from pathlib import Path
 
-from memory_fabric import MemoryFabric
-from memory_fabric.dispatcher import Dispatcher
-from memory_fabric.events import EventType
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog
+from amberlog.dispatcher import Dispatcher
+from amberlog.events import EventType
+from amberlog.federation import offer
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.model import EXPOSABLE_STATES
-from memory_fabric.protocol import MAX_HOPS
-from memory_fabric.transport import InProcessTransport
+from amberlog.model import EXPOSABLE_STATES
+from amberlog.protocol import MAX_HOPS
+from amberlog.transport import InProcessTransport
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "research" / "results" / "fed-scale.json"
 
 
-def store() -> MemoryFabric:
-    return MemoryFabric(":memory:", firewall=Firewall(rules=(
+def store() -> Amberlog:
+    return Amberlog(":memory:", firewall=Firewall(rules=(
         rule_must_be_active, rule_restricted_stays_private, rule_capabilities_must_be_granted)))
 
 
@@ -69,7 +69,7 @@ def run(name: str, n: int, edges_of: "callable", seed: int = 7) -> dict:  # type
     # A correction, not a bare quarantine: `quarantine` withdraws locally and
     # owes nothing, so the first run of this harness moved no retraction at
     # all and reported every copy still live.
-    from memory_fabric import correction
+    from amberlog import correction
 
     correction.apply(stores[0], origin, reason="wrong", actor="op")
     transport = InProcessTransport(by_id)

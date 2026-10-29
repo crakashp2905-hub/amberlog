@@ -9,9 +9,9 @@ import tempfile
 import unittest
 from unittest import mock
 
-from memory_fabric import MemoryFabric
-from memory_fabric import retrievers
-from memory_fabric.retrievers import (CrossEncoderReranker, HttpEmbedder, VectorCache,
+from amberlog import Amberlog
+from amberlog import retrievers
+from amberlog.retrievers import (CrossEncoderReranker, HttpEmbedder, VectorCache,
                                       apply_reranker, best_available)
 
 
@@ -100,7 +100,7 @@ class TestReranking(unittest.TestCase):
 class TestInTheFabric(unittest.TestCase):
     def test_trained_embedder_and_reranker_in_retrieve(self):
         e = WordEmbedder()
-        f = MemoryFabric(":memory:", auto_activate=True, retrieval="hybrid", embedder=e,
+        f = Amberlog(":memory:", auto_activate=True, retrieval="hybrid", embedder=e,
                          rerank=KeywordReranker("P-14"))
         self.addCleanup(f.close)
         for text in ("Pump P-15 relief valve is 9 bar.", "Pump P-14 relief valve is 12 bar.",
@@ -113,12 +113,12 @@ class TestInTheFabric(unittest.TestCase):
     def test_replay_warms_in_batches(self):
         with tempfile.TemporaryDirectory() as tmp:
             db = os.path.join(tmp, "m.db")
-            f = MemoryFabric(db, auto_activate=True)
+            f = Amberlog(db, auto_activate=True)
             for i in range(9):
                 f.remember("ag", f"pump {i} seal note {i}", scope="team")
             f.close()
             e = WordEmbedder()
-            MemoryFabric(db, embedder=e, retrieval="hybrid").close()
+            Amberlog(db, embedder=e, retrieval="hybrid").close()
             self.assertLess(len(e.batches), 9)
 
 
@@ -160,7 +160,7 @@ if __name__ == "__main__":
 
 class TestSpecs(unittest.TestCase):
     def test_http_embedders_from_specs(self):
-        from memory_fabric.retrievers import embedder_from_spec
+        from amberlog.retrievers import embedder_from_spec
 
         with mock.patch.dict(os.environ, {"OPENAI_API_KEY": "x"}):
             e = embedder_from_spec("openai:text-embedding-3-small")
@@ -175,12 +175,12 @@ class TestSpecs(unittest.TestCase):
             embedder_from_spec("anthropic:x")
 
     def test_environment_falls_back_to_best_available(self):
-        from memory_fabric import retrievers as r
+        from amberlog import retrievers as r
 
         with mock.patch.dict(os.environ, {}, clear=True), \
                 mock.patch.object(r, "fastembed_available", return_value=False):
             self.assertEqual(r.from_environment(), {"retrieval": "lexical"})
-        with mock.patch.dict(os.environ, {"MEMORY_FABRIC_EMBEDDER": "ollama:nomic-embed-text"},
+        with mock.patch.dict(os.environ, {"AMBERLOG_EMBEDDER": "ollama:nomic-embed-text"},
                              clear=True):
             cfg = r.from_environment()
         self.assertEqual(cfg["retrieval"], "hybrid")
@@ -190,7 +190,7 @@ class TestDenseScan(unittest.TestCase):
     def test_numpy_and_python_scans_agree(self):
         import random as rnd
 
-        from memory_fabric.vectors import VectorIndex
+        from amberlog.vectors import VectorIndex
 
         class E:
             dim = 32
@@ -215,7 +215,7 @@ class TestDenseScan(unittest.TestCase):
 
 class TestWarmBatching(unittest.TestCase):
     def test_long_texts_are_embedded_from_their_start_and_cached_whole(self) -> None:
-        from memory_fabric.retrievers import MAX_TEXT_CHARS, _BatchEmbedder
+        from amberlog.retrievers import MAX_TEXT_CHARS, _BatchEmbedder
 
         class Fake(_BatchEmbedder):
             def __init__(self) -> None:
@@ -234,7 +234,7 @@ class TestWarmBatching(unittest.TestCase):
         self.assertEqual(e.calls, 1, "the whole text is the cache key; no second call")
 
     def test_warm_batches_respect_a_character_budget(self) -> None:
-        from memory_fabric.retrievers import BATCH_CHARS_PER_TEXT, _BatchEmbedder
+        from amberlog.retrievers import BATCH_CHARS_PER_TEXT, _BatchEmbedder
 
         class Fake(_BatchEmbedder):
             def __init__(self) -> None:

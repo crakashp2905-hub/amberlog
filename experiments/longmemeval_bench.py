@@ -222,7 +222,7 @@ def run_arm(arm: str, instances: Sequence[Mapping[str, Any]], k: int,
     a finding that can only be reproduced by editing the harness is not
     reproducible.
     """
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     report = ArmReport(arm=arm)
     for instance in instances:
@@ -249,7 +249,7 @@ def run_arm(arm: str, instances: Sequence[Mapping[str, Any]], k: int,
             kwargs["rerank"] = "replace"
         if arm.startswith("real_") and embedder is not None:
             kwargs["embedder"] = embedder
-        fabric = MemoryFabric(
+        fabric = Amberlog(
             ":memory:", auto_activate=True, encrypt_content=False,
             retrieval=retrieval,
             # Off: it is a per-write content scan and this benchmark writes
@@ -340,7 +340,7 @@ def real_embedder():
     comparable with the SciFact ones.
     """
     try:
-        from memory_fabric.adapters.ollama import OllamaEmbedder
+        from amberlog.adapters.ollama import OllamaEmbedder
 
         return OllamaEmbedder()
     except Exception as exc:  # pragma: no cover - environment dependent

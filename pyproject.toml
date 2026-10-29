@@ -3,9 +3,9 @@ requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "memory-fabric"
+name = "amberlog"
 version = "0.14.0"
-description = "Memory for AI agents that you can audit, correct and trust: provenance, cross-store retraction, and evidence-gated actions."
+description = "Trust infrastructure for collective intelligence."
 readme = "README.md"
 requires-python = ">=3.11"
 # PEP 639: an SPDX expression and the file, so `License:` is a short
@@ -41,38 +41,38 @@ claude = ["anthropic>=0.40"]
 # Optional storage backend for writers on more than one machine. The core and
 # SQLite, the default, need nothing.
 postgres = ["psycopg>=3.1"]
-# A LangChain retriever (memory_fabric.integrations.langchain).
+# A LangChain retriever (amberlog.integrations.langchain).
 langchain = ["langchain-core>=0.3"]
 # AES-256-GCM from a maintained library; required by the production crypto
-# profile (MEMORY_FABRIC_CRYPTO_PROFILE=production).
+# profile (AMBERLOG_CRYPTO_PROFILE=production).
 crypto = ["cryptography>=42"]
-# Trained retrieval (memory_fabric.retrievers): ONNX models on CPU, no PyTorch.
+# Trained retrieval (amberlog.retrievers): ONNX models on CPU, no PyTorch.
 retrieval = ["fastembed>=0.5"]
 # The same with sentence-transformers, for teams already on PyTorch or a GPU.
 retrieval-torch = ["sentence-transformers>=3"]
 
 [project.scripts]
-memory-fabric = "memory_fabric.cli:main"
+amberlog = "amberlog.cli:main"
 
 [project.urls]
-Repository = "https://github.com/crakashp2905-hub/memory-fabric"
-Documentation = "https://github.com/crakashp2905-hub/memory-fabric/blob/main/docs/README.md"
-Changelog = "https://github.com/crakashp2905-hub/memory-fabric/blob/main/CHANGELOG.md"
-Issues = "https://github.com/crakashp2905-hub/memory-fabric/issues"
-Security = "https://github.com/crakashp2905-hub/memory-fabric/blob/main/SECURITY.md"
+Repository = "https://github.com/crakashp2905-hub/amberlog"
+Documentation = "https://github.com/crakashp2905-hub/amberlog/blob/main/docs/README.md"
+Changelog = "https://github.com/crakashp2905-hub/amberlog/blob/main/CHANGELOG.md"
+Issues = "https://github.com/crakashp2905-hub/amberlog/issues"
+Security = "https://github.com/crakashp2905-hub/amberlog/blob/main/SECURITY.md"
 
 [tool.setuptools.packages.find]
-include = ["memory_fabric*"]
+include = ["amberlog*"]
 
 [tool.setuptools.package-data]
 # The dashboard is served from disk at runtime, so it has to ship inside the
 # wheel; without this the web UI 500s on a pip-installed copy. `doctor` checks
 # for it, because that failure only shows up when an operator opens the page.
-"memory_fabric.observability" = ["static/*.html", "static/*.json"]
+"amberlog.observability" = ["static/*.html", "static/*.json"]
 # PEP 561. The public APIs carry type hints (AGENTS.md requires it), and
 # without this marker no type checker in a consuming project reads them: the
 # hints exist and are invisible, which is the worst of both.
-"memory_fabric" = ["py.typed"]
+"amberlog" = ["py.typed"]
 
 # Lint and type checking, enforced by the `lint` CI job. Scoped to the shipped
 # packages: experiments and tests are research code and are compiled, not
@@ -81,14 +81,14 @@ include = ["memory_fabric*"]
 # code is written to.
 [tool.ruff]
 line-length = 100
-include = ["memory_fabric/**/*.py", "memeval/**/*.py"]
+include = ["amberlog/**/*.py", "memeval/**/*.py"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["memory_fabric", "memeval", "benchmarks"]
+files = ["amberlog", "memeval", "benchmarks"]
 # psycopg, anthropic and cryptography are optional; their absence must not
 # fail a check of the zero-dependency core.
 ignore_missing_imports = true

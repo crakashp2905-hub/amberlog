@@ -1,6 +1,6 @@
 # Brief for legal and privacy review (blueprint §12.3, gap G10)
 
-For counsel reviewing Memory Fabric before any compliance claim is made. It
+For counsel reviewing Amberlog before any compliance claim is made. It
 states what the software does, with the code that does it, and the questions
 that need a legal answer. **No compliance claim is made today**, and the
 product says so (`docs/LIMITATIONS.md`; capability `compliance.certification`
@@ -12,11 +12,11 @@ is listed as unsupported).
    removed. Events are hash-chained for tamper evidence (`integrity.py`).
 2. **Cryptographic erasure.** Each memory's content is encrypted with its own
    key; erasure destroys the key (`governance/erasure.py`,
-   `MemoryFabric.erase_content`). The event remains, the text is unreadable.
+   `Amberlog.erase_content`). The event remains, the text is unreadable.
    Indexes holding plaintext are cleared, and summaries written from an erased
    memory are erased with it (`decay.py`).
 3. **What erasure does not reach**, reported per request by
-   `MemoryFabric.erasure_scope`: backups taken before the erasure, copies
+   `Amberlog.erasure_scope`: backups taken before the erasure, copies
    already shared with other stores (each is sent a signed retraction and
    reports back; the origin cannot verify deletion there), exports, and
    anything a model was already given.

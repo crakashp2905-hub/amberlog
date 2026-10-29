@@ -1,6 +1,6 @@
 # Pre-registration — C2: which decisions genuinely depended on a corrected memory?
 
-**Registered 2026-10-24**, before `memory_fabric/dependence.py` and
+**Registered 2026-10-24**, before `amberlog/dependence.py` and
 `experiments/c2_dependence.py` existed.
 
 ## 1. Question

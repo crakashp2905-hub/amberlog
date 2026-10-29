@@ -1,4 +1,4 @@
-# What Memory Fabric should take from Hindsight
+# What Amberlog should take from Hindsight
 
 An assessment of [vectorize-io/hindsight](https://github.com/vectorize-io/hindsight)
 against this project's **measured** gaps, 2026-10-12.
@@ -22,7 +22,7 @@ than a technique.**
 `research/SCORECARD.md` has said for several milestones that SciFact is this
 project's only external check, and that **SciFact has no provenance, no
 lifecycle, no retraction and no tenants** — so every claim about the things
-Memory Fabric is actually *for* has rested on benchmarks I wrote and labelled
+Amberlog is actually *for* has rested on benchmarks I wrote and labelled
 myself. Hindsight evaluates on
 [LongMemEval](https://arxiv.org/abs/2410.10813) (Wu et al., ICLR 2025), which
 turns out to test four of them directly:
@@ -111,7 +111,7 @@ survived in a docstring that recommended it.
 ### 3a. A reranking stage — closes a gap this project worked around
 
 Hindsight's recall runs four strategies in parallel and merges them with
-**reciprocal-rank fusion followed by a cross-encoder reranker**. Memory Fabric
+**reciprocal-rank fusion followed by a cross-encoder reranker**. Amberlog
 does the fusion and stops.
 
 The absence shows up as a rule I derived and measured five times: **do not fuse
@@ -152,7 +152,7 @@ which is a sharper statement than five previous measurements produced.
 Hindsight's `retain` extracts entities and relationships and its recall
 traverses entity, temporal and causal links.
 
-Memory Fabric's `chains.py` bridges on **shared non-query terms**, and I can
+Amberlog's `chains.py` bridges on **shared non-query terms**, and I can
 say precisely where that heuristic succeeds and fails because it is measured:
 it recovered a connector at **rank 462 of ~486** that no top-k arm could reach
 ([p1](results/p1-evidence-chain-reconstruction.md)), and it fails on
@@ -208,7 +208,7 @@ Hindsight consolidates related facts into deduplicated **observations**, each
 keeping supporting quotes and a **proof count**, refined rather than
 overwritten when new evidence arrives.
 
-Memory Fabric is arguably **ahead on the hard half** of this: `_group_by_root`,
+Amberlog is arguably **ahead on the hard half** of this: `_group_by_root`,
 source-root resolution and copy recognition exist precisely so that copies do
 not count as corroboration, and [p2b](results/p2b-copy-recognition.md) measured
 that closed to zero against an oracle, including the case where a withdrawn
@@ -228,12 +228,12 @@ ingest. `SECURITY.md` records this project's detector as pattern-based with
 coverage is a cheap, bounded improvement with a clear test: patterns the
 current screen misses.
 
-## 4. Where Memory Fabric is ahead, from the same README
+## 4. Where Amberlog is ahead, from the same README
 
 Stated to keep the comparison honest, and with the caveat that **absence from a
 README is not absence from a product**.
 
-- **Retraction.** The README documents no retraction, deletion or invalidation path. This is Memory Fabric's core, and [P3](results/p3-correction-propagation.md) and [P2b](results/p2b-copy-recognition.md) measure it against an oracle: withdrawing a memory contests its descendants, spares independently-supported conclusions, and reaches re-ingested copies in either storage order. Hindsight's "refined rather than overwritten" is about *strengthening* a belief; nothing described handles a source being **withdrawn as wrong**.
+- **Retraction.** The README documents no retraction, deletion or invalidation path. This is Amberlog's core, and [P3](results/p3-correction-propagation.md) and [P2b](results/p2b-copy-recognition.md) measure it against an oracle: withdrawing a memory contests its descendants, spares independently-supported conclusions, and reaches re-ingested copies in either storage order. Hindsight's "refined rather than overwritten" is about *strengthening* a belief; nothing described handles a source being **withdrawn as wrong**.
 - **The event log as the source of truth**, with every projection rebuildable from it, append-only triggers and a hash chain with external checkpoints.
 - **Propensity logging.** Every exposure decision records the probability it was made with, so causal credit can be estimated later. Nothing in the README suggests an equivalent.
 - **Authorisation as a boundary**, with tenant filtering applied *before* the index is consulted, signed expiring credentials and per-credential revocation. Hindsight's banks are isolated stores; isolation by partition is a different guarantee from authorisation within a shared store, and [P4](results/p4-envelope.md) measures zero cross-tenant leaks across 1,600 exposures.

@@ -4,22 +4,22 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.model import LifecycleState, Scope
-from memory_fabric.response import assess, candidates, contain, record, record_markdown
+from amberlog.model import LifecycleState, Scope
+from amberlog.response import assess, candidates, contain, record, record_markdown
 
 
 class APoisoning(unittest.TestCase):
     def setUp(self) -> None:
-        from memory_fabric.federation import offer
+        from amberlog.federation import offer
 
         permissive = Firewall(rules=(rule_restricted_stays_private, rule_must_be_active,
                                      rule_capabilities_must_be_granted))
-        self.fabric = MemoryFabric(":memory:", firewall=permissive, auto_activate=True)
-        self.other = MemoryFabric(":memory:", firewall=permissive)
+        self.fabric = Amberlog(":memory:", firewall=permissive, auto_activate=True)
+        self.other = Amberlog(":memory:", firewall=permissive)
         self.addCleanup(self.fabric.close)
         self.addCleanup(self.other.close)
         f = self.fabric
@@ -60,8 +60,8 @@ class APoisoning(unittest.TestCase):
         self.assertTrue(again["already_quarantined"])
 
     def test_the_record_shows_who_did_what_and_what_is_outstanding(self) -> None:
-        from memory_fabric.dispatcher import Dispatcher
-        from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
+        from amberlog.dispatcher import Dispatcher
+        from amberlog.transport import InProcessTransport, Peer, PeerRegistry
 
         contain(self.fabric, self.poison, reason="fabricated rating", actor="sec-lead")
         data = record(self.fabric, self.poison)

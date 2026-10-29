@@ -56,8 +56,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from experiments import checks  # noqa: E402
 from experiments import depotworld as W  # noqa: E402
 from experiments import phase_a_prime as PA  # noqa: E402
-from memory_fabric import LifecycleState, MemoryFabric  # noqa: E402
-from memory_fabric.adapters.context import build_context  # noqa: E402
+from amberlog import LifecycleState, Amberlog  # noqa: E402
+from amberlog.adapters.context import build_context  # noqa: E402
 
 ARMS = ("no_memory", "shared_memory", "shared_memory_delete",
         "fabric_governed", "oracle")
@@ -135,7 +135,7 @@ def run_governed(
     the same text.
     """
     policy, estimator = PA._policy("shared_memory")
-    fabric = MemoryFabric(
+    fabric = Amberlog(
         ":memory:", seed=seed, embedder=embedder,
         estimator=estimator, exposure_policy=policy,
     )
@@ -250,7 +250,7 @@ def run_pooled(
     The deletion is deliberately not given the id. That is the whole
     difference being measured, and `wrongly_removed` counts what it costs.
     """
-    from memory_fabric.vectors import cosine
+    from amberlog.vectors import cosine
 
     run = PA.ArmRun(result=PA.ArmResult(arm))
     live: dict[int, str] = {}
@@ -324,7 +324,7 @@ def run_oracle(
     keeps only its real advantage -- knowing which lessons are wrong for this
     episode.
     """
-    from memory_fabric.vectors import VectorIndex
+    from amberlog.vectors import VectorIndex
 
     run = PA.ArmRun(result=PA.ArmResult("oracle"))
     index = VectorIndex(embedder)
@@ -468,7 +468,7 @@ def verdict(rows: dict[str, Any], rates: Sequence[float]) -> dict[str, Any]:
 
 def run(seeds: int, episodes: int, rates: Sequence[float], model: str,
         verbose: bool) -> dict[str, Any]:
-    from memory_fabric.adapters.ollama import OllamaClient, OllamaEmbedder
+    from amberlog.adapters.ollama import OllamaClient, OllamaEmbedder
 
     client = OllamaClient()
     embedder = OllamaEmbedder(client=client)

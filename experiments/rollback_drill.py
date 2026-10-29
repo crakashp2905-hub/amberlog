@@ -28,7 +28,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(cwd: Path, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", "memory_fabric", *args], cwd=cwd,
+    return subprocess.run([sys.executable, "-m", "amberlog", *args], cwd=cwd,
                           capture_output=True, text=True, timeout=300)
 
 

@@ -11,7 +11,7 @@ explains why it is necessary. Overall nDCG goes from 0.654 to **0.873** on dev
 with **zero regressions on any family on either split**.
 
 - **Registration:** [p1-evidence-chain-reconstruction.md](../prereg/p1-evidence-chain-reconstruction.md), written before the mechanism existed
-- **Mechanism:** `MemoryFabric.reconstruct()` / `memory_fabric/chains.py`
+- **Mechanism:** `Amberlog.reconstruct()` / `amberlog/chains.py`
 - **Benchmark:** [relevance_v2](../bench/relevance_v2/README.md), 33 cases a split, k=5; plus [facet_v1](facet-v1-implied.md) for prediction 4
 - **Runs:** 2026-10-12. Deterministic apart from `real_*`
 

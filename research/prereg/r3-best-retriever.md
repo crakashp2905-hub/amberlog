@@ -19,7 +19,7 @@ adds measurably over its base.
 | **SciFact** (BEIR/MTEB) | primary | test, 300 queries, 5,183 documents, 339 judgements | **nDCG@10** | 10 |
 | **LongMemEval `s`** | no-regression | 60 instances, stratified by question type (`longmemeval_bench.load(limit=60)`), median ~490 turns | turn recall | 10 |
 
-LongMemEval runs through `MemoryFabric.retrieve`, the product path, with the
+LongMemEval runs through `Amberlog.retrieve`, the product path, with the
 harness defaults of `longmemeval_bench` (`as_of` temporal filtering, copy
 recognition off). SciFact runs on the indexes directly, as `external_bench`
 does. Nothing is tuned on either.

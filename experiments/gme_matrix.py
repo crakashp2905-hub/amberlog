@@ -30,7 +30,7 @@ Arms (blueprint labels):
 |---|---|
 | A | no memory |
 | B | conventional retrieval: every text ever written, ranked lexically, no governance |
-| C | Memory Fabric governance, canonical records, no compression |
+| C | Amberlog governance, canonical records, no compression |
 | D | compression without governance: summaries of every text ever written |
 | E | Governed Context Map (compact mode) |
 | F | branch merged naively: every proposal applied, then governed retrieval |
@@ -55,10 +55,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-from memory_fabric import MemoryFabric
-from memory_fabric.branching import Branches
-from memory_fabric.context_map import ContextMap, build_l1, estimate_tokens, subject
-from memory_fabric.context_receipt import rendered_items
+from amberlog import Amberlog
+from amberlog.branching import Branches
+from amberlog.context_map import ContextMap, build_l1, estimate_tokens, subject
+from amberlog.context_receipt import rendered_items
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "research" / "results" / "gme-matrix.json"
@@ -131,22 +131,22 @@ def within_budget(texts: list[str], budget: int | None = None) -> list[str]:
 class World:
     seed: int
     assets: list[Asset]
-    gov: MemoryFabric               # governed store, branch merged with governance after phase 1
-    naive: MemoryFabric             # same timeline, branch merged naively after phase 1
-    raw: MemoryFabric               # every text ever written, all active, no governance
+    gov: Amberlog               # governed store, branch merged with governance after phase 1
+    naive: Amberlog             # same timeline, branch merged naively after phase 1
+    raw: Amberlog               # every text ever written, all active, no governance
     branches: Branches
     stats: dict[str, Any] = field(default_factory=dict)
 
 
 def build_world(seed: int, n_assets: int = 36) -> World:
     rng = random.Random(seed)
-    gov = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False, seed=seed)
-    naive = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False, seed=seed)
-    raw = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False, seed=seed,
+    gov = Amberlog(":memory:", auto_activate=True, hold_suspicious=False, seed=seed)
+    naive = Amberlog(":memory:", auto_activate=True, hold_suspicious=False, seed=seed)
+    raw = Amberlog(":memory:", auto_activate=True, hold_suspicious=False, seed=seed,
                        recognise_copies=False)
     stores = (gov, naive)
 
-    def both(fn: Callable[[MemoryFabric], str]) -> tuple[str, str]:
+    def both(fn: Callable[[Amberlog], str]) -> tuple[str, str]:
         return fn(gov), fn(naive)
 
     def write_raw(text: str) -> None:
@@ -243,7 +243,7 @@ def merge_naive(w: World) -> None:
 
 # --- arms -----------------------------------------------------------------
 
-def ranked_texts(f: MemoryFabric, q: str) -> list[str]:
+def ranked_texts(f: Amberlog, q: str) -> list[str]:
     return [m.content for m in f.retrieve("reader", q, k=K).exposed]
 
 

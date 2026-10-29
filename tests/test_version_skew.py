@@ -23,18 +23,18 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import LifecycleState, MemoryFabric
-from memory_fabric.federation import offer
-from memory_fabric.governance.cipher import ETM_PREFIX, LEGACY_PREFIX
-from memory_fabric.governance.firewall import (
+from amberlog import LifecycleState, Amberlog
+from amberlog.federation import offer
+from amberlog.governance.cipher import ETM_PREFIX, LEGACY_PREFIX
+from amberlog.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from memory_fabric.identity import DEFAULT_TENANT
-from memory_fabric.model import SCHEMA_VERSION, Memory
-from memory_fabric.protocol import PROTOCOL_VERSION, PropagationState, Retraction
+from amberlog.identity import DEFAULT_TENANT
+from amberlog.model import SCHEMA_VERSION, Memory
+from amberlog.protocol import PROTOCOL_VERSION, PropagationState, Retraction
 
 
 def permissive() -> Firewall:
@@ -103,7 +103,7 @@ class AnOlderStoreOpensOnNewerCode(unittest.TestCase):
 
     def _write_legacy(self, schema: str, strip: tuple[str, ...] = ()) -> str:
         """Build a store, then rewrite its events to look like `schema`."""
-        fabric = MemoryFabric(
+        fabric = Amberlog(
             self.path, firewall=permissive(), auto_activate=True,
             encrypt_content=False,
         )
@@ -144,7 +144,7 @@ class AnOlderStoreOpensOnNewerCode(unittest.TestCase):
             "0.2.0",
             strip=("tenant_id", "valid_from", "valid_to", "capabilities"),
         )
-        fabric = MemoryFabric(self.path, firewall=permissive(), auto_activate=True)
+        fabric = Amberlog(self.path, firewall=permissive(), auto_activate=True)
         self.addCleanup(fabric.close)
         memory = fabric.get(memory_id)
         self.assertEqual(memory.content, "valve 7 is upstream of the pump")
@@ -158,7 +158,7 @@ class AnOlderStoreOpensOnNewerCode(unittest.TestCase):
         that would silently return nothing if absent had meant "never valid".
         """
         self._write_legacy("0.3.0", strip=("tenant_id", "valid_from", "valid_to"))
-        fabric = MemoryFabric(self.path, firewall=permissive(), auto_activate=True)
+        fabric = Amberlog(self.path, firewall=permissive(), auto_activate=True)
         self.addCleanup(fabric.close)
         for label, kwargs in (
             ("plain", {}),
@@ -174,7 +174,7 @@ class AnOlderStoreOpensOnNewerCode(unittest.TestCase):
         from io import StringIO
         from unittest.mock import patch
 
-        from memory_fabric.cli import main
+        from amberlog.cli import main
 
         self._write_legacy("0.3.0", strip=("tenant_id", "valid_from", "valid_to"))
         buffer = StringIO()
@@ -196,7 +196,7 @@ class AnOlderStoreOpensOnNewerCode(unittest.TestCase):
         from io import StringIO
         from unittest.mock import patch
 
-        from memory_fabric.cli import main
+        from amberlog.cli import main
 
         self._write_legacy("99.0.0")
         buffer = StringIO()
@@ -218,13 +218,13 @@ class CiphertextGenerationsCoexist(unittest.TestCase):
         """
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "mixed.db"
-            plain = MemoryFabric(path, auto_activate=True, encrypt_content=False)
+            plain = Amberlog(path, auto_activate=True, encrypt_content=False)
             try:
                 plaintext_id = plain.remember(agent_id="ag", content="written in the clear")
             finally:
                 plain.close()
 
-            sealed = MemoryFabric(path, auto_activate=True, encrypt_content=True)
+            sealed = Amberlog(path, auto_activate=True, encrypt_content=True)
             try:
                 sealed_id = sealed.remember(agent_id="ag", content="written sealed")
                 self.assertEqual(sealed.get(plaintext_id).content, "written in the clear")
@@ -232,7 +232,7 @@ class CiphertextGenerationsCoexist(unittest.TestCase):
             finally:
                 sealed.close()
 
-            reopened = MemoryFabric(path, auto_activate=True, encrypt_content=True)
+            reopened = Amberlog(path, auto_activate=True, encrypt_content=True)
             try:
                 self.assertEqual(reopened.get(plaintext_id).content, "written in the clear")
                 self.assertEqual(reopened.get(sealed_id).content, "written sealed")
@@ -240,7 +240,7 @@ class CiphertextGenerationsCoexist(unittest.TestCase):
                 reopened.close()
 
     def test_a_legacy_envelope_is_still_recognised(self) -> None:
-        from memory_fabric.governance.cipher import is_sealed
+        from amberlog.governance.cipher import is_sealed
 
         self.assertTrue(is_sealed(LEGACY_PREFIX + "00:00"))
         self.assertTrue(is_sealed(ETM_PREFIX + "00:00:00"))
@@ -256,8 +256,8 @@ class TheProtocolIsStableAcrossVersions(unittest.TestCase):
         self.dir = Path(self._tmp.name)
 
     def _pair(self):
-        origin = MemoryFabric(self.dir / "a.db", firewall=permissive(), auto_activate=True)
-        recipient = MemoryFabric(self.dir / "b.db", firewall=permissive(), auto_activate=True)
+        origin = Amberlog(self.dir / "a.db", firewall=permissive(), auto_activate=True)
+        recipient = Amberlog(self.dir / "b.db", firewall=permissive(), auto_activate=True)
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
         return origin, recipient
@@ -318,7 +318,7 @@ class TheProtocolIsStableAcrossVersions(unittest.TestCase):
         )
 
     def test_an_unsupported_protocol_version_is_refused(self) -> None:
-        from memory_fabric.protocol import ProtocolError
+        from amberlog.protocol import ProtocolError
 
         origin, _ = self._pair()
         memory_id = origin.remember(agent_id="ag", content="valve 7 is upstream")
@@ -357,8 +357,8 @@ class EveryShippedVersionUpgradesThenBacksUp(AnOlderStoreOpensOnNewerCode):
         from io import StringIO
         from unittest.mock import patch
 
-        from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
-        from memory_fabric.cli import main
+        from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+        from amberlog.cli import main
 
         for version in self.VERSIONS:
             with self.subTest(version):
@@ -367,7 +367,7 @@ class EveryShippedVersionUpgradesThenBacksUp(AnOlderStoreOpensOnNewerCode):
                 old = self._write_legacy(
                     version, strip=("tenant_id", "valid_from", "valid_to", "capabilities")
                     if version < "0.5.0" else ())
-                fabric = MemoryFabric(self.path, firewall=permissive(), auto_activate=True)
+                fabric = Amberlog(self.path, firewall=permissive(), auto_activate=True)
                 try:
                     new = fabric.remember("ag", "valve 9 is downstream of the pump")
                     gate = ActionGate(fabric, ActionPolicy(
@@ -386,7 +386,7 @@ class EveryShippedVersionUpgradesThenBacksUp(AnOlderStoreOpensOnNewerCode):
                 copy = self.path.with_name(f"copy-{version}.db")
                 with patch("sys.stdout", StringIO()):
                     self.assertEqual(main(["--db", str(self.path), "backup", str(copy)]), 0)
-                restored = MemoryFabric(copy, firewall=permissive())
+                restored = Amberlog(copy, firewall=permissive())
                 try:
                     self.assertEqual({m: restored.lifecycle_of(m) for m in (old, new)}, states)
                     self.assertIs(states[old], LifecycleState.QUARANTINED)

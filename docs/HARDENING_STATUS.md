@@ -18,7 +18,7 @@ holds it. **Partial** names the gap. **Open** says what it needs.
 | Survives summaries, tool outputs, federation | inherited through lineage, `copy_of` and `context.federation.authority` (the origin's verdict, a floor at the recipient) | `TheBoundarySurvivesEveryTransformation` (inject → summarise → tool copy → share) |
 | Source identity separate from the summariser's | `Authority.origins` vs `Authority.transformed_by` | `test_the_summary_keeps_the_source_apart_from_the_summariser` |
 | Instruction / observation / derived claim are distinct | `KINDS`; an instruction is never evidence at the gate | `test_an_instruction_is_never_evidence` |
-| Policy-controlled elevation before consequential use | `MemoryFabric.elevate`: a different approver, one version, soft reasons only; `ToolRule.min_authority` (default `unverified`) | `Elevation` |
+| Policy-controlled elevation before consequential use | `Amberlog.elevate`: a different approver, one version, soft reasons only; `ToolRule.min_authority` (default `unverified`) | `Elevation` |
 | Success does not prove the memories were right | nothing in `authority.py` reads outcomes | `OutcomesDoNotConferAuthority` |
 
 ### A2 (P0). Influence graph with typed edges: **done (structure)**

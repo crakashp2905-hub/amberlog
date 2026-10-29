@@ -45,16 +45,16 @@ from typing import Any, Sequence
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from memory_fabric import MemoryFabric  # noqa: E402
+from amberlog import Amberlog  # noqa: E402
 
 WRITER = textwrap.dedent(
     """
     import json, sys
     sys.path.insert(0, {root!r})
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     path, label, count, timeout = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
-    fabric = MemoryFabric(path, auto_activate=True, encrypt_content=False,
+    fabric = Amberlog(path, auto_activate=True, encrypt_content=False,
                           busy_timeout_ms=timeout, recognise_copies=False)
     written, failures = 0, []
     try:
@@ -108,7 +108,7 @@ def concurrent_writers(env: Envelope, counts: Sequence[int], appends: int) -> No
         with tempfile.TemporaryDirectory() as tmp:
             directory = pathlib.Path(tmp)
             path = directory / "store.db"
-            MemoryFabric(path, auto_activate=True, encrypt_content=False).close()
+            Amberlog(path, auto_activate=True, encrypt_content=False).close()
             script = directory / "writer.py"
             script.write_text(WRITER.format(root=str(ROOT)), encoding="utf-8")
 
@@ -129,7 +129,7 @@ def concurrent_writers(env: Envelope, counts: Sequence[int], appends: int) -> No
                 results.append(json.loads(out.strip().splitlines()[-1]))
             elapsed = time.perf_counter() - started
 
-            fabric = MemoryFabric(path, auto_activate=True, encrypt_content=False)
+            fabric = Amberlog(path, auto_activate=True, encrypt_content=False)
             try:
                 stored = len(fabric.state.memories)
                 sequences = [e.seq for e in fabric.log.read()]
@@ -165,7 +165,7 @@ def concurrent_writers(env: Envelope, counts: Sequence[int], appends: int) -> No
 def retrieval_latency(env: Envelope, sizes: Sequence[int], queries: int = 40,
                       copies: bool = False) -> None:
     for size in sizes:
-        fabric = MemoryFabric(
+        fabric = Amberlog(
             ":memory:", auto_activate=True, encrypt_content=False,
             retrieval="lexical", recognise_copies=copies)
         try:
@@ -207,7 +207,7 @@ def authorisation_under_load(env: Envelope, agents: Sequence[int]) -> None:
     """
     for count in agents:
         tenants = [f"tn-{i}" for i in range(4)]
-        fabric = MemoryFabric(":memory:", auto_activate=True,
+        fabric = Amberlog(":memory:", auto_activate=True,
                               encrypt_content=False, retrieval="lexical",
                               recognise_copies=False)
         try:
@@ -261,7 +261,7 @@ def recovery_under_contention(env: Envelope, writers: int, appends: int) -> None
     with tempfile.TemporaryDirectory() as tmp:
         directory = pathlib.Path(tmp)
         path = directory / "store.db"
-        MemoryFabric(path, auto_activate=True, encrypt_content=False).close()
+        Amberlog(path, auto_activate=True, encrypt_content=False).close()
         script = directory / "writer.py"
         script.write_text(WRITER.format(root=str(ROOT)), encoding="utf-8")
 
@@ -286,7 +286,7 @@ def recovery_under_contention(env: Envelope, writers: int, appends: int) -> None
             if process.returncode == 0 and out.strip():
                 survived += 1
 
-        reopened = MemoryFabric(path, auto_activate=True, encrypt_content=False)
+        reopened = Amberlog(path, auto_activate=True, encrypt_content=False)
         try:
             sequences = [e.seq for e in reopened.log.read()]
             gaps = sequences != list(range(1, len(sequences) + 1))

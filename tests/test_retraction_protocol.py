@@ -9,7 +9,7 @@ crash-safe retraction intent (3), acknowledgement states (5), and causal
 ordering (7) — so this file is the first place they can be tested at all.
 
 A crash is simulated the way it actually happens: the process stops between two
-operations and a *new* `MemoryFabric` opens the same file. Nothing is mocked,
+operations and a *new* `Amberlog` opens the same file. Nothing is mocked,
 because the thing under test is whether the durable state is enough to recover.
 """
 
@@ -19,16 +19,16 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (
+from amberlog import LifecycleState, Amberlog, WithdrawalBasis
+from amberlog.federation import offer
+from amberlog.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from memory_fabric.outbox import MAX_ATTEMPTS, now_ms
-from memory_fabric.protocol import (
+from amberlog.outbox import MAX_ATTEMPTS, now_ms
+from amberlog.protocol import (
     Acknowledgement,
     PropagationState,
     ProtocolError,
@@ -60,8 +60,8 @@ class ProtocolCase(unittest.TestCase):
         self.origin_path = str(Path(self.tmp.name) / "origin.db")
         self.recipient_path = str(Path(self.tmp.name) / "recipient.db")
 
-        self.origin = MemoryFabric(self.origin_path, firewall=permissive())
-        self.recipient = MemoryFabric(self.recipient_path, firewall=permissive())
+        self.origin = Amberlog(self.origin_path, firewall=permissive())
+        self.recipient = Amberlog(self.recipient_path, firewall=permissive())
         self.addCleanup(self._close)
 
         self.memory_id = self.origin.remember("ag_north", "E01 at coastal: swap the cable.")
@@ -80,10 +80,10 @@ class ProtocolCase(unittest.TestCase):
             except Exception:
                 pass
 
-    def reopen_recipient(self) -> MemoryFabric:
+    def reopen_recipient(self) -> Amberlog:
         """Simulate a crash and restart of the recipient process."""
         self.recipient.close()
-        self.recipient = MemoryFabric(self.recipient_path, firewall=permissive())
+        self.recipient = Amberlog(self.recipient_path, firewall=permissive())
         return self.recipient
 
 
@@ -104,7 +104,7 @@ class TestStoreIdentity(ProtocolCase):
         self.assertEqual(self.reopen_recipient().store_id, before)
 
     def test_an_import_records_the_origin_identity_and_version(self) -> None:
-        from memory_fabric.federation import imported_from
+        from amberlog.federation import imported_from
 
         origin = imported_from(self.recipient, self.imported_id)
         self.assertEqual(origin["store"], self.origin.store_id)
@@ -123,7 +123,7 @@ class TestDurability(ProtocolCase):
         )
         # Crash: nothing was ever dispatched.
         self.origin.close()
-        reopened = MemoryFabric(self.origin_path, firewall=permissive())
+        reopened = Amberlog(self.origin_path, firewall=permissive())
         self.addCleanup(reopened.close)
 
         pending = reopened.outbox.pending()
@@ -138,7 +138,7 @@ class TestDurability(ProtocolCase):
             actor="ag_north", basis=WithdrawalBasis.CONTRADICTED,
         )
         self.origin.close()
-        reopened = MemoryFabric(self.origin_path, firewall=permissive())
+        reopened = Amberlog(self.origin_path, firewall=permissive())
         self.addCleanup(reopened.close)
         self.assertEqual(
             reopened.get(self.memory_id).lifecycle_state, LifecycleState.QUARANTINED
@@ -570,20 +570,20 @@ class ReorderedDeliveryAcrossMemories(unittest.TestCase):
     def test_a_delayed_retraction_of_another_memory_still_applies(self) -> None:
         import time
 
-        from memory_fabric.dispatcher import Dispatcher
-        from memory_fabric.federation import offer
-        from memory_fabric.governance.firewall import (
+        from amberlog.dispatcher import Dispatcher
+        from amberlog.federation import offer
+        from amberlog.governance.firewall import (
             Firewall, rule_capabilities_must_be_granted, rule_must_be_active,
             rule_restricted_stays_private)
-        from memory_fabric.model import LifecycleState, Scope
-        from memory_fabric.transport import InProcessTransport, PeerRegistry
+        from amberlog.model import LifecycleState, Scope
+        from amberlog.transport import InProcessTransport, PeerRegistry
 
         def firewall() -> Firewall:
             return Firewall(rules=(rule_restricted_stays_private, rule_must_be_active,
                                    rule_capabilities_must_be_granted))
 
-        origin = MemoryFabric(":memory:", firewall=firewall(), auto_activate=True)
-        recipient = MemoryFabric(":memory:", firewall=firewall())
+        origin = Amberlog(":memory:", firewall=firewall(), auto_activate=True)
+        recipient = Amberlog(":memory:", firewall=firewall())
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
         a = origin.remember("ana", "valve A sticks", scope="team")
@@ -615,18 +615,18 @@ class ReorderedDeliveryAcrossVersions(unittest.TestCase):
     """Copies of two versions are two memories; their retractions are independent."""
 
     def test_the_v1_copys_retraction_applies_after_the_v2_copys(self) -> None:
-        from memory_fabric.federation import offer
-        from memory_fabric.governance.firewall import (
+        from amberlog.federation import offer
+        from amberlog.governance.firewall import (
             Firewall, rule_capabilities_must_be_granted, rule_must_be_active,
             rule_restricted_stays_private)
-        from memory_fabric.model import LifecycleState, Scope
+        from amberlog.model import LifecycleState, Scope
 
         def firewall() -> Firewall:
             return Firewall(rules=(rule_restricted_stays_private, rule_must_be_active,
                                    rule_capabilities_must_be_granted))
 
-        origin = MemoryFabric(":memory:", firewall=firewall(), auto_activate=True)
-        recipient = MemoryFabric(":memory:", firewall=firewall())
+        origin = Amberlog(":memory:", firewall=firewall(), auto_activate=True)
+        recipient = Amberlog(":memory:", firewall=firewall())
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
         mid = origin.remember("ana", "valve A runs at 4 bar", scope="team")

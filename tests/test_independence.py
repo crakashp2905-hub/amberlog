@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog
+from amberlog.federation import offer
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.independence import Independence, global_ref, independent_sources
-from memory_fabric.model import Scope
+from amberlog.independence import Independence, global_ref, independent_sources
+from amberlog.model import Scope
 
 
-def store() -> MemoryFabric:
-    return MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=(
+def store() -> Amberlog:
+    return Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=(
         rule_restricted_stays_private, rule_must_be_active, rule_capabilities_must_be_granted)))
 
 

@@ -305,9 +305,9 @@ class TheProductArmImproved(unittest.TestCase):
         )
 
     def test_an_unknown_retrieval_mode_is_refused(self) -> None:
-        from memory_fabric import MemoryFabric
+        from amberlog import Amberlog
 
-        fabric = MemoryFabric(":memory:", retrieval="magic")
+        fabric = Amberlog(":memory:", retrieval="magic")
         self.addCleanup(fabric.close)
         with self.assertRaises(ValueError):
             fabric.retrieve(agent_id="a", query="anything")
@@ -439,7 +439,7 @@ class TheRealEmbedderArmsAreHonest(unittest.TestCase):
 
         import experiments.relevance_bench as bench
 
-        with patch.object(bench, "_REAL_EMBEDDER", None),              patch.object(bench, "_REAL_EMBEDDER_TRIED", False),              patch.dict("sys.modules", {"memory_fabric.adapters.ollama": None}):
+        with patch.object(bench, "_REAL_EMBEDDER", None),              patch.object(bench, "_REAL_EMBEDDER_TRIED", False),              patch.dict("sys.modules", {"amberlog.adapters.ollama": None}):
             self.assertIsNone(bench.real_embedder())
 
     def test_the_arm_raises_rather_than_scoring_a_hash(self) -> None:

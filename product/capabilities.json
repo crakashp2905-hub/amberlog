@@ -13,9 +13,9 @@
       "status": "available",
       "user_problem": "I need memories stored with provenance, and secrets or injections kept out.",
       "modules": [
-        "memory_fabric/_fabric/writes.py",
-        "memory_fabric/governance/firewall.py",
-        "memory_fabric/governance/sensitive.py"
+        "amberlog/_fabric/writes.py",
+        "amberlog/governance/firewall.py",
+        "amberlog/governance/sensitive.py"
       ],
       "tests": [
         "tests/test_fabric.py",
@@ -23,7 +23,7 @@
         "tests/test_sensitive_patterns.py"
       ],
       "surfaces": {
-        "sdk": "MemoryFabric.remember",
+        "sdk": "Amberlog.remember",
         "mcp": "remember",
         "cli": null,
         "dashboard": null
@@ -39,8 +39,8 @@
       "status": "available",
       "user_problem": "An agent must only see memories it may use now.",
       "modules": [
-        "memory_fabric/_fabric/retrieval.py",
-        "memory_fabric/model.py"
+        "amberlog/_fabric/retrieval.py",
+        "amberlog/model.py"
       ],
       "tests": [
         "tests/test_scope_visibility.py",
@@ -48,7 +48,7 @@
         "tests/test_properties_authz.py"
       ],
       "surfaces": {
-        "sdk": "MemoryFabric.retrieve",
+        "sdk": "Amberlog.retrieve",
         "mcp": "recall",
         "cli": "search",
         "dashboard": "search"
@@ -63,15 +63,15 @@
       "status": "available",
       "user_problem": "I need to know why the system remembers this.",
       "modules": [
-        "memory_fabric/explain.py",
-        "memory_fabric/lineage.py"
+        "amberlog/explain.py",
+        "amberlog/lineage.py"
       ],
       "tests": [
         "tests/test_observability.py",
         "tests/test_transitive_retraction.py"
       ],
       "surfaces": {
-        "sdk": "MemoryFabric.explain",
+        "sdk": "Amberlog.explain",
         "mcp": "trace_provenance",
         "cli": "show",
         "dashboard": "memories/{id}"
@@ -86,14 +86,14 @@
       "status": "available",
       "user_problem": "I need to see what was derived from a memory.",
       "modules": [
-        "memory_fabric/lineage.py",
-        "memory_fabric/observability/report.py"
+        "amberlog/lineage.py",
+        "amberlog/observability/report.py"
       ],
       "tests": [
         "tests/test_observability.py"
       ],
       "surfaces": {
-        "sdk": "MemoryFabric.lineage",
+        "sdk": "Amberlog.lineage",
         "mcp": null,
         "cli": "lineage",
         "dashboard": "memories/{id}/lineage"
@@ -108,8 +108,8 @@
       "status": "available",
       "user_problem": "I need to see how a memory changed and who changed it.",
       "modules": [
-        "memory_fabric/observability/report.py",
-        "memory_fabric/eventlog.py"
+        "amberlog/observability/report.py",
+        "amberlog/eventlog.py"
       ],
       "tests": [
         "tests/test_observability.py",
@@ -129,8 +129,8 @@
       "status": "available",
       "user_problem": "Before withdrawing a memory I need to see what it touches, and the preview must still hold when applied.",
       "modules": [
-        "memory_fabric/correction.py",
-        "memory_fabric/incident.py"
+        "amberlog/correction.py",
+        "amberlog/incident.py"
       ],
       "tests": [
         "tests/test_correction.py"
@@ -151,10 +151,10 @@
       "status": "available",
       "user_problem": "A withdrawn memory must not survive in copies or conclusions.",
       "modules": [
-        "memory_fabric/lineage.py",
-        "memory_fabric/justification.py",
-        "memory_fabric/outbox.py",
-        "memory_fabric/transport.py"
+        "amberlog/lineage.py",
+        "amberlog/justification.py",
+        "amberlog/outbox.py",
+        "amberlog/transport.py"
       ],
       "tests": [
         "tests/test_retraction.py",
@@ -164,7 +164,7 @@
         "tests/test_restatements.py"
       ],
       "surfaces": {
-        "sdk": "MemoryFabric.request_retraction",
+        "sdk": "Amberlog.request_retraction",
         "mcp": null,
         "cli": "correct",
         "dashboard": "propagation"
@@ -180,7 +180,7 @@
       "status": "available",
       "user_problem": "I need to know what the store has and has not established about a memory.",
       "modules": [
-        "memory_fabric/status.py"
+        "amberlog/status.py"
       ],
       "tests": [
         "tests/test_status.py"
@@ -201,8 +201,8 @@
       "status": "available",
       "user_problem": "When sources disagree I need both claims, not a silent overwrite.",
       "modules": [
-        "memory_fabric/conflicts.py",
-        "memory_fabric/adapters/context.py"
+        "amberlog/conflicts.py",
+        "amberlog/adapters/context.py"
       ],
       "tests": [
         "tests/test_conflicts.py"
@@ -223,9 +223,9 @@
       "status": "available",
       "user_problem": "A memory withdrawn after it was read must not drive an action.",
       "modules": [
-        "memory_fabric/actions.py",
-        "memory_fabric/enforcement.py",
-        "memory_fabric/certificates.py"
+        "amberlog/actions.py",
+        "amberlog/enforcement.py",
+        "amberlog/certificates.py"
       ],
       "tests": [
         "tests/test_action_fence.py",
@@ -248,8 +248,8 @@
       "status": "available",
       "user_problem": "One tenant must never read or infer another's memories.",
       "modules": [
-        "memory_fabric/tenancy.py",
-        "memory_fabric/identity.py"
+        "amberlog/tenancy.py",
+        "amberlog/identity.py"
       ],
       "tests": [
         "tests/test_tenancy.py",
@@ -257,7 +257,7 @@
         "tests/test_metadata_leakage.py"
       ],
       "surfaces": {
-        "sdk": "MemoryFabric.for_tenant",
+        "sdk": "Amberlog.for_tenant",
         "mcp": null,
         "cli": "tenants",
         "dashboard": null
@@ -272,7 +272,7 @@
       "status": "experimental",
       "user_problem": "A later session cannot read every turn of an earlier one.",
       "modules": [
-        "memory_fabric/compaction.py"
+        "amberlog/compaction.py"
       ],
       "tests": [
         "tests/test_compaction.py",
@@ -294,7 +294,7 @@
       "status": "available",
       "user_problem": "I need to reproduce and explain exactly what context an agent received.",
       "modules": [
-        "memory_fabric/context_receipt.py"
+        "amberlog/context_receipt.py"
       ],
       "tests": [
         "tests/test_cli_versioning.py",
@@ -319,7 +319,7 @@
       "status": "experimental",
       "user_problem": "Long histories must fit a token budget without losing their sources or using stale summaries.",
       "modules": [
-        "memory_fabric/context_map.py"
+        "amberlog/context_map.py"
       ],
       "tests": [
         "tests/test_context_map.py"
@@ -341,7 +341,7 @@
       "status": "experimental",
       "user_problem": "A session needs what is currently known within a fixed budget, without withdrawn or superseded values.",
       "modules": [
-        "memory_fabric/decay.py"
+        "amberlog/decay.py"
       ],
       "tests": [
         "tests/test_decay.py",
@@ -366,7 +366,7 @@
       "status": "available",
       "user_problem": "I need to try memory changes in isolation and merge them with conflicts surfaced.",
       "modules": [
-        "memory_fabric/branching.py"
+        "amberlog/branching.py"
       ],
       "tests": [
         "tests/test_branching.py",
@@ -391,9 +391,9 @@
       "status": "available",
       "user_problem": "Stores on different machines must share validated memories and retractions safely.",
       "modules": [
-        "memory_fabric/federation.py",
-        "memory_fabric/transport.py",
-        "memory_fabric/protocol.py"
+        "amberlog/federation.py",
+        "amberlog/transport.py",
+        "amberlog/protocol.py"
       ],
       "tests": [
         "tests/test_federation.py",
@@ -402,7 +402,7 @@
         "tests/test_key_rotation_drill.py"
       ],
       "surfaces": {
-        "sdk": "MemoryFabric.share",
+        "sdk": "Amberlog.share",
         "mcp": null,
         "cli": "federate",
         "dashboard": null
@@ -417,15 +417,15 @@
       "status": "available",
       "user_problem": "Deleted personal data must not be recoverable from history.",
       "modules": [
-        "memory_fabric/governance/erasure.py",
-        "memory_fabric/governance/cipher.py"
+        "amberlog/governance/erasure.py",
+        "amberlog/governance/cipher.py"
       ],
       "tests": [
         "tests/test_erasure.py",
         "tests/test_erasure_residue.py"
       ],
       "surfaces": {
-        "sdk": "MemoryFabric.erase_content",
+        "sdk": "Amberlog.erase_content",
         "mcp": null,
         "cli": "erase",
         "dashboard": null
@@ -440,8 +440,8 @@
       "status": "available",
       "user_problem": "I need to detect a rewritten or truncated history.",
       "modules": [
-        "memory_fabric/integrity.py",
-        "memory_fabric/eventlog.py"
+        "amberlog/integrity.py",
+        "amberlog/eventlog.py"
       ],
       "tests": [
         "tests/test_integrity_chain.py",
@@ -463,8 +463,8 @@
       "status": "available",
       "user_problem": "An operator needs to see the store without changing it.",
       "modules": [
-        "memory_fabric/observability/server.py",
-        "memory_fabric/observability/report.py"
+        "amberlog/observability/server.py",
+        "amberlog/observability/report.py"
       ],
       "tests": [
         "tests/test_observability.py",

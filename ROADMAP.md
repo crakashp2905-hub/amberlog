@@ -86,7 +86,7 @@ To close it: `pip install anthropic`, set credentials, and run `examples/agent_o
 
 ### Postgres deferred out of P2 — then built as an option (2026-10-16)
 
-**Update.** Built as an optional backend (`memory-fabric[postgres]`), not a
+**Update.** Built as an optional backend (`amberlog[postgres]`), not a
 replacement: SQLite stays the default and the core stays dependency-free. It
 earns its place for writers on more than one machine, which SQLite cannot
 serve; it does not add throughput, because writers still serialise for the
@@ -119,7 +119,7 @@ authorised memory can be irrelevant now and essential later.
 | **R6** | Real-agent integration | The full loop runs against a live provider with a deterministic stub path still in CI. A downstream claim only if a controlled experiment supports it | 🔶 **run. dev inconclusive, test ABANDONED** — perfect selection was worth +0.000 on the frozen split, so the registered abandonment clause fired. The dev finding that retrieval beats a stuffed context **did not replicate**. What survived both splits: a ~3× token saving, and stuffing the context making the model less willing to abstain ([result](research/results/r6-downstream.md)) |
 | **R7** | Security and reliability | ✅ crypto (AEAD, external key custody) · ✅ trust boundary · ✅ multi-process durability · ✅ **tamper-evident event chain** with external checkpoints · ✅ concurrency measured and documented · ✅ version-skew tests · ✅ [OPERATIONS.md](docs/OPERATIONS.md). ✅ erasure inventory (`erasure_scope` reports reached / kept / unreachable, with the third as *unknown* rather than guessed) · ✅ state-machine property tests | ✅ **done** |
 | **R8** | Developer experience | An unfamiliar developer completes the quickstart unaided; demo matches docs | 🔶 **dry run passed, gate open.** Every README command and snippet runs verbatim from a clean venv (one snippet needed its imports); an MCP server now serves non-Python agents. The gate needs a person who has not seen the project, which a dry run by its authors cannot stand in for ([VALIDATION.md](docs/VALIDATION.md) row 6, 16) |
-| **R9** | Release qualification | Claims match measured evidence, per deployment model | 🔶 **started.** Found and fixed: CI red on `main` for seven pushes while VALIDATION.md said it ran green; a fault-matrix invariant violation; `__version__` ≠ package version; stale test and layer counts; a macOS support claim CI never checked. Release workflow added. **Blocked on a name:** `memory-fabric` is taken on PyPI (open decision 6) |
+| **R9** | Release qualification | Claims match measured evidence, per deployment model | 🔶 **started.** Found and fixed: CI red on `main` for seven pushes while VALIDATION.md said it ran green; a fault-matrix invariant violation; `__version__` ≠ package version; stale test and layer counts; a macOS support claim CI never checked. Release workflow added. **Blocked on name clearance and account setup** (open decision 6) |
 
 ### Why the benchmark comes before the ranker
 
@@ -331,7 +331,7 @@ removed rather than the mechanism, and the reasoning is in §5 of the result.
 
 **[P1](research/results/p1-evidence-chain-reconstruction.md) answers the
 question the previous three experiments located and missed its own bar doing
-it.** `MemoryFabric.reconstruct()` searches for a connected set of currently
+it.** `Amberlog.reconstruct()` searches for a connected set of currently
 valid memories that jointly cover a query, rather than ranking candidates
 individually.
 
@@ -587,6 +587,6 @@ population **worse** (−0.042 [−0.081, −0.005]).
 3. **LLM for the agent tier**, and the budget for LLM-agent runs (see CRITICAL_REVIEW §2.1 for the scale).
 4. **Real benchmark** for validation at P4 (ALFWorld, WebShop, τ-bench, a SWE-style set).
 5. **Memory types in v0:** all three, or semantic + procedural with episodic left as the raw log. *(P1 implements all three; the question is which the product surfaces.)*
-6. **Project name**, given the MemOS / MemoryOS collision — **and now a release blocker**: the distribution name `memory-fabric` is taken on PyPI by an unrelated MCP memory project (checked 2026-10-16).
+6. **Project name**, given the MemOS / MemoryOS collision — **and now a release blocker**: the former distribution name was occupied at the historical 2026-10-16 check. Amberlog is the new target; HTTP 404 responses on 2026-10-29 do not prove registration rights or trademark clearance.
 7. **Numeric thresholds** for H1–H5 — the numbers above are proposals and must be pre-registered before P4 starts.
 8. **Embedding model.** P1 ships a deterministic, dependency-free hashing embedder so tests are reproducible. A real model is swappable behind the `Embedder` protocol; choosing one is a P2/P3 decision.

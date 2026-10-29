@@ -23,12 +23,12 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
-from memory_fabric.governance.cipher import (
+from amberlog import LifecycleState, Amberlog, WithdrawalBasis
+from amberlog.governance.cipher import (
     IntegrityError,
     associated_data,
 )
-from memory_fabric.governance.erasure import (
+from amberlog.governance.erasure import (
     ERASED_MARKER,
     ContentVault,
     is_sealed,
@@ -119,7 +119,7 @@ class ErasureCase(unittest.TestCase):
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.path = str(Path(self.tmp.name) / "store.db")
-        self.fabric = MemoryFabric(self.path)
+        self.fabric = Amberlog(self.path)
         self.addCleanup(self._close)
         self.secret = "Jane Doe lives at 14 Elm Road, Bristol."
         self.memory_id = self.fabric.remember("ag_a", self.secret)
@@ -160,7 +160,7 @@ class TestContentNeverReachesTheLogInPlaintext(ErasureCase):
     def test_encryption_can_be_turned_off(self) -> None:
         """A deployment that wants the log readable by other tools may choose
         plaintext — and then erasure is not available, which the docs say."""
-        plain = MemoryFabric(":memory:", encrypt_content=False)
+        plain = Amberlog(":memory:", encrypt_content=False)
         self.addCleanup(plain.close)
         memory_id = plain.remember("ag_a", "readable in the log")
         raw = json.dumps(
@@ -185,7 +185,7 @@ class TestErasureThroughTheFabric(ErasureCase):
     def test_erasure_survives_a_restart(self) -> None:
         self.fabric.erase_content(self.memory_id, reason="request", actor="dpo")
         self.fabric.close()
-        reopened = MemoryFabric(self.path)
+        reopened = Amberlog(self.path)
         self.addCleanup(reopened.close)
         self.assertEqual(reopened.get(self.memory_id).content, ERASED_MARKER)
 
@@ -271,12 +271,12 @@ class TestAccountabilitySurvivesErasure(ErasureCase):
         restored backup is erased too — which is the right behaviour and worth
         pinning, because the opposite would make erasure defeatable by holding
         an old copy."""
-        from memory_fabric.cli import main
+        from amberlog.cli import main
 
         self.fabric.erase_content(self.memory_id, reason="request", actor="dpo")
         target = str(Path(self.tmp.name) / "copy.db")
         self.assertEqual(main(["--db", self.path, "backup", target]), 0)
-        restored = MemoryFabric(target)
+        restored = Amberlog(target)
         self.addCleanup(restored.close)
         self.assertEqual(restored.get(self.memory_id).content, ERASED_MARKER)
 
@@ -287,13 +287,13 @@ class TestBackupTakenBeforeErasure(ErasureCase):
         before the key was destroyed. Retention of backups is an operational
         control, and DEPLOYMENT.md says so.
         """
-        from memory_fabric.cli import main
+        from amberlog.cli import main
 
         target = str(Path(self.tmp.name) / "before.db")
         self.assertEqual(main(["--db", self.path, "backup", target]), 0)
         self.fabric.erase_content(self.memory_id, reason="request", actor="dpo")
 
-        older = MemoryFabric(target)
+        older = Amberlog(target)
         self.addCleanup(older.close)
         self.assertEqual(older.get(self.memory_id).content, self.secret)
 
@@ -310,11 +310,11 @@ class TestEraseFromTheCommandLine(unittest.TestCase):
         import os
         import tempfile
 
-        from memory_fabric.cli import main
+        from amberlog.cli import main
 
         with tempfile.TemporaryDirectory() as tmp:
             db = os.path.join(tmp, "s.db")
-            fabric = MemoryFabric(db)
+            fabric = Amberlog(db)
             mid = fabric.remember("ag", "the customer lives at 4 Elm Road")
             fabric.close()
 
@@ -329,7 +329,7 @@ class TestEraseFromTheCommandLine(unittest.TestCase):
             self.assertTrue(scope["erased"])
             self.assertTrue(all(scope["reached"].values()))
 
-            reopened = MemoryFabric(db)
+            reopened = Amberlog(db)
             try:
                 self.assertNotIn("Elm Road", reopened.get(mid).content)
                 self.assertEqual(reopened.erasure_status(mid).reason, "ticket SAR-17")

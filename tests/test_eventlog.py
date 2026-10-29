@@ -7,9 +7,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from memory_fabric.eventlog import EventLog
-from memory_fabric.events import Event
-from memory_fabric.ids import UlidFactory, new_ulid, ulid_time_ms
+from amberlog.eventlog import EventLog
+from amberlog.events import Event
+from amberlog.ids import UlidFactory, new_ulid, ulid_time_ms
 
 
 class TestUlid(unittest.TestCase):

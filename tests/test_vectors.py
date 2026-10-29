@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric.vectors import HashingEmbedder, VectorIndex, cosine
+from amberlog.vectors import HashingEmbedder, VectorIndex, cosine
 
 
 class TestHashingEmbedder(unittest.TestCase):

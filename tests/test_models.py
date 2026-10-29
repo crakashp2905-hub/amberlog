@@ -9,7 +9,7 @@ import types
 import unittest
 from unittest import mock
 
-from memory_fabric.models import CallLog, ModelClient, ModelError, ModelSpec, configured
+from amberlog.models import CallLog, ModelClient, ModelError, ModelSpec, configured
 
 
 def fake_http(seen):
@@ -37,7 +37,7 @@ class TestSpec(unittest.TestCase):
     def test_no_model_chosen_is_an_error_not_a_default(self):
         with mock.patch.dict(os.environ, {}, clear=True), self.assertRaises(ModelError):
             ModelClient()
-        with mock.patch.dict(os.environ, {"MEMORY_FABRIC_MODEL": "ollama:llama3"}):
+        with mock.patch.dict(os.environ, {"AMBERLOG_MODEL": "ollama:llama3"}):
             self.assertEqual(str(ModelClient().spec), "ollama:llama3")
 
 

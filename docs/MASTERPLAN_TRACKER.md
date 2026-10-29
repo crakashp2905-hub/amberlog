@@ -1,4 +1,4 @@
-# Masterplan tracker — "Memory Fabric next masterplan" (2026-10-28)
+# Masterplan tracker — "Amberlog next masterplan" (2026-10-28)
 
 Every work item in the masterplan, with what was done and what was not. Status words:
 

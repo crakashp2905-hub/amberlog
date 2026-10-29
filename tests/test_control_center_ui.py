@@ -9,16 +9,16 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from memory_fabric import MemoryFabric
-from memory_fabric.observability.control import agents, graph, knowledge_map
-from memory_fabric.observability.server import Api
+from amberlog import Amberlog
+from amberlog.observability.control import agents, graph, knowledge_map
+from amberlog.observability.server import Api
 
-HTML = Path(__file__).resolve().parents[1] / "memory_fabric" / "observability" / "static" / "dashboard.html"
+HTML = Path(__file__).resolve().parents[1] / "amberlog" / "observability" / "static" / "dashboard.html"
 
 
 class TestViews(unittest.TestCase):
     def setUp(self):
-        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.a = self.f.remember("ag_one", "Pump P-14 relief valve is set to 12 bar.", scope="team")
         self.b = self.f.derive("ag_two", "Restore P-14 relief after seal work.", [self.a])
@@ -49,7 +49,7 @@ class TestKnowledgeMap(unittest.TestCase):
     """Topics a person can read without zooming: few, named, with what matters picked out."""
 
     def setUp(self):
-        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.wrong = self.f.remember("ag_one", "Pump P-14 relief valve opens at 12 bar.", scope="team")
         self.f.remember("ag_two", "Pump P-14 relief valve was replaced in May.", scope="team")
@@ -80,7 +80,7 @@ class TestKnowledgeMap(unittest.TestCase):
         self.assertNotIn("AKIAIOSFODNN7EXAMPLE", repr(knowledge_map(self.f)))
 
     def test_an_empty_store_has_no_topics(self):
-        empty = MemoryFabric(":memory:")
+        empty = Amberlog(":memory:")
         self.addCleanup(empty.close)
         m = knowledge_map(empty)
         self.assertEqual((m["topics"], m["total"]), ([], 0))

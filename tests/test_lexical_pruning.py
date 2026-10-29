@@ -7,7 +7,7 @@ import math
 import random
 import unittest
 
-from memory_fabric.vectors import UBIQUITOUS_MIN_DOCS, UBIQUITOUS_SHARE, LexicalIndex
+from amberlog.vectors import UBIQUITOUS_MIN_DOCS, UBIQUITOUS_SHARE, LexicalIndex
 
 
 def brute(index: LexicalIndex, query: str, k: int, allowed=None, floor=0.0):
@@ -32,7 +32,7 @@ class TestPruning(unittest.TestCase):
     def test_matches_a_full_scan_in_large_stores_too(self):
         from unittest import mock
 
-        with mock.patch("memory_fabric.vectors.UBIQUITOUS_MIN_DOCS", 20), \
+        with mock.patch("amberlog.vectors.UBIQUITOUS_MIN_DOCS", 20), \
                 mock.patch(f"{__name__}.UBIQUITOUS_MIN_DOCS", 20):
             self.test_matches_a_full_scan()
 

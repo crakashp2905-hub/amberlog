@@ -14,17 +14,17 @@ from __future__ import annotations
 import json
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.enforcement import RiskLevel
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (
+from amberlog import Amberlog
+from amberlog.enforcement import RiskLevel
+from amberlog.federation import offer
+from amberlog.governance.firewall import (
     Firewall,
     FirewallDecision,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from memory_fabric.model import Scope, SecurityClass
+from amberlog.model import Scope, SecurityClass
 
 PRICE = "Acme renewal price is 1.2M, agreed on the call"
 
@@ -37,8 +37,8 @@ def permissive() -> Firewall:
 
 class Fixture(unittest.TestCase):
     def setUp(self) -> None:
-        self.origin = MemoryFabric(auto_activate=True, firewall=permissive())
-        self.recipient = MemoryFabric(auto_activate=True, firewall=permissive())
+        self.origin = Amberlog(auto_activate=True, firewall=permissive())
+        self.recipient = Amberlog(auto_activate=True, firewall=permissive())
         self.addCleanup(self.origin.close)
         self.addCleanup(self.recipient.close)
         self.restricted = self.origin.remember("ag", PRICE, security_class="restricted")
@@ -80,8 +80,8 @@ class TestDerivedContent(Fixture):
 
 
 class TestDisclosureOfExistence(unittest.TestCase):
-    def make(self, conceal: bool) -> tuple[MemoryFabric, str]:
-        fabric = MemoryFabric(auto_activate=True, conceal_cross_tenant=conceal)
+    def make(self, conceal: bool) -> tuple[Amberlog, str]:
+        fabric = Amberlog(auto_activate=True, conceal_cross_tenant=conceal)
         self.addCleanup(fabric.close)
         return fabric, fabric.remember("ag", "tenant A fact", tenant_id="tn_a", scope="team")
 

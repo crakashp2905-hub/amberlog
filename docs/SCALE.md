@@ -47,7 +47,7 @@ origin, every store's dispatcher drained until quiet):
 - **Breadth is not limited.** A star of 100 and a mesh of 100 both converge.
 - **Cycles terminate**: a store already on a memory's provenance chain is not
   offered it again.
-- **Across separate servers over HTTP:** three `memory-fabric federate`
+- **Across separate servers over HTTP:** three `amberlog federate`
   servers, each its own process and store, with 50 ms added to every hop. A
   memory shared A -> B -> C by signed offers, then corrected at A, was
   withdrawn at C in **1.3 to 1.9 seconds**, carried by the servers' own

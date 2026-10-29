@@ -22,10 +22,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from memory_fabric import MemoryFabric  # noqa: E402
-from memory_fabric.branching import Branches  # noqa: E402
-from memory_fabric.context_receipt import build_context, explain_receipt  # noqa: E402
-from memory_fabric.correction import apply, preview  # noqa: E402
+from amberlog import Amberlog  # noqa: E402
+from amberlog.branching import Branches  # noqa: E402
+from amberlog.context_receipt import build_context, explain_receipt  # noqa: E402
+from amberlog.correction import apply, preview  # noqa: E402
 
 
 def show(title: str) -> None:
@@ -33,7 +33,7 @@ def show(title: str) -> None:
 
 
 def main() -> None:
-    f = MemoryFabric(":memory:", auto_activate=True)
+    f = Amberlog(":memory:", auto_activate=True)
 
     show("1. A source states a policy; an agent derives a rule from it")
     policy = f.remember("source-a", "Refund window R1 is 30 days from delivery.", scope="team")

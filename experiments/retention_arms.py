@@ -12,20 +12,20 @@ import random
 from dataclasses import dataclass
 from typing import Callable, Mapping
 
-from memory_fabric import LifecycleState, MemoryFabric
-from memory_fabric.estimators import build_estimator
+from amberlog import LifecycleState, Amberlog
+from amberlog.estimators import build_estimator
 
-Scorer = Callable[[MemoryFabric, random.Random], dict[str, float]]
+Scorer = Callable[[Amberlog, random.Random], dict[str, float]]
 
 # Generative-Agents-style exponential recency decay, per episode of age.
 RECENCY_DECAY = 0.995
 
 
-def score_random(fabric: MemoryFabric, rng: random.Random) -> dict[str, float]:
+def score_random(fabric: Amberlog, rng: random.Random) -> dict[str, float]:
     return {memory_id: rng.random() for memory_id in fabric.state.memories}
 
 
-def score_frequency(fabric: MemoryFabric, rng: random.Random) -> dict[str, float]:
+def score_frequency(fabric: Amberlog, rng: random.Random) -> dict[str, float]:
     """What a relevance-only system effectively keeps: whatever gets retrieved.
 
     Retrieval frequency is the global shadow of relevance ranking — a memory
@@ -37,7 +37,7 @@ def score_frequency(fabric: MemoryFabric, rng: random.Random) -> dict[str, float
     }
 
 
-def score_recency_importance(fabric: MemoryFabric, rng: random.Random) -> dict[str, float]:
+def score_recency_importance(fabric: Amberlog, rng: random.Random) -> dict[str, float]:
     """Recency decay plus a stated importance rating, as in Generative Agents.
 
     Both components are normalised to [0,1] and summed, which is the shape of
@@ -63,7 +63,7 @@ def score_recency_importance(fabric: MemoryFabric, rng: random.Random) -> dict[s
 
 
 def _estimator_scorer(estimator_id: str) -> Scorer:
-    def scorer(fabric: MemoryFabric, rng: random.Random) -> dict[str, float]:
+    def scorer(fabric: Amberlog, rng: random.Random) -> dict[str, float]:
         estimator = build_estimator(estimator_id)
         estimator.fit(fabric.state)
         scores: dict[str, float] = {}
@@ -85,7 +85,7 @@ score_amortized = _estimator_scorer("amortized")
 def make_oracle(truth: Mapping[str, float]) -> Scorer:
     """Upper bound: rank by the true value. Not a competitor."""
 
-    def scorer(fabric: MemoryFabric, rng: random.Random) -> dict[str, float]:
+    def scorer(fabric: Amberlog, rng: random.Random) -> dict[str, float]:
         return {
             memory_id: truth.get(memory_id, -math.inf)
             for memory_id in fabric.state.memories
@@ -106,7 +106,7 @@ BASELINES = ("frequency", "recency_importance", "naive")
 CHALLENGER = "amortized"
 
 
-def active_memories(fabric: MemoryFabric) -> list[str]:
+def active_memories(fabric: Amberlog) -> list[str]:
     return [
         memory_id
         for memory_id, memory in fabric.state.memories.items()
@@ -114,7 +114,7 @@ def active_memories(fabric: MemoryFabric) -> list[str]:
     ]
 
 
-def prune(fabric: MemoryFabric, scorer: Scorer, budget: int, rng: random.Random) -> set[str]:
+def prune(fabric: Amberlog, scorer: Scorer, budget: int, rng: random.Random) -> set[str]:
     """Keep the top `budget` **active** memories; deprecate the rest.
 
     Ranking over every memory in the store would let already-deprecated ones

@@ -36,16 +36,16 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Sequence
 
-from memory_fabric import (
+from amberlog import (
     EpsilonGreedyPolicy,
     LifecycleState,
-    MemoryFabric,
+    Amberlog,
     TopKPolicy,
 )
-from memory_fabric.adapters.context import build_context
-from memory_fabric.adapters.ollama import OllamaClient, OllamaEmbedder, OllamaError
-from memory_fabric.cli import configure_output
-from memory_fabric.vectors import VectorIndex
+from amberlog.adapters.context import build_context
+from amberlog.adapters.ollama import OllamaClient, OllamaEmbedder, OllamaError
+from amberlog.cli import configure_output
+from amberlog.vectors import VectorIndex
 
 from . import depotworld as W
 from . import stats
@@ -173,7 +173,7 @@ def run_arm(
     retrieval; the only difference is which memories a verified failure takes
     out of circulation, which is the whole question."""
     policy, estimator = _policy(arm)
-    fabric = MemoryFabric(
+    fabric = Amberlog(
         ":memory:", seed=seed, embedder=embedder,
         estimator=estimator, exposure_policy=policy,
     )

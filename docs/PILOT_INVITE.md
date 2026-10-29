@@ -1,8 +1,8 @@
-# Invitation: a two-to-four-week pilot of Memory Fabric
+# Invitation: a two-to-four-week pilot of Amberlog
 
 *For you to send to a team you would like to pilot with. Edit freely.*
 
-**What it is.** Memory Fabric is shared memory for AI agents that keeps track
+**What it is.** Amberlog is shared memory for AI agents that keeps track
 of where each piece of knowledge came from. When something an agent learned
 turns out to be wrong, it is withdrawn everywhere it spread, and any agent
 about to act on it is stopped and told why.
@@ -35,7 +35,7 @@ anonymised.
 **How to know you are done.**
 
 ```bash
-memory-fabric --db pilot/store.db --keys pilot/keys pilot-report --check
+amberlog --db pilot/store.db --keys pilot/keys pilot-report --check
 ```
 
 It says in plain words whether the pilot has produced enough to send (two

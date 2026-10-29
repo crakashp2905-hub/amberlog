@@ -6,14 +6,14 @@ import inspect
 import unittest
 from unittest import mock
 
-from memory_fabric import MemoryFabric
-from memory_fabric._fabric import retrieval as R
-from memory_fabric.retrieval_profiles import PROFILES, RetrievalProfile, resolve
+from amberlog import Amberlog
+from amberlog._fabric import retrieval as R
+from amberlog.retrieval_profiles import PROFILES, RetrievalProfile, resolve
 
 
 class Profiles(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(auto_activate=True)
+        self.f = Amberlog(auto_activate=True)
         self.addCleanup(self.f.close)
         for i in range(30):
             self.f.remember("ag", f"Pump P-{10 + i}: the relief pressure is {10 + i} bar.")

@@ -13,8 +13,8 @@ import re
 import unittest
 from pathlib import Path
 
-from memory_fabric import LifecycleState, MemoryFabric
-from memory_fabric.model import EXPOSABLE_STATES
+from amberlog import LifecycleState, Amberlog
+from amberlog.model import EXPOSABLE_STATES
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -83,7 +83,7 @@ class Map(unittest.TestCase):
 
 class Direct(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(":memory:", recognise_copies=True)
+        self.f = Amberlog(":memory:", recognise_copies=True)
         self.addCleanup(self.f.close)
 
     def test_withdrawn_memory_is_never_exposed(self) -> None:
@@ -114,7 +114,7 @@ class Direct(unittest.TestCase):
         self.assertIsNot(self.f.get(c).lifecycle_state, LifecycleState.CONTESTED)
 
     def test_a_cross_tenant_copy_in_an_old_log_is_ignored_on_replay(self) -> None:
-        from memory_fabric import events as ev
+        from amberlog import events as ev
 
         a = self.f.remember("a", "Pump P-3 relief is 12 bar.", tenant_id="t1")
         b = self.f.remember("z", "Pump P-3 relief is 12 bar.", tenant_id="t2")
@@ -137,7 +137,7 @@ class Direct(unittest.TestCase):
         self.assertEqual({a, b} & {m.id for m in got.exposed}, {a, b})
 
     def test_believed_at_differs_from_true_at_after_a_correction(self) -> None:
-        from memory_fabric.incident import replay_until
+        from amberlog.incident import replay_until
 
         wrong = self.f.remember("a", "Rate R is 15 per cent.", structured={"rate": 15},
                                 valid_from=0, valid_to=None)

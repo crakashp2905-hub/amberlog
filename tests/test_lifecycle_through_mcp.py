@@ -25,7 +25,7 @@ class LifecycleThroughMcp(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.db = str(Path(self.tmp.name) / "store.db")
         self.server = subprocess.Popen(
-            [sys.executable, "-m", "memory_fabric", "--db", self.db, "--create", "mcp",
+            [sys.executable, "-m", "amberlog", "--db", self.db, "--create", "mcp",
              "--agent", "ag1", "--no-maintain"],
             stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
             text=True, cwd=ROOT)
@@ -59,7 +59,7 @@ class LifecycleThroughMcp(unittest.TestCase):
         return result.get("structuredContent", {}), bool(result.get("isError"))
 
     def cli(self, *args: str) -> subprocess.CompletedProcess:
-        return subprocess.run([sys.executable, "-m", "memory_fabric", "--db", self.db, *args],
+        return subprocess.run([sys.executable, "-m", "amberlog", "--db", self.db, *args],
                               capture_output=True, text=True, cwd=ROOT, timeout=120)
 
     def recalled(self) -> list[str]:

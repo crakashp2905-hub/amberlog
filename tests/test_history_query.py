@@ -1,14 +1,14 @@
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.history_query import query
-from memory_fabric.incident import replay_until
-from memory_fabric.events import EventType
+from amberlog import Amberlog
+from amberlog.history_query import query
+from amberlog.incident import replay_until
+from amberlog.events import EventType
 
 
 class HistoricalReads(unittest.TestCase):
     def setUp(self):
-        self.f = MemoryFabric(":memory:", recognise_copies=False)
+        self.f = Amberlog(":memory:", recognise_copies=False)
         self.addCleanup(self.f.close)
 
     def remember(self, text="The limit is 10 bar.", **kw):

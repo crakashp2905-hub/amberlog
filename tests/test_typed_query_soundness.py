@@ -3,8 +3,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import MemoryFabric
-from memory_fabric import typed_query as query
+from amberlog import Amberlog
+from amberlog import typed_query as query
 
 
 class QuerySoundness(unittest.TestCase):
@@ -39,7 +39,7 @@ class QuerySoundness(unittest.TestCase):
     def test_replay_preserves_erasure_and_tenant_exclusions(self):
         with TemporaryDirectory() as directory:
             path = str(Path(directory) / "query.db")
-            f = MemoryFabric(path)
+            f = Amberlog(path)
             visible = f.remember("writer", "Visible inventory.", structured={"kind": "sensor"},
                                  scope="team", auto_activate=True)
             f.remember("writer", "Foreign inventory.", structured={"kind": "sensor"},
@@ -49,7 +49,7 @@ class QuerySoundness(unittest.TestCase):
             f.erase_content(erased, reason="fixture erasure")
             before = query.select(f, "reader", {"kind": "sensor"}).certificate()
             f.close()
-            reopened = MemoryFabric(path)
+            reopened = Amberlog(path)
             try:
                 self.assertEqual(query.select(reopened, "reader", {"kind": "sensor"}).ids, [visible])
                 self.assertEqual(query.select(reopened, "reader", {"kind": "sensor"}).certificate(), before)
@@ -57,7 +57,7 @@ class QuerySoundness(unittest.TestCase):
                 reopened.close()
 
     def setUp(self):
-        self.f = MemoryFabric(":memory:", recognise_copies=False)
+        self.f = Amberlog(":memory:", recognise_copies=False)
         self.addCleanup(self.f.close)
 
     def record(self, fields, **kw):

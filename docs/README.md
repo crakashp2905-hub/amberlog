@@ -2,7 +2,7 @@
 
 **New here? Three steps, in order:**
 
-1. `memory-fabric tour` â€” the idea in sixty seconds, in your terminal.
+1. `amberlog tour` â€” the idea in sixty seconds, in your terminal.
 2. [QUICKSTART.md](QUICKSTART.md) â€” ten minutes with your own store.
 3. [Any agent, any model](guides/any-agent-any-model.md): connect your tool and pick your
    model in two commands. Or a guide for your stack: [Claude Code and Desktop](guides/claude.md) Â·
@@ -107,13 +107,18 @@ use the product.
 | [BRANCHES.md](BRANCHES.md) | Branches and how they are protected |
 | [../CONTRIBUTING.md](../CONTRIBUTING.md), [../AGENTS.md](../AGENTS.md) | How to change this repository |
 
-## Memory Fabric 2 roadmap
+## Amberlog 2 roadmap
 
-- [Product and research masterplan](MEMORY_FABRIC_2_PRODUCT_RESEARCH_MASTERPLAN.md)
+- [Product and research masterplan](AMBERLOG_2_PRODUCT_RESEARCH_MASTERPLAN.md)
 - [Implementation status and compiler ADR](MF2_IMPLEMENTATION_STATUS.md)
 
 ## Current checklist work
 
+- [Amberlog migration plan](AMBERLOG_MIGRATION_PLAN.md)
+- [Amberlog migration guide](MIGRATING_TO_AMBERLOG.md)
+- [Amberlog migration report](AMBERLOG_MIGRATION_REPORT.md)
+- [Amberlog release checklist](AMBERLOG_RELEASE_CHECKLIST.md)
+- [Package publishing](PYPI_PUBLISHING.md)
 - [Local three-agent and conformance audit](LOCAL_AGENT_AUDIT.md)
 - [Experimental evidence completeness](EVIDENCE_COMPLETENESS.md)
 - [Experimental historical reads](HISTORICAL_READS.md)

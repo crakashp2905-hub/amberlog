@@ -8,10 +8,10 @@ on:
     paths:
       - experiments/s1_screen_fp.py
       - experiments/s1b_model_screen.py
-      - memory_fabric/governance/injection.py
-      - memory_fabric/governance/directive.py
-      - memory_fabric/governance/firewall.py
-      - memory_fabric/_fabric/retrieval.py
+      - amberlog/governance/injection.py
+      - amberlog/governance/directive.py
+      - amberlog/governance/firewall.py
+      - amberlog/_fabric/retrieval.py
       - .github/workflows/screen-eval.yml
 
 permissions:

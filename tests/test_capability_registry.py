@@ -19,17 +19,17 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = json.loads((ROOT / "product" / "capabilities.json").read_text(encoding="utf-8"))
-CLI = (ROOT / "memory_fabric" / "cli.py").read_text(encoding="utf-8")
-MCP = (ROOT / "memory_fabric" / "adapters" / "mcp.py").read_text(encoding="utf-8")
-SERVER = (ROOT / "memory_fabric" / "observability" / "server.py").read_text(encoding="utf-8")
+CLI = (ROOT / "amberlog" / "cli.py").read_text(encoding="utf-8")
+MCP = (ROOT / "amberlog" / "adapters" / "mcp.py").read_text(encoding="utf-8")
+SERVER = (ROOT / "amberlog" / "observability" / "server.py").read_text(encoding="utf-8")
 
 
 def _resolve_sdk(name: str) -> object:
     owner, _, attr = name.rpartition(".")
-    if owner == "MemoryFabric":
-        from memory_fabric import MemoryFabric
-        return getattr(MemoryFabric, attr)
-    return getattr(importlib.import_module(f"memory_fabric.{owner}"), attr)
+    if owner == "Amberlog":
+        from amberlog import Amberlog
+        return getattr(Amberlog, attr)
+    return getattr(importlib.import_module(f"amberlog.{owner}"), attr)
 
 
 class Registry(unittest.TestCase):
@@ -48,7 +48,7 @@ class Registry(unittest.TestCase):
                 for path in c["modules"] + c["tests"]:
                     self.assertTrue((ROOT / path).exists(), path)
                 for module in c["modules"]:
-                    if not module.startswith("memory_fabric/"):
+                    if not module.startswith("amberlog/"):
                         continue
                     text = (ROOT / module).read_text(encoding="utf-8")
                     tier = re.search(r'__stability__ = "(\w+)"', text)

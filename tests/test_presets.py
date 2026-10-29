@@ -8,8 +8,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from memory_fabric.cli import main
-from memory_fabric.presets import MODES, mcp_flags, open_store, tool_rule
+from amberlog.cli import main
+from amberlog.presets import MODES, mcp_flags, open_store, tool_rule
 
 
 class TestPresets(unittest.TestCase):

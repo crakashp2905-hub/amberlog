@@ -107,14 +107,14 @@ class Cluster:
 
 def run_mode(sync: bool, user: str, writes: int) -> dict[str, Any]:
     sys.path.insert(0, str(ROOT))
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     base = Path(tempfile.mkdtemp(prefix=f"mffo-{'sync' if sync else 'async'}-", dir="/var/tmp"))
     cluster = Cluster(base, user, sync)
     out: dict[str, Any] = {"mode": "sync" if sync else "async"}
     try:
         cluster.up()
-        fabric = MemoryFabric(cluster.url(), auto_activate=True)
+        fabric = Amberlog(cluster.url(), auto_activate=True)
         acknowledged: list[str] = []
         failed_during = 0
         kill_at = writes // 2
@@ -139,7 +139,7 @@ def run_mode(sync: bool, user: str, writes: int) -> dict[str, Any]:
                 except Exception:  # noqa: BLE001 - the connection is already gone
                     pass
                 reopened = time.perf_counter()
-                fabric = MemoryFabric(cluster.url(), auto_activate=True)
+                fabric = Amberlog(cluster.url(), auto_activate=True)
                 out["reconnect_s"] = round(time.perf_counter() - reopened, 2)
             try:
                 acknowledged.append(fabric.remember("ag_writer", f"Pump P-{i}: relief pressure "
@@ -149,7 +149,7 @@ def run_mode(sync: bool, user: str, writes: int) -> dict[str, Any]:
                 out.setdefault("errors", []).append(f"{type(exc).__name__}: {str(exc)[:120]}")
         fabric.close()
 
-        check = MemoryFabric(cluster.promoted_url())
+        check = Amberlog(cluster.promoted_url())
         try:
             present = set(check.state.memories)
             lost = [m for m in acknowledged if m not in present]
@@ -168,7 +168,7 @@ def run_mode(sync: bool, user: str, writes: int) -> dict[str, Any]:
             })
         finally:
             check.close()
-        doctor = subprocess.run([sys.executable, "-m", "memory_fabric", "--db",
+        doctor = subprocess.run([sys.executable, "-m", "amberlog", "--db",
                                  cluster.promoted_url(), "--json", "doctor"],
                                 capture_output=True, text=True, cwd=ROOT)
         try:

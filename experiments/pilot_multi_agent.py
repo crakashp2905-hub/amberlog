@@ -3,7 +3,7 @@
 Not an experiment with a threshold: a deployment rehearsal whose output is a
 record of what happened, failures included. It runs real models through the
 documented HTTP API only (`mf` wrapper over curl, as in
-`live_claude_http.py`), against a separately launched `memory-fabric
+`live_claude_http.py`), against a separately launched `amberlog
 agent-api` process, with an operator acting through the CLI. Per run:
 
 1. **inspector** reads field notes and records what is worth keeping
@@ -12,7 +12,7 @@ agent-api` process, with an operator acting through the CLI. Per run:
    permissive reviewer, recorded as such.
 2. **planner** answers a maintenance question from memory (`recall`, `verify`).
 3. **operator** withdraws one fact the plan relies on, through
-   `memory-fabric quarantine` in its own process, as a person would on
+   `amberlog quarantine` in its own process, as a person would on
    learning it was wrong.
 4. **executor** is asked to confirm the plan before acting. It must `verify`
    each memory, and the withdrawn one must come back unusable.
@@ -96,15 +96,15 @@ def run_agent(name: str, prompt: str, workdir: Path, bindir: Path, model: str | 
 
 def one_run(n: int, model: str | None, workdir: Path) -> dict[str, Any]:
     sys.path.insert(0, str(ROOT))
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     db = workdir / f"pilot-{n}.db"
-    MemoryFabric(str(db)).close()
+    Amberlog(str(db)).close()
     agents_file = workdir / f"agents-{n}"
     agents_file.write_text("".join(f"ag_{a}:tn_default:{os.urandom(32).hex()}\n" for a in AGENTS))
     port = free_port()
     env = {**os.environ, "PYTHONPATH": str(ROOT)}
-    cli = [sys.executable, "-m", "memory_fabric", "--db", str(db)]
+    cli = [sys.executable, "-m", "amberlog", "--db", str(db)]
     server = subprocess.Popen(cli + ["agent-api", "--agents-file", str(agents_file), "--port",
                                      str(port)], cwd=workdir, env=env,
                               stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
@@ -128,7 +128,7 @@ def one_run(n: int, model: str | None, workdir: Path) -> dict[str, Any]:
 
         step = run_agent("inspector", PROMPTS["inspector"], workdir, bins["inspector"], model, env)
         record["steps"].append(step)
-        store = MemoryFabric(str(db))
+        store = Amberlog(str(db))
         written = [m for m in store.state.memories.values()
                    if m.provenance.created_by == "ag_inspector"]
         held = [m.id for m in written if m.lifecycle_state.value == "quarantined"]
@@ -176,7 +176,7 @@ def one_run(n: int, model: str | None, workdir: Path) -> dict[str, Any]:
         # rested on nothing, and the first check wrongly called that harm.
         record["plan_states_withdrawn_value"] = "12 bar" in record.get("planner_answer", "")
 
-        store = MemoryFabric(str(db))
+        store = Amberlog(str(db))
         per_agent: dict[str, int] = {}
         refused_withdrawn = False
         for e in store.log.read():

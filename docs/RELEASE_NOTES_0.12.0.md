@@ -1,4 +1,4 @@
-# Memory Fabric 0.12.0 — release notes (in qualification)
+# Amberlog 0.12.0 — release notes (in qualification)
 
 **Not yet tagged.** 0.12.0 is released through the same gate as 0.11.0: CI
 green on the exact commit, acceptance on a fresh machine, the release
@@ -18,9 +18,9 @@ for a measured failure:
 |---|---|---|
 | The **directive screen** runs at ingest and share | Text that addresses its reader or voids other records is quarantined for review | `Firewall(directive_screen=False)` |
 | **Contradictions are flagged** in context and recall | Disputed memories carry a `disputed` warning | not configurable; ignore the warning |
-| **Hostile sources are withheld** from retrieval | Memories by an author an ingest screen caught injecting, here or at a peer, are not shown | `MemoryFabric(withhold_hostile_sources=False)` |
+| **Hostile sources are withheld** from retrieval | Memories by an author an ingest screen caught injecting, here or at a peer, are not shown | `Amberlog(withhold_hostile_sources=False)` |
 | **Origin-bound authority at the action gate** | Evidence from a tool output, web page, import or instruction, or descending from a withdrawn memory, is refused unless elevated | `ToolRule(min_authority="untrusted")` |
-| **Claim checks** hold suspicious writes and refuse them as evidence | A write that restates a corrected value, is far out of range or contradicts an established fact is a candidate, not active; the gate answers `evidence_suspicious` | `MemoryFabric(hold_suspicious=False)`, `ToolRule(refuse_suspicious=False)` |
+| **Claim checks** hold suspicious writes and refuse them as evidence | A write that restates a corrected value, is far out of range or contradicts an established fact is a candidate, not active; the gate answers `evidence_suspicious` | `Amberlog(hold_suspicious=False)`, `ToolRule(refuse_suspicious=False)` |
 | **Imports stop at 16 hops** | An offer that would place a copy beyond where a retraction can reach is refused | none: a copy must not outrun its retraction |
 | **The operator role has no `execute`** | An operator session cannot run protected tools | grant `perm:execute` explicitly |
 | **Retention never retires a premise** of an active memory | Sources outlive the summaries and conclusions built on them | none |
@@ -29,14 +29,14 @@ for a measured failure:
 
 ## New
 
-- **Federation across machines**: `memory-fabric federate` and
-  `memory-fabric offer`, signed network offers that land as candidates,
+- **Federation across machines**: `amberlog federate` and
+  `amberlog offer`, signed network offers that land as candidates,
   and `--share-policy reviewed`.
 - **Fixed**: forwarded retractions over HTTP were refused at the second
   hop; a federation server could apply a retraction against a stale view.
   Upgrade every store in a federation.
 - **Claim checks** (`validation.py`): every claim checked against the
-  store's own knowledge; `memory-fabric suspicious` lists what is held.
+  store's own knowledge; `amberlog suspicious` lists what is held.
 - **Federation key rotation with an overlap window** (`previous_keys` in the
   peers file), drilled end to end.
 - **Origin-bound authority** (`authority.py`): trust and kind bound at first

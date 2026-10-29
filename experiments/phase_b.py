@@ -44,12 +44,12 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Sequence
 
-from memory_fabric import EpsilonGreedyPolicy, LifecycleState, MemoryFabric
-from memory_fabric.adapters.context import build_context
-from memory_fabric.adapters.ollama import OllamaClient, OllamaEmbedder, OllamaError
-from memory_fabric.cli import configure_output
-from memory_fabric.federation import imported_from, offer, propagate_retraction
-from memory_fabric.governance.firewall import (
+from amberlog import EpsilonGreedyPolicy, LifecycleState, Amberlog
+from amberlog.adapters.context import build_context
+from amberlog.adapters.ollama import OllamaClient, OllamaEmbedder, OllamaError
+from amberlog.cli import configure_output
+from amberlog.federation import imported_from, offer, propagate_retraction
+from amberlog.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
@@ -248,7 +248,7 @@ def run_arm(
     rounds = len(next(iter(episodes.values())))
     retract_at = rounds // 2
     stores = {
-        agent: MemoryFabric(
+        agent: Amberlog(
             ":memory:", seed=seed, embedder=embedder, estimator="amortized",
             exposure_policy=EpsilonGreedyPolicy(epsilon=0.2, rank_by="value"),
             firewall=federating_firewall(),

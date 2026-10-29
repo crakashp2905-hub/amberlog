@@ -2,7 +2,7 @@
 
 **Registered 2026-10-18, after a one-seed dev pilot (seed 100) and before
 seeds 0–4.** This is research direction S5 in
-[WORKPLAN.md](../../docs/WORKPLAN.md). Mechanism: `memory_fabric/receipts.py`.
+[WORKPLAN.md](../../docs/WORKPLAN.md). Mechanism: `amberlog/receipts.py`.
 Harness: `experiments/s5_receipt_leakage.py`. Both are committed with this
 file. The pilot changed nothing in either.
 

@@ -12,9 +12,9 @@ import random
 from dataclasses import dataclass, field
 from typing import Mapping, Sequence
 
-from memory_fabric import MemoryFabric
-from memory_fabric.events import EventType
-from memory_fabric.exposure import EpsilonGreedyPolicy, TopKPolicy
+from amberlog import Amberlog
+from amberlog.events import EventType
+from amberlog.exposure import EpsilonGreedyPolicy, TopKPolicy
 
 from .ruleworld import RuleWorld, SeededMemory, WorldConfig, query_for, seed_memories
 
@@ -41,7 +41,7 @@ class EpisodeRecord:
 
 @dataclass
 class RunResult:
-    fabric: MemoryFabric
+    fabric: Amberlog
     world: RuleWorld
     seeded: list[SeededMemory]
     episodes: list[EpisodeRecord]
@@ -67,7 +67,7 @@ def run(config: RunConfig) -> RunResult:
         if config.epsilon is None
         else EpsilonGreedyPolicy(epsilon=config.epsilon, rank_by="relevance")
     )
-    fabric = MemoryFabric(
+    fabric = Amberlog(
         auto_activate=True, seed=config.seed, exposure_policy=policy
     )
     seeded = seed_memories(fabric, world, rng)
@@ -98,7 +98,7 @@ def run(config: RunConfig) -> RunResult:
     return RunResult(fabric, world, seeded, episodes, config)
 
 
-def _attach_candidate_order(fabric: MemoryFabric, episodes: list[EpisodeRecord]) -> None:
+def _attach_candidate_order(fabric: Amberlog, episodes: list[EpisodeRecord]) -> None:
     """Recover each episode's ranked candidate list from the log."""
     by_episode = {e.episode_id: e for e in episodes}
     for event in fabric.log.read():

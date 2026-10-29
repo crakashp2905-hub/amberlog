@@ -7,7 +7,7 @@ that make the comparison measurable.
 
 ## The agent is deterministic, and that is the design
 
-"Does a team do better with Memory Fabric" is two questions: does the right
+"Does a team do better with Amberlog" is two questions: does the right
 evidence reach the agent, and does the agent use it. [R6](../research/results/r6-downstream.md)
 measured the second and **its dev finding did not replicate** — on a corpus a
 model could simply read, perfect selection was worth +0.000.
@@ -364,12 +364,12 @@ class SharedMemory:
 
 
 class FabricMemory:
-    """Memory Fabric at its defaults."""
+    """Amberlog at its defaults."""
 
     def __init__(self) -> None:
-        from memory_fabric import MemoryFabric
+        from amberlog import Amberlog
 
-        self.fabric = MemoryFabric(
+        self.fabric = Amberlog(
             ":memory:", auto_activate=True, encrypt_content=False,
             retrieval="lexical",
         )
@@ -389,7 +389,7 @@ class FabricMemory:
             memory = self.fabric.state.memories.get(mid)
             if memory is None:
                 continue
-            from memory_fabric.model import LifecycleState
+            from amberlog.model import LifecycleState
 
             if memory.lifecycle_state is LifecycleState.QUARANTINED:
                 continue

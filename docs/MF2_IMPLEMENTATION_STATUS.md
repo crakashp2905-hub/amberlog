@@ -1,6 +1,6 @@
-# Memory Fabric 2 implementation status
+# Amberlog 2 implementation status
 
-The [masterplan](MEMORY_FABRIC_2_PRODUCT_RESEARCH_MASTERPLAN.md) is a roadmap,
+The [masterplan](AMBERLOG_2_PRODUCT_RESEARCH_MASTERPLAN.md) is a roadmap,
 not a completed release specification. Unchecked requirements remain open.
 
 ## Baseline
@@ -27,7 +27,7 @@ Authoritative module tiers are in [STABILITY.md](../STABILITY.md).
 | Requirement | Existing code and interface | Remaining work |
 | --- | --- | --- |
 | Governed source import | `docsource.import_document`, `current_sections`; experimental | PDF/CSV parsers, page/table anchors, transactional ingestion review |
-| Browse and search | `navigation.topics`, `open_topic`; experimental; stable `MemoryFabric.retrieve` | Source-tree browser, bounded coverage contracts |
+| Browse and search | `navigation.topics`, `open_topic`; experimental; stable `Amberlog.retrieve` | Source-tree browser, bounded coverage contracts |
 | Retrieval adapters | `retrievers`, `retrieval_profiles`, `answerability` | Paired evaluation and calibrated abstention for the target corpus |
 | Corrections and provenance | Stable lifecycle, lineage, federation and certificates | Compiler-derived projection integration tests across peers |
 | Actions | `actions.ActionGate.execute`, freshness leases | Workload-specific latency and deployment verification |

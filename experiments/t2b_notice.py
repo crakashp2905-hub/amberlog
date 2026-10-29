@@ -46,7 +46,7 @@ SPLITS = {"dev": range(101, 102), "test": range(15, 20)}
 
 
 def hindsight_notes(fabric: FabricArm, site: str, question: str, mode: str) -> list[str]:
-    from memory_fabric import hindsight
+    from amberlog import hindsight
 
     store = fabric.sites[site]
     hits = store.retrieve(fabric.agent(site), question, k=K).exposed
@@ -72,8 +72,8 @@ def run_seed(seed: int, client: Any, model: str, cache: Cache) -> list[dict[str,
             fabric.correct(f"{doc.fact.fid}-v1", doc, SITES)
         else:
             fabric.write(doc, SITES)
-    from memory_fabric.manager import MemoryManager
-    from memory_fabric.transport import InProcessTransport
+    from amberlog.manager import MemoryManager
+    from amberlog.transport import InProcessTransport
 
     peers = InProcessTransport({s.store_id: s for s in fabric.sites.values()})
     for site_store in fabric.sites.values():
@@ -160,7 +160,7 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    from memory_fabric.adapters.claude_chat import make_client
+    from amberlog.adapters.claude_chat import make_client
 
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--split", choices=sorted(SPLITS), default="dev")

@@ -1,6 +1,6 @@
 # Concepts
 
-The ideas you need to use Memory Fabric well, in the order you meet them.
+The ideas you need to use Amberlog well, in the order you meet them.
 Each links to where it is specified.
 
 ## A memory
@@ -56,7 +56,7 @@ Separate from relevance and from lifecycle. Every memory has a **kind**
 inherited through summaries, copies and other stores. A tool output or a
 web page is untrusted until a reviewer who did not write it **elevates** it.
 An instruction is never evidence. A successful outcome never raises trust
-([authority.py](../memory_fabric/authority.py)).
+([authority.py](../amberlog/authority.py)).
 
 ## Correction
 
@@ -75,7 +75,7 @@ far outside every comparable value, or contradict a fact established by an
 author with a track record? Such a write is held as a **candidate** for
 review even where clean writes activate at once, the action gate refuses it
 as evidence, and recall marks it `implausible`. A claim from an author with
-no track record is **provisional**. `memory-fabric suspicious` lists what is
+no track record is **provisional**. `amberlog suspicious` lists what is
 held and why.
 
 ## Contradictions
@@ -90,7 +90,7 @@ A **protected tool** runs only when four things hold at the moment of
 action, inside one transaction: the agent is granted the tool; a
 **certificate** names the evidence and every piece still verifies; the
 evidence has sufficient authority; and, if required, a short-lived **grant**
-covers this exact target and parameters ([actions.py](../memory_fabric/actions.py)).
+covers this exact target and parameters ([actions.py](../amberlog/actions.py)).
 
 ## Outcomes and value
 
@@ -108,7 +108,7 @@ still stands ([COOKBOOK.md §6](COOKBOOK.md)).
 
 ## The background manager
 
-Runs inside `serve`, `mcp` and `agent-api` (or `memory-fabric maintain`).
+Runs inside `serve`, `mcp` and `agent-api` (or `amberlog maintain`).
 Each cycle: hostile-source notices, retraction delivery, retention, audit
 triggers, contradiction scan, re-compaction, integrity checkpoints, health.
 One manager per store at a time, under a lease.

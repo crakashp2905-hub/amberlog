@@ -17,17 +17,17 @@ try:
 except Exception:  # noqa: BLE001
     HAVE_CRYPTO = False
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import ActionGate, ActionPolicy, ActionRequest, ToolRule
-from memory_fabric.cli import main
+from amberlog import Amberlog
+from amberlog.actions import ActionGate, ActionPolicy, ActionRequest, ToolRule
+from amberlog.cli import main
 
 
 @unittest.skipUnless(HAVE_CRYPTO, "cryptography not installed")
 class ActionReceipts(unittest.TestCase):
     def setUp(self) -> None:
-        from memory_fabric.action_receipt import generate_key
+        from amberlog.action_receipt import generate_key
 
-        self.f = MemoryFabric(auto_activate=True)
+        self.f = Amberlog(auto_activate=True)
         self.addCleanup(self.f.close)
         self.gauge = self.f.remember("ag_field", "Valve V-7 pressure reads 4 bar.", scope="team")
         self.f.validate(self.gauge, actor="supervisor")
@@ -37,14 +37,14 @@ class ActionReceipts(unittest.TestCase):
         self.request = ActionRequest("valve V-7", {"position": "open", "operator": "night shift"})
 
     def receipt(self):
-        from memory_fabric.action_receipt import issue
+        from amberlog.action_receipt import issue
 
         cert = self.f.certify("open-valve-7", [self.gauge], "ag_ops")
         decision = self.gate.authorize("open_valve", "ag_ops", cert, request=self.request)
         return issue(self.f, decision, self.private, certificate=cert, request=self.request)
 
     def test_a_receipt_verifies_with_the_public_key_alone(self) -> None:
-        from memory_fabric.action_receipt import verify_receipt
+        from amberlog.action_receipt import verify_receipt
 
         doc = self.receipt()
         verify_receipt(json.loads(json.dumps(doc)), self.public)
@@ -57,7 +57,7 @@ class ActionReceipts(unittest.TestCase):
         self.assertNotIn("night shift", text)
 
     def test_any_alteration_is_detected(self) -> None:
-        from memory_fabric.action_receipt import ReceiptInvalid, verify_receipt
+        from amberlog.action_receipt import ReceiptInvalid, verify_receipt
 
         doc = self.receipt()
         for path in (("decision", "allowed"), ("action", "tool"), ("log", "seq")):
@@ -70,14 +70,14 @@ class ActionReceipts(unittest.TestCase):
                 verify_receipt(forged, self.public)
 
     def test_a_different_trusted_key_is_refused(self) -> None:
-        from memory_fabric.action_receipt import ReceiptInvalid, generate_key, verify_receipt
+        from amberlog.action_receipt import ReceiptInvalid, generate_key, verify_receipt
 
         _, other = generate_key()
         with self.assertRaises(ReceiptInvalid):
             verify_receipt(self.receipt(), other)
 
     def test_a_refusal_is_receipted_too(self) -> None:
-        from memory_fabric.action_receipt import issue, verify_receipt
+        from amberlog.action_receipt import issue, verify_receipt
 
         cert = self.f.certify("open-valve-7", [self.gauge], "ag_ops")
         self.f.quarantine(self.gauge, reason="miscalibrated", basis="contradicted")
@@ -88,11 +88,11 @@ class ActionReceipts(unittest.TestCase):
         self.assertEqual(doc["evidence"][0]["lifecycle_state"], "quarantined")
 
     def test_against_the_store(self) -> None:
-        from memory_fabric.action_receipt import verify_against_store
+        from amberlog.action_receipt import verify_against_store
 
         doc = self.receipt()
         self.assertEqual(verify_against_store(doc, self.f), [])
-        other = MemoryFabric()
+        other = Amberlog()
         self.addCleanup(other.close)
         self.assertTrue(verify_against_store(doc, other))
 

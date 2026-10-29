@@ -36,7 +36,7 @@ def _read(rel: str) -> str:
 
 def versions() -> dict[str, str]:
     package = re.search(r'(?m)^version = "([^"]+)"', _read("pyproject.toml"))
-    schema = re.search(r'(?m)^SCHEMA_VERSION = "([^"]+)"', _read("memory_fabric/model.py"))
+    schema = re.search(r'(?m)^SCHEMA_VERSION = "([^"]+)"', _read("amberlog/model.py"))
     spec = re.search(r"Schema version:\*\* `([^`]+)`", _read("SPEC.md"))
     spec_latest = re.search(r"(?m)^### (\d+\.\d+\.\d+) ", _read("SPEC.md"))
     notes = sorted((ROOT / "docs").glob("RELEASE_NOTES_*.md"),
@@ -54,7 +54,7 @@ def tags() -> list[str]:
 
 def tiers() -> dict[str, list[str]]:
     out: dict[str, list[str]] = {}
-    for path in sorted((ROOT / "memory_fabric").rglob("*.py"), key=lambda p: p.as_posix()):
+    for path in sorted((ROOT / "amberlog").rglob("*.py"), key=lambda p: p.as_posix()):
         if "__pycache__" in path.parts:
             continue
         match = re.search(r'(?m)^__stability__ = "(\w+)"', path.read_text(encoding="utf-8"))
@@ -66,8 +66,8 @@ def tiers() -> dict[str, list[str]]:
 
 def preset_experimental(experimental: list[str]) -> list[str]:
     """Experimental modules a preset imports, i.e. turns on by default in that mode."""
-    tree = ast.parse(_read("memory_fabric/presets.py"))
-    used = {f"memory_fabric.{n.module.lstrip('.')}" for n in ast.walk(tree)
+    tree = ast.parse(_read("amberlog/presets.py"))
+    used = {f"amberlog.{n.module.lstrip('.')}" for n in ast.walk(tree)
             if isinstance(n, ast.ImportFrom) and n.module}
     return sorted(used & set(experimental))
 
@@ -148,7 +148,7 @@ def render(sha: str | None = None) -> str:
         "",
         "## Experimental modules on by default",
         "",
-        "Turned on by a preset in `memory_fabric/presets.py`; every other experimental module is opt-in.",
+        "Turned on by a preset in `amberlog/presets.py`; every other experimental module is opt-in.",
         "",
         *([f"- `{m}`" for m in defaults] or ["- none"]),
         "",

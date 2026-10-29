@@ -1,10 +1,10 @@
-# Pre-registration — P3b: does Memory Fabric improve an agent team?
+# Pre-registration — P3b: does Amberlog improve an agent team?
 
 **Registered 2026-10-12, before `experiments/teamworld.py` exists.**
 
 ## 1. The question, and the honest decomposition
 
-"Does a team of agents do better with Memory Fabric than without" is two
+"Does a team of agents do better with Amberlog than without" is two
 questions, and only one of them is answerable cheaply:
 
 - **(a) Does the right evidence reach the agent?** A property of the memory system.
@@ -33,7 +33,7 @@ thing that varies is where memory lives and what it does.
 `local` | each agent has its own store. It knows only what it discovered itself |
 `shared` | one plain append-only store, lexical top-k over everything ever written. No lifecycle, no provenance, no gates. The ordinary shared store |
 `shared_blanket` | `shared`, plus the naive correction rule: when a fact is corrected, withhold everything whose content overlaps the withdrawn fact |
-`fabric` | Memory Fabric at its defaults |
+`fabric` | Amberlog at its defaults |
 `oracle` | handed the currently-correct fact. The ceiling |
 
 `shared_blanket` exists because without it metric 3 cannot fire: neither

@@ -16,8 +16,8 @@ import sys
 from dataclasses import dataclass, field
 from typing import Sequence
 
-from memory_fabric.estimators import build_estimator
-from memory_fabric.model import UNKNOWN_VALUE
+from amberlog.estimators import build_estimator
+from amberlog.model import UNKNOWN_VALUE
 
 from . import stats
 from .runner import (

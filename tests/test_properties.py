@@ -22,11 +22,11 @@ import random
 import sqlite3
 import unittest
 
-from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
-from memory_fabric.enforcement import Verdict
-from memory_fabric.justification import JustificationKind, justification_context
-from memory_fabric.model import BLOCKED_STATES, EXPOSABLE_STATES
-from memory_fabric.protocol import (
+from amberlog import LifecycleState, Amberlog, WithdrawalBasis
+from amberlog.enforcement import Verdict
+from amberlog.justification import JustificationKind, justification_context
+from amberlog.model import BLOCKED_STATES, EXPOSABLE_STATES
+from amberlog.protocol import (
     PropagationState,
     Retraction,
     can_transition,
@@ -44,7 +44,7 @@ class Walk:
     def __init__(self, seed: int) -> None:
         self.rng = random.Random(seed)
         self.seed = seed
-        self.fabric = MemoryFabric(":memory:")
+        self.fabric = Amberlog(":memory:")
         self.memories: list[str] = []
         self.trace: list[str] = []
 

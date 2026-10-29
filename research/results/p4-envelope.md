@@ -52,7 +52,7 @@ it is for.
 
 This also puts a third measurement beside P9. The lexical path costs 19 ms at
 10,000 memories; the 768-dimension dense path cost **544 ms at 5,183**
-(`memory_fabric/vectors.py`). Distribution was declined on a **4.39 ms**
+(`amberlog/vectors.py`). Distribution was declined on a **4.39 ms**
 figure, and none of the three numbers since has been close to it.
 
 ## 3. The defect this sweep found

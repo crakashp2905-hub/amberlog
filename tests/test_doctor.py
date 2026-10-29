@@ -1,4 +1,4 @@
-"""`memory-fabric doctor` — and whether it can tell a broken store from a sound one.
+"""`amberlog doctor` — and whether it can tell a broken store from a sound one.
 
 A health check that only ever reports health is worse than no health check,
 because it is read as evidence. So every test here breaks something specific
@@ -23,9 +23,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
 
-from memory_fabric import MemoryFabric
-from memory_fabric.cli import main
-from memory_fabric.model import MemoryType, WithdrawalBasis
+from amberlog import Amberlog
+from amberlog.cli import main
+from amberlog.model import MemoryType, WithdrawalBasis
 
 
 
@@ -33,7 +33,7 @@ def _host_warnings() -> list[str]:
     """Warnings that describe this host rather than the store. A host with
     `cryptography` installed but broken gets a content-cipher warning on every
     store (tests/test_cipher.py::BrokenCryptography). Everywhere else, none."""
-    from memory_fabric.governance.cipher import aead_status
+    from amberlog.governance.cipher import aead_status
 
     available, reason = aead_status()
     return [] if available or reason == "not installed" else ["content cipher"]
@@ -45,7 +45,7 @@ class DoctorTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()
         self.path = Path(self._tmp.name) / "store.db"
-        fabric = MemoryFabric(self.path)
+        fabric = Amberlog(self.path)
         self.memory_id = fabric.remember(
             agent_id="a",
             content="valve 7 is upstream of the pump",
@@ -147,9 +147,9 @@ class DoctorTests(unittest.TestCase):
         something other than this code, and an untested branch in a health
         check is a branch that reports the wrong thing when it finally fires.
         """
-        from memory_fabric.cli import _check_append_only
+        from amberlog.cli import _check_append_only
 
-        fabric = MemoryFabric(self.path)
+        fabric = Amberlog(self.path)
         try:
             fabric.log._conn.execute("DROP TRIGGER events_no_update")
             fabric.log._conn.execute("DROP TRIGGER events_no_delete")
@@ -190,7 +190,7 @@ class DoctorTests(unittest.TestCase):
         withdrawn, the local store looks right, and the recipient goes on
         exposing knowledge that was withdrawn hours ago.
         """
-        fabric = MemoryFabric(self.path)
+        fabric = Amberlog(self.path)
         fabric.request_retraction(
             self.memory_id, reason="contradicted",
             recipients=["st_unreachable"], basis=WithdrawalBasis.CONTRADICTED,
@@ -205,7 +205,7 @@ class DoctorTests(unittest.TestCase):
 
     def test_a_retrying_retraction_is_a_warning_not_a_failure(self) -> None:
         """A recipient restarting is not a broken installation."""
-        fabric = MemoryFabric(self.path)
+        fabric = Amberlog(self.path)
         fabric.request_retraction(
             self.memory_id, reason="contradicted",
             recipients=["st_slow"], basis=WithdrawalBasis.CONTRADICTED,
@@ -224,7 +224,7 @@ class DoctorTests(unittest.TestCase):
         completely different fault. So the finding points at *releasing* the
         memory, and it is a warning rather than a failure because the store
         itself is working exactly as designed."""
-        fabric = MemoryFabric(self.path)
+        fabric = Amberlog(self.path)
         fabric.quarantine(
             self.memory_id, reason="in context when the episode failed",
             actor="operator", basis=WithdrawalBasis.CO_OCCURRENCE,
@@ -246,10 +246,10 @@ class DoctorTests(unittest.TestCase):
         in it reached the line. So the fixture has to be populated; an empty
         store exercises almost none of these branches.
         """
-        from memory_fabric import cli
-        from memory_fabric.demo import seed
+        from amberlog import cli
+        from amberlog.demo import seed
 
-        fabric = MemoryFabric(self.path)
+        fabric = Amberlog(self.path)
         try:
             seed(fabric)
         finally:
@@ -271,7 +271,7 @@ class DoctorTests(unittest.TestCase):
         amounts to isolation against a compromised process should read it here
         rather than in an incident.
         """
-        fabric = MemoryFabric(self.path, auto_activate=True)
+        fabric = Amberlog(self.path, auto_activate=True)
         try:
             fabric.remember(
                 agent_id="b", content="the east gate closes at 1800",
@@ -293,10 +293,10 @@ class DoctorTests(unittest.TestCase):
         thing when it finally fires. The same reasoning as the missing-trigger
         case.
         """
-        from memory_fabric.cli import _check_tenant_isolation
-        from memory_fabric.enforcement import ACTIVE, AccessDecision, RiskLevel, Verdict
+        from amberlog.cli import _check_tenant_isolation
+        from amberlog.enforcement import ACTIVE, AccessDecision, RiskLevel, Verdict
 
-        fabric = MemoryFabric(self.path, auto_activate=True)
+        fabric = Amberlog(self.path, auto_activate=True)
         try:
             fabric.remember(
                 agent_id="b", content="the east gate closes at 1800",
@@ -340,7 +340,7 @@ class DoctorTests(unittest.TestCase):
 
     def test_a_check_that_cannot_run_is_never_reported_as_ok(self) -> None:
         """The honest outcome of "I could not tell" is a warning with the reason."""
-        from memory_fabric import cli
+        from amberlog import cli
 
         def exploding(fabric):
             raise RuntimeError("no idea")

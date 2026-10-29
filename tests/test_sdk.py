@@ -14,11 +14,11 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
-from memory_fabric.enforcement import RiskLevel, Verdict
-from memory_fabric.justification import JustificationKind, justification_context
-from memory_fabric.protocol import PropagationState
-from memory_fabric.sdk import (
+from amberlog import LifecycleState, Amberlog, WithdrawalBasis
+from amberlog.enforcement import RiskLevel, Verdict
+from amberlog.justification import JustificationKind, justification_context
+from amberlog.protocol import PropagationState
+from amberlog.sdk import (
     AgentClient,
     NotUsable,
     OperatorClient,
@@ -30,7 +30,7 @@ from memory_fabric.sdk import (
 
 class SdkCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:")
+        self.fabric = Amberlog(":memory:")
         self.addCleanup(self.fabric.close)
         self.agent = agent(self.fabric, "ag_a")
         self.operator = operator(self.fabric, "supervisor")
@@ -42,7 +42,7 @@ class TestTheAgentClientCannotBypassEnforcement(SdkCase):
     """The defining requirement of Phase 7."""
 
     def test_there_is_no_unenforced_read(self) -> None:
-        """`MemoryFabric.get()` returns a withdrawn memory to an operator tool.
+        """`Amberlog.get()` returns a withdrawn memory to an operator tool.
         An adapter holding that method is one autocomplete away from serving
         retracted knowledge to a model, so the agent client does not have it."""
         for forbidden in ("get", "state", "log", "quarantine", "erase_content"):
@@ -221,15 +221,15 @@ class TestEndToEndDemonstration(unittest.TestCase):
         from pathlib import Path
         from tempfile import TemporaryDirectory
 
-        from memory_fabric.dispatcher import Dispatcher, reconcile
-        from memory_fabric.federation import offer
-        from memory_fabric.governance.firewall import (
+        from amberlog.dispatcher import Dispatcher, reconcile
+        from amberlog.federation import offer
+        from amberlog.governance.firewall import (
             Firewall,
             rule_capabilities_must_be_granted,
             rule_must_be_active,
             rule_restricted_stays_private,
         )
-        from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
+        from amberlog.transport import InProcessTransport, Peer, PeerRegistry
 
         def permissive() -> Firewall:
             return Firewall(
@@ -245,8 +245,8 @@ class TestEndToEndDemonstration(unittest.TestCase):
         a_path = str(Path(tmp.name) / "a.db")
         b_path = str(Path(tmp.name) / "b.db")
 
-        store_a = MemoryFabric(a_path, firewall=permissive())
-        store_b = MemoryFabric(b_path, firewall=permissive())
+        store_a = Amberlog(a_path, firewall=permissive())
+        store_b = Amberlog(b_path, firewall=permissive())
         self.addCleanup(lambda: self._close(store_a))
 
         # 1. A records a fact.
@@ -325,7 +325,7 @@ class TestEndToEndDemonstration(unittest.TestCase):
 
         # 11. Restarts preserve the result.
         store_b.close()
-        reopened = MemoryFabric(b_path, firewall=permissive())
+        reopened = Amberlog(b_path, firewall=permissive())
         self.addCleanup(lambda: self._close(reopened))
         self.assertEqual(
             reopened.get(imported.imported_memory_id).lifecycle_state,
@@ -335,7 +335,7 @@ class TestEndToEndDemonstration(unittest.TestCase):
         self.assertEqual(agent(reopened, "ag_b").recall("tyre pressure winter"), [])
 
     @staticmethod
-    def _close(store: MemoryFabric) -> None:
+    def _close(store: Amberlog) -> None:
         try:
             store.close()
         except Exception:

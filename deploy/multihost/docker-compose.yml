@@ -19,8 +19,8 @@ x-store: &store
   # stores were prepared with their keys in the database, and run as the host
   # user, so the variable is cleared.
   environment:
-    MEMORY_FABRIC_KEYS: ""
-  entrypoint: ["memory-fabric"]
+    AMBERLOG_KEYS: ""
+  entrypoint: ["amberlog"]
 
 services:
   a:

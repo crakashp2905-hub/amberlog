@@ -1,9 +1,0 @@
-Memory Fabric ({{ .Values.mode }} mode) is starting.
-
-  kubectl port-forward svc/{{ include "mf.name" . }} {{ .Values.dashboard.port }}
-  open http://127.0.0.1:{{ .Values.dashboard.port }}/?token=<your token>
-
-Prometheus metrics: GET /metrics with the same bearer token.
-{{- if .Values.agentApi.enabled }}
-Agent HTTP API on port {{ .Values.agentApi.port }}; put TLS in front of it (an Ingress).
-{{- end }}

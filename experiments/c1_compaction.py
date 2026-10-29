@@ -36,9 +36,9 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from memory_fabric import MemoryFabric, correction
-from memory_fabric.compaction import compact_session
-from memory_fabric.model import ProvenanceMethod
+from amberlog import Amberlog, correction
+from amberlog.compaction import compact_session
+from amberlog.model import ProvenanceMethod
 
 ROOT = Path(__file__).resolve().parents[1]
 SPLITS = {"dev": range(200, 203), "test": range(300, 310)}
@@ -53,9 +53,9 @@ FILLER = ["Shift handover went smoothly.", "Checked the logbook, nothing unusual
           "Waiting on parts from stores.", "Coffee machine in bay 2 is fixed."]
 
 
-def build(seed: int, arm: str) -> tuple[MemoryFabric, list[dict[str, Any]]]:
+def build(seed: int, arm: str) -> tuple[Amberlog, list[dict[str, Any]]]:
     rng = random.Random(seed)
-    f = MemoryFabric(":memory:", auto_activate=True, seed=seed)
+    f = Amberlog(":memory:", auto_activate=True, seed=seed)
     facts, episodes = [], []
     for s in range(8):
         ep = f.start_episode("agent", f"shift-{s}").id
@@ -97,14 +97,14 @@ def build(seed: int, arm: str) -> tuple[MemoryFabric, list[dict[str, Any]]]:
                                            f"{corrected['v']} {corrected['u']}.", scope="team")]
     if arm == "compacted":
         # What the background manager's `compaction` task does next.
-        from memory_fabric.compaction import recompact
+        from amberlog.compaction import recompact
 
         recompact(f, agent_id="manager")
     return f, facts
 
 
-def _naive(f: MemoryFabric, episode: str) -> str:
-    from memory_fabric.compaction import session_memories
+def _naive(f: Amberlog, episode: str) -> str:
+    from amberlog.compaction import session_memories
 
     seen, lines = set(), []
     for m in session_memories(f, episode):
@@ -114,12 +114,12 @@ def _naive(f: MemoryFabric, episode: str) -> str:
         if nums:
             seen.add(nums[0])
             lines.append(m.content)
-    from memory_fabric.compaction import session_label
+    from amberlog.compaction import session_label
 
     return f"Session summary ({session_label(f, episode)}): " + " ".join(lines)
 
 
-def context(f: MemoryFabric, arm: str, fact: dict[str, Any], budget: int | None) -> str:
+def context(f: Amberlog, arm: str, fact: dict[str, Any], budget: int | None) -> str:
     if arm == "oracle":
         texts = [f.get(fact["ids"][-1]).content]
         if "dispute" in fact:
@@ -152,10 +152,10 @@ def states(text: str, equipment: str, value: int) -> bool:
     return False
 
 
-def raw_episode_texts(f: MemoryFabric, episode: str, facts: list[dict[str, Any]]) -> list[str]:
+def raw_episode_texts(f: Amberlog, episode: str, facts: list[dict[str, Any]]) -> list[str]:
     """The session's own usable notes, ranked by the session's parameters."""
-    from memory_fabric.compaction import session_memories
-    from memory_fabric.model import EXPOSABLE_STATES
+    from amberlog.compaction import session_memories
+    from amberlog.model import EXPOSABLE_STATES
 
     mine = {m.id for m in session_memories(f, episode)
             if m.lifecycle_state in EXPOSABLE_STATES
@@ -167,11 +167,11 @@ def raw_episode_texts(f: MemoryFabric, episode: str, facts: list[dict[str, Any]]
     return [m.content for m in ranked]
 
 
-def handoff_context(f: MemoryFabric, arm: str, session: str, episode: str,
+def handoff_context(f: Amberlog, arm: str, session: str, episode: str,
                     facts: list[dict[str, Any]], budget: int | None) -> str:
     """Context for "what did <session> establish?", filled to the budget in rank order."""
-    from memory_fabric.compaction import session_memories
-    from memory_fabric.model import EXPOSABLE_STATES
+    from amberlog.compaction import session_memories
+    from amberlog.model import EXPOSABLE_STATES
 
     q = f"What was recorded during {session}? Session summary {session}"
     if arm == "oracle":

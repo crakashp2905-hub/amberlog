@@ -17,7 +17,7 @@ import random
 import subprocess
 from pathlib import Path
 
-from memory_fabric import MemoryFabric, influence
+from amberlog import Amberlog, influence
 
 ROOT = Path(__file__).resolve().parents[1]
 PARAMS = [("rated pressure", "bar"), ("purge time", "s"), ("setpoint", "C"), ("trip current", "A")]
@@ -28,7 +28,7 @@ TEMPLATES = ["The {p} of {e} is {v} {u}.", "{e}: {p} {v} {u}.", "For {e}, use a 
 
 def run(seed: int) -> dict[str, int]:
     rng = random.Random(seed)
-    f = MemoryFabric(":memory:", auto_activate=True)
+    f = Amberlog(":memory:", auto_activate=True)
     tp = fp = fn = 0
     stats = {"copy_only": 0, "claim_only": 0}
     for n in range(12):

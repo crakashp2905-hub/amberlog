@@ -4,16 +4,16 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.adapters.mcp import McpServer
-from memory_fabric.events import EventType
-from memory_fabric.navigation import members, navigate, open_topic, topics
-from memory_fabric.sdk import AgentClient
+from amberlog import Amberlog
+from amberlog.adapters.mcp import McpServer
+from amberlog.events import EventType
+from amberlog.navigation import members, navigate, open_topic, topics
+from amberlog.sdk import AgentClient
 
 
 class Navigation(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         for text in ("Pump P-14 relief valve opens at 12 bar.", "Pump P-14 relief valve was replaced in May.",
                      "Pump P-14 relief valve has a new gasket.", "Pump P-14 relief valve leaks at the flange.",
@@ -53,7 +53,7 @@ class Navigation(unittest.TestCase):
 
 class McpBrowse(unittest.TestCase):
     def test_browse_then_open_over_mcp(self) -> None:
-        f = MemoryFabric(":memory:", auto_activate=True)
+        f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         for i in range(4):
             f.remember("ana", f"Pump P-14 relief valve inspection {i} passed.", scope="team")
@@ -67,7 +67,7 @@ class McpBrowse(unittest.TestCase):
         self.assertTrue(bad.get("isError"))
 
     def test_browsing_is_opt_in_so_the_default_surface_stays_narrow(self) -> None:
-        f = MemoryFabric(":memory:")
+        f = Amberlog(":memory:")
         self.addCleanup(f.close)
         self.assertTrue(McpServer(AgentClient(f, "ana"), f)._call("browse_topics", {}).get("isError"))
 

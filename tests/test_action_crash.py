@@ -16,17 +16,17 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import EXECUTED, REFUSED, ActionGate, ActionPolicy, ToolRule
+from amberlog import Amberlog
+from amberlog.actions import EXECUTED, REFUSED, ActionGate, ActionPolicy, ToolRule
 
 ROOT = Path(__file__).resolve().parents[1]
 
 CRASHER = textwrap.dedent("""
     import os, sys
     sys.path.insert(0, {root!r})
-    from memory_fabric import MemoryFabric
-    from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
-    f = MemoryFabric({db!r})
+    from amberlog import Amberlog
+    from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+    f = Amberlog({db!r})
     gate = ActionGate(f, ActionPolicy(tools={{"open": ToolRule("open")}},
                                       grants={{"ops": frozenset({{"open"}})}}))
     cert = f.certify("open-v7", [{mid!r}], "ops")
@@ -41,7 +41,7 @@ class CrashMidAction(unittest.TestCase):
     def setUp(self) -> None:
         tmp = Path(self.enterContext(TemporaryDirectory()))
         self.db, self.marker = tmp / "store.db", tmp / "side-effect"
-        f = MemoryFabric(str(self.db), auto_activate=True)
+        f = Amberlog(str(self.db), auto_activate=True)
         self.mid = f.remember("tech", "Valve V7 opens below 4 bar.", scope="team")
         f.close()
         script = CRASHER.format(root=str(ROOT), db=str(self.db), mid=self.mid,
@@ -51,12 +51,12 @@ class CrashMidAction(unittest.TestCase):
         self.assertEqual(done.returncode, 1, done.stderr[-2000:])
         self.assertTrue(self.marker.exists(), "the side effect did happen")
 
-    def gate(self, f: MemoryFabric) -> ActionGate:
+    def gate(self, f: Amberlog) -> ActionGate:
         return ActionGate(f, ActionPolicy(tools={"open": ToolRule("open")},
                                           grants={"ops": frozenset({"open"})}))
 
     def test_the_next_call_refuses_until_someone_says_to_retry(self) -> None:
-        f = MemoryFabric(str(self.db))
+        f = Amberlog(str(self.db))
         self.addCleanup(f.close)
         ran: list[str] = []
         cert = f.certify("open-v7", [self.mid], "ops")

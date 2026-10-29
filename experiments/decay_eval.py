@@ -34,9 +34,9 @@ import sys
 from pathlib import Path
 from typing import Any
 
-from memory_fabric import MemoryFabric
-from memory_fabric.context_map import estimate_tokens
-from memory_fabric.decay import DecayView, SummaryRejected
+from amberlog import Amberlog
+from amberlog.context_map import estimate_tokens
+from amberlog.decay import DecayView, SummaryRejected
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "research" / "results" / "decay-view.json"
@@ -45,9 +45,9 @@ ARMS = ("R", "X", "S", "oracle")
 _VALUE = re.compile(r"(\d+)\s*bar\b")
 
 
-def build(seed: int, n_assets: int = 32, steps: int = 160) -> tuple[MemoryFabric, dict[str, Any]]:
+def build(seed: int, n_assets: int = 32, steps: int = 160) -> tuple[Amberlog, dict[str, Any]]:
     rng = random.Random(seed)
-    f = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False, seed=seed)
+    f = Amberlog(":memory:", auto_activate=True, hold_suspicious=False, seed=seed)
     tags = [f"P{i}-{rng.choice(['ROT', 'GDA', 'LEE', 'POR'])}" for i in range(n_assets)]
     truth: dict[str, int] = {}
     fact_id: dict[str, str] = {}
@@ -168,7 +168,7 @@ def model_agent(view: DecayView, budget: int, client: Any, model: str) -> dict[s
     return stats
 
 
-def view_texts(arm: str, f: MemoryFabric, world: dict[str, Any], budget: int) -> list[str]:
+def view_texts(arm: str, f: Amberlog, world: dict[str, Any], budget: int) -> list[str]:
     if arm == "R":
         out, used = [], 0
         recent = sorted((m for m in f.state.memories.values()
@@ -234,7 +234,7 @@ def main(argv: list[str] | None = None) -> int:
     arms = ("R", "oracle") if args.pilot else ARMS + (("M",) if args.model else ())
     client = None
     if args.model:
-        from memory_fabric.adapters.ollama import OllamaClient
+        from amberlog.adapters.ollama import OllamaClient
 
         client = OllamaClient()
     runs = [run_seed(s, arms, args.budget, client, args.model or "") for s in seeds]

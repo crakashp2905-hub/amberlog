@@ -31,28 +31,28 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from memory_fabric import (
+from amberlog import (
     EpsilonGreedyPolicy,
     LifecycleState,
-    MemoryFabric,
+    Amberlog,
     WithdrawalBasis,
 )
-from memory_fabric.adapters.ollama import (
+from amberlog.adapters.ollama import (
     OllamaClient,
     OllamaEmbedder,
     OllamaError,
     OllamaMemoryAgent,
 )
-from memory_fabric.cli import configure_output
-from memory_fabric.cli import main as cli_main
-from memory_fabric.observability import report
-from memory_fabric.federation import (
+from amberlog.cli import configure_output
+from amberlog.cli import main as cli_main
+from amberlog.observability import report
+from amberlog.federation import (
     descendants_of,
     imported_from,
     offer,
     propagate_retraction,
 )
-from memory_fabric.governance.firewall import (
+from amberlog.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
@@ -97,8 +97,8 @@ def main() -> int:
     passed: list[bool] = []
 
     # Two separate stores: this is federation, not one store with flags.
-    depot = MemoryFabric(seed=1, embedder=embedder, firewall=federating_firewall())
-    workshop = MemoryFabric(seed=2, embedder=embedder, firewall=federating_firewall())
+    depot = Amberlog(seed=1, embedder=embedder, firewall=federating_firewall())
+    workshop = Amberlog(seed=2, embedder=embedder, firewall=federating_firewall())
 
     try:
         rule("1. An agent writes a memory; it is NOT retrievable yet")
@@ -267,7 +267,7 @@ def main() -> int:
         # time, so an import — always newer than what the recipient already
         # held — could never be exposed, and value evidence can only be earned
         # by exposure.
-        fresh = MemoryFabric(
+        fresh = Amberlog(
             embedder=embedder, firewall=federating_firewall(),
             estimator="amortized",
             exposure_policy=EpsilonGreedyPolicy(epsilon=0.2, rank_by="value"),
@@ -312,10 +312,10 @@ def main() -> int:
             # an explanation instead.
             #
             # The lesson the example should teach: **replaying events into
-            # another store is not a backup.** `memory-fabric backup` copies
+            # another store is not a backup.** `amberlog backup` copies
             # the file, and therefore the identity and the keys with it.
             on_disk_path = str(Path(tmp) / "depot-on-disk.db")
-            on_disk = MemoryFabric(on_disk_path)
+            on_disk = Amberlog(on_disk_path)
             try:
                 seeded = on_disk.remember(
                     "ag-n", "Oil change every 250 hours on the yard tug.", scope="team"
@@ -339,7 +339,7 @@ def main() -> int:
             copy_path = str(Path(tmp) / "depot-backup.db")
             code = cli_main(["--db", on_disk_path, "backup", copy_path])
             passed.append(check("backup reported success", code == 0))
-            restored = MemoryFabric(copy_path)
+            restored = Amberlog(copy_path)
             try:
                 passed.append(check(
                     "the copy replays to the same event count",

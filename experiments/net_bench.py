@@ -1,6 +1,6 @@
 """Networked deployment: latency, a partition, an outage and concurrent corrections.
 
-Three `memory-fabric federate` servers, each with its own database, talking
+Three `amberlog federate` servers, each with its own database, talking
 only over HTTP through TCP proxies (`experiments/multihost.py`). At each
 latency the run covers:
 - correction propagation A → B → C;

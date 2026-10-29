@@ -1,4 +1,4 @@
-"""Live run: does the memory fabric actually change a real model's answers?
+"""Live run: does the amberlog actually change a real model's answers?
 
 Every result in `research/` was produced with a scripted agent. That made
 effects attributable and cheap, and it left one question open: whether a
@@ -32,14 +32,14 @@ import time
 from dataclasses import dataclass, field
 from typing import Sequence
 
-from memory_fabric import MemoryFabric
-from memory_fabric.adapters.ollama import (
+from amberlog import Amberlog
+from amberlog.adapters.ollama import (
     OllamaClient,
     OllamaEmbedder,
     OllamaError,
     OllamaMemoryAgent,
 )
-from memory_fabric.cli import configure_output
+from amberlog.cli import configure_output
 
 from . import stats
 
@@ -108,14 +108,14 @@ def build_store(
     embedder: OllamaEmbedder,
     rng: random.Random,
     tested: str,
-) -> tuple[MemoryFabric, set[str]]:
+) -> tuple[Amberlog, set[str]]:
     """A store holding exactly what this arm is meant to expose.
 
     Every arm but `no_memory` holds a claim for *every* fault code, so the model
     only sees the right one if retrieval actually finds it among the rest. That
     makes this a test of the retrieval path too, not just of the prompt.
     """
-    fabric = MemoryFabric(auto_activate=True, seed=0, embedder=embedder)
+    fabric = Amberlog(auto_activate=True, seed=0, embedder=embedder)
     right_ids: set[str] = set()
     if arm == "no_memory":
         return fabric, right_ids
@@ -252,7 +252,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     print("Live Ollama run - does the fabric change a real model's answers?")
     print(f"models={models}  trials={trials}  chance={1/len(ACTIONS):.1%}")
     print("warming the embedder over the whole corpus...")
-    # The index embeds content *plus* context (MemoryFabric._index_text), so
+    # The index embeds content *plus* context (Amberlog._index_text), so
     # warming the raw content alone misses the cache on every single store
     # build — at ~1.2s each, that is the whole runtime.
     corpus = [
@@ -268,7 +268,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     # Guard: if the warm corpus and the index text ever drift apart again, the
     # run silently falls back to a live embed per store build and takes hours.
     warm_calls = embedder.calls
-    probe = MemoryFabric(auto_activate=True, seed=0, embedder=embedder)
+    probe = Amberlog(auto_activate=True, seed=0, embedder=embedder)
     probe.remember("probe", 
         f"When fault code {codes[0]} appears on a depot charger, "
         f"the correct response is {truth[codes[0]]}.", context={"fault": codes[0]}, scope="team")

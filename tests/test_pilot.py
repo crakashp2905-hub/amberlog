@@ -5,16 +5,16 @@ from __future__ import annotations
 import json
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
-from memory_fabric.pilot import content_free, readiness, report
+from amberlog import Amberlog
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog.pilot import content_free, readiness, report
 
 SECRET_NOTE = "valve 7 on the north manifold is safe to open below 4 bar"
 
 
 class PilotReport(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.m = self.f.remember("ana", SECRET_NOTE, scope="team")
         self.f.remember("ben", "The north manifold was inspected on Monday.", scope="team")
@@ -47,7 +47,7 @@ class PilotReport(unittest.TestCase):
 
     def test_readiness_says_what_is_missing(self) -> None:
         self.assertTrue(all(ok for ok, _ in readiness(report(self.f))))
-        thin = MemoryFabric(":memory:", auto_activate=True)
+        thin = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(thin.close)
         thin.remember("solo", "Only one agent here.", scope="team")
         failing = [line for ok, line in readiness(report(thin)) if not ok]

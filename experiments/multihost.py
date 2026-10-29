@@ -1,6 +1,6 @@
 """Multi-host federation: separate store servers, real HTTP, injected latency, an outage.
 
-Each store runs as its own `memory-fabric federate` server process, with its
+Each store runs as its own `amberlog federate` server process, with its
 own database, and the stores talk to each other only over HTTP, through a
 TCP proxy that adds latency to every hop. A driver then:
 
@@ -109,13 +109,13 @@ def wait_health(url: str, timeout_s: float = 30) -> None:
 
 class Topology:
     def __init__(self, names: list[str], latency_ms: float, workdir: Path) -> None:
-        from memory_fabric import MemoryFabric
+        from amberlog import Amberlog
 
         self.names, self.dir = names, workdir
         self.db = {n: workdir / f"{n}.db" for n in names}
         self.store_id = {}
         for n in names:
-            f = MemoryFabric(str(self.db[n]))
+            f = Amberlog(str(self.db[n]))
             self.store_id[n] = f.store_id
             f.close()
         self.port = {n: free_port() for n in names}
@@ -142,7 +142,7 @@ class Topology:
         # server, and macOS's small pipe buffer did exactly that in CI.
         log = open(self.dir / f"{n}.log", "ab")
         self.procs[n] = subprocess.Popen(
-            [sys.executable, "-m", "memory_fabric", "--db", str(self.db[n]),
+            [sys.executable, "-m", "amberlog", "--db", str(self.db[n]),
              "--share-policy", "reviewed", "federate", "--peers", str(self.peers_file(n)),
              "--port", str(self.port[n]), "--maintain-interval", "1"],
             cwd=ROOT, stdout=subprocess.DEVNULL, stderr=log)
@@ -167,8 +167,8 @@ class Topology:
             self.stop(n)
 
     def transport(self, me: str) -> Any:
-        from memory_fabric.manager import load_peers
-        from memory_fabric.transport import HttpTransport
+        from amberlog.manager import load_peers
+        from amberlog.transport import HttpTransport
 
         return HttpTransport(load_peers(self.peers_file(me)), self.store_id[me])
 
@@ -178,14 +178,14 @@ FED_PORT = 8767
 
 def prepare_compose(names: list[str], workdir: Path) -> None:
     """Stores and peers files for containers that reach each other as http://<name>:8767."""
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     workdir.mkdir(parents=True, exist_ok=True)
     keys = {frozenset((a, b)): secrets.token_bytes(32).hex() for a in names for b in names
             if a < b}
     ids = {}
     for n in names:
-        f = MemoryFabric(str(workdir / f"{n}.db"))
+        f = Amberlog(str(workdir / f"{n}.db"))
         ids[n] = f.store_id
         f.close()
     for me in names:
@@ -227,8 +227,8 @@ class ComposeTopology:
         pass  # the compose file owns the containers
 
     def transport(self, me: str) -> Any:
-        from memory_fabric.manager import load_peers
-        from memory_fabric.transport import HttpTransport, Peer, PeerRegistry
+        from amberlog.manager import load_peers
+        from amberlog.transport import HttpTransport, Peer, PeerRegistry
 
         registry = PeerRegistry()
         for name, sid in self.store_id.items():
@@ -240,15 +240,15 @@ class ComposeTopology:
 
 
 def open_store(path: Path) -> Any:
-    from memory_fabric import MemoryFabric
-    from memory_fabric.governance.firewall import SHARE_POLICIES, Firewall
+    from amberlog import Amberlog
+    from amberlog.governance.firewall import SHARE_POLICIES, Firewall
 
-    return MemoryFabric(str(path), firewall=Firewall(rules=SHARE_POLICIES["reviewed"]))
+    return Amberlog(str(path), firewall=Firewall(rules=SHARE_POLICIES["reviewed"]))
 
 
 def share_chain(topo: Topology, text: str) -> dict[str, str]:
     """A -> B -> C by signed network offers; each import validated at its recipient."""
-    from memory_fabric.federation import offer_remote
+    from amberlog.federation import offer_remote
 
     ids: dict[str, str] = {}
     names = topo.names
@@ -279,7 +279,7 @@ def state_of(topo: Topology, name: str, memory_id: str) -> str:
 
 
 def correct_and_wait(topo: Topology, ids: dict[str, str], timeout_s: float) -> float | None:
-    from memory_fabric import correction
+    from amberlog import correction
 
     a = open_store(topo.db[topo.names[0]])
     t0 = time.perf_counter()
@@ -295,7 +295,7 @@ def correct_and_wait(topo: Topology, ids: dict[str, str], timeout_s: float) -> f
 
 def scenario(topo: Any) -> dict[str, Any]:
     """Share, correct, measure; then correct with the last store down, restart, measure."""
-    from memory_fabric import correction
+    from amberlog import correction
 
     names = topo.names
     t0 = time.perf_counter()
@@ -335,7 +335,7 @@ def partition(topo: Topology, a: str, b: str, blocked: bool) -> None:
 
 def network_scenarios(topo: Topology) -> dict[str, Any]:
     """A partition with both servers up, and two corrections at once at different stores."""
-    from memory_fabric import correction
+    from amberlog import correction
 
     names = topo.names
     first, mid, last = names[0], names[1], names[-1]

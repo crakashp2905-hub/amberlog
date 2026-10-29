@@ -13,9 +13,9 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any, Callable
 
-from memory_fabric.governance import directive
-from memory_fabric.governance.injection import InjectionDetector
-from memory_fabric.governance.model_screen import ModelScreen
+from amberlog.governance import directive
+from amberlog.governance.injection import InjectionDetector
+from amberlog.governance.model_screen import ModelScreen
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "research" / "results"

@@ -1,4 +1,4 @@
-# Memory Fabric end to end
+# Amberlog end to end
 
 For someone who has just arrived. What happens to a memory from the moment it
 is written to the moment its content is destroyed, what the system is measured
@@ -11,7 +11,7 @@ Every number here cites a run. Where something is unmeasured, it says so.
 
 ## 0. What this is, in one paragraph
 
-Memory Fabric is a **governed store for agent memory**. Agents write what they
+Amberlog is a **governed store for agent memory**. Agents write what they
 learn, retrieve it later, and act on it. What distinguishes it from a vector
 database is not retrieval quality — measured, it is **at or below** a plain
 lexical baseline — but that every memory carries where it came from, every
@@ -131,7 +131,7 @@ checkpoint. `audit_trail()`, `explain()`, `lineage()` and `history()` answer
 "why do you believe this?", and `rebuild()` regenerates every projection from
 the log.
 
-**Operationally**: `memory-fabric overview | attention | audit | doctor |
+**Operationally**: `amberlog overview | attention | audit | doctor |
 backup | serve`. `doctor` exits non-zero when the installation's answers cannot
 be believed. `backup` takes a consistent snapshot and then **replays the copy**,
 failing if the event count does not match — because a truncated backup opens

@@ -98,7 +98,7 @@ def main(argv: list[str] | None = None) -> int:
     out.mkdir(parents=True, exist_ok=True)
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
     sys.path.insert(0, str(ROOT))
-    from memory_fabric.model import SCHEMA_VERSION
+    from amberlog.model import SCHEMA_VERSION
 
     (out / "sbom.cdx.json").write_text(json.dumps(sbom(project), indent=2), encoding="utf-8")
     scan = subprocess.run([sys.executable, str(ROOT / "tools" / "scan_secrets.py")],

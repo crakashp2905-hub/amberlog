@@ -18,18 +18,18 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import (
+from amberlog import (
     WEAK_BASES,
     LifecycleState,
-    MemoryFabric,
+    Amberlog,
     WithdrawalBasis,
 )
-from memory_fabric.events import EventType, lifecycle_changed
-from memory_fabric.observability import report
+from amberlog.events import EventType, lifecycle_changed
+from amberlog.observability import report
 
 
-def store(**kwargs) -> MemoryFabric:
-    return MemoryFabric(":memory:", **kwargs)
+def store(**kwargs) -> Amberlog:
+    return Amberlog(":memory:", **kwargs)
 
 
 class TestBasisIsRecorded(unittest.TestCase):
@@ -119,7 +119,7 @@ class TestGovernancePathsStateTheirOwn(unittest.TestCase):
 
 
 class TestAttentionFlagsWeakWithdrawals(unittest.TestCase):
-    def _item(self, fabric: MemoryFabric, memory_id: str):
+    def _item(self, fabric: Amberlog, memory_id: str):
         return next(
             (i for i in report.attention(fabric) if i.memory_id == memory_id), None
         )

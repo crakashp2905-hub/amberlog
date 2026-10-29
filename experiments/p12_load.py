@@ -1,6 +1,6 @@
 """P12 — latency and throughput at 10, 50 and 100 simulated agents (plan Task 12).
 
-Each agent is its own **process** with its own `MemoryFabric` on one shared
+Each agent is its own **process** with its own `Amberlog` on one shared
 store, which is the deployment the cross-process freshness work supports. All
 agents open the store, wait at a barrier, then run the same mix of operations:
 
@@ -52,13 +52,13 @@ def _pct(values: Sequence[float], q: float) -> float:
 
 
 def _worker(url: str, agent: str, ops: int, seed: int, barrier: Any, out: Any) -> None:
-    from memory_fabric import MemoryFabric
-    from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+    from amberlog import Amberlog
+    from amberlog.actions import ActionGate, ActionPolicy, ToolRule
 
     rng = random.Random(seed)
     records: list[tuple[str, float, str]] = []
     try:
-        fabric = MemoryFabric(url, auto_activate=True, busy_timeout_ms=30_000)
+        fabric = Amberlog(url, auto_activate=True, busy_timeout_ms=30_000)
         gate = ActionGate(fabric, ActionPolicy(tools={"act": ToolRule("act")},
                                                grants={agent: frozenset({"act"})}))
     except Exception as exc:  # noqa: BLE001 - reported, not hidden
@@ -92,7 +92,7 @@ def _worker(url: str, agent: str, ops: int, seed: int, barrier: Any, out: Any) -
 
 
 def _prepare(backend: str, base_url: str | None) -> tuple[str, Any]:
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     if backend == "sqlite":
         tmp = tempfile.TemporaryDirectory()
@@ -106,7 +106,7 @@ def _prepare(backend: str, base_url: str | None) -> tuple[str, Any]:
             conn.execute(f"CREATE DATABASE {name}")
         url = base_url.rpartition("/")[0] + "/" + name
         cleanup = (base_url, name)
-    fabric = MemoryFabric(url, auto_activate=True)
+    fabric = Amberlog(url, auto_activate=True)
     rng = random.Random(0)
     for i in range(SEED_MEMORIES):
         fabric.remember(f"seed{i % 7}", f"unit {rng.randint(1, 50)} runs at {rng.randint(1, 9)} bar, "

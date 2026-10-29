@@ -32,7 +32,7 @@
 > `fabric.as_principal` returns a handle that cannot be asked to read outside
 > its tenant. Two rows below move: **tenant identity** from missing to
 > implemented-as-authorisation, **agent identity** from partial to implemented
-> at the handle. What has *not* changed: a caller holding the `MemoryFabric`
+> at the handle. What has *not* changed: a caller holding the `Amberlog`
 > can still act as anyone, because the check and the bypass would be on the
 > same side of that boundary. See `identity.py`.
 >
@@ -81,7 +81,7 @@ Labels: **implemented** (code + test), **partial** (works under stated condition
 
 > **`propagate_retraction` is an in-process function call, not a protocol.**
 
-It takes a list of live `MemoryFabric` *objects* as its targets:
+It takes a list of live `Amberlog` *objects* as its targets:
 
 ```python
 propagate_retraction(source, memory_id, [store_b, store_c])

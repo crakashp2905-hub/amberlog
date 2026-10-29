@@ -14,8 +14,8 @@ from pathlib import Path
 from typing import Any
 
 from benchmarks.manifest import head
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog import Amberlog
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
 
 SEEDS = (601, 607, 613, 617, 619)
 ARMS = ("shared_cached", "shared_recheck", "governed", "oracle")
@@ -31,7 +31,7 @@ def run(seed: int, arm: str) -> dict[str, Any]:
                   false_blocking=0, abstention=0, correct_abstention=0)
     trace = []
     started = time.perf_counter()
-    with MemoryFabric(":memory:", recognise_copies=False, encrypt_content=False) as f:
+    with Amberlog(":memory:", recognise_copies=False, encrypt_content=False) as f:
         agents = ("observer", "planner", "executor")
         gate = ActionGate(f, ActionPolicy(
             tools={"publish": ToolRule("publish")},

@@ -1,12 +1,12 @@
 # DATA_ACCESS.md — every public way to reach a memory
 
-`MemoryFabric` has fifty public members. **Three return memory content**, and
+`Amberlog` has fifty public members. **Three return memory content**, and
 only two of those are safe for an agent — while the unsafe one is the shortest
 to type.
 
 The classification lives in `tests/test_data_access_paths.py`, not here, and
 that is deliberate: a document listing a surface drifts the moment someone adds
-a method, and a test does not. Adding a public member to `MemoryFabric` now
+a method, and a test does not. Adding a public member to `Amberlog` now
 fails that test until it is classified. This page explains the categories; the
 test is the authority.
 
@@ -51,4 +51,4 @@ receiver now.
 1. **Read through `AgentClient`**, which has no `get`, no `state`, no `history`, no `audit_trail` and no `quarantine` — asserted by test.
 2. **Ask for metadata with `lifecycle_of`**, never by fetching a memory and reading one field off it.
 3. **Operator views go through `operator(fabric, actor)`** or `Session.inspect`, which requires the operator role *and* stays inside the session's tenant.
-4. **Hold a `MemoryService`, not a `MemoryFabric`**, in application code. The service exposes no public route to the fabric and hands out only credential-derived sessions that re-verify per call.
+4. **Hold a `MemoryService`, not a `Amberlog`**, in application code. The service exposes no public route to the fabric and hands out only credential-derived sessions that re-verify per call.

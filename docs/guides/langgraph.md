@@ -14,11 +14,11 @@ pip install ".[langchain]" langgraph
 from langchain_core.tools import tool
 from langgraph.prebuilt import create_react_agent
 
-from memory_fabric import MemoryFabric
-from memory_fabric.integrations.tools import FabricTools
-from memory_fabric.sdk import agent
+from amberlog import Amberlog
+from amberlog.integrations.tools import FabricTools
+from amberlog.sdk import agent
 
-fabric = MemoryFabric("memory/store.db")
+fabric = Amberlog("memory/store.db")
 mem = FabricTools(agent(fabric, "planner"))
 
 
@@ -43,7 +43,7 @@ def remember(content: str) -> dict:
 ## A guarded action
 
 ```python
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
 
 gate = ActionGate(fabric, ActionPolicy(
     tools={"set_relief_valve": ToolRule("set_relief_valve")},
@@ -67,5 +67,5 @@ and the model reads why.
 
 ## Retrieval-augmented chains
 
-`memory_fabric.integrations.langchain.fabric_retriever(agent(fabric, "rag"))`
+`amberlog.integrations.langchain.fabric_retriever(agent(fabric, "rag"))`
 is a LangChain retriever: same eligibility, same exposure log.

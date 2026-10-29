@@ -1,12 +1,12 @@
-"""`memory-fabric tour` tells the story and its claims hold."""
+"""`amberlog tour` tells the story and its claims hold."""
 
 from __future__ import annotations
 
 import io
 import unittest
 
-from memory_fabric.cli import main
-from memory_fabric.tour import run
+from amberlog.cli import main
+from amberlog.tour import run
 
 
 class TestTour(unittest.TestCase):

@@ -44,7 +44,7 @@ import tracemalloc
 from pathlib import Path
 from typing import Any
 
-from memory_fabric import MemoryFabric
+from amberlog import Amberlog
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "research" / "results" / "product-bench.json"
@@ -108,7 +108,7 @@ def measure(size: int, seed: int, queries: int) -> dict[str, Any]:
     notes, planted = corpus(size, rng)
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
         path = os.path.join(tmp, "bench.db")
-        f = MemoryFabric(path, auto_activate=True)  # clean writes go live; screens can still hold
+        f = Amberlog(path, auto_activate=True)  # clean writes go live; screens can still hold
         tracemalloc.start()
         heap0 = tracemalloc.get_traced_memory()[0]
         ids, write_s = [], []

@@ -32,6 +32,21 @@ measurements, not SLOs. All arms construct certificates to equalize setup; these
 are not minimal-baseline storage costs. Full disk size, model tokens and model
 accuracy are NOT_MEASURED. Zero paid calls is not a token-efficiency result.
 
+Local performance comparison from the same raw artifact (180 decisions per arm;
+p95 is nearest-rank, throughput is the mean of five whole-run rates):
+
+| Arm | Decision p50 ms | Decision p95 ms | Decisions/s | Content bytes | Events |
+|---|---:|---:|---:|---:|---:|
+| shared cached | 0.0019 | 0.0068 | 237.53 | 326 | 31 |
+| shared current-metadata recheck | 0.0190 | 0.0692 | 309.40 | 326 | 31 |
+| governed certificate | 1.3546 | 6.6867 | 203.47 | 326 | 67 |
+| truth oracle | 0.0024 | 0.0078 | 377.83 | 326 | 31 |
+
+These tiny sequential runs include warmup/order and machine-load effects, have
+no confidence interval, and cannot establish a performance ranking. The action
+gate adds audit events and verification work. Model tokens are unmeasured for
+every arm; content bytes are identical and exclude event storage.
+
 ## Conformance and retrieval findings
 
 The executable audit ran all 41 qualified mapped tests with no failures or skips.

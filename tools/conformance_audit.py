@@ -44,7 +44,10 @@ def main() -> int:
     # Subtest IDs append parameters to their parent; the assertion must inherit
     # that failure rather than being labelled passed because IDs differ.
     failures = {test.id().split(" (")[0] for test, _ in result.failures + result.errors}
-    skips = {test.id(): reason for test, reason in result.skipped}
+    skips = {test.id().split(" (")[0]: reason for test, reason in result.skipped}
+    for test, _ in result.expectedFailures:
+        skips[test.id()] = "expected failure; not passing conformance evidence"
+    failures.update(test.id() for test in result.unexpectedSuccesses)
     assertions = {}
     for gid, (declared, mapped, reason) in GOV.items():
         ids = sorted({test.id() for name in mapped for test in by_name.get(name, [])})

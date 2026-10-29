@@ -1,15 +1,15 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 109,
+ "results": 112,
  "missing_field_counts": {
   "git_sha": 33,
   "prereg": 38,
-  "dataset_digest": 107,
-  "model_id": 77,
-  "prompt_hash": 109,
-  "seed": 45,
-  "cost": 89,
-  "verdict": 69
+  "dataset_digest": 110,
+  "model_id": 80,
+  "prompt_hash": 112,
+  "seed": 47,
+  "cost": 92,
+  "verdict": 70
  },
  "rows": [
   {
@@ -1095,6 +1095,66 @@
    "config": null,
    "cost": null,
    "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "local-conformance-audit",
+   "file": "research/results/local-conformance-audit.json",
+   "file_sha256": "97d3fedf74c9377b659e453ef6f032387c49991ed5535e9ad7e5d7fd9fca61fd",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": "research/prereg/local-three-agent-audit.md",
+   "git_sha": "d87ec015f9e084b6861f3d77c4fda1273931b7f0",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": null,
+   "config": 41,
+   "cost": null,
+   "verdict": "DESCRIPTIVE",
+   "parsable": true
+  },
+  {
+   "experiment_id": "local-retrieval-partition-audit",
+   "file": "research/results/local-retrieval-partition-audit.json",
+   "file_sha256": "5680a839559c70687eef9992d51d8426ae942b143505eef81bbb8bd01c2212a1",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": "research/prereg/local-three-agent-audit.md",
+   "git_sha": "d87ec015f9e084b6861f3d77c4fda1273931b7f0",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": null,
+   "config": null,
+   "cost": null,
+   "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "local-three-agent",
+   "file": "research/results/local-three-agent.json",
+   "file_sha256": "671b4ab297826d85e9ae2ceed0d34f69a655c0f66b01f30aaff890f9f5be2254",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": "research/prereg/local-three-agent-audit.md",
+   "git_sha": "d87ec015f9e084b6861f3d77c4fda1273931b7f0",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": [
+    601,
+    607,
+    613,
+    617,
+    619
+   ],
+   "config": {
+    "initial_evidence_per_agent": 1,
+    "refresh_content_reads": 0
+   },
+   "cost": null,
+   "verdict": "DESCRIPTIVE",
    "parsable": true
   },
   {

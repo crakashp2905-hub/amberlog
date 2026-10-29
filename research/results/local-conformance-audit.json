@@ -1,0 +1,222 @@
+{
+  "commit": "d87ec015f9e084b6861f3d77c4fda1273931b7f0",
+  "decision": "DESCRIPTIVE",
+  "scope": "local mapped test execution; not independent review or physical-host qualification",
+  "discovery_errors": [],
+  "missing": [],
+  "run": 41,
+  "failures": [],
+  "skipped": {},
+  "assertions": {
+    "GOV-01": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_gov_conformance.Direct.test_withdrawn_memory_is_never_exposed"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-02": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_federation_reach.Reach.test_a_mesh_with_cycles_converges",
+        "tests.test_transitive_retraction.TransitiveRetractionTests.test_a_diamond_withdraws_both_copies"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-03": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_federation_transport.TestOfflineRecipient.test_an_offline_recipient_stays_pending_and_visible",
+        "tests.test_freshness.Federation.test_no_lease_means_strict_refuses_and_lenient_allows",
+        "tests.test_freshness.Federation.test_partition_bounds_staleness_to_one_lease_lifetime"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-04": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_federation_transport.TestReconciliation.test_a_replay_is_applied_in_the_origins_order"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-05": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_security_regression.TestPoisoning.test_independent_support_survives_the_poison_being_withdrawn"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-06": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_independence.AcrossStores.test_laundering_through_a_second_store_is_still_one_source"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-07": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_branching.Governance.test_cross_tenant_changes_are_refused",
+        "tests.test_gov_conformance.Direct.test_a_cross_tenant_copy_in_an_old_log_is_ignored_on_replay",
+        "tests.test_gov_conformance.Direct.test_a_withdrawal_in_one_tenant_never_contests_another",
+        "tests.test_gov_conformance.Direct.test_same_content_in_two_tenants_never_shares_a_source_root"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-08": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_freshness.Federation.test_a_compromised_peer_cannot_vouch_for_another_store",
+        "tests.test_validation.Signals.test_a_new_source_is_provisional_and_independent_agreement_corroborates"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-09": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_compaction.Session.test_an_injection_written_by_the_summariser_is_quarantined",
+        "tests.test_compaction.Session.test_the_summary_inherits_the_lowest_authority"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-10": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_auth.TestServerWithAuth.test_no_memory_content_leaks_in_any_refusal"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-11": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_access_matrix.Matrix.test_a_revoked_credential_is_refused_at_the_next_call",
+        "tests.test_certificates.TestRevokedPermission.test_a_revoked_credential_stops_the_action"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-12": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_action_fence.Fence.test_a_concurrent_retraction_waits_for_the_action",
+        "tests.test_action_fence.Fence.test_withdrawn_evidence_stops_it_before_the_side_effect"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-13": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_action_crash.CrashMidAction.test_the_next_call_refuses_until_someone_says_to_retry",
+        "tests.test_action_fence.Fence.test_an_unknown_outcome_needs_an_explicit_retry_that_re_verifies"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-14": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_anchor.Anchor.test_a_consistent_rewrite_is_caught_by_an_earlier_anchor",
+        "tests.test_cipher.EndToEndThroughTheFabric.test_tampering_with_stored_content_is_detected_on_replay"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-15": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_cipher.KeyCustody.test_an_erased_memory_is_not_resurrected_by_a_restored_key",
+        "tests.test_decay.Governance.test_erasing_a_source_erases_its_summaries"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-16": {
+      "declared": "PARTIAL",
+      "reason": "backup/restore round-trips everything; a cross-store export/import that keeps tombstones is not built",
+      "tests": [
+        "tests.test_backup.TestBackup.test_the_copy_replays_to_the_same_state",
+        "tests.test_backup_custody.Custody.test_restore_brings_back_readable_content_keys_and_config"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-17": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_adapters.TestMemoryContext.test_preamble_frames_memories_as_evidence_not_instructions",
+        "tests.test_authority.Elevation.test_an_instruction_is_never_evidence"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-18": {
+      "declared": "PARTIAL",
+      "reason": "false-hold rates are measured per screen (S1, O1, C3 results); no single collateral-damage report",
+      "tests": [
+        "tests.test_conflicts.Rule.test_the_stated_false_positive_is_pinned"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-19": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_concurrency.ConcurrentWriters.test_concurrent_writers_serialise_without_losing_writes",
+        "tests.test_multiprocess_crash.CrashInsideATransaction.test_a_retraction_killed_mid_transaction_leaves_no_trace"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-20": {
+      "declared": "BLOCKED",
+      "reason": "simulated on one host; multi-physical-host faults need a second machine",
+      "tests": [
+        "tests.test_freshness.Federation.test_partition_bounds_staleness_to_one_lease_lifetime"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-21": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_gov_conformance.Direct.test_a_contradiction_keeps_both_sides_and_deletes_neither"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-22": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_bitemporal.TestTheThreeTemporalQuestions.test_as_of_gives_the_state_at_that_moment",
+        "tests.test_gov_conformance.Direct.test_believed_at_differs_from_true_at_after_a_correction"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-23": {
+      "declared": "PARTIAL",
+      "reason": "no procedural-skill asset exists yet; rulebook revisions are gated and reviewed",
+      "tests": [
+        "tests.test_rulebook.RulebookTests.test_the_proposer_cannot_verify_its_own_rules"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    },
+    "GOV-24": {
+      "declared": "COVERED",
+      "reason": "",
+      "tests": [
+        "tests.test_incident.KnownIncident.test_the_full_path_is_reconstructed",
+        "tests.test_incident.KnownIncident.test_writers_are_named_and_decoys_are_not_on_the_path"
+      ],
+      "execution": "LOCAL_TESTS_PASSED"
+    }
+  }
+}

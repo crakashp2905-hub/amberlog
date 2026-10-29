@@ -114,6 +114,7 @@ use the product.
 
 ## Current checklist work
 
+- [Local three-agent and conformance audit](LOCAL_AGENT_AUDIT.md)
 - [Experimental evidence completeness](EVIDENCE_COMPLETENESS.md)
 - [Experimental historical reads](HISTORICAL_READS.md)
 - [Operator import preview and atomic batches](IMPORT_PREVIEW.md)

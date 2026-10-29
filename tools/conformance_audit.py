@@ -41,7 +41,9 @@ def main() -> int:
     selected = {test.id(): test for name in names for test in by_name.get(name, [])}
     result = unittest.TestResult()
     unittest.TestSuite(selected.values()).run(result)
-    failures = {test.id() for test, _ in result.failures + result.errors}
+    # Subtest IDs append parameters to their parent; the assertion must inherit
+    # that failure rather than being labelled passed because IDs differ.
+    failures = {test.id().split(" (")[0] for test, _ in result.failures + result.errors}
     skips = {test.id(): reason for test, reason in result.skipped}
     assertions = {}
     for gid, (declared, mapped, reason) in GOV.items():

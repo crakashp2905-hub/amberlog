@@ -40,6 +40,11 @@ def run(seed: int, arm: str) -> dict[str, Any]:
             mid = f.remember(agents[0], f"Job {case} dispatch code is {rng.randrange(100, 999)}.",
                              scope="team", auto_activate=True)
             f.elevate(mid, approver="reviewer", reason="scenario source checked")
+            for agent in agents:
+                exposed = f.retrieve(agent, f"Job {case} dispatch code", k=1,
+                                     within=[mid], min_relevance=0.0).exposed
+                if [m.id for m in exposed] != [mid]:
+                    raise RuntimeError("initial evidence exposure failed")
             certificates = {a: f.certify(f"dispatch-{case}", [mid], a) for a in agents}
             if corrected:
                 f.quarantine(mid, actor="reviewer", reason="dispatch code withdrawn",

@@ -48,7 +48,7 @@ jobs:
         run: python experiments/s1_screen_fp.py show data/lme_s.json 60
       - name: Baseline (base commit's screen)
         working-directory: base
-        run: PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/experiments/s1_screen_fp.py" rates "$GITHUB_WORKSPACE/base.json" "$GITHUB_WORKSPACE/data/lme_s.json" "$GITHUB_WORKSPACE/data/deepset"
+        run: AMBERLOG_EVAL_CHECKOUT="$PWD" PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/experiments/s1_screen_fp.py" rates "$GITHUB_WORKSPACE/base.json" "$GITHUB_WORKSPACE/data/lme_s.json" "$GITHUB_WORKSPACE/data/deepset"
       - name: This commit's screen
         run: python experiments/s1_screen_fp.py rates head.json data/lme_s.json data/deepset
       - name: Own memories are not withheld from their author (prereg §5)

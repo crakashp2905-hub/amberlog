@@ -24,11 +24,13 @@ import sys
 import tempfile
 from pathlib import Path
 
+from experiments.checkout_namespace import namespace_at
+
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(cwd: Path, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", "amberlog", *args], cwd=cwd,
+    return subprocess.run([sys.executable, "-m", namespace_at(cwd), *args], cwd=cwd,
                           capture_output=True, text=True, timeout=300)
 
 

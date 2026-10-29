@@ -1,12 +1,12 @@
-"""MemoryFabric's structure: one facade over a core and cohesive services, public API unchanged.
+"""Amberlog's structure: one facade over a core and cohesive services, public API unchanged.
 
-`memory_fabric/fabric.py` composes `memory_fabric/_fabric/`: a `FabricCore`
+`amberlog/fabric.py` composes `amberlog/_fabric/`: a `FabricCore`
 (identity, log, refresh, transactions, replay) and one mixin per service
 (federation, sealing, retrieval, lifecycle, sharing, access, writes). These
 tests keep that shape honest:
 
 - the public API is exactly the one recorded before the split
-  (`tests/data/memory_fabric_api.json`, generated from the original class);
+  (`tests/data/amberlog_api.json`, generated from the original class);
 - the methods `FabricCore` declares for the type checker match their
   implementations, so the declarations cannot drift;
 - services depend on the core, never on each other;
@@ -21,10 +21,10 @@ import json
 import unittest
 from pathlib import Path
 
-from memory_fabric import MemoryFabric
+from amberlog import Amberlog
 
 ROOT = Path(__file__).resolve().parents[1]
-PKG = ROOT / "memory_fabric" / "_fabric"
+PKG = ROOT / "amberlog" / "_fabric"
 SERVICES = ("federation", "sealing", "retrieval", "lifecycle", "sharing", "access", "writes")
 
 
@@ -40,26 +40,26 @@ def _args(fn: object) -> str:
 
 class PublicApi(unittest.TestCase):
     def test_the_public_api_is_the_recorded_one(self) -> None:
-        recorded = json.loads((ROOT / "tests/data/memory_fabric_api.json").read_text(encoding="utf-8"))
+        recorded = json.loads((ROOT / "tests/data/amberlog_api.json").read_text(encoding="utf-8"))
         current = {}
         for name in recorded:
-            member = getattr(MemoryFabric, name, None)
-            self.assertIsNotNone(member, f"{name} is gone from MemoryFabric")
+            member = getattr(Amberlog, name, None)
+            self.assertIsNotNone(member, f"{name} is gone from Amberlog")
             if isinstance(member, property):
                 member = member.fget
             current[name] = _args(inspect.unwrap(member))
         self.assertEqual(current, recorded)
 
     def test_no_public_member_was_added_unrecorded(self) -> None:
-        recorded = set(json.loads((ROOT / "tests/data/memory_fabric_api.json")
+        recorded = set(json.loads((ROOT / "tests/data/amberlog_api.json")
                                   .read_text(encoding="utf-8")))
-        public = {n for n, v in vars(MemoryFabric).items() if callable(v) and not n.startswith("_")}
-        for base in MemoryFabric.__mro__[1:]:
-            if base.__module__.startswith("memory_fabric._fabric"):
+        public = {n for n, v in vars(Amberlog).items() if callable(v) and not n.startswith("_")}
+        for base in Amberlog.__mro__[1:]:
+            if base.__module__.startswith("amberlog._fabric"):
                 public |= {n for n, v in vars(base).items()
                            if callable(v) and not n.startswith("_")}
         self.assertEqual(sorted(public - recorded), [],
-                         "a new public method: add it to tests/data/memory_fabric_api.json")
+                         "a new public method: add it to tests/data/amberlog_api.json")
 
 
 class Structure(unittest.TestCase):
@@ -71,7 +71,7 @@ class Structure(unittest.TestCase):
         self.assertTrue(declared)
         for name, args in declared.items():
             with self.subTest(method=name):
-                self.assertEqual(args, _args(inspect.unwrap(getattr(MemoryFabric, name))))
+                self.assertEqual(args, _args(inspect.unwrap(getattr(Amberlog, name))))
 
     def test_services_depend_on_the_core_not_on_each_other(self) -> None:
         for service in SERVICES:
@@ -82,7 +82,7 @@ class Structure(unittest.TestCase):
 
     def test_no_module_grows_back_into_a_monolith(self) -> None:
         sizes = {p.name: len(p.read_text(encoding="utf-8").splitlines())
-                 for p in [ROOT / "memory_fabric" / "fabric.py", *PKG.glob("*.py")]}
+                 for p in [ROOT / "amberlog" / "fabric.py", *PKG.glob("*.py")]}
         self.assertLess(sizes["fabric.py"], 300, sizes)
         self.assertEqual({k: v for k, v in sizes.items() if v > 1200}, {})
 

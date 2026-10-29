@@ -4,7 +4,7 @@
 before the test seeds (200–204).** This is task M2 in
 [WORKPLAN.md](../../docs/WORKPLAN.md), requested by the user as
 "memory based recursive self improvement through reflective rulebooks".
-Mechanism: `memory_fabric/rulebook.py`. Harness: `experiments/m2_rulebook.py`,
+Mechanism: `amberlog/rulebook.py`. Harness: `experiments/m2_rulebook.py`,
 on M1's ObjectiveWorld.
 
 **Disclosed: the first pilot invalidated the ceiling.** Rules were applied as

@@ -5,8 +5,8 @@ from __future__ import annotations
 import unittest
 from types import SimpleNamespace
 
-from memory_fabric.adapters.claude_chat import ClaudeChat, make_client
-from memory_fabric.adapters.ollama import OllamaClient
+from amberlog.adapters.claude_chat import ClaudeChat, make_client
+from amberlog.adapters.ollama import OllamaClient
 
 
 class FakeMessages:

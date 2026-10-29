@@ -2,7 +2,7 @@
 
 **Registered 2026-10-19, after the dev split (seeds 400–402) and before the
 held-out split (500–509).** Harness: `experiments/v1_claim_validation.py`,
-deterministic, no model. Mechanism: `memory_fabric/validation.py`.
+deterministic, no model. Mechanism: `amberlog/validation.py`.
 
 ## Dev (rate flagged suspicious / provisional or worse)
 

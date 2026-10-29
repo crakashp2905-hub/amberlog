@@ -51,10 +51,10 @@ ARMS = ("authorize_then_act", "reverify", "fenced", "fenced_overrun")
 
 def retractor(path: str, ids: list[str], seed: int, ready: Any, go: Any, out: Any) -> None:
     """Withdraw every memory once, on a seeded schedule; report commit times."""
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     rng = random.Random(seed * 31 + 7)
-    fab = MemoryFabric(path)
+    fab = Amberlog(path)
     order = list(ids)
     rng.shuffle(order)
     gaps = [rng.uniform(0, 0.8) for _ in order]
@@ -80,10 +80,10 @@ def targeted_retractor(path: str, seed: int, ready: Any, go: Any, signals: Any,
     """Withdraw a just-verified memory, with probability TARGET_P, at once."""
     import queue
 
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     rng = random.Random(seed * 31 + 11)
-    fab = MemoryFabric(path)
+    fab = Amberlog(path)
     ready.set()
     go.wait()
     rows: list[dict[str, Any]] = []
@@ -111,14 +111,14 @@ def targeted_retractor(path: str, seed: int, ready: Any, go: Any, signals: Any,
 
 
 def run_arm(arm: str, seed: int, timing: str = "targeted") -> dict[str, Any]:
-    from memory_fabric import MemoryFabric
-    from memory_fabric.actions import (EXECUTED, TIMED_OUT, ActionGate, ActionPolicy, ToolRule,
+    from amberlog import Amberlog
+    from amberlog.actions import (EXECUTED, TIMED_OUT, ActionGate, ActionPolicy, ToolRule,
                                        unfenced_changes)
 
     rng = random.Random(seed)
     with tempfile.TemporaryDirectory() as tmp:
         path = str(Path(tmp) / "store.db")
-        fab = MemoryFabric(path, auto_activate=True)
+        fab = Amberlog(path, auto_activate=True)
         ids = [fab.remember("author", f"Valve V{i} may be opened below {3 + i % 4} bar.",
                             scope="team") for i in range(MEMORIES[timing])]
         certs = {m: fab.certify(f"open-{m}", [m], "ops", ttl_ms=None) for m in ids}

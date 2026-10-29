@@ -18,7 +18,7 @@ own clause** — `C − B = 0.000` — but for the opposite reason to last time:
 headroom is gone because the product reached the ceiling, not because the
 fixture could not pose the question.
 
-- **Mechanism:** `memory_fabric/duplicates.py`, wired into `remember`, `source_root` and `quarantine`. Schema 0.8.0
+- **Mechanism:** `amberlog/duplicates.py`, wired into `remember`, `source_root` and `quarantine`. Schema 0.8.0
 - **Fixture:** [propagation_v1](../bench/propagation_v1/build.py), `copied_document` family
 - **Run:** 2026-10-12, `python -m experiments.p3_propagation --split {dev,test}`
 

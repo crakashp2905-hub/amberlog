@@ -2,7 +2,7 @@
 
 Registration: [prereg/s2-evidence-independence.md](../prereg/s2-evidence-independence.md)
 (`1b97588`, written after a disclosed dev run). Mechanism:
-`memory_fabric/independence.py`. Run: `python -m experiments.s2_launder_sim
+`amberlog/independence.py`. Run: `python -m experiments.s2_launder_sim
 --split test --tau overlap@0.9` in a worktree pinned at `1b97588`. Seeds 0–19,
 420 clusters, deterministic, no model. Raw output:
 [s2-launder-sim.json](s2-launder-sim.json); dev:

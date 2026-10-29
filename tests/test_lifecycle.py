@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.governance.firewall import Firewall
-from memory_fabric.lifecycle import DAY_MS, center
-from memory_fabric.model import Scope
+from amberlog import Amberlog
+from amberlog.governance.firewall import Firewall
+from amberlog.lifecycle import DAY_MS, center
+from amberlog.model import Scope
 
 T0 = 1_800_000_000_000
 
@@ -15,7 +15,7 @@ T0 = 1_800_000_000_000
 class Clocked(unittest.TestCase):
     def setUp(self) -> None:
         self.now = [T0]
-        self.fabric = MemoryFabric(":memory:", auto_activate=True, clock=lambda: self.now[0])
+        self.fabric = Amberlog(":memory:", auto_activate=True, clock=lambda: self.now[0])
         self.addCleanup(self.fabric.close)
 
     def at(self, days: float) -> None:
@@ -74,18 +74,18 @@ class Finders(Clocked):
 
 class Propagation(unittest.TestCase):
     def test_outstanding_until_the_store_confirms(self) -> None:
-        from memory_fabric.correction import apply
-        from memory_fabric.dispatcher import Dispatcher
-        from memory_fabric.federation import offer
-        from memory_fabric.governance.firewall import (rule_capabilities_must_be_granted,
+        from amberlog.correction import apply
+        from amberlog.dispatcher import Dispatcher
+        from amberlog.federation import offer
+        from amberlog.governance.firewall import (rule_capabilities_must_be_granted,
                                                        rule_must_be_active,
                                                        rule_restricted_stays_private)
-        from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
+        from amberlog.transport import InProcessTransport, Peer, PeerRegistry
 
         permissive = Firewall(rules=(rule_restricted_stays_private, rule_must_be_active,
                                      rule_capabilities_must_be_granted))
-        origin = MemoryFabric(":memory:", firewall=permissive, auto_activate=True)
-        recipient = MemoryFabric(":memory:", firewall=permissive)
+        origin = Amberlog(":memory:", firewall=permissive, auto_activate=True)
+        recipient = Amberlog(":memory:", firewall=permissive)
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
         mid = origin.remember("ana", "tug tyre pressure is 3.5 bar")

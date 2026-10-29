@@ -17,6 +17,18 @@ from release_report import render  # noqa: E402
 
 
 class ReleaseReport(unittest.TestCase):
+    def test_skipped_checks_do_not_claim_pass_or_unverified_ci_execution(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = Path(tmp)
+            (bundle / "manifest.json").write_text(json.dumps({
+                "commit": "fixture", "checks": {"tests": None, "benchmark": None}}))
+            (bundle / "tests.json").write_text(json.dumps({"skipped_here": True}))
+            page = render(bundle)
+            self.assertIn("| tests | **SKIPPED** |", page)
+            self.assertIn("| benchmark | **SKIPPED** |", page)
+            self.assertIn("no external CI outcome is verified", page)
+            self.assertNotIn("run by CI on this commit", page)
+
     def test_every_section_comes_from_a_bundle_file(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             bundle = Path(tmp)

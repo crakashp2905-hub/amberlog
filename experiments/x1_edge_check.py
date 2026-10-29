@@ -36,8 +36,8 @@ from typing import Any, Mapping, Sequence
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import relevance_bench as rb  # noqa: E402
-from memory_fabric import extraction as extracting  # noqa: E402
-from memory_fabric.relations import RelationKind  # noqa: E402
+from amberlog import extraction as extracting  # noqa: E402
+from amberlog.relations import RelationKind  # noqa: E402
 
 
 def pair(split: str = "dev") -> tuple[str, str]:
@@ -53,7 +53,7 @@ def pair(split: str = "dev") -> tuple[str, str]:
 def check(model: str, modifier: str, stated: str,
           constrained: bool = False,
           think: bool | None = False) -> dict[str, Any]:
-    from memory_fabric.adapters.ollama import OllamaClient
+    from amberlog.adapters.ollama import OllamaClient
 
     extractor = extracting.ModelExtractor(
         client=OllamaClient(), model=model, constrained=constrained,

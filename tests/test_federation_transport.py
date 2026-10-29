@@ -24,24 +24,24 @@ import urllib.request
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
-from memory_fabric.dispatcher import Dispatcher, reconcile
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (
+from amberlog import LifecycleState, Amberlog, WithdrawalBasis
+from amberlog.dispatcher import Dispatcher, reconcile
+from amberlog.federation import offer
+from amberlog.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from memory_fabric.outbox import MAX_ATTEMPTS, now_ms
-from memory_fabric.protocol import (
+from amberlog.outbox import MAX_ATTEMPTS, now_ms
+from amberlog.protocol import (
     Acknowledgement,
     PropagationState,
     RejectionCode,
     Retraction,
     new_retraction_id,
 )
-from memory_fabric.transport import (
+from amberlog.transport import (
     HttpTransport,
     InProcessTransport,
     Peer,
@@ -88,15 +88,15 @@ class FederationCase(unittest.TestCase):
                 Peer(store_id=store.store_id, endpoint="unused", key=b"shared-" + store.store_id.encode())
             )
 
-    def _store(self, name: str) -> MemoryFabric:
+    def _store(self, name: str) -> Amberlog:
         path = str(Path(self.tmp.name) / f"{name}.db")
-        store = MemoryFabric(path, firewall=permissive())
+        store = Amberlog(path, firewall=permissive())
         self.addCleanup(self._safe_close, store)
         setattr(self, f"_{name}_path", path)
         return store
 
     @staticmethod
-    def _safe_close(store: MemoryFabric) -> None:
+    def _safe_close(store: Amberlog) -> None:
         try:
             store.close()
         except Exception:
@@ -158,7 +158,7 @@ class TestDispatch(FederationCase):
         retraction = self.request()
         Dispatcher(self.origin, self.transport()).run_once()
         self.origin.close()
-        reopened = MemoryFabric(self._origin_path, firewall=permissive())
+        reopened = Amberlog(self._origin_path, firewall=permissive())
         self.addCleanup(self._safe_close, reopened)
         acks = reopened.outbox.acknowledgements(retraction.retraction_id)
         self.assertEqual(len(acks), 2)
@@ -611,14 +611,14 @@ class TestObservabilityStaysReadOnly(unittest.TestCase):
     every value estimate is computed from."""
 
     def test_the_federation_endpoint_is_not_on_the_observability_server(self) -> None:
-        from memory_fabric.observability import server as observability
+        from amberlog.observability import server as observability
 
         source = Path(observability.__file__).read_text(encoding="utf-8")
         self.assertNotIn("federation/retraction", source)
         self.assertNotIn("receive_retraction", source)
 
     def test_the_federation_server_is_a_separate_module(self) -> None:
-        from memory_fabric import transport
+        from amberlog import transport
 
         self.assertTrue(hasattr(transport, "build_federation_server"))
 

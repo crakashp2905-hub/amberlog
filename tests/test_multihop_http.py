@@ -11,17 +11,17 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import LifecycleState, MemoryFabric, correction
-from memory_fabric.dispatcher import Dispatcher
-from memory_fabric.federation import offer_remote
-from memory_fabric.governance.firewall import SHARE_POLICIES, Firewall
-from memory_fabric.transport import HttpTransport, Peer, PeerRegistry, serve
+from amberlog import LifecycleState, Amberlog, correction
+from amberlog.dispatcher import Dispatcher
+from amberlog.federation import offer_remote
+from amberlog.governance.firewall import SHARE_POLICIES, Firewall
+from amberlog.transport import HttpTransport, Peer, PeerRegistry, serve
 
 AB, BC = b"key-shared-by-a-and-b-0000000000", b"key-shared-by-b-and-c-0000000000"
 
 
-def store() -> MemoryFabric:
-    return MemoryFabric(":memory:", firewall=Firewall(rules=SHARE_POLICIES["reviewed"]))
+def store() -> Amberlog:
+    return Amberlog(":memory:", firewall=Firewall(rules=SHARE_POLICIES["reviewed"]))
 
 
 class TwoHopsOverHttp(unittest.TestCase):

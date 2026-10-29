@@ -2,7 +2,7 @@
 
 Registration: [prereg/m1-memory-objective.md](../prereg/m1-memory-objective.md)
 (`adaf615`, after a disclosed dev pilot). Mechanism:
-`memory_fabric/objective.py`. Harness: `experiments/m1_objective.py`.
+`amberlog/objective.py`. Harness: `experiments/m1_objective.py`.
 
 | run | status |
 |---|---|

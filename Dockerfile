@@ -3,14 +3,14 @@
 # of the final layer.
 FROM python:3.13-slim AS build
 WORKDIR /src
-COPY pyproject.toml README.md ./
-COPY memory_fabric ./memory_fabric
+COPY pyproject.toml README.md LICENSE ./
+COPY amberlog ./amberlog
 RUN pip install --no-cache-dir build && python -m build --wheel --outdir /dist
 
 FROM python:3.13-slim
-LABEL org.opencontainers.image.title="Memory Fabric" \
+LABEL org.opencontainers.image.title="Amberlog" \
       org.opencontainers.image.description="Governed agent memory, valued by effect on outcomes." \
-      org.opencontainers.image.source="https://github.com/crakashp2905-hub/memory-fabric" \
+      org.opencontainers.image.source="https://github.com/crakashp2905-hub/amberlog" \
       org.opencontainers.image.authors="C R Akash Preetham" \
       org.opencontainers.image.licenses="LicenseRef-Proprietary"
 
@@ -18,7 +18,7 @@ COPY --from=build /dist/*.whl /tmp/
 # The production cryptography profile: AES-256-GCM from the maintained
 # `cryptography` library only, and a store refuses to open without it.
 RUN pip install --no-cache-dir "$(ls /tmp/*.whl)[crypto]" && rm /tmp/*.whl
-ENV MEMORY_FABRIC_CRYPTO_PROFILE=production
+ENV AMBERLOG_CRYPTO_PROFILE=production
 
 # The store is a SQLite file and the container is disposable: keep them apart,
 # or the first `docker rm` takes the event log with it. The log is the source of
@@ -29,8 +29,8 @@ ENV MEMORY_FABRIC_CRYPTO_PROFILE=production
 # content in /data unreadable, which is what erasure relies on and also what a
 # careless `docker rm` would do.
 VOLUME ["/data", "/keys"]
-ENV MEMORY_FABRIC_DB=/data/store.db \
-    MEMORY_FABRIC_KEYS=/keys
+ENV AMBERLOG_DB=/data/store.db \
+    AMBERLOG_KEYS=/keys
 
 # Not root: the process only ever needs to read its own package and write one
 # directory, and a governance layer that runs as root is a poor advertisement.

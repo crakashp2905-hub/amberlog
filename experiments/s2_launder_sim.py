@@ -121,15 +121,15 @@ def launder(rng: random.Random, e: Event, source: Report) -> Report:
 
 class World:
     def __init__(self, seed: int) -> None:
-        from memory_fabric import MemoryFabric
-        from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+        from amberlog import Amberlog
+        from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                        rule_must_be_active,
                                                        rule_restricted_stays_private)
 
         rules = (rule_restricted_stays_private, rule_must_be_active,
                  rule_capabilities_must_be_granted)
         self.rng = random.Random(seed)
-        self.s = {n: MemoryFabric(":memory:", firewall=Firewall(rules=rules), auto_activate=True)
+        self.s = {n: Amberlog(":memory:", firewall=Firewall(rules=rules), auto_activate=True)
                   for n in ("s0", "s1", "D")}
         self.agent = 0
         self.used: set[tuple[str, str]] = set()
@@ -156,8 +156,8 @@ class World:
         return fab.remember(agent, report.text, scope="team")
 
     def to_d(self, store: str, memory_id: str) -> str:
-        from memory_fabric.federation import offer
-        from memory_fabric.model import Scope
+        from amberlog.federation import offer
+        from amberlog.model import Scope
 
         src = self.s[store]
         src.share(memory_id, Scope.FEDERATED, actor="op")
@@ -202,8 +202,8 @@ class World:
         raise ValueError(family)
 
     def to_s1(self, memory_id: str) -> str:
-        from memory_fabric.federation import offer
-        from memory_fabric.model import Scope
+        from amberlog.federation import offer
+        from amberlog.model import Scope
 
         self.s["s0"].share(memory_id, Scope.FEDERATED, actor="op")
         result = offer(self.s["s0"], memory_id, self.s["s1"], recipient_agent="intake",
@@ -224,8 +224,8 @@ def similarity(measure: str, a: str, b: str) -> float:
     over the product's hashing embedder. The measure and its threshold are
     both tuned on the dev seeds, so the baseline is the best of the three.
     """
-    from memory_fabric.duplicates import terms
-    from memory_fabric.vectors import HashingEmbedder, cosine
+    from amberlog.duplicates import terms
+    from amberlog.vectors import HashingEmbedder, cosine
 
     if measure == "hashing_cosine":
         embedder = HashingEmbedder()
@@ -240,7 +240,7 @@ def similarity(measure: str, a: str, b: str) -> float:
 
 
 def count_similarity(fab: Any, ids: Sequence[str], measure: str, tau: float) -> int:
-    from memory_fabric.independence import global_ref
+    from amberlog.independence import global_ref
 
     parent = {m: m for m in ids}
 
@@ -259,7 +259,7 @@ def count_similarity(fab: Any, ids: Sequence[str], measure: str, tau: float) -> 
 
 
 def run_seed(seed: int, taus: Sequence[float]) -> list[dict[str, Any]]:
-    from memory_fabric.independence import Independence, global_ref
+    from amberlog.independence import Independence, global_ref
 
     world = World(seed)
     written = []

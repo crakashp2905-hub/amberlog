@@ -6,12 +6,12 @@ import os
 import tempfile
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import EVIDENCE_NOT_FRESH, ActionGate, ActionPolicy, ToolRule
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog
+from amberlog.actions import EVIDENCE_NOT_FRESH, ActionGate, ActionPolicy, ToolRule
+from amberlog.federation import offer
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.freshness import (BAD_SIGNATURE, EXPIRED, FRESH, LOCAL, NO_LEASE,
+from amberlog.freshness import (BAD_SIGNATURE, EXPIRED, FRESH, LOCAL, NO_LEASE,
                                      UNKNOWN_KEY, VERSION_MISMATCH, WITHDRAWN, FreshnessLease,
                                      LeaseBook, freshness_of, issue_lease)
 
@@ -36,8 +36,8 @@ class Clock:
 class Federation(unittest.TestCase):
     def setUp(self) -> None:
         self.clock = Clock()
-        self.origin = MemoryFabric(auto_activate=True, clock=self.clock, firewall=permissive())
-        self.peer = MemoryFabric(auto_activate=True, clock=self.clock, firewall=permissive())
+        self.origin = Amberlog(auto_activate=True, clock=self.clock, firewall=permissive())
+        self.peer = Amberlog(auto_activate=True, clock=self.clock, firewall=permissive())
         self.addCleanup(self.origin.close)
         self.addCleanup(self.peer.close)
         self.src = self.origin.remember("ag_field", "Valve V-7 pressure reads 4 bar.", scope="federated")
@@ -109,7 +109,7 @@ class Federation(unittest.TestCase):
         self.assertEqual(freshness_of(self.peer, self.imported, self.book), NO_LEASE)
 
     def test_a_compromised_peer_cannot_vouch_for_another_store(self) -> None:
-        rogue = MemoryFabric(auto_activate=True, clock=self.clock)
+        rogue = Amberlog(auto_activate=True, clock=self.clock)
         self.addCleanup(rogue.close)
         self.book.peer_keys[rogue.store_id] = {"k1": ROGUE}
         fake = FreshnessLease(rogue.store_id, self.src, 1, self.clock(), self.clock.t + 60_000)

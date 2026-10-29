@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric, authority, correction, influence
-from memory_fabric.compaction import CompactionRefused, compact_session
-from memory_fabric.model import LifecycleState
+from amberlog import Amberlog, authority, correction, influence
+from amberlog.compaction import CompactionRefused, compact_session
+from amberlog.model import LifecycleState
 
 
 class Session(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.ep = self.f.start_episode("ops", "p1-restart").id
         r = self.f.remember
@@ -58,7 +58,7 @@ class Session(unittest.TestCase):
 
     def test_a_summariser_that_drops_an_undisputed_value_is_refused(self) -> None:
         """Without a dispute in play, so only the value check can refuse it."""
-        f = MemoryFabric(":memory:", auto_activate=True)
+        f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         ep = f.start_episode("ops", "quiet-shift").id
         f.remember("ops", "Pump P1 purge time is 30 s.", source_episodes=[ep], scope="team")

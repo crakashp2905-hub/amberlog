@@ -2,7 +2,7 @@
 
 Registration: [prereg/s4-recipient-trust.md](../prereg/s4-recipient-trust.md)
 (`aae4e57`, after a disclosed dev pilot that changed the mechanism).
-Mechanism: `memory_fabric/trust.py`. Run: `python -m experiments.s4_transfer_sim
+Mechanism: `amberlog/trust.py`. Run: `python -m experiments.s4_transfer_sim
 --split test`, in a worktree pinned at `aae4e57`. Seeds 0–9, 600 episodes
 each, 6,000 paired episodes per arm. Deterministic, no model. Raw output:
 [s4-transfer-sim.json](s4-transfer-sim.json).

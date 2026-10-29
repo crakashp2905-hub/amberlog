@@ -17,13 +17,13 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from memory_fabric import MemoryFabric  # noqa: E402
-from memory_fabric.adapters import context as C  # noqa: E402
+from amberlog import Amberlog  # noqa: E402
+from amberlog.adapters import context as C  # noqa: E402
 
 
 class Base(unittest.TestCase):
     def setUp(self):
-        self.fabric = MemoryFabric(":memory:", encrypt_content=False,
+        self.fabric = Amberlog(":memory:", encrypt_content=False,
                                    retrieval="lexical", auto_activate=True)
 
     def tearDown(self):

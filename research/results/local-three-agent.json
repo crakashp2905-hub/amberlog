@@ -1,0 +1,5491 @@
+{
+  "commit": "3be32dd2694a11b59cbe6807d443d930f88becc3",
+  "decision": "DESCRIPTIVE",
+  "seeds": [
+    601,
+    607,
+    613,
+    617,
+    619
+  ],
+  "arms": [
+    "shared_cached",
+    "shared_recheck",
+    "governed",
+    "oracle"
+  ],
+  "violations": 0,
+  "rows": [
+    {
+      "seed": 601,
+      "arm": "shared_cached",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 18,
+        "false_blocking": 0,
+        "abstention": 0,
+        "correct_abstention": 0
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0086
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0068
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0036
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0052
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0018
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0064
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0056
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0059
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0056
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0056
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0056
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.002
+        }
+      ],
+      "elapsed_s": 0.337811,
+      "decisions_per_second": 106.568371,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 601,
+      "arm": "shared_recheck",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0267
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0202
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0156
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0238
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0168
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0148
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0218
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0154
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0144
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0201
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0548
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0499
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0266
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0178
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0148
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0361
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0193
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0171
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0269
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0157
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0144
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.026
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0158
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0146
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0254
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0167
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0161
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.028
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0165
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.015
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0244
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0165
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0151
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0291
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.017
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0161
+        }
+      ],
+      "elapsed_s": 0.077956,
+      "decisions_per_second": 461.798371,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 601,
+      "arm": "governed",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5941
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4875
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4426
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.4355
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3895
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.2844
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3168
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.2312
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.2372
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3834
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3189
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3162
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5344
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4595
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4119
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5108
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4116
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4178
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4144
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.3666
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.3268
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.4851
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.4521
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6041
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.4788
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3849
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3839
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4813
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4227
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4033
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6511
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.5122
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.4652
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4839
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.6405
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.3551
+        }
+      ],
+      "elapsed_s": 0.101627,
+      "decisions_per_second": 354.236571,
+      "retained_content_bytes": 326,
+      "event_count": 139,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 601,
+      "arm": "oracle",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0035
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.005
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0143
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0053
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0051
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0018
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0065
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0067
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0045
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0018
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0054
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0018
+        }
+      ],
+      "elapsed_s": 0.082513,
+      "decisions_per_second": 436.295416,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 607,
+      "arm": "shared_cached",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 18,
+        "false_blocking": 0,
+        "abstention": 0,
+        "correct_abstention": 0
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0052
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0054
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0054
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0048
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0017
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0049
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0054
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.006
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0059
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0025
+        }
+      ],
+      "elapsed_s": 0.070585,
+      "decisions_per_second": 510.020486,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 607,
+      "arm": "shared_recheck",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0272
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0166
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0323
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0339
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.018
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0188
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0312
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0192
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0127
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0286
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0138
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0123
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0317
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0192
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0165
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0235
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0129
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0135
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0254
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0173
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0176
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0283
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0508
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0178
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0253
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0135
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0122
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0347
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0212
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0193
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0293
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0156
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0143
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0347
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0213
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0181
+        }
+      ],
+      "elapsed_s": 0.072452,
+      "decisions_per_second": 496.880008,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 607,
+      "arm": "governed",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.6644
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5539
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5174
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.442
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.2821
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.2091
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7072
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.9486
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.8268
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5145
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.7538
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.6527
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6447
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3449
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.4607
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5911
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4796
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 7.0593
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.3522
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7642
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 8.7903
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5697
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5598
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5617
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.522
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.5806
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 6.8454
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.5908
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7545
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.5336
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5608
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4365
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4249
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 1.7249
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.8274
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 1.4995
+        }
+      ],
+      "elapsed_s": 0.190531,
+      "decisions_per_second": 188.945829,
+      "retained_content_bytes": 326,
+      "event_count": 139,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 607,
+      "arm": "oracle",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0053
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0053
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0065
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0031
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0032
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0071
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0064
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0056
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0063
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0054
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0059
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0022
+        }
+      ],
+      "elapsed_s": 0.109294,
+      "decisions_per_second": 329.387394,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 613,
+      "arm": "shared_cached",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 18,
+        "false_blocking": 0,
+        "abstention": 0,
+        "correct_abstention": 0
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.005
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0051
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.005
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0052
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0052
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.005
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0051
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0102
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0063
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0032
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        }
+      ],
+      "elapsed_s": 0.110581,
+      "decisions_per_second": 325.55292,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 613,
+      "arm": "shared_recheck",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0311
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0208
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0192
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0262
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0151
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.014
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0283
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0205
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0213
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0318
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0176
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0144
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.024
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0147
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0135
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0275
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0146
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0138
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0319
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0208
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0207
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0289
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0174
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0156
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.025
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0157
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0162
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0366
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0178
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0145
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0469
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0206
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0145
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0299
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0175
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0156
+        }
+      ],
+      "elapsed_s": 0.094221,
+      "decisions_per_second": 382.0784,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 613,
+      "arm": "governed",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5618
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5029
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4438
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.7694
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 1.0121
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5391
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.1658
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.9156
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7089
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4623
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.525
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4424
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.457
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.3571
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.4006
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6338
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 4.7444
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.2311
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5466
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4799
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 1.0843
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 3.3915
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4827
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4314
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.857
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.108
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.9902
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5632
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.6266
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5528
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.2012
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 5.6691
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.5776
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.0703
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 5.3652
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 6.3688
+        }
+      ],
+      "elapsed_s": 0.167328,
+      "decisions_per_second": 215.145657,
+      "retained_content_bytes": 326,
+      "event_count": 139,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 613,
+      "arm": "oracle",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0063
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0033
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0063
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0064
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0063
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0074
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0075
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0073
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0062
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        }
+      ],
+      "elapsed_s": 0.198288,
+      "decisions_per_second": 181.554378,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 617,
+      "arm": "shared_cached",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 18,
+        "false_blocking": 0,
+        "abstention": 0,
+        "correct_abstention": 0
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0065
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0031
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0021
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0056
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0065
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0059
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0054
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0054
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0052
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0066
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0141
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0053
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0061
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.005
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.002
+        }
+      ],
+      "elapsed_s": 0.132534,
+      "decisions_per_second": 271.629027,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 617,
+      "arm": "shared_recheck",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0309
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0171
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0148
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.028
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0168
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0156
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0325
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0175
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0155
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0355
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0177
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0158
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0312
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0167
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0139
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0331
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0166
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0149
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.022
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0145
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0126
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0361
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0174
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.015
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0246
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0166
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0158
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0489
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0143
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0133
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.04
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0175
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0158
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0406
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0185
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0159
+        }
+      ],
+      "elapsed_s": 0.225678,
+      "decisions_per_second": 159.519244,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 617,
+      "arm": "governed",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5081
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.446
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4154
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 3.0367
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.1164
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 28.0465
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4453
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4445
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5192
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5813
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.424
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.401
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.8213
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.5636
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7146
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 5.6266
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.0741
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6843
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6859
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.2373
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7329
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5637
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5318
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4706
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.0209
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 10.2525
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.187
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 6.0054
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7658
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.61
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.7727
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.7218
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4881
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5339
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4508
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4589
+        }
+      ],
+      "elapsed_s": 0.267136,
+      "decisions_per_second": 134.762969,
+      "retained_content_bytes": 326,
+      "event_count": 139,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 617,
+      "arm": "oracle",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0067
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0033
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0064
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0069
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0031
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0065
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.006
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0064
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0064
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0018
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0052
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0031
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0066
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.002
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0067
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        }
+      ],
+      "elapsed_s": 0.141536,
+      "decisions_per_second": 254.352789,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 619,
+      "arm": "shared_cached",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 18,
+        "false_blocking": 0,
+        "abstention": 0,
+        "correct_abstention": 0
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0062
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0031
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0051
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0023
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0057
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0067
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0052
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0052
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0048
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.0515
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0034
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0063
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": true,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0053
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0054
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0061
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        }
+      ],
+      "elapsed_s": 0.204334,
+      "decisions_per_second": 176.182219,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 619,
+      "arm": "shared_recheck",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0281
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0154
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0141
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.029
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0177
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0159
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0515
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0175
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0143
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0458
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0175
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0155
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0523
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0196
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0151
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.025
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.016
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0147
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0236
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.1437
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0203
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0277
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.016
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0147
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.038
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0166
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0149
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0272
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0158
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0148
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0254
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0136
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0122
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0245
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0166
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0147
+        }
+      ],
+      "elapsed_s": 0.190277,
+      "decisions_per_second": 189.197655,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 619,
+      "arm": "governed",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 6.0359
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 3.9337
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 1.331
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.7499
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.818
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.6119
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.658
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.7438
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.6264
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5311
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4102
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4404
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6731
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 6.5279
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7747
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.9641
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6159
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.5562
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.5288
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.1923
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.5599
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 1.0714
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5985
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5476
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.5712
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.4531
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.443
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 4.8814
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7316
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6496
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 3.2404
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7418
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.6883
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.7492
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 2.1652
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 1.7522
+        }
+      ],
+      "elapsed_s": 0.287775,
+      "decisions_per_second": 125.097906,
+      "retained_content_bytes": 326,
+      "event_count": 139,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    },
+    {
+      "seed": 619,
+      "arm": "oracle",
+      "counts": {
+        "attempted": 36,
+        "task_success": 18,
+        "stale_actions": 0,
+        "false_blocking": 0,
+        "abstention": 18,
+        "correct_abstention": 18
+      },
+      "trace": [
+        {
+          "case": 0,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0071
+        },
+        {
+          "case": 0,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0035
+        },
+        {
+          "case": 0,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 1,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0076
+        },
+        {
+          "case": 1,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 1,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 2,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0067
+        },
+        {
+          "case": 2,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0032
+        },
+        {
+          "case": 2,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 3,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.007
+        },
+        {
+          "case": 3,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0025
+        },
+        {
+          "case": 3,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0019
+        },
+        {
+          "case": 4,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0064
+        },
+        {
+          "case": 4,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0031
+        },
+        {
+          "case": 4,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 5,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 5,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 5,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 6,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0067
+        },
+        {
+          "case": 6,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 6,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0022
+        },
+        {
+          "case": 7,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0067
+        },
+        {
+          "case": 7,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0029
+        },
+        {
+          "case": 7,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 8,
+          "agent": "observer",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0061
+        },
+        {
+          "case": 8,
+          "agent": "planner",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.003
+        },
+        {
+          "case": 8,
+          "agent": "executor",
+          "corrected": true,
+          "allowed": false,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 9,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0055
+        },
+        {
+          "case": 9,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0027
+        },
+        {
+          "case": 9,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0024
+        },
+        {
+          "case": 10,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.006
+        },
+        {
+          "case": 10,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0031
+        },
+        {
+          "case": 10,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0026
+        },
+        {
+          "case": 11,
+          "agent": "observer",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0058
+        },
+        {
+          "case": 11,
+          "agent": "planner",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0028
+        },
+        {
+          "case": 11,
+          "agent": "executor",
+          "corrected": false,
+          "allowed": true,
+          "latency_ms": 0.0023
+        }
+      ],
+      "elapsed_s": 0.197152,
+      "decisions_per_second": 182.599857,
+      "retained_content_bytes": 326,
+      "event_count": 103,
+      "model_calls": 0,
+      "model_tokens": null,
+      "model_usd": 0
+    }
+  ],
+  "scope": "scripted single-process three-agent shared-store study; no real pilot",
+  "budget": {
+    "initial_evidence_per_agent": 1,
+    "refresh_content_reads": 0
+  },
+  "caveats": [
+    "all arms include identical certificate setup overhead",
+    "recheck baseline has privileged local metadata access",
+    "timing includes store setup and teardown except per-decision latency",
+    "no model token or total disk-storage measurement"
+  ]
+}

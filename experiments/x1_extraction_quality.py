@@ -54,7 +54,7 @@ from typing import Any, Mapping, Sequence
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import relevance_bench as rb  # noqa: E402
-from memory_fabric import extraction as extracting  # noqa: E402
+from amberlog import extraction as extracting  # noqa: E402
 
 FILLERS_PER_FAMILY = 8
 
@@ -171,7 +171,7 @@ def run(models: Sequence[str], split: str = "dev",
         constrained: bool = False, warm: bool = True,
         trace: str | None = None,
         think: bool | None = False) -> dict[str, Any]:
-    from memory_fabric.adapters.ollama import OllamaClient
+    from amberlog.adapters.ollama import OllamaClient
 
     statements = sample(split)
     results: list[ModelResult] = []
@@ -181,7 +181,7 @@ def run(models: Sequence[str], split: str = "dev",
             # Metadata only. `JsonlSink` sends no content unless asked, and
             # this comparison has no reason to ask: what it needs from a trace
             # is latency and token counts per model.
-            from memory_fabric.adapters.tracing import JsonlSink
+            from amberlog.adapters.tracing import JsonlSink
 
             client.add_sink(JsonlSink(trace))
         extractor = extracting.ModelExtractor(

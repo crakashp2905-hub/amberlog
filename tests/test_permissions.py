@@ -5,11 +5,11 @@ from __future__ import annotations
 import os
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import PERMISSION_DENIED, ActionGate, ActionPolicy, ToolRule
-from memory_fabric.identity import (PERMISSIONS, ROLE_AGENT, ROLE_AUDITOR, ROLE_OPERATOR,
+from amberlog import Amberlog
+from amberlog.actions import PERMISSION_DENIED, ActionGate, ActionPolicy, ToolRule
+from amberlog.identity import (PERMISSIONS, ROLE_AGENT, ROLE_AUDITOR, ROLE_OPERATOR,
                                     IdentityError, Principal)
-from memory_fabric.service import MemoryService
+from amberlog.service import MemoryService
 
 
 class RoleBundles(unittest.TestCase):
@@ -31,7 +31,7 @@ class RoleBundles(unittest.TestCase):
 
 class ThroughTheService(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:", auto_activate=True)
+        self.fabric = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.fabric.close)
         self.service = MemoryService(fabric=self.fabric)
         self.s: dict[str, object] = {}

@@ -5,11 +5,11 @@ API key. An integration that is not listed here is not supported.
 
 | surface | how | install | tested by | stability |
 |---|---|---|---|---|
-| Python library | `MemoryFabric`, `sdk.operator` / `sdk.agent` | `pip install .` | the whole suite; `tests/test_sdk.py` | stable |
-| CLI | `memory-fabric …` | `pip install .` | `tests/test_first_run.py`, `tests/test_doctor.py`, `tests/test_backup.py` | stable |
-| MCP server (stdio) | `memory-fabric mcp --agent <id>` for Claude Code, Claude Desktop and IDE assistants | `pip install .` | `tests/test_mcp.py`, `tests/test_lifecycle_through_mcp.py` | stable |
-| Agent HTTP API | `memory-fabric agent-api`, bearer tokens per agent, rate limits | `pip install .` | `tests/test_agent_api.py`, `experiments/e2e_validation.py` | stable |
-| Federation (store to store) | `memory-fabric federate --peers …` on each store; `memory-fabric offer <id> --to <store>`; signed offers, retractions and notices over HTTP | `pip install .` | `tests/test_remote_offer.py`, `tests/test_multihop_http.py`, `tests/test_key_rotation_drill.py`, `experiments/multihost.py` (CI) | stable |
+| Python library | `Amberlog`, `sdk.operator` / `sdk.agent` | `pip install .` | the whole suite; `tests/test_sdk.py` | stable |
+| CLI | `amberlog …` | `pip install .` | `tests/test_first_run.py`, `tests/test_doctor.py`, `tests/test_backup.py` | stable |
+| MCP server (stdio) | `amberlog mcp --agent <id>` for Claude Code, Claude Desktop and IDE assistants | `pip install .` | `tests/test_mcp.py`, `tests/test_lifecycle_through_mcp.py` | stable |
+| Agent HTTP API | `amberlog agent-api`, bearer tokens per agent, rate limits | `pip install .` | `tests/test_agent_api.py`, `experiments/e2e_validation.py` | stable |
+| Federation (store to store) | `amberlog federate --peers …` on each store; `amberlog offer <id> --to <store>`; signed offers, retractions and notices over HTTP | `pip install .` | `tests/test_remote_offer.py`, `tests/test_multihop_http.py`, `tests/test_key_rotation_drill.py`, `experiments/multihost.py` (CI) | stable |
 | Claude as the model for evaluations | `adapters.claude_chat.ClaudeChat`, `make_client("claude-…")` | `pip install ".[claude]"` | `tests/test_claude_chat.py` | beta |
 | Claude API adapter | `adapters.claude.ClaudeMemoryAgent` | `pip install ".[claude]"` | `tests/test_claude_contract.py` | beta |
 | Ollama adapter (local models) | `adapters.ollama` | none (HTTP over urllib) | `tests/test_ollama_adapter.py` | beta |

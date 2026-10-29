@@ -1,6 +1,6 @@
 # P3b — four memory systems, one agent team
 
-**SUPPORTED. Memory Fabric closes 86% of the measured headroom against a
+**SUPPORTED. Amberlog closes 86% of the measured headroom against a
 registered 40%, and holds at 85% with ten times the agents.**
 
 - `local` 0.060 · `shared` 0.780 · `shared_blanket` 0.720 · **`fabric` 0.970** · `oracle` 1.000
@@ -110,7 +110,7 @@ and a real agent might do better than abstain, which this harness cannot say.
 
 ## 7. The honest summary
 
-> **Memory Fabric closes 86% of the headroom against a registered 40%, and 85%
+> **Amberlog closes 86% of the headroom against a registered 40%, and 85%
 > with ten times the agents.** The clearest single difference is metric 2: a
 > plain shared store lets agents act on withdrawn knowledge in **18% of
 > tasks** and the fabric in **none**, because a correction in a plain store is

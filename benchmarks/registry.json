@@ -282,12 +282,15 @@
    "id": "INT-02",
    "name": "MemoryWorld 2 multi-agent federation",
    "url": null,
-   "version": null,
+   "version": "benchmarks/federation_world.py",
    "license": "proprietary (this repo)",
    "access": "generated",
-   "run_status": "NOT_RUN",
-   "reason": "existing federation worlds (P3, S1, PB) cover parts; a combined world is pending",
-   "vendor_reported": null
+   "run_status": "RUN",
+   "reason": "five seeds, chain/star scheduled partitions, descriptive single-process regression world",
+   "vendor_reported": null,
+   "results": [
+    "research/results/int02-federation-world.json"
+   ]
   },
   {
    "id": "INT-03",

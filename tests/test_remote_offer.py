@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import LifecycleState, MemoryFabric, correction
-from memory_fabric.dispatcher import Dispatcher
-from memory_fabric.federation import offer_remote
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import LifecycleState, Amberlog, correction
+from amberlog.dispatcher import Dispatcher
+from amberlog.federation import offer_remote
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.transport import HttpTransport, Peer, PeerRegistry, TransportError, serve
+from amberlog.transport import HttpTransport, Peer, PeerRegistry, TransportError, serve
 
 KEY = b"remote-offer-shared-key-000000000"
 
 
-def store() -> MemoryFabric:
-    return MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=(
+def store() -> Amberlog:
+    return Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=(
         rule_restricted_stays_private, rule_must_be_active, rule_capabilities_must_be_granted)))
 
 

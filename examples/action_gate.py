@@ -17,16 +17,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from memory_fabric.cli import configure_output
+from amberlog.cli import configure_output
 
 configure_output()
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog import Amberlog
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
 
 
 def main() -> int:
-    fabric = MemoryFabric(seed=0)
+    fabric = Amberlog(seed=0)
     gauge = fabric.remember("ag_field", "Valve 7 pressure reads 4 bar.", scope="team")
     fabric.validate(gauge, actor="supervisor")
 

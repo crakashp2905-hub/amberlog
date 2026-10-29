@@ -6,7 +6,7 @@ import json
 import unittest
 from pathlib import Path
 
-from memory_fabric.governance.directive import assess
+from amberlog.governance.directive import assess
 
 ROOT = Path(__file__).resolve().parents[1]
 

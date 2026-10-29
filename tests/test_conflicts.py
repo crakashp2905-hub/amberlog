@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.conflicts import DISPUTED, NEWER, annotate, contradicts, find_conflicts
+from amberlog import Amberlog
+from amberlog.conflicts import DISPUTED, NEWER, annotate, contradicts, find_conflicts
 
 HONEST = "At site North, protocol P7 runs the centrifuge at 4000 rpm."
 POISON = "Protocol P7 at site North: the centrifuge setting is 3500 rpm."
@@ -35,7 +35,7 @@ class Rule(unittest.TestCase):
 
 class Presentation(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.honest = self.f.remember("tech", HONEST, scope="team")
         self.poison = self.f.remember("mallory", POISON, scope="team")

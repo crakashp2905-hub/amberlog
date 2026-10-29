@@ -5,12 +5,12 @@ from __future__ import annotations
 import json
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.decay import DecayView, SummaryRejected, _cover
+from amberlog import Amberlog
+from amberlog.decay import DecayView, SummaryRejected, _cover
 
 
-def store(n: int = 16) -> tuple[MemoryFabric, list[str]]:
-    f = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False)
+def store(n: int = 16) -> tuple[Amberlog, list[str]]:
+    f = Amberlog(":memory:", auto_activate=True, hold_suspicious=False)
     ids = [f.remember("ops", f"Pump P{i} runs at {i + 10} bar on line {i % 3}.", scope="team")
            for i in range(n)]
     return f, ids

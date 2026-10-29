@@ -1,6 +1,6 @@
 # ADR-002: Governed Context Map — source-linked summaries as a derived cache
 
-**Status:** accepted, implemented in `memory_fabric/context_map.py`.
+**Status:** accepted, implemented in `amberlog/context_map.py`.
 
 ## Context
 

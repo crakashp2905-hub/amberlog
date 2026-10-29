@@ -12,8 +12,8 @@ import unittest
 from experiments.h2 import H2_WORLD, _play, _rngs
 from experiments.retention_arms import ARMS, active_memories, make_oracle, prune
 from experiments.ruleworld import RuleWorld, seed_memories
-from memory_fabric import LifecycleState, MemoryFabric
-from memory_fabric.exposure import EpsilonGreedyPolicy, TopKPolicy
+from amberlog import LifecycleState, Amberlog
+from amberlog.exposure import EpsilonGreedyPolicy, TopKPolicy
 
 BUDGET = 20
 
@@ -21,7 +21,7 @@ BUDGET = 20
 def warmed_store(seed: int = 0, episodes: int = 300):
     rngs = _rngs(seed)
     world = RuleWorld(H2_WORLD, rngs["world"])
-    fabric = MemoryFabric(
+    fabric = Amberlog(
         auto_activate=True,
         seed=seed,
         exposure_policy=EpsilonGreedyPolicy(epsilon=0.2, rank_by="relevance"),

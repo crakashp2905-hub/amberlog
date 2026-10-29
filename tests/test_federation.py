@@ -8,15 +8,15 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import (
+from amberlog import (
     FirewallDecision,
     LifecycleState,
-    MemoryFabric,
+    Amberlog,
     MemoryType,
     Scope,
     SecurityClass,
 )
-from memory_fabric.federation import (
+from amberlog.federation import (
     describe,
     descendants_of,
     imported_from,
@@ -25,7 +25,7 @@ from memory_fabric.federation import (
     offer_many,
     propagate_retraction,
 )
-from memory_fabric.governance.firewall import (
+from amberlog.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
@@ -45,9 +45,9 @@ def permissive_firewall() -> Firewall:
     )
 
 
-def store(**kwargs) -> MemoryFabric:
+def store(**kwargs) -> Amberlog:
     kwargs.setdefault("firewall", permissive_firewall())
-    return MemoryFabric(auto_activate=True, **kwargs)
+    return Amberlog(auto_activate=True, **kwargs)
 
 
 class TestOffer(unittest.TestCase):
@@ -256,8 +256,8 @@ class TestValueGateBlocksFederationByDefault(unittest.TestCase):
     """
 
     def test_default_firewall_refuses_an_unevaluated_memory(self) -> None:
-        source = MemoryFabric(auto_activate=True, seed=1)  # default firewall
-        target = MemoryFabric(auto_activate=True, seed=2)
+        source = Amberlog(auto_activate=True, seed=1)  # default firewall
+        target = Amberlog(auto_activate=True, seed=2)
         try:
             mid = source.remember("agent-a", "A fact nobody has evaluated.")
             result = offer(source, mid, target, recipient_agent="agent-b")

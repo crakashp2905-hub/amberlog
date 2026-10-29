@@ -19,8 +19,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-from memory_fabric.governance import directive
-from memory_fabric.governance.injection import InjectionDetector
+from amberlog.governance import directive
+from amberlog.governance.injection import InjectionDetector
 
 _PATTERNS = InjectionDetector()
 
@@ -63,8 +63,8 @@ def main(argv: list[str]) -> int:
     model = argv[1] if len(argv) > 1 else None
     screen = None
     if model:
-        from memory_fabric.adapters.claude_chat import make_client
-        from memory_fabric.governance.model_screen import ModelScreen
+        from amberlog.adapters.claude_chat import make_client
+        from amberlog.governance.model_screen import ModelScreen
 
         screen = ModelScreen(make_client(model), model)
     own = json.loads((ROOT / "research/bench/injection_heldout/heldout.json").read_text(encoding="utf-8"))

@@ -23,11 +23,11 @@ import unittest
 import urllib.error
 import urllib.request
 
-from memory_fabric import MemoryFabric
-from memory_fabric.agent_api import (AgentApi, build_agent_server, encode_credential,
+from amberlog import Amberlog
+from amberlog.agent_api import (AgentApi, build_agent_server, encode_credential,
                                      load_agents, register_all)
-from memory_fabric.sdk import agent, operator
-from memory_fabric.service import MemoryService
+from amberlog.sdk import agent, operator
+from amberlog.service import MemoryService
 
 THREADS = 8
 REQUESTS = 25
@@ -41,7 +41,7 @@ class ConcurrentAgentRequests(unittest.TestCase):
         with open(agents_file, "w", encoding="utf-8") as fh:
             for i in range(THREADS):
                 fh.write(f"ag{i}:tn_acme:{('%02x' % (i + 1)) * 32}\n")
-        self.fabric = MemoryFabric(os.path.join(self.tmp.name, "store.db"))
+        self.fabric = Amberlog(os.path.join(self.tmp.name, "store.db"))
         writer = agent(self.fabric, "ag_seed", "tn_acme")
         for i in range(30):
             operator(self.fabric, "op").validate(

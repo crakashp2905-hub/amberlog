@@ -34,12 +34,12 @@ KEYS, PERIODS, WRONG_SHARE = 20, ((0, 100), (100, 200), (200, None)), 0.3
 
 
 def run_seed(seed: int) -> dict[str, Any]:
-    from memory_fabric import MemoryFabric
-    from memory_fabric.incident import replay_until
-    from memory_fabric.model import EXPOSABLE_STATES
+    from amberlog import Amberlog
+    from amberlog.incident import replay_until
+    from amberlog.model import EXPOSABLE_STATES
 
     rng = random.Random(seed)
-    f = MemoryFabric(":memory:", auto_activate=True, recognise_copies=False, retrieval="lexical",
+    f = Amberlog(":memory:", auto_activate=True, recognise_copies=False, retrieval="lexical",
                      encrypt_content=False)
     truth: dict[tuple[str, int], int] = {}
     # Writes in a shuffled recording order: (key, period index, value, correct?)

@@ -56,7 +56,7 @@ same rendering: each memory with its date and the agent that recorded it.
 |---|---|
 | `no_memory` | none. |
 | `naive` | **the same store and the same ranking, without governance.** Every write is active (a screened injection is released). A correction is a second, newer row instead of a new version. Nothing is quarantined. This isolates governance from retrieval. |
-| `fabric` | the product as it ships: `MemoryFabric.retrieve`, default parameters, after the governance actions the world records (revise, quarantine on detection, ingest screen). |
+| `fabric` | the product as it ships: `Amberlog.retrieve`, default parameters, after the governance actions the world records (revise, quarantine on detection, ingest screen). |
 | `oracle` | the correct memory, if one exists, plus valid near-miss distractors up to k = 5. It knows which memories are valid and nothing else, with the same k, ranking order and rendering (8b). |
 | `abstain` | always `UNKNOWN`. Makes no model call. It is a degenerate reference and is reported every run. |
 

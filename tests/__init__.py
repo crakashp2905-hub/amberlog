@@ -21,7 +21,7 @@ _URL = os.environ.get("MF_TEST_POSTGRES_URL")
 if _URL:  # pragma: no cover - only under the Postgres CI job
     import psycopg
 
-    from memory_fabric import eventlog
+    from amberlog import eventlog
 
     _counter = itertools.count()
     _schemas: list[str] = []

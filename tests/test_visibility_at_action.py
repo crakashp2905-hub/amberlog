@@ -11,14 +11,14 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric, sdk
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
-from memory_fabric.enforcement import RiskLevel
+from amberlog import Amberlog, sdk
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog.enforcement import RiskLevel
 
 
 class VisibilityChanges(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(":memory:", auto_activate=True)
+        self.f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.mid = self.f.remember("alice", "Valve V7 opens below 4 bar.")  # private to alice
         self.f.collection_add("ops", self.mid, actor="lead")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 
 from experiments import fed_scale
-from memory_fabric.protocol import MAX_HOPS
+from amberlog.protocol import MAX_HOPS
 
 
 class Reach(unittest.TestCase):

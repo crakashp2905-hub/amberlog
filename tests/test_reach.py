@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.model import Scope
-from memory_fabric.reach import reach
+from amberlog import Amberlog
+from amberlog.model import Scope
+from amberlog.reach import reach
 
 
 class Reach(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:", auto_activate=True)
+        self.fabric = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(self.fabric.close)
 
     def test_private_is_the_writer_only(self) -> None:
@@ -47,15 +47,15 @@ class Reach(unittest.TestCase):
         self.assertEqual(r.seen_by, {"ana": 1})
 
     def test_other_stores_are_listed_with_the_copys_id(self) -> None:
-        from memory_fabric.federation import offer
-        from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+        from amberlog.federation import offer
+        from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                        rule_must_be_active,
                                                        rule_restricted_stays_private)
 
         permissive = Firewall(rules=(rule_restricted_stays_private, rule_must_be_active,
                                      rule_capabilities_must_be_granted))
-        origin = MemoryFabric(":memory:", firewall=permissive, auto_activate=True)
-        recipient = MemoryFabric(":memory:", firewall=permissive)
+        origin = Amberlog(":memory:", firewall=permissive, auto_activate=True)
+        recipient = Amberlog(":memory:", firewall=permissive)
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
         mid = origin.remember("ana", "pump 3 needs a new seal")

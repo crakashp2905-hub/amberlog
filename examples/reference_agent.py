@@ -21,8 +21,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from memory_fabric import MemoryFabric  # noqa: E402
-from memory_fabric.actions import ActionGate, ActionPolicy, ActionRequest, ToolRule  # noqa: E402
+from amberlog import Amberlog  # noqa: E402
+from amberlog.actions import ActionGate, ActionPolicy, ActionRequest, ToolRule  # noqa: E402
 
 TRUE_LIMITS = {"P1": 30, "P2": 45}
 
@@ -37,7 +37,7 @@ class Report:
 
 @dataclass
 class ReferenceAgent:
-    fabric: MemoryFabric
+    fabric: Amberlog
     agent_id: str = "ops-agent"
     gate: ActionGate = field(init=False)
     executed: list[tuple[str, int]] = field(default_factory=list)
@@ -87,7 +87,7 @@ class ReferenceAgent:
 
 
 def main(path: str = ":memory:") -> list[Report]:
-    fabric = MemoryFabric(path, auto_activate=True)
+    fabric = Amberlog(path, auto_activate=True)
     try:
         fabric.remember("plant-manual", "Pump P1 requires a 30 second purge.", scope="team")
         # A poisoned note from a scraped forum: the gate must not act on it.

@@ -1,0 +1,15 @@
+{
+  "source_commit": "e11d4d40471fb092657976e32409f71199df919d",
+  "key_hex": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+  "aad_hex": "6d656d6f72792d6661627269632f6161642f76311f73745f7072696f721f30315052494f521f31",
+  "vectors": [
+    {
+      "envelope": "enc:v2:0b9fc19c925bc6bff9dfa98d0485e7c0:335b0c62e89cbd2ca606c17c20bd3b6e69316f24fc922209b095fe:6e42bef88aed5752eea0ffa52bd29e7cc55ab9858a93728956d39d4fc157515c",
+      "plaintext": "Prior authenticated content"
+    },
+    {
+      "envelope": "enc:v3:81ade631cff41ede7d87bed5:e48e8827336e21b6370004493b76e9e9501060f1c67d66a3296ac2f3516ff55307c5789bbad05277ae5235",
+      "plaintext": "Prior authenticated content"
+    }
+  ]
+}

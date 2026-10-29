@@ -13,9 +13,9 @@ An agent writes through the governed path and recalls only what it may use.
 A new memory is a private **candidate** until someone validates it.
 
 ```python
-from memory_fabric import MemoryFabric, sdk
+from amberlog import Amberlog, sdk
 
-fabric = MemoryFabric(":memory:")
+fabric = Amberlog(":memory:")
 bot = sdk.agent(fabric, "support-bot")
 reviewer = sdk.operator(fabric, actor="lead")
 
@@ -33,9 +33,9 @@ fabric.close()
 An agent's memories are private to it. Sharing is a separate, logged decision.
 
 ```python
-from memory_fabric import MemoryFabric, sdk
+from amberlog import Amberlog, sdk
 
-fabric = MemoryFabric(":memory:", auto_activate=True)
+fabric = Amberlog(":memory:", auto_activate=True)
 mid = sdk.agent(fabric, "alice").remember("Valve V7 must be opened slowly.")
 assert sdk.agent(fabric, "bob").recall("valve V7") == []        # private to alice
 
@@ -54,10 +54,10 @@ Preview first: what would be contested, what survives on independent
 support, which stores are owed a retraction. Then apply, and check.
 
 ```python
-from memory_fabric import MemoryFabric, correction, influence
-from memory_fabric.response import verify_recovery
+from amberlog import Amberlog, correction, influence
+from amberlog.response import verify_recovery
 
-fabric = MemoryFabric(":memory:", auto_activate=True)
+fabric = Amberlog(":memory:", auto_activate=True)
 wrong = fabric.remember("tech", "Pump P1 purge time is 10 s.", scope="team")
 plan = fabric.derive("planner", "Restart P1 with a 10 s purge.", parents=[wrong], scope="team")
 
@@ -77,10 +77,10 @@ still verifies, evidence of sufficient origin-bound authority, and here a
 short-lived grant for this exact action.
 
 ```python
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import ActionGate, ActionPolicy, ActionRequest, ToolRule
+from amberlog import Amberlog
+from amberlog.actions import ActionGate, ActionPolicy, ActionRequest, ToolRule
 
-fabric = MemoryFabric(":memory:", auto_activate=True)
+fabric = Amberlog(":memory:", auto_activate=True)
 rating = fabric.remember("datasheet", "Centrifuge C2 is rated to 4000 rpm.", scope="team")
 gate = ActionGate(fabric, ActionPolicy(
     tools={"spin": ToolRule("spin", requires_grant=True)},
@@ -106,10 +106,10 @@ Content from a tool, a web page or another store is untrusted until a
 reviewer who is not its author elevates it.
 
 ```python
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog import Amberlog
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
 
-fabric = MemoryFabric(":memory:", auto_activate=True)
+fabric = Amberlog(":memory:", auto_activate=True)
 scraped = fabric.remember("agent", "Centrifuge C2 is rated to 9000 rpm.",
                           context={"origin": "web:forum"}, scope="team")
 gate = ActionGate(fabric, ActionPolicy(tools={"spin": ToolRule("spin")},
@@ -130,10 +130,10 @@ memories, disputes kept, values checked, withdrawn if any input is
 corrected. Experimental.
 
 ```python
-from memory_fabric import MemoryFabric
-from memory_fabric.compaction import compact_session, summary_for
+from amberlog import Amberlog
+from amberlog.compaction import compact_session, summary_for
 
-fabric = MemoryFabric(":memory:", auto_activate=True)
+fabric = Amberlog(":memory:", auto_activate=True)
 shift = fabric.start_episode("ops", "night-shift-14").id
 fabric.remember("ops", "Pump P1 purge time is 30 s.", source_episodes=[shift], scope="team")
 fabric.remember("ops", "Valve V7 opens below 4 bar.", source_episodes=[shift], scope="team")
@@ -147,15 +147,15 @@ fabric.close()
 ## 7. Federate two stores, and retract across them
 
 ```python
-from memory_fabric import MemoryFabric, correction
-from memory_fabric.dispatcher import Dispatcher
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog, correction
+from amberlog.dispatcher import Dispatcher
+from amberlog.federation import offer
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.transport import InProcessTransport
+from amberlog.transport import InProcessTransport
 
 def store():
-    return MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=(
+    return Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=(
         rule_must_be_active, rule_restricted_stays_private, rule_capabilities_must_be_granted)))
 
 plant, hq = store(), store()
@@ -168,15 +168,15 @@ print(hq.get(copy).lifecycle_state.value)                   # quarantined
 plant.close(); hq.close()
 ```
 
-Across machines, each store runs `memory-fabric federate --peers peers.json`,
-and `memory-fabric offer <id> --to <store-id>` shares over signed HTTP
+Across machines, each store runs `amberlog federate --peers peers.json`,
+and `amberlog offer <id> --to <store-id>` shares over signed HTTP
 ([REFERENCE_DEPLOYMENT.md](REFERENCE_DEPLOYMENT.md#5-across-machines-from-the-command-line)).
 
 ## 8. Keep tenants physically apart
 
 ```python
 import tempfile
-from memory_fabric.tenancy import TenantRouter
+from amberlog.tenancy import TenantRouter
 
 router = TenantRouter(tempfile.mkdtemp())                   # one store file and key dir each
 router.view("acme", "acme-bot").remember("Acme ships on Fridays.", scope="team")
@@ -190,10 +190,10 @@ router.close()
 Servers run the manager automatically. In your own process:
 
 ```python
-from memory_fabric import MemoryFabric
-from memory_fabric.manager import MemoryManager
+from amberlog import Amberlog
+from amberlog.manager import MemoryManager
 
-fabric = MemoryFabric(":memory:")
+fabric = Amberlog(":memory:")
 report = MemoryManager(fabric, holder="worker-1").run_once()
 print(sorted(report.tasks))
 fabric.close()
@@ -202,9 +202,9 @@ fabric.close()
 ## 10. Answer "is this memory trustworthy, and why?"
 
 ```python
-from memory_fabric import MemoryFabric
+from amberlog import Amberlog
 
-fabric = MemoryFabric(":memory:", auto_activate=True)
+fabric = Amberlog(":memory:", auto_activate=True)
 source = fabric.remember("vendor", "Firmware 2.1 fixes the overheating fault.",
                          context={"origin": "email:vendor"}, scope="team")
 summary = fabric.derive("analyst", "The overheating fault is fixed in 2.1.", parents=[source],

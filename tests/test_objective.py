@@ -5,9 +5,9 @@ from __future__ import annotations
 import json
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.events import EventType
-from memory_fabric.objective import MemoryObjective, Rule, compile_objective, sanity, validate
+from amberlog import Amberlog
+from amberlog.events import EventType
+from amberlog.objective import MemoryObjective, Rule, compile_objective, sanity, validate
 
 OBJ = MemoryObjective(
     "Night shift at Brook: approved Brook procedures and plant-wide safety rules only.",
@@ -60,7 +60,7 @@ class Robustness(unittest.TestCase):
 
 class Retrieval(unittest.TestCase):
     def test_an_excluded_memory_is_never_ranked_or_logged(self) -> None:
-        f = MemoryFabric(":memory:", auto_activate=True)
+        f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         good = f.remember("ana", "Pump P4 restart: hold 4 bar for two minutes.", scope="team",
                           context={"plant": "brook", "status": "approved"})

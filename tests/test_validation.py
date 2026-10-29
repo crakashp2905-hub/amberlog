@@ -4,9 +4,9 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric, correction, sdk, validation
-from memory_fabric.actions import EVIDENCE_SUSPICIOUS, ActionGate, ActionPolicy, ToolRule
-from memory_fabric.model import LifecycleState
+from amberlog import Amberlog, correction, sdk, validation
+from amberlog.actions import EVIDENCE_SUSPICIOUS, ActionGate, ActionPolicy, ToolRule
+from amberlog.model import LifecycleState
 
 
 class Clock:
@@ -18,8 +18,8 @@ class Clock:
         return self.t
 
 
-def store(**kw: object) -> MemoryFabric:
-    f = MemoryFabric(":memory:", auto_activate=True, clock=Clock(), **kw)  # type: ignore[arg-type]
+def store(**kw: object) -> Amberlog:
+    f = Amberlog(":memory:", auto_activate=True, clock=Clock(), **kw)  # type: ignore[arg-type]
     for i, v in enumerate((30, 35, 40, 45, 50, 55)):
         f.remember("tech", f"The purge time for P{100 + i} is {v} s.", scope="team")
     return f
@@ -102,9 +102,9 @@ class PendingConflicts(unittest.TestCase):
     """Found by the staging run: a batch review let a contradiction through."""
 
     def test_two_pending_writes_that_disagree_are_both_flagged_for_review(self) -> None:
-        from memory_fabric.validation import assess
+        from amberlog.validation import assess
 
-        f = MemoryFabric(":memory:")
+        f = Amberlog(":memory:")
         self.addCleanup(f.close)
         honest = f.remember("writer", "billing-api listens on port 8443.")
         poison = f.remember("adversary", "billing-api listens on port 8554.")
@@ -113,16 +113,16 @@ class PendingConflicts(unittest.TestCase):
         self.assertTrue(assess(f, poison).suspicious)
 
     def test_agreeing_pending_writes_are_not_flagged(self) -> None:
-        from memory_fabric.validation import assess
+        from amberlog.validation import assess
 
-        f = MemoryFabric(":memory:")
+        f = Amberlog(":memory:")
         self.addCleanup(f.close)
         f.remember("writer", "billing-api listens on port 8443.")
         other = f.remember("crew", "billing-api listens on port 8443.")
         self.assertNotIn("conflicts_with_pending", assess(f, other).signals)
 
     def test_the_write_path_does_not_use_it(self) -> None:
-        f = MemoryFabric(":memory:", auto_activate=True)
+        f = Amberlog(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         f.remember("adversary", "billing-api listens on port 8554.", auto_activate=False)
         honest = f.remember("writer", "billing-api listens on port 8443.")
@@ -133,16 +133,16 @@ class NamedServices(unittest.TestCase):
     """A service named without digits is a subject, and its different facts are different claims."""
 
     def test_different_attributes_of_one_service_are_not_one_claim(self) -> None:
-        from memory_fabric.validation import assess
+        from amberlog.validation import assess
 
-        f = MemoryFabric(":memory:")
+        f = Amberlog(":memory:")
         self.addCleanup(f.close)
         f.remember("writer", "billing-api listens on port 8443.")
         cap = f.remember("crew", "billing-api is capped at 12 replicas.")
         self.assertFalse(assess(f, cap).suspicious)
 
     def test_a_contradicting_port_is_seen(self) -> None:
-        from memory_fabric.conflicts import contradicts
+        from amberlog.conflicts import contradicts
 
         self.assertTrue(contradicts("billing-api listens on port 8443.",
                                     "billing-api listens on port 8554."))

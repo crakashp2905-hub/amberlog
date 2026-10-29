@@ -1,0 +1,12 @@
+include LICENSE README.md pyproject.toml
+recursive-include amberlog *.py py.typed *.html *.json
+prune tests
+prune research
+prune benchmarks
+prune experiments
+prune examples
+prune deploy
+prune tools
+prune docs
+prune .github
+global-exclude *.db *.db-wal *.db-shm *.pyc

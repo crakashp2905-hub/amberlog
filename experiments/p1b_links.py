@@ -24,7 +24,7 @@ from typing import Any
 
 from experiments import p1_chains as p1
 from experiments import relevance_bench as rb
-from memory_fabric import chains
+from amberlog import chains
 
 HERE = Path(__file__).resolve().parent.parent
 HOLDOUT = "holdout_p1b"

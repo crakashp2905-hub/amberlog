@@ -1,7 +1,7 @@
 # Pre-registration: governed decay view (OptMem-inspired compression)
 
 **Registered after the pilot (seed 0: R and the oracle) and before X or S
-ran.** Harness: `experiments/decay_eval.py`. Module: `memory_fabric/decay.py`.
+ran.** Harness: `experiments/decay_eval.py`. Module: `amberlog/decay.py`.
 Evaluation seeds 1–5. Budget **300** estimated tokens for every arm, the
 oracle included.
 

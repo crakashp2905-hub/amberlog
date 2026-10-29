@@ -11,18 +11,14 @@ name: Release
 #    and so is the job a local run never catches. Branch protection cannot
 #    require checks on this plan (docs/BRANCHES.md), so the release enforces it.
 # 1. The tag must equal the version in pyproject.toml *and* in
-#    memory_fabric.__version__. They drifted once (0.8.0 vs 0.7.0) and a
+#    amberlog.__version__. They drifted once (0.8.0 vs 0.7.0) and a
 #    release is the worst place to find out.
 # 2. The full suite runs with nothing installed, and the wheel is installed
 #    clean and exercised, as in CI. A release is not cut from a red tree.
 # 3. A GitHub release carries the wheel and sdist.
 # 4. The container image goes to GHCR, tagged with the version and `latest`.
-# 5. PyPI only when the repository variable PYPI_PUBLISH is "true". It is off
-#    by default because the distribution name `memory-fabric` is already taken
-#    on PyPI by an unrelated project — publishing needs a name decision first
-#    (ROADMAP open decision 6). Uses trusted publishing, so no token is stored:
-#    configure the publisher on PyPI for this repository and the `pypi`
-#    environment, then set the variable.
+# 5. Package publishing is separate and manual: publish-pypi.yml requires
+#    name clearance, exact-commit CI, release gates and protected environments.
 # 6. Supply chain: every wheel, sdist and image gets an SPDX SBOM and a
 #    Sigstore-signed build-provenance attestation, so a user can check what an
 #    artifact contains and that this workflow, from this commit, built it:
@@ -64,10 +60,10 @@ jobs:
           python - <<'EOF'
           import os, sys, tomllib
           sys.path.insert(0, ".")
-          import memory_fabric
+          import amberlog
           tag = os.environ["GITHUB_REF_NAME"].removeprefix("v")
           declared = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
-          found = {"tag": tag, "pyproject": declared, "__version__": memory_fabric.__version__}
+          found = {"tag": tag, "pyproject": declared, "__version__": amberlog.__version__}
           print(found)
           sys.exit(0 if len(set(found.values())) == 1 else 1)
           EOF
@@ -86,8 +82,8 @@ jobs:
           python -m venv /tmp/v
           /tmp/v/bin/pip install --quiet dist/*.whl
           cd /tmp
-          /tmp/v/bin/memory-fabric --db /tmp/r.db demo
-          /tmp/v/bin/memory-fabric --db /tmp/r.db doctor
+          /tmp/v/bin/amberlog --db /tmp/r.db demo
+          /tmp/v/bin/amberlog --db /tmp/r.db doctor
 
       - uses: actions/upload-artifact@v4
         with:
@@ -129,7 +125,7 @@ jobs:
           subject-path: "dist/*"
           sbom-path: sbom.spdx.json
 
-      - run: cp sbom.spdx.json dist/memory-fabric.spdx.json
+      - run: cp sbom.spdx.json dist/amberlog.spdx.json
 
       - name: Create the release with the built artifacts
         env:
@@ -198,16 +194,4 @@ jobs:
           sbom-path: image.spdx.json
           push-to-registry: true
 
-  pypi:
-    needs: build
-    if: vars.PYPI_PUBLISH == 'true'
-    runs-on: ubuntu-latest
-    environment: pypi
-    permissions:
-      id-token: write
-    steps:
-      - uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-      - uses: pypa/gh-action-pypi-publish@release/v1
+  # Package publication uses the separate, manually approved publish-pypi.yml.

@@ -1,15 +1,15 @@
-"""End-to-end behaviour of the MemoryFabric facade."""
+"""End-to-end behaviour of the Amberlog facade."""
 
 from __future__ import annotations
 
 import unittest
-from memory_fabric.governance.firewall import FirewallRuling
+from amberlog.governance.firewall import FirewallRuling
 
-from memory_fabric import (
+from amberlog import (
     EpsilonGreedyPolicy,
     FirewallDecision,
     LifecycleState,
-    MemoryFabric,
+    Amberlog,
     MemoryType,
     NotFound,
     PolicyViolation,
@@ -20,7 +20,7 @@ from memory_fabric import (
 class FabricTestCase(unittest.TestCase):
     def setUp(self) -> None:
         self.clock = [1_700_000_000_000]
-        self.fabric = MemoryFabric(
+        self.fabric = Amberlog(
             auto_activate=True, seed=42, clock=lambda: self.clock[0]
         )
 
@@ -45,7 +45,7 @@ class TestWritePath(FabricTestCase):
         self.assertGreater(stored.created_at, 0)
 
     def test_new_memories_are_candidates_by_default(self) -> None:
-        f = MemoryFabric()  # auto_activate off
+        f = Amberlog()  # auto_activate off
         try:
             mid = f.remember("agent-a", "Something unverified.")
             self.assertIs(f.get(mid).lifecycle_state, LifecycleState.CANDIDATE)
@@ -153,7 +153,7 @@ class TestRetrievalPath(FabricTestCase):
         self.assertIsNotNone(f.stats(self.ids["rg"]).last_exposed_at)
 
     def test_randomised_policy_produces_both_arms(self) -> None:
-        f = MemoryFabric(
+        f = Amberlog(
             auto_activate=True, seed=1, exposure_policy=EpsilonGreedyPolicy(epsilon=0.4)
         )
         try:
@@ -245,7 +245,7 @@ class TestSharing(FabricTestCase):
         self.assertTrue(any("shell" in r for r in refused.reasons))
 
     def test_sharing_a_sensitive_memory_quarantines_it(self) -> None:
-        f = MemoryFabric(auto_activate=True)
+        f = Amberlog(auto_activate=True)
         try:
             # Bypass the ingest screen to test the share-time check on its own.
             # This used to go through `revise`, which skipped the screen; that
@@ -389,7 +389,7 @@ class TestExplain(FabricTestCase):
 
 class TestContextManager(unittest.TestCase):
     def test_closes_cleanly(self) -> None:
-        with MemoryFabric(auto_activate=True) as f:
+        with Amberlog(auto_activate=True) as f:
             mid = f.remember("agent-a", "A fact.")
             self.assertTrue(f.get(mid))
 
@@ -410,7 +410,7 @@ class TestExplainRedactsSecrets(unittest.TestCase):
     SECRET = "AKIAIOSFODNN7EXAMPLE"
 
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(auto_activate=True)
+        self.fabric = Amberlog(auto_activate=True)
         self.mid = self.fabric.remember(
             "agent-a", f"To deploy, export AWS_ACCESS_KEY_ID={self.SECRET} and ship."
         )

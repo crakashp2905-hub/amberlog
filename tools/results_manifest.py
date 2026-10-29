@@ -64,7 +64,10 @@ def entry(path: Path) -> dict[str, Any]:
     return {
         "experiment_id": path.stem,
         "file": f"research/results/{path.name}",
-        "file_sha256": hashlib.sha256(raw).hexdigest(),
+        # Git stores these text files with LF. Windows write_text can leave
+        # CRLF in the working tree before normalization at commit time.
+        "file_sha256": hashlib.sha256(raw.replace(b"\r\n", b"\n")).hexdigest(),
+        "file_sha256_basis": "UTF-8 file bytes with LF line endings",
         "prereg": _prereg(path.stem),
         "git_sha": sha,
         "git_sha_source": sha_from,

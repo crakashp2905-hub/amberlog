@@ -69,7 +69,7 @@ def statement(plant: str) -> str:
 
 
 def gold(plant: str) -> Any:
-    from memory_fabric.objective import MemoryObjective, Rule
+    from amberlog.objective import MemoryObjective, Rule
 
     return MemoryObjective(statement(plant), include=(
         (Rule("plant", "eq", plant), Rule("status", "eq", "approved"),
@@ -138,7 +138,7 @@ def ask(client: Any, model: str, cache: Any, system: str, text: str) -> str:
 
 
 def compiled(client: Any, model: str, cache: Any, plant: str) -> Any:
-    from memory_fabric.objective import MemoryObjective, compile_objective
+    from amberlog.objective import MemoryObjective, compile_objective
 
     # Keyed on the compiler's own source as well as the statement. Keyed on the
     # statement alone, the registered test run reused the dev pilot's
@@ -146,7 +146,7 @@ def compiled(client: Any, model: str, cache: Any, plant: str) -> Any:
     # pilot had seen (disclosed in research/results/m1-memory-objective.md).
     import inspect
 
-    from memory_fabric import objective as objective_module
+    from amberlog import objective as objective_module
 
     source = (inspect.getsource(objective_module.compile_objective)
               + inspect.getsource(objective_module.validate)
@@ -161,15 +161,15 @@ def compiled(client: Any, model: str, cache: Any, plant: str) -> Any:
 
 
 def run_seed(seed: int, client: Any, model: str, cache: Any) -> tuple[list[dict[str, Any]], dict[str, Any]]:
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     w = world(seed)
-    fab = MemoryFabric(":memory:", auto_activate=True)
+    fab = Amberlog(":memory:", auto_activate=True)
     truth: dict[str, bool] = {}
     for m in w["memories"]:
         mid = fab.remember("staff", m["text"], scope="team", context=m["context"])
         truth[mid] = m["relevant"]
-    from memory_fabric.objective import sanity
+    from amberlog.objective import sanity
 
     objective = compiled(client, model, cache, w["plant"])
     gold_objective = gold(w["plant"])
@@ -256,7 +256,7 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     from experiments.g4_labnet import Cache
-    from memory_fabric.adapters.claude_chat import make_client
+    from amberlog.adapters.claude_chat import make_client
 
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--split", choices=sorted(SPLITS), default="dev")

@@ -14,10 +14,10 @@ from __future__ import annotations
 import json
 import unittest
 
-from memory_fabric import LifecycleState, MemoryFabric
+from amberlog import LifecycleState, Amberlog
 
 
-def snapshot(fabric: MemoryFabric) -> str:
+def snapshot(fabric: Amberlog) -> str:
     """Canonical serialisation of all derived state, for equality comparison."""
     state = fabric.state
     return json.dumps(
@@ -65,7 +65,7 @@ class TestRetraction(unittest.TestCase):
     """A chain of derived knowledge, then a retraction at the root."""
 
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(auto_activate=True)
+        self.fabric = Amberlog(auto_activate=True)
         f = self.fabric
 
         # An observation that will later turn out to be poisoned.
@@ -204,7 +204,7 @@ class TestRetraction(unittest.TestCase):
 
 class TestRebuildDeterminism(unittest.TestCase):
     def test_state_is_identical_after_rebuild(self) -> None:
-        f = MemoryFabric(auto_activate=True, seed=7)
+        f = Amberlog(auto_activate=True, seed=7)
         try:
             ep = f.start_episode("agent-a", "task-1", {"env": "linux"})
             a = f.remember("agent-a", "Use ripgrep to search large trees.", source_episodes=[ep.id])
@@ -224,7 +224,7 @@ class TestRebuildDeterminism(unittest.TestCase):
             f.close()
 
     def test_rebuild_restores_the_search_index(self) -> None:
-        f = MemoryFabric(auto_activate=True)
+        f = Amberlog(auto_activate=True)
         try:
             mid = f.remember("agent-a", "Rotate the signing key every ninety days.")
             f.rebuild()
@@ -235,9 +235,9 @@ class TestRebuildDeterminism(unittest.TestCase):
 
     def test_unknown_event_types_do_not_break_replay(self) -> None:
         """Forward compatibility: an older reader meeting a newer schema."""
-        from memory_fabric.events import Event
+        from amberlog.events import Event
 
-        f = MemoryFabric(auto_activate=True)
+        f = Amberlog(auto_activate=True)
         try:
             mid = f.remember("agent-a", "Something worth keeping.")
             f.log.append(Event(type="SomeFutureEvent", ts=f.now(), payload={"x": 1}))

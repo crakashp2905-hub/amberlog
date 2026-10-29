@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://memory-fabric.dev/protocol/retraction-v1.schema.json",
-  "title": "Memory Fabric retraction event, protocol v1",
+  "$id": "https://amberlog.dev/protocol/retraction-v1.schema.json",
+  "title": "Amberlog retraction event, protocol v1",
   "description": "A retraction issued by an origin store for one exact memory version. Specification only; no implementation exists as of commit 597bdcb. See docs/PROTOCOL.md and docs/AUDIT.md.",
   "type": "object",
   "additionalProperties": false,
@@ -55,7 +55,7 @@
         "co_occurrence",
         "unstated"
       ],
-      "description": "Drawn from memory_fabric.model.WithdrawalBasis. co_occurrence and unstated are measured-weak: see research/results/phase-a-prime-attribution.md."
+      "description": "Drawn from amberlog.model.WithdrawalBasis. co_occurrence and unstated are measured-weak: see research/results/phase-a-prime-attribution.md."
     },
     "evidence_digest": {
       "type": "string",

@@ -21,9 +21,9 @@ psycopg 3.2.3, cryptography 50.0.1. No product code was changed to produce it.
 | storage-touching modules with `MF_TEST_POSTGRES_URL` set (Postgres 16, local) | **938 tests, OK** (0 skipped), 364.0 s |
 | `python3 -m experiments.faultsim` | **17/17 scenarios pass** |
 | `python3 tools/scan_secrets.py` | 94 known synthetic fixtures, **0 unexpected**, exit 0 |
-| `python3 -m compileall -q memory_fabric experiments tests examples tools` | exit 0 |
-| `ruff check memory_fabric` (defaults; not configured by the repo, informational) | 215 findings, 186 auto-fixable: unused imports ×19, import order ×14, unused locals ×3, **F811 duplicate `access_denied` in `events.py`**, **S110 bare `except: pass` in `cipher.py`** |
-| `mypy memory_fabric --ignore-missing-imports` (not configured, informational) | 27 errors in 11 files, mostly `pgcompat` connections typed as `sqlite3.Connection`; two are real (see §4) |
+| `python3 -m compileall -q amberlog experiments tests examples tools` | exit 0 |
+| `ruff check amberlog` (defaults; not configured by the repo, informational) | 215 findings, 186 auto-fixable: unused imports ×19, import order ×14, unused locals ×3, **F811 duplicate `access_denied` in `events.py`**, **S110 bare `except: pass` in `cipher.py`** |
+| `mypy amberlog --ignore-missing-imports` (not configured, informational) | 27 errors in 11 files, mostly `pgcompat` connections typed as `sqlite3.Connection`; two are real (see §4) |
 
 The 36 skips are the Postgres-only file (skipped without a server), optional
 model adapters without a running Ollama, and live-model harnesses without an
@@ -47,7 +47,7 @@ projection rebuilt from it (AGENTS.md principle 3).
  agents ──► agent HTTP API ─────┼─► MemoryService / TenantView (verified principal)
  host code ─────────────────────┘          │
                                            ▼
-                                   MemoryFabric (library; trusts its caller)
+                                   Amberlog (library; trusts its caller)
              ┌──────────────┬──────────────┼──────────────┬──────────────┐
          screens       Enforcer +      truth maint.    federation      retrieval
    (sensitive, inj.)  ExposureToken  (justification,  (outbox/inbox,  (lexical, vectors,
@@ -82,7 +82,7 @@ projection rebuilt from it (AGENTS.md principle 3).
 | Agent identity | **implemented** — HMAC credentials, expiry, revocation persisted in SQLite; re-verified per call | `identity.py`, `service.py` | `test_identity.py`, `test_auth.py`, `test_service.py` |
 | Principal registrations | **partial** — registrations live in memory; revocations persist | `identity.py` | `test_identity.py` |
 | Tenancy | **partial (logical only)** — tenant filter on every read path and on the enforcer; one physical store | `fabric.TenantView`, `enforcement.Enforcer.check` | `test_data_access_paths.py`, `test_service.py`, `test_enforcement.py` |
-| Server-side authorization | **implemented** at `MemoryService`, agent API and MCP; **not** at `MemoryFabric`, which is the host library and trusts its caller by design | `service.py`, `agent_api.py`, `adapters/mcp.py` | `test_agent_api.py`, `test_mcp.py`, `test_service.py` |
+| Server-side authorization | **implemented** at `MemoryService`, agent API and MCP; **not** at `Amberlog`, which is the host library and trusts its caller by design | `service.py`, `agent_api.py`, `adapters/mcp.py` | `test_agent_api.py`, `test_mcp.py`, `test_service.py` |
 | Replay / duplicate retraction | **implemented** — dedupe keys, recipient-owned `origin_sequence` cursor, idempotent apply | `outbox.py`, `dispatcher.py`, `protocol.py` | `test_retraction_protocol.py`, `test_federation_transport.py`, faultsim |
 | Peer authentication | **implemented** — each retraction HMAC-signed by the origin's peer key and verified before processing; replay handled by the dedupe key above; **no TLS** in-process (terminate in front) | `transport.py` | `test_federation_transport.py` |
 | Log tamper evidence | **implemented, with the documented limit** — hash chain detects edits, deletion and reorder; a full rewrite by a writer is detected only against an external checkpoint the operator keeps | `integrity.py`, `cli.py checkpoint` | `test_integrity_chain.py` |

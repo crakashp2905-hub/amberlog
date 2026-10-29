@@ -3,7 +3,7 @@
 G4's LabNet, with its arms, prompt, k and models unchanged, on **held-out
 seeds**. Two arms are added; they run on the same fabric stores as `fabric`,
 so retrieval is identical and only the presentation differs
-(`memory_fabric.conflicts.annotate`):
+(`amberlog.conflicts.annotate`):
 
   fabric_flag       contradicting notes placed together, each marked as disputed
   fabric_incumbent  the same, the earliest-written first, later ones marked as newer claims
@@ -52,7 +52,7 @@ def ordered_docs(facts: list[Any], seed: int) -> tuple[list[Doc], dict[str, bool
 
 
 def conflict_notes(fabric: FabricArm, site: str, question: str, mode: str) -> list[str]:
-    from memory_fabric.conflicts import annotate
+    from amberlog.conflicts import annotate
 
     store = fabric.sites[site]
     hits = store.retrieve(fabric.agent(site), question, k=K).exposed
@@ -158,7 +158,7 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    from memory_fabric.adapters.claude_chat import make_client
+    from amberlog.adapters.claude_chat import make_client
 
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--split", choices=sorted(SPLITS), default="dev")

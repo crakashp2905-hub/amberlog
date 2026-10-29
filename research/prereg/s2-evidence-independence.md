@@ -2,7 +2,7 @@
 
 **Registered 2026-10-18, after a dev run of every arm and before any test
 seed.** This is research direction S2 in [WORKPLAN.md](../../docs/WORKPLAN.md).
-The mechanism is `memory_fabric/independence.py` and the harness is
+The mechanism is `amberlog/independence.py` and the harness is
 `experiments/s2_launder_sim.py`, both committed with this file.
 
 **Disclosed:** the dev split (seeds 100–109) was run with all five arms, the

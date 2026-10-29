@@ -1,7 +1,7 @@
 """S1 -- CorrectionSim: correcting exact versions across stores under faults.
 
 Registered in research/prereg/s1-federated-correction.md before this file.
-Deterministic (no model): five stores per arm, real MemoryFabric instances and
+Deterministic (no model): five stores per arm, real Amberlog instances and
 the real dispatcher for the fabric-based arms, a dictionary store for
 `naive_overwrite`. Each seed: 12 facts shared to 2-4 stores, onward re-shares
 (one cycle), derived conclusions at recipients (some with an independent
@@ -91,17 +91,17 @@ def text(fid: str, value: int) -> str:
 
 class FabricArm:
     def __init__(self, mode: str, seed: int) -> None:
-        from memory_fabric import MemoryFabric
-        from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+        from amberlog import Amberlog
+        from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                        rule_must_be_active,
                                                        rule_restricted_stays_private)
-        from memory_fabric.transport import InProcessTransport, PeerRegistry
+        from amberlog.transport import InProcessTransport, PeerRegistry
 
         rules = (rule_restricted_stays_private, rule_must_be_active,
                  rule_capabilities_must_be_granted)
         self.mode = mode
         self.rng = random.Random(seed * 7 + 1)
-        self.f = {s: MemoryFabric(":memory:", firewall=Firewall(rules=rules), auto_activate=True)
+        self.f = {s: Amberlog(":memory:", firewall=Firewall(rules=rules), auto_activate=True)
                   for s in STORES}
         self.by_store_id = {fab.store_id: s for s, fab in self.f.items()}
         self.transport = InProcessTransport({fab.store_id: fab for fab in self.f.values()},
@@ -113,7 +113,7 @@ class FabricArm:
         self.offline: set[str] = set()
 
     def _offer(self, fid: str, frm: str, to: str) -> None:
-        from memory_fabric.federation import offer
+        from amberlog.federation import offer
 
         if to in self.offline or frm in self.offline:
             return
@@ -134,7 +134,7 @@ class FabricArm:
         return self._origins[fid]
 
     def setup(self, p: Plan) -> None:
-        from memory_fabric.justification import JustificationKind, justification_context
+        from amberlog.justification import JustificationKind, justification_context
 
         self._origins = dict(p.origin)
         for fid in sorted(p.origin):
@@ -179,8 +179,8 @@ class FabricArm:
 
     def step(self) -> None:
         """Deliver what is due, shuffled, with duplicates; then re-offer current versions."""
-        from memory_fabric.dispatcher import DispatchReport, Dispatcher
-        from memory_fabric.outbox import now_ms
+        from amberlog.dispatcher import DispatchReport, Dispatcher
+        from amberlog.outbox import now_ms
 
         self.transport.offline = {self.f[s].store_id for s in self.offline}
         for name in STORES:
@@ -236,7 +236,7 @@ class FabricArm:
         that count are the recipient's imports of whichever local memory at
         the sender stood for (origin, memory, version).
         """
-        from memory_fabric.events import EventType
+        from amberlog.events import EventType
 
         def origin_of(memory: Any) -> dict[str, Any]:
             record = memory.context.get("federation")

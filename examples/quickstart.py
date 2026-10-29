@@ -15,12 +15,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from memory_fabric import MemoryFabric, correction, influence  # noqa: E402
-from memory_fabric.response import verify_recovery  # noqa: E402
+from amberlog import Amberlog, correction, influence  # noqa: E402
+from amberlog.response import verify_recovery  # noqa: E402
 
 
 def main(path: str) -> dict[str, object]:
-    fabric = MemoryFabric(path, auto_activate=True)
+    fabric = Amberlog(path, auto_activate=True)
     try:
         # 1. Store. Each memory records who wrote it and how.
         wrong = fabric.remember("field-tech", "Pump P1 purge time is 10 seconds.", scope="team")

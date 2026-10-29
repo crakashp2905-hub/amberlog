@@ -1,21 +1,26 @@
-# Memory Fabric
+# Amberlog
 
-**Memory for AI agents that you can audit, correct and trust.**
+**Trust infrastructure for collective intelligence.**
 
-Every memory knows where it came from. A wrong one can be withdrawn
-everywhere it travelled, along with everything built on it. Nothing an agent
-remembers can authorise an action unless the evidence still holds at the
-moment it acts.
+Amberlog is a governed knowledge and memory infrastructure layer for AI agents,
+providing persistent context, verifiable provenance, correction propagation,
+federation, and evidence-aware action control. It helps agents check where a
+claim came from, withdraw incorrect knowledge, and verify evidence before acting.
 
-[![CI](https://github.com/crakashp2905-hub/memory-fabric/actions/workflows/ci.yml/badge.svg)](https://github.com/crakashp2905-hub/memory-fabric/actions/workflows/ci.yml)
+[![CI](https://github.com/crakashp2905-hub/amberlog/actions/workflows/ci.yml/badge.svg)](https://github.com/crakashp2905-hub/amberlog/actions/workflows/ci.yml)
 ![Python](https://img.shields.io/badge/python-3.11%20%7C%203.12%20%7C%203.13-blue)
 ![Dependencies](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen)
 ![MCP](https://img.shields.io/badge/MCP-stdio%20server-purple)
 ![License](https://img.shields.io/badge/license-proprietary-lightgrey)
 
 > **Status: alpha, 0.14.0 in development** (the last pinned baseline is 0.13.0, in the
-> [release notes](docs/RELEASE_NOTES_0.13.0.md)). Working name; not yet on PyPI.
+> [release notes](docs/RELEASE_NOTES_0.13.0.md)). Not yet published under this name.
 > What is stable and what is experimental: [STABILITY.md](STABILITY.md).
+> The import, command and environment namespace changed. See
+> [migration](docs/MIGRATING_TO_AMBERLOG.md) and
+> [release readiness](docs/AMBERLOG_RELEASE_CHECKLIST.md).
+> The repository rename is complete. Package-index publication remains pending
+> name/account readiness and the release gates above.
 
 ---
 
@@ -23,7 +28,7 @@ moment it acts.
 
 ```bash
 pip install .
-memory-fabric tour
+amberlog tour
 ```
 
 ```
@@ -48,7 +53,7 @@ dashboard, with a replay of everything that happened and the story of each
 fact:
 
 ```bash
-memory-fabric sandbox          # opens the Memory Control Center on localhost
+amberlog sandbox          # opens the Memory Control Center on localhost
 ```
 
 ![The Memory Control Center](docs/images/control-center-home.png)
@@ -71,7 +76,7 @@ matter once that memory is shared, long-lived or used to act:
 - **Should the agent act on it?** Being retrieved is not the same as being
   true, and a successful outcome does not prove the memory was right.
 
-Memory Fabric is a memory layer built around those questions.
+Amberlog is a memory layer built around those questions.
 
 ## What you get
 
@@ -86,26 +91,26 @@ Memory Fabric is a memory layer built around those questions.
 | **Session handoff** | A short, governed summary of what a session established, for the sessions that follow. A later correction reaches it like any other memory. |
 | **Runs anywhere** | Pure Python with no runtime dependencies. SQLite by default, PostgreSQL for several writers. MCP, HTTP, Python and LangChain. |
 
-Memory Fabric is a governance layer. It works alongside your retriever and
+Amberlog is a governance layer. It works alongside your retriever and
 your models; it does not replace them. It makes what your agents remember
 accountable.
 
 ## Quick start
 
 ```bash
-git clone https://github.com/crakashp2905-hub/memory-fabric.git
-cd memory-fabric
+git clone https://github.com/crakashp2905-hub/amberlog.git
+cd amberlog
 pip install .
-memory-fabric init ./memory        # a store, keys kept outside it, one agent, MCP config, doctor
+amberlog init ./memory        # a store, keys kept outside it, one agent, MCP config, doctor
 ```
 
 Then, in Python: store, retrieve, inspect the evidence, correct, verify.
 
 ```python
-from memory_fabric import MemoryFabric, correction
-from memory_fabric.response import verify_recovery
+from amberlog import Amberlog, correction
+from amberlog.response import verify_recovery
 
-fabric = MemoryFabric("memory.db", auto_activate=True)
+fabric = Amberlog("memory.db", auto_activate=True)
 
 wrong = fabric.remember("field-tech", "Pump P1 purge time is 10 s.", scope="team")
 plan = fabric.derive("planner", "Restart P1 with a 10 s purge.", parents=[wrong], scope="team")
@@ -133,8 +138,8 @@ Recipes for sharing, gating tools, federating, tenants and handoffs:
 ```json
 {
   "mcpServers": {
-    "memory-fabric": {
-      "command": "memory-fabric",
+    "amberlog": {
+      "command": "amberlog",
       "args": ["--db", "/path/to/memory/store.db", "--keys", "/path/to/memory/keys",
                "mcp", "--agent", "my-assistant"]
     }
@@ -148,9 +153,9 @@ summary (source, independent sources, age, corrections), and every refusal
 with a sentence saying why and what to do. Its identity is fixed at launch. It
 cannot read withdrawn memories, widen who sees a memory, or score its own work.
 
-**Any other tool, any model:** `memory-fabric connect <tool> --write` sets up
+**Any other tool, any model:** `amberlog connect <tool> --write` sets up
 Claude Code, Claude Desktop, Cursor, Windsurf, VS Code, Cline, Gemini CLI, Zed,
-Codex or Continue; `MEMORY_FABRIC_MODEL=provider:model` picks the model for
+Codex or Continue; `AMBERLOG_MODEL=provider:model` picks the model for
 every model-backed feature (Anthropic, OpenAI, Azure, Gemini, Groq, OpenRouter,
 Ollama, vLLM and any OpenAI-compatible server):
 [Any agent, any model](docs/guides/any-agent-any-model.md).
@@ -162,8 +167,8 @@ Framework guides: [Claude Code and Desktop](docs/guides/claude.md) ·
 **Agents in other processes or languages (HTTP):**
 
 ```bash
-memory-fabric --db memory/store.db agent-api --agents-file agents.txt     # 127.0.0.1:8766
-memory-fabric --db memory/store.db agent-api-issue --agents-file agents.txt --agent my-bot
+amberlog --db memory/store.db agent-api --agents-file agents.txt     # 127.0.0.1:8766
+amberlog --db memory/store.db agent-api-issue --agents-file agents.txt --agent my-bot
 curl -s -X POST http://127.0.0.1:8766/v1/recall \
   -H "Authorization: Bearer <credential>" -d '{"query": "pump fault E01"}'
 ```
@@ -214,12 +219,12 @@ meshes with cycles. Details and sources: [docs/SCALE.md](docs/SCALE.md).
 ## Running it
 
 ```bash
-docker build -t memory-fabric .
+docker build -t amberlog .
 docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
-  -e MEMORY_FABRIC_TOKEN=<token> memory-fabric
+  -e AMBERLOG_TOKEN=<token> amberlog
 ```
 
-- `memory-fabric doctor` says whether an installation's answers can be
+- `amberlog doctor` says whether an installation's answers can be
   believed (exit 0 ok, 1 warn, 5 fail).
 - `serve`, `mcp` and `agent-api` run the background manager by default. It
   delivers retractions and notices, applies retention, scans for
@@ -268,7 +273,7 @@ python tools/check.py           # regenerate docs, lint, type-check, doc tests, 
 python tools/check.py --full    # and the full suite, which needs no dependencies
 ```
 
-**2173 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
+**2233 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
 a multi-store fault matrix and an adversarial release gate run
 in CI on Linux, macOS and Windows. Read [AGENTS.md](AGENTS.md), the rules for
 everyone who changes this repository, humans and AI agents alike, and

@@ -6,9 +6,9 @@ import json
 import types
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.claimcheck import ModelClaimChecker, parse
-from memory_fabric.models import ModelClient
+from amberlog import Amberlog
+from amberlog.claimcheck import ModelClaimChecker, parse
+from amberlog.models import ModelClient
 
 
 def model(reply: str | None):
@@ -22,7 +22,7 @@ def model(reply: str | None):
 class TestClaimCheck(unittest.TestCase):
     def store(self, reply):
         checker = ModelClaimChecker(model(reply))
-        f = MemoryFabric(":memory:", auto_activate=True, claim_checker=checker)
+        f = Amberlog(":memory:", auto_activate=True, claim_checker=checker)
         self.addCleanup(f.close)
         f.remember("inspector", "The east wing is safe to enter.", scope="team")
         return f, checker

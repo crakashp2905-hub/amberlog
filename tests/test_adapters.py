@@ -12,17 +12,17 @@ import unittest
 from dataclasses import dataclass, field
 from typing import Any
 
-from memory_fabric import LifecycleState, MemoryFabric, MemoryType, PolicyViolation
-from memory_fabric.adapters import Turn, build_context, ingest_transcript
-from memory_fabric.adapters.claude import (
+from amberlog import LifecycleState, Amberlog, MemoryType, PolicyViolation
+from amberlog.adapters import Turn, build_context, ingest_transcript
+from amberlog.adapters.claude import (
     DEFAULT_MODEL,
     AdapterError,
     ClaudeMemoryAgent,
     Refused,
 )
-from memory_fabric.adapters.context import CLOSE, OPEN, describe_evidence
-from memory_fabric.model import ValueEstimate
-from memory_fabric.session import AgentSession, SessionClosed
+from amberlog.adapters.context import CLOSE, OPEN, describe_evidence
+from amberlog.model import ValueEstimate
+from amberlog.session import AgentSession, SessionClosed
 
 
 # --- stub Claude client -----------------------------------------------------
@@ -101,7 +101,7 @@ def tool_response(content: str, kind: str = "semantic", tool_id: str = "tu_1") -
 
 class TestAgentSession(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(auto_activate=True, seed=1)
+        self.fabric = Amberlog(auto_activate=True, seed=1)
 
     def tearDown(self) -> None:
         self.fabric.close()
@@ -168,7 +168,7 @@ class TestAgentSession(unittest.TestCase):
 
 class TestMemoryContext(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(auto_activate=True, seed=1)
+        self.fabric = Amberlog(auto_activate=True, seed=1)
 
     def tearDown(self) -> None:
         self.fabric.close()
@@ -235,7 +235,7 @@ class TestMemoryContext(unittest.TestCase):
 
 class TestClaudeAdapter(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(auto_activate=True, seed=1)
+        self.fabric = Amberlog(auto_activate=True, seed=1)
 
     def tearDown(self) -> None:
         self.fabric.close()
@@ -322,7 +322,7 @@ class TestClaudeAdapter(unittest.TestCase):
 
     def test_remember_tool_stores_an_unvalidated_memory(self) -> None:
         """An agent writing something down must not make it retrievable."""
-        fabric = MemoryFabric(seed=1)  # auto_activate off: the realistic setting
+        fabric = Amberlog(seed=1)  # auto_activate off: the realistic setting
         try:
             client = StubClient([
                 tool_response("Retry a failed deploy once after 30s.", "procedural"),
@@ -442,7 +442,7 @@ class TestClaudeAdapter(unittest.TestCase):
 
 class TestTranscriptIngestion(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(auto_activate=True, seed=1)
+        self.fabric = Amberlog(auto_activate=True, seed=1)
 
     def tearDown(self) -> None:
         self.fabric.close()
@@ -544,7 +544,7 @@ class TheEmbedderBatchesAndCaches(unittest.TestCase):
             return [[float(len(text)), 1.0, 0.0] for text in inputs]
 
     def _embedder(self):
-        from memory_fabric.adapters.ollama import OllamaEmbedder
+        from amberlog.adapters.ollama import OllamaEmbedder
 
         client = self.StubClient()
         return OllamaEmbedder(client=client, model="stub"), client

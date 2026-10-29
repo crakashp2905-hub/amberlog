@@ -4,19 +4,19 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog
+from amberlog.federation import offer
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.model import Scope
-from memory_fabric.receipts import (CorrectionReceipt, ReceiptError, audit, authentic, issue)
+from amberlog.model import Scope
+from amberlog.receipts import (CorrectionReceipt, ReceiptError, audit, authentic, issue)
 
 PEER = b"peer-key-shared-with-origin"
 BINDING = b"recipient-only-binding-key"
 
 
-def store() -> MemoryFabric:
-    return MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=(
+def store() -> Amberlog:
+    return Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=(
         rule_restricted_stays_private, rule_must_be_active, rule_capabilities_must_be_granted)))
 
 

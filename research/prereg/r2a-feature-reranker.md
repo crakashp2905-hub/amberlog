@@ -1,7 +1,7 @@
 
 # Pre-registration — R2a: a reranking stage, to make fusion safe
 
-**Registered 2026-10-12, before `memory_fabric/rerank.py` exists.**
+**Registered 2026-10-12, before `amberlog/rerank.py` exists.**
 
 ## 1. The claim, and why it is not "a better ranker"
 

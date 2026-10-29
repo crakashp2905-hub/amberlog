@@ -11,9 +11,9 @@ from __future__ import annotations
 import unittest
 from typing import Any, Mapping, Sequence
 
-from memory_fabric import LifecycleState, MemoryFabric, MemoryType
-from memory_fabric.adapters.context import OPEN
-from memory_fabric.adapters.ollama import (
+from amberlog import LifecycleState, Amberlog, MemoryType
+from amberlog.adapters.context import OPEN
+from amberlog.adapters.ollama import (
     REMEMBER_TOOL,
     OllamaEmbedder,
     OllamaMemoryAgent,
@@ -93,7 +93,7 @@ class TestEmbedder(unittest.TestCase):
         self.assertEqual(embedder.dim, 3)
 
     def test_plugs_into_the_fabric(self) -> None:
-        fabric = MemoryFabric(auto_activate=True, embedder=OllamaEmbedder(StubClient()))
+        fabric = Amberlog(auto_activate=True, embedder=OllamaEmbedder(StubClient()))
         try:
             mid = fabric.remember("a", "Use ripgrep for large trees.", scope="team")
             found = fabric.retrieve("a", "Use ripgrep for large trees.", k=1)
@@ -104,7 +104,7 @@ class TestEmbedder(unittest.TestCase):
 
 class TestAgent(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(auto_activate=True, seed=1,
+        self.fabric = Amberlog(auto_activate=True, seed=1,
                                    embedder=OllamaEmbedder(StubClient()))
 
     def tearDown(self) -> None:
@@ -148,7 +148,7 @@ class TestAgent(unittest.TestCase):
         self.assertEqual(self.client.calls[0]["tools"], [REMEMBER_TOOL])
 
     def test_remember_tool_writes_an_unvalidated_memory(self) -> None:
-        fabric = MemoryFabric(seed=1, embedder=OllamaEmbedder(StubClient()))
+        fabric = Amberlog(seed=1, embedder=OllamaEmbedder(StubClient()))
         try:
             client = StubClient([tool_reply("Retry a failed deploy once.", "procedural"),
                                  text_reply("noted")])

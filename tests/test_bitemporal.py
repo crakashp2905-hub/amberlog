@@ -17,7 +17,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from memory_fabric import MemoryFabric  # noqa: E402
+from amberlog import Amberlog  # noqa: E402
 
 
 class TestTheThreeTemporalQuestions(unittest.TestCase):
@@ -38,7 +38,7 @@ class TestTheThreeTemporalQuestions(unittest.TestCase):
     DAY = 86_400
 
     def _store(self):
-        fabric = MemoryFabric(":memory:", auto_activate=True,
+        fabric = Amberlog(":memory:", auto_activate=True,
                               encrypt_content=False, retrieval="lexical")
         ids = {
             "superseded": fabric.remember(

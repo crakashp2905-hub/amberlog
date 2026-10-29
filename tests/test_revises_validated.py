@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import EVIDENCE_PROVISIONAL, ActionGate, ActionPolicy, ToolRule
-from memory_fabric.validation import assess
+from amberlog import Amberlog
+from amberlog.actions import EVIDENCE_PROVISIONAL, ActionGate, ActionPolicy, ToolRule
+from amberlog.validation import assess
 
 
 class RevisesValidated(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = MemoryFabric(auto_activate=True, hold_suspicious=False)
+        self.f = Amberlog(auto_activate=True, hold_suspicious=False)
         self.addCleanup(self.f.close)
         for i in range(3):
             self.f.validate(self.f.remember("ag_tech", f"Pump P-{20 + i}: the torque setting is {40 + i} Nm."),

@@ -1,0 +1,16 @@
+{{- range $name, $p := .Values.persistence }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "amberlog.name" $ }}-{{ $name }}
+  labels: {{- include "amberlog.labels" $ | nindent 4 }}
+spec:
+  accessModes: [ReadWriteOnce]
+  {{- if $p.storageClass }}
+  storageClassName: {{ $p.storageClass }}
+  {{- end }}
+  resources:
+    requests:
+      storage: {{ $p.size }}
+{{- end }}

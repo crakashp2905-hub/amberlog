@@ -8,14 +8,14 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import MemoryFabric
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog
+from amberlog.federation import offer
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.governance.retention import RetentionPolicy
-from memory_fabric.manager import MemoryManager, findings, last_run
-from memory_fabric.model import LifecycleState, Scope
-from memory_fabric.transport import InProcessTransport, PeerRegistry
+from amberlog.governance.retention import RetentionPolicy
+from amberlog.manager import MemoryManager, findings, last_run
+from amberlog.model import LifecycleState, Scope
+from amberlog.transport import InProcessTransport, PeerRegistry
 
 DAY_S = 86_400.0
 
@@ -35,7 +35,7 @@ class Clock:
 
 class Leadership(unittest.TestCase):
     def test_one_manager_leads_and_another_takes_over_when_it_stops(self) -> None:
-        f = MemoryFabric(":memory:")
+        f = Amberlog(":memory:")
         self.addCleanup(f.close)
         clock = Clock()
         a = MemoryManager(f, interval_s=10, holder="a", clock=clock)
@@ -50,7 +50,7 @@ class Leadership(unittest.TestCase):
 
 class Isolation(unittest.TestCase):
     def test_a_failing_task_backs_off_and_the_others_still_run(self) -> None:
-        f = MemoryFabric(":memory:")
+        f = Amberlog(":memory:")
         self.addCleanup(f.close)
         manager = MemoryManager(f, interval_s=1, holder="m")
 
@@ -69,7 +69,7 @@ class Isolation(unittest.TestCase):
 class Retention(unittest.TestCase):
     def test_deletions_wait_for_the_owners_opt_in(self) -> None:
         clock = Clock()
-        f = MemoryFabric(":memory:", retention=RetentionPolicy(deprecated_grace_days=1))
+        f = Amberlog(":memory:", retention=RetentionPolicy(deprecated_grace_days=1))
         self.addCleanup(f.close)
         m = f.remember("ana", "an old note nobody needs", auto_activate=True)
         f.forget(m, reason="superseded", actor="op")
@@ -83,7 +83,7 @@ class Retention(unittest.TestCase):
 
 class Delivery(unittest.TestCase):
     def test_owed_retractions_are_delivered_without_anyone_running_the_dispatcher(self) -> None:
-        origin, peer = (MemoryFabric(":memory:", firewall=permissive(), auto_activate=True)
+        origin, peer = (Amberlog(":memory:", firewall=permissive(), auto_activate=True)
                         for _ in range(2))
         self.addCleanup(origin.close)
         self.addCleanup(peer.close)
@@ -104,7 +104,7 @@ class Delivery(unittest.TestCase):
 class Findings(unittest.TestCase):
     def test_conflicts_and_checkpoints_are_recorded_for_a_person(self) -> None:
         with TemporaryDirectory() as tmp:
-            f = MemoryFabric(":memory:", auto_activate=True)
+            f = Amberlog(":memory:", auto_activate=True)
             self.addCleanup(f.close)
             f.remember("tech", "At site North, protocol P7 runs the centrifuge at 4000 rpm.")
             f.remember("mallory", "Protocol P7 at site North: the centrifuge setting is 3500 rpm.")
@@ -118,9 +118,9 @@ class Findings(unittest.TestCase):
 
 class Doctor(unittest.TestCase):
     def test_a_stopped_manager_is_reported(self) -> None:
-        from memory_fabric.cli import _check_manager
+        from amberlog.cli import _check_manager
 
-        f = MemoryFabric(":memory:")
+        f = Amberlog(":memory:")
         self.addCleanup(f.close)
         self.assertEqual(_check_manager(f).status, "ok", "never run: manual, not broken")
         MemoryManager(f, holder="m").run_once()

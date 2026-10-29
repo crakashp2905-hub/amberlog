@@ -6,16 +6,16 @@ import os
 import tempfile
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.demo import seed_sandbox
-from memory_fabric.observability.server import Api, ApiError
+from amberlog import Amberlog
+from amberlog.demo import seed_sandbox
+from amberlog.observability.server import Api, ApiError
 
 
 class ControlCenter(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.tmp = tempfile.TemporaryDirectory()
-        cls.f = MemoryFabric(os.path.join(cls.tmp.name, "s.db"), auto_activate=True)
+        cls.f = Amberlog(os.path.join(cls.tmp.name, "s.db"), auto_activate=True)
         cls.seeded = seed_sandbox(cls.f)
         cls.api = Api(cls.f)
 

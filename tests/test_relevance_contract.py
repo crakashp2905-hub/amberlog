@@ -21,7 +21,7 @@ import json
 import unittest
 from dataclasses import FrozenInstanceError
 
-from memory_fabric.relevance import (
+from amberlog.relevance import (
     CONTRACT_VERSION,
     MISSING,
     ContextPackage,
@@ -171,7 +171,7 @@ class Invariant3_IrrelevanceIsNotAVerdictOnTheMemory(unittest.TestCase):
         """Structural, so the separation cannot erode by convenience import."""
         from pathlib import Path
 
-        import memory_fabric.relevance as module
+        import amberlog.relevance as module
 
         source = Path(module.__file__).read_text(encoding="utf-8")
         for forbidden in ("from .fabric", "import fabric", "LifecycleState"):

@@ -1,6 +1,6 @@
 # RELEVANCE_SPEC.md — the relevance contract
 
-- **Contract version:** `1.0.0` (`memory_fabric.relevance.CONTRACT_VERSION`)
+- **Contract version:** `1.0.0` (`amberlog.relevance.CONTRACT_VERSION`)
 - **Status:** schemas and invariants implemented and tested. **No ranker exists**, deliberately — see §2.
 - **Implements:** P0 of the end-to-end plan. The gate is §4, and every row maps to a test in `tests/test_relevance_contract.py`.
 
@@ -33,7 +33,7 @@ merely been present when an episode failed, and of naive blame's 87
 withdrawals **57 were about a completely different fault**
 ([PA′](../research/results/phase-a-prime-attribution.md)). A relevance signal
 with lifecycle authority would be that mistake with a new name, so the types in
-`memory_fabric/relevance.py` have no route to one and a test asserts it
+`amberlog/relevance.py` have no route to one and a test asserts it
 structurally.
 
 ## 2. Why there is no ranker in this contract
@@ -78,7 +78,7 @@ invisible.
 
 ## 3. The types
 
-All in `memory_fabric/relevance.py`. The module imports nothing from
+All in `amberlog/relevance.py`. The module imports nothing from
 `fabric.py` and names no `LifecycleState`, which a test enforces.
 
 | Type | Holds |

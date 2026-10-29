@@ -1,6 +1,6 @@
 # ADR-001: Memory branches and commits as an overlay on the event log
 
-**Status:** accepted, implemented in `memory_fabric/branching.py`.
+**Status:** accepted, implemented in `amberlog/branching.py`.
 
 ## Context
 

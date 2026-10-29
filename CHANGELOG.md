@@ -1,14 +1,27 @@
 # Changelog
 
 Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track the
-**memory schema**, not the Python API — see [VERSIONING.md](VERSIONING.md) for why.
+**memory schema**, not the Python API â€” see [VERSIONING.md](VERSIONING.md) for why.
 
 ## [Unreleased]
+
+### Changed: Amberlog namespace
+- Product, package, Python import, CLI, MCP setup and environment prefix now use Amberlog. The public store class is `Amberlog`; retired import/command aliases are intentionally absent under the owner's complete-rename decision.
+- Existing events, schema version and cryptographic key-derivation/associated-data bytes remain unchanged. Historical text was terminology-normalized; original evidence commits remain in Git and numerical outcomes were not improved by renaming.
+- Package publishing is manual and gated on name clearance, account setup, exact-commit validation and human approval. No upload, tag or remote rename is part of this change.
+
+### Added and fixed: next-checklist integration candidate
+- Experimental typed queries now preserve unknown join/aggregate keys, caller filters, default-tenant/erasure boundaries and scalar/null semantics.
+- Evidence Completeness v1 adds bounded governed fallback and diagnostic corpus certificates; its frozen study is INCONCLUSIVE and does not promote a default.
+- Local CSV/HTML/DOCX/optional PDF adapters, operator dry-run impact previews and guarded atomic document batches preserve existing import governance.
+- Explicit-ID historical reads intersect current and historical authorization and return bounded archival receipts without action credentials.
+- Optional phrase-dictionary compaction preserves exact records when encoding is selected; scope/tenant/source-version checks and summary erasure are strengthened.
+- Generated evidence is independent of local tag refs and checkout line endings; skipped release checks are labelled SKIPPED rather than passing.
 
 ### Security (schema 0.14.0): copy recognition no longer crosses tenants
 - **A withdrawal in one tenant could contest another tenant's memory.** Copy recognition matched identical text across tenants, so the second tenant's memory was recorded as a copy of the first's: they shared a source root, and withdrawing the first contested the second. Found by the new governance conformance suite (GOV-07). Writes now match copies only within their own tenant, and a cross-tenant link recorded by an older version is ignored when the log is replayed (SPEC.md 0.14.0). Memories already contested by such a link stay contested in the log; review and validate them again.
 
-### Added: masterplan foundation — status, benchmarks, conformance
+### Added: masterplan foundation â€” status, benchmarks, conformance
 - **`docs/STATUS_AT_HEAD.md`** (`tools/status_at_head.py`): versions, tags, tiers, experimental defaults, skipped tests and contradictions, generated from the tree and checked on every run; `SPEC.md`'s stale schema header was the first contradiction it found. **`research/results/MANIFEST.json`** (`tools/results_manifest.py`) lists every recorded result and which provenance fields it lacks.
 - **`benchmarks/`**: a registry of 25 suites with licence and run status (`python -m benchmarks.registry validate --offline`, which also recomputes vendor tables' token reductions), one run-manifest schema with PASS/FAIL/INCONCLUSIVE/INVALID/NOT_RUN/BLOCKED, paired statistics, the AGENTS.md 8a-8d checks as code, a cost ledger whose cost per safe success is undefined when there is none, and a generated scoreboard.
 - **Imported document sections carry exact spans** (`line_start`, `line_end`, `byte_start`, `byte_end`), the parser version, MIME type and source hash; the Markdown compiler has a size limit and a CRLF/fence/unicode test matrix.
@@ -23,7 +36,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - Experimental `knowledge_compiler.compile_markdown` and `import-docs --format markdown`
   compile heading-based source sections through the existing governed importer.
   Explicit document identity and revision are required; review remains the default.
-- Memory Fabric 2 masterplan, implementation status and local performance baseline.
+- Amberlog 2 masterplan, implementation status and local performance baseline.
 
 ### Fixed: document revision tenant boundary
 - Importing a document without an explicit tenant now compares only the default
@@ -32,7 +45,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 ### Added: typed claims, topic browsing (from Sarvam's knowledge fabric)
 - **`TypedClaimChecker`** (`typedclaims.py`) holds a plain-sentence write that negates or reverses another author's established claim, with no model call. Now the default claim checker in the `personal` and `team` presets, as registered on O1 passing (held-out world: recall 1.00 against 0.00 for the built-in checks, 0.00 false holds, 5/5 seeds).
 - **`import-docs`** (`docsource.py`): a compiled document tree becomes provenance-tracked sections; re-importing a new version withdraws revised and removed sections, contests what was derived from them, and the action gate refuses actions certified on them. Guide: `docs/guides/knowledge-fabric.md`.
-- **Topic browsing**: `navigation.py` groups what a reader may see into a topic tree; `retrieve(within=…)` and `recall(within=…)` limit a retrieval to given ids; MCP `browse_topics` / `open_topic` (opt-in, `--extended-tools`). K1 found it does **not** improve recall over search on LongMemEval (0.729 vs 0.768), so it is offered for seeing what is there, not as a retriever.
+- **Topic browsing**: `navigation.py` groups what a reader may see into a topic tree; `retrieve(within=â€¦)` and `recall(within=â€¦)` limit a retrieval to given ids; MCP `browse_topics` / `open_topic` (opt-in, `--extended-tools`). K1 found it does **not** improve recall over search on LongMemEval (0.729 vs 0.768), so it is offered for seeing what is there, not as a retriever.
 
 ### Changed: a knowledge map you can read at a glance
 - **Knowledge map** replaces the dot graph: memories grouped into a few named topics drawn as shaded 3D spheres, each ringed by the state of its memories and captioned with the one memory to look at first (withdrawn or disputed). Fits the screen, needs no zooming, sways gently for depth (still under reduced motion), and becomes a column on a phone. `GET /api/map`.
@@ -44,11 +57,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **Embedders add their model's instruction prefixes** (arctic-m, nomic), which fastembed does not.
 
 ### Fixed: one false flag no longer hides a whole history
-- **An author's own memories are not withheld from it** by hostile-source withholding. Other readers still have them withheld, the flagged memory stays quarantined, and imports keep their origin author. LongMemEval keyword retrieval with withholding on: 0.033 → 0.768, the same as off.
-- **The directive screen flags far less ordinary conversation**: 0.62% → 0.08% of LongMemEval turns, with third-party injection recall unchanged (20/60, 0/56 benign) and the held-out set unchanged (10/12, 0/16). Forms that tell the answerer what to say now need a planted value to follow.
+- **An author's own memories are not withheld from it** by hostile-source withholding. Other readers still have them withheld, the flagged memory stays quarantined, and imports keep their origin author. LongMemEval keyword retrieval with withholding on: 0.033 â†’ 0.768, the same as off.
+- **The directive screen flags far less ordinary conversation**: 0.62% â†’ 0.08% of LongMemEval turns, with third-party injection recall unchanged (20/60, 0/56 benign) and the held-out set unchanged (10/12, 0/16). Forms that tell the answerer what to say now need a planted value to follow.
 
 ### Added: make it easy to see, understand and trust
-- **`memory-fabric tour`**: the whole idea in sixty seconds, in a terminal, with nothing written or downloaded. The README now opens with it.
+- **`amberlog tour`**: the whole idea in sixty seconds, in a terminal, with nothing written or downloaded. The README now opens with it.
 - **Plain-language reasons** (`reasons.py`): every refusal code the gate, verifier, limits and enforcer can return has a sentence and a fix; a blocked action names the memory, who withdrew it, when and why. MCP and the agent API return them as `explanation`.
 - **Trust badge on recall**: each recalled memory carries its source, independent sources (not agent count), age and corrections (`trust` in MCP and the agent API).
 - **Control Center**: the story of each fact (made, shared, recalled, acted on, corrected, blocked), "what would change if this were wrong?", a **Replay** tab that steps through a store's history, and plain-language explanations on every action. Secret values stay masked in all of them.
@@ -58,13 +71,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ### Changed: faster at scale
 - **Embedding batches** are sorted by length and capped by total characters, so a long-context model no longer pads 64 texts to its longest one (one batch had asked for 29 GB).
-- **Reopening a store**: 20,000 memories open in about 1.6 s instead of 15–30 s, peaking at 144 MB instead of 310 MB. The hashed vector index is built only when a retrieval needs vectors (lexical, the default, never does), and text normalisation skips plain ASCII.
+- **Reopening a store**: 20,000 memories open in about 1.6 s instead of 15â€“30 s, peaking at 144 MB instead of 310 MB. The hashed vector index is built only when a retrieval needs vectors (lexical, the default, never does), and text normalisation skips plain ASCII.
 - **Writes after reopening**: about 2.3 ms at 20,000 memories (from 14.7). The outlier check no longer scans peers for a claim that has no single value to compare.
-- **Lexical retrieval prunes**: rarest query terms first, stopping once nothing unseen can reach the top k; in stores of 2,000 memories or more, a term in over 90% of them no longer nominates candidates by itself. 110 ms → 0.6 ms a retrieval at 10,000 memories on the scale benchmark's corpus; identical results to a full scan below 2,000 memories.
-- **Writes**: the outlier claim check reads the newest 256 comparable claims (at most 1,024 looked at) instead of every memory sharing a word: about 23 ms → 4 ms a write at 10,000 memories, still catching a 900-bar claim against a median of 26.
+- **Lexical retrieval prunes**: rarest query terms first, stopping once nothing unseen can reach the top k; in stores of 2,000 memories or more, a term in over 90% of them no longer nominates candidates by itself. 110 ms â†’ 0.6 ms a retrieval at 10,000 memories on the scale benchmark's corpus; identical results to a full scan below 2,000 memories.
+- **Writes**: the outlier claim check reads the newest 256 comparable claims (at most 1,024 looked at) instead of every memory sharing a word: about 23 ms â†’ 4 ms a write at 10,000 memories, still catching a 900-bar claim against a median of 26.
 
 ### Research
-- **L1 / L1′**: a long-running task against a plain vector store. L1 abandoned under its 8c rule (baselines already at the oracle); the registered amendment L1′ on fresh seeds: 0 harmful actions per 1,000 against 80.5, recovery 0 steps against 130.
+- **L1 / L1â€²**: a long-running task against a plain vector store. L1 abandoned under its 8c rule (baselines already at the oracle); the registered amendment L1â€² on fresh seeds: 0 harmful actions per 1,000 against 80.5, recovery 0 steps against 130.
 
 ### Fixed
 - **`min_independent_sources` above one was not enforced** unless `independent_support` was also listed among the required checks. `ToolRule(min_independent_sources=2)` let a single-source certificate through, so the corroboration defence recommended for consequential tools did nothing. Asking for more than one source now implies the check. Found by C2.
@@ -74,25 +87,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **Answerability** (`answerability.py`): a verdict on the evidence (answerable, conflicting, insufficient, undetermined), separate from retrieval scores. `RetrievalResult.answerability()`; the agent API's `recall` returns it. Evaluated with real models (A1, A1-h): an instructed model already abstains perfectly on this world, so the verdict ships as a reported signal and an optional gate.
 - **Retrieval profiles** (`retrieve(profile=..., method=...)`): `precise`, `conversational`, `semantic`, `multi_hop` and `audit`, each citing its measurement, plus a per-call ranking method.
 - **Strict freshness** (`freshness.py`, `ToolRule(require_fresh=True)`): imported evidence needs a signed, unexpired lease from its origin, so no protected action relies on a withdrawal at an offline peer for more than one lease lifetime.
-- **`memory-fabric anchor`**: checkpoint anchoring in one command to `dir:`, `git:` or `https://` targets, with `--verify`.
-- **Signed action receipts** (`action_receipt.py`, `mf-action-receipt/1`): Ed25519, verifiable with the public key alone, and carrying hashes, never content. `memory-fabric receipt-verify`.
+- **`amberlog anchor`**: checkpoint anchoring in one command to `dir:`, `git:` or `https://` targets, with `--verify`.
+- **Signed action receipts** (`action_receipt.py`, `mf-action-receipt/1`): Ed25519, verifiable with the public key alone, and carrying hashes, never content. `amberlog receipt-verify`.
 - **Decision dependence** (`dependence.py`): which recorded decisions depended on a corrected memory, by counterfactual through the product's own verifier.
 - **Consensus by independent source** (`consensus.py`): repetition is not corroboration, and artificial consensus is flagged.
-- **Memory Control Center** (dashboard): a guided start page, agent actions with their evidence then and now, a "would retrieval show this?" trace, decision dependence and known limitations. `memory-fabric sandbox` seeds a store with deliberately wrong memories and opens it in the dashboard.
-- **Tenant isolation patterns** (DEPLOYMENT.md), **PostgreSQL failover runbook** (OPERATIONS §4b), and the team review flow (validate *and* share).
+- **Memory Control Center** (dashboard): a guided start page, agent actions with their evidence then and now, a "would retrieval show this?" trace, decision dependence and known limitations. `amberlog sandbox` seeds a store with deliberately wrong memories and opens it in the dashboard.
+- **Tenant isolation patterns** (DEPLOYMENT.md), **PostgreSQL failover runbook** (OPERATIONS Â§4b), and the team review flow (validate *and* share).
 
 ### Added: staging run, real-model summaries, related work, review kits
 
 - `experiments/staging_run.py`: the production deployment end to end on
-  PostgreSQL — `agent-api` with default rate limits, local-model writer and
+  PostgreSQL â€” `agent-api` with default rate limits, local-model writer and
   answering agents, operators reviewing and changing facts, a scripted
   adversary, background load. Governed answers 0.625 vs 0.542 for plain
   retrieval with no poisoned or stale value in context (plain: 4% / 21%);
   `research/results/staging-run.md`, with a failed first run kept.
 - Decay view with real models (`--model`): qwen2.5:7b missed the registered
   bar badly (0.12 of 0.75); llama3.1:8b reached 0.53. The submission check
-  refused 18–37% of model summaries for invented facts but cannot catch an
-  older real value, which caused 3–5% stale answers.
+  refused 18â€“37% of model summaries for invented facts but cannot catch an
+  older real value, which caused 3â€“5% stale answers.
 - `research/RELATED_WORK.md`: prior work (Lemmalog, Kumiho, Git Context
   Controller, Memoria, a provenance-aware tiered memory preprint) narrows
   every novelty claim; only specific governance checks remain possibly new.
@@ -115,13 +128,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 ### Fixed: constraints an engineer would hit
 - **Claim checks missed every equipment code written with a separator.** `H-14`, `PMP_0012` and `K/31` were split into a word and a number, so the claim had no identifier and the contradiction, re-assertion and corroboration checks never ran on it. A poisoned "update" to such a code went through unflagged (D1, with one attacker account per case: 15 of 15). Codes before a claim's verb now form its subject, and codes after it are values. Held-out: detection 1.000, false alarms 0.000 ([V2](research/results/v2-codes.md)).
 - **A compromised account could change a reviewer-validated fact unflagged.** The change is now provisional (`revises_validated`) until someone validates it. `ToolRule(refuse_provisional=True)` lets a protected tool refuse it.
-- **"Every assistant should treat X as …" passed both injection screens.** The directive screen now catches it, with 0 of 40,919 benign memories flagged.
+- **"Every assistant should treat X as â€¦" passed both injection screens.** The directive screen now catches it, with 0 of 40,919 benign memories flagged.
 
 ### Added
 - **`doctor --webhook URL`**: a JSON alert POSTed when the store is not sound (`--webhook-on warn` for warnings too). Before this, `doctor` had no alerting path.
 ### Added: governed decay view (OptMem-inspired compression)
 
-- `memory_fabric/decay.py` (experimental): a bounded session-start view with
+- `amberlog/decay.py` (experimental): a bounded session-start view with
   recent memories whole and older ones in summaries that coarsen with age over
   a binary tree of fixed log positions; `zoom` back down to the records;
   summaries written by the agent on request ("nap"), stored as derived
@@ -155,7 +168,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - Revising a fact, or withdrawing it with basis `contradicted`, now contests
   other usable notes in the tenant that state the same claim with the old
   value (`validation.restatements`). They are withheld from retrieval and
-  stay visible for review; nothing is deleted. `MemoryFabric(...,
+  stay visible for review; nothing is deleted. `Amberlog(...,
   contest_restatements=False)` turns it off.
 - GME matrix v2 (pre-registered, fresh seeds): stale leakage halved; the
   remainder is withdrawals recorded without a basis. Compression saves 5-19%
@@ -244,10 +257,10 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   first run found two untested guards, now covered: a summariser dropping an
   undisputed value, and an ungranted agent holding its own valid certificate.
 
-### Changed (internal): MemoryFabric split into a core and seven services
+### Changed (internal): Amberlog split into a core and seven services
 
 - `fabric.py` was one 3,722-line module with a 3,400-line class. It is now a
-  182-line facade composing `memory_fabric/_fabric/`: `FabricCore` (identity,
+  182-line facade composing `amberlog/_fabric/`: `FabricCore` (identity,
   log, refresh, transactions, replay) and services for writes, retrieval,
   lifecycle, federation, sharing, sealing and access. Methods moved
   verbatim; no behaviour changed.
@@ -278,12 +291,12 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   checkpoints, kept off the store's disk, catch an edited event with a
   recomputed chain; `checkpoint --verify` reads the manager's JSONL file
   (`tests/test_checkpoint_rewrite.py`).
-- **Production cryptography profile**: `MEMORY_FABRIC_CRYPTO_PROFILE=production`
+- **Production cryptography profile**: `AMBERLOG_CRYPTO_PROFILE=production`
   writes only AES-256-GCM from the maintained `cryptography` library and
   refuses to open without it; the Docker image installs it and defaults to
-  it; extra `memory-fabric[crypto]`; `doctor` reports the profile.
+  it; extra `amberlog[crypto]`; `doctor` reports the profile.
   `docs/CRYPTOGRAPHY.md` sets out every decision for independent review.
-- `docs/SECURITY_REVIEW.md`: F15–F17 recorded; every open item now carries
+- `docs/SECURITY_REVIEW.md`: F15â€“F17 recorded; every open item now carries
   current status and a review-by date.
 
 ### Fixed: writes slowed as a store filled with near-identical notes
@@ -305,8 +318,8 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   recipient's firewall and import here. A networked import is always a
   **candidate**, recorded as `peer:<sending store>`, and idempotent. `offer`
   is now `prepare_offer` + `accept_offer`, shared by both paths.
-- **CLI:** `memory-fabric federate` serves the federation endpoints and runs
-  the manager; `memory-fabric offer <id> --to <store>` shares; a global
+- **CLI:** `amberlog federate` serves the federation endpoints and runs
+  the manager; `amberlog offer <id> --to <store>` shares; a global
   `--share-policy {value,reviewed}` (default `value`, unchanged) lets a
   validated memory leave a store that has no outcome evidence yet.
 - **Fixed: forwarded retractions were refused over HTTP.** A recipient
@@ -321,9 +334,9 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - **Multi-host harness** (`experiments/multihost.py`) and CI jobs
   `multihost` (separate server processes, 50 ms a hop, three OSes) and
   `multihost-compose` (separate containers): correction reached the third
-  store in 1.3–1.9 s; with it down, it converged ~1 s after restart.
+  store in 1.3â€“1.9 s; with it down, it converged ~1 s after restart.
 - **Model injection screen** (`governance/model_screen.py`, opt-in): on
-  the third-party test split, 20/60 → 46/60 (qwen2.5:3b) or 54/60
+  the third-party test split, 20/60 â†’ 46/60 (qwen2.5:3b) or 54/60
   (gemma3:4b) caught, with 6/56 or 3/56 benign texts flagged for review.
 - **Frontier models:** `adapters.claude_chat.ClaudeChat` gives every
   model-based evaluation the same interface on Claude, recording model,
@@ -344,12 +357,12 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - **Defaults:** a suspicious write is held as a candidate
   (`hold_suspicious=True`), the action gate refuses suspicious evidence
   (`ToolRule.refuse_suspicious=True`, code `evidence_suspicious`), and
-  recall marks it `implausible`. New command: `memory-fabric suspicious`.
+  recall marks it `implausible`. New command: `amberlog suspicious`.
 - **Federation key rotation with an overlap window**: `Peer.accepted` and
   `previous_keys` in the peers file. The recipient verifies with the key the
   signature names, if current or still accepted; a retired key is refused.
   Drilled over HTTP in four phases (`tests/test_key_rotation_drill.py`);
-  RUNBOOKS §3 rewritten.
+  RUNBOOKS Â§3 rewritten.
 
 ### Product documentation and consumability
 
@@ -367,7 +380,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   relative link (698) and that every doc is indexed; check the generated
   references are current, every CLI option has help (68 were missing), and
   every reason code is documented.
-- `memory-fabric --version`. Package metadata: keywords, classifiers and
+- `amberlog --version`. Package metadata: keywords, classifiers and
   documentation, changelog, issue and security URLs.
 - **Security reporting** is by private email to the maintainer: GitHub's
   private reporting is not available on a private repository.
@@ -403,7 +416,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   `hindsight` moves to beta.
 - **`tenancy.TenantRouter`**: one store file and key directory per tenant.
 - **Directive detector `OVERRIDE` family** (English and German): on the
-  third-party deepset/prompt-injections test split, 0/60 → 20/60 caught,
+  third-party deepset/prompt-injections test split, 0/60 â†’ 20/60 caught,
   0/56 benign flagged.
 - **`influence.paraphrases`**: unlinked restatements of a claim, reported
   as `possible_paraphrases` in `impact()`.
@@ -421,7 +434,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   config beside the snapshot and writes a manifest of hashes, the event count
   and the chain head. **`restore`** refuses a backup that does not match its
   manifest, never overwrites, and checks the replayed chain head.
-- **Structured logs**: `--log-format json` / `MEMORY_FABRIC_LOG_FORMAT=json`;
+- **Structured logs**: `--log-format json` / `AMBERLOG_LOG_FORMAT=json`;
   the manager logs each cycle and each task failure with ids and codes.
 - **Quickstart and reference agent**: `docs/QUICKSTART.md`,
   `examples/quickstart.py` and `examples/reference_agent.py`, each run by a
@@ -433,18 +446,18 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - **Open-loop load** (`experiments/p12_openloop.py`): latency from the
   scheduled arrival, so queueing counts.
 - Docs: `docs/INTEGRATIONS.md`, a supported-version policy (VERSIONING.md),
-  threats T9–T12 (SECURITY.md), RUNBOOKS §8 (restore), and
+  threats T9â€“T12 (SECURITY.md), RUNBOOKS Â§8 (restore), and
   `docs/HARDENING_STATUS.md` mapping every item of the owner's three lists.
 - T2b, the cross-store hostile-source notice: **supported** on held-out
-  seeds (0.732 → 0.949 safe success).
+  seeds (0.732 â†’ 0.949 safe success).
 
 ### Added: MemoryObjectiveV2, store limits, recovery states, the adversarial gate
 
 - **`objective_v2.py`** (experimental): goal, required facts, preferred
   evidence, excluded context, safety constraints, scope, `as_of`, freshness,
-  uncertainty policy and decision impact. Eligibility (security ∧ lifecycle ∧
-  hard rules) is separate from ranking (relevance × authority × kind ×
-  freshness × independence × soft preferences). An **unreviewed** compiled
+  uncertainty policy and decision impact. Eligibility (security âˆ§ lifecycle âˆ§
+  hard rules) is separate from ranking (relevance Ã— authority Ã— kind Ã—
+  freshness Ã— independence Ã— soft preferences). An **unreviewed** compiled
   exclusion never removes safety evidence; a compiled V1 objective converts
   to *uncertain* rules, which never filter. Applying an objective has no
   write path. Changes are proposed and adopted through `ObjectiveLog`, by a
@@ -467,13 +480,13 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   `elevated`) and kind (`instruction` / `observation` / `derived_claim`) are
   bound to its origin. They are inherited through summaries, derivations,
   recognised copies and federation, where the origin's verdict travels as a
-  floor. Sources are kept apart from summarisers. `MemoryFabric.elevate`
+  floor. Sources are kept apart from summarisers. `Amberlog.elevate`
   lifts soft reasons only, per version, by an approver who is not the author.
-  Outcomes never confer authority. The roadmap's test (inject → summarise →
-  tool copy → share) is `tests/test_authority.py`.
+  Outcomes never confer authority. The roadmap's test (inject â†’ summarise â†’
+  tool copy â†’ share) is `tests/test_authority.py`.
 - **`ActionGate`** refuses evidence below `ToolRule.min_authority` (default
   `unverified`) and any `instruction` used as evidence. **Grants**
-  (`issue_grant`, `revoke_grant`) are short-lived (≤ 300 s), bound to the
+  (`issue_grant`, `revoke_grant`) are short-lived (â‰¤ 300 s), bound to the
   exact tool, agent, tenant, target, parameters and evidence versions, and
   consumed once: an expired, revoked, replayed or changed request is refused.
   Approvals can be bound to the same digest.
@@ -495,14 +508,14 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   values for one claim, by different authors, are marked as contradicting
   each other in the agent context (`build_context`) and carry a `disputed`
   warning through the SDK, MCP and LangChain recall (G4b: acting on an
-  undetected poison 63% → 55%).
+  undetected poison 63% â†’ 55%).
 - **Cross-store hostile-source notice** (`SourceNotice`, `/federation/notice`,
   the manager's `sources` task): a source caught by an ingest screen is
   withheld at the stores holding its memories.
 
 ### Added: the background memory manager (schema 0.12.0)
 
-- **`memory_fabric/manager.py`: the store maintains itself.**
+- **`amberlog/manager.py`: the store maintains itself.**
   - **Tasks:** every interval it delivers owed retractions to peer stores,
     applies the retention policy, scans for the auditor's triggers, finds
     contradicting memories, records an integrity checkpoint (off-host with
@@ -513,13 +526,13 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
     across processes, with takeover when the holder stops.
   - **Audit:** every cycle is a `MaintenanceRan` event.
   - **Startup:** it starts automatically with `serve`, `agent-api` and
-    `mcp`, and runs alone with `memory-fabric maintain`. `--status` shows
+    `mcp`, and runs alone with `amberlog maintain`. `--status` shows
     the last cycle and what needs a person.
   - **No terminal step by default:** retention *deletions* need
     `--retention-delete`, contradictions are queued and never resolved, and
     nothing is validated or released.
 - **Retraction delivery now has a configuration path:** `--peers` or
-  `MEMORY_FABRIC_PEERS` (a JSON peer list). Before, nothing in the CLI
+  `AMBERLOG_PEERS` (a JSON peer list). Before, nothing in the CLI
   delivered retractions to other stores.
 - `doctor` reports a manager that has stopped.
 - `sweep_retention(actions=)` limits which retention actions are applied.
@@ -538,10 +551,10 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - `derive(auto_activate=)`, as `remember` has.
 - **Contradiction surfacing** (`conflicts.py`, G4b, under test): notes that give different values for the same claim, by different authors (imports resolve to the original author), are placed together and flagged, instead of lexical ranking deciding which the agent sees first.
 - **In the RC as well:** `trust.py` and `exposure.TransferGatePolicy` (S4),
-  `independence.py` (S2), `receipts.py` (S5), `MemoryFabric.supersede_copies` (S1),
+  `independence.py` (S2), `receipts.py` (S5), `Amberlog.supersede_copies` (S1),
   `ActionGate.execute` (S6). See the release note.
 
-### Changed — breaking
+### Changed â€” breaking
 
 - **Scope is enforced on reads.** A `private` memory is visible only to the
   agent that wrote it; `team` and `federated` are visible to every agent in
@@ -549,7 +562,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   validated private memory, restricted ones included, was returned to every
   agent in its tenant although the specification defines scope as visibility
   ([security review](docs/SECURITY_REVIEW.md) F10). **Upgrading a store:**
-  `memory-fabric --db store.db share --all-private-active --actor <you>`
+  `amberlog --db store.db share --all-private-active --actor <you>`
   restores the previous effective visibility through the firewall, and
   restricted memories are refused and listed.
 - **Promotion to `team` no longer needs value evidence.** The value rule now
@@ -574,7 +587,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   a tenant. Attaching an agent (`read`) lets it read the members even when
   private; `write`, `approve` and `retract` let an authenticated agent add to,
   validate and withdraw a collection's members without the operator role. Every
-  change is an event naming its actor. `memory-fabric collection ...`.
+  change is an event naming its actor. `amberlog collection ...`.
 - A review queue (`review`), safe correction with a preview that is the outcome
   (`correct`), reach on every memory page, and four status labels.
 - `share` and `agent-api-revoke` commands; `list --agent`.
@@ -612,19 +625,19 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - **`conceal_cross_tenant`**: opt-in, makes a cross-tenant refusal identical to a missing id.
 - **Benchmarks**: [P5](research/results/p5-poisonworld.md) (ten-agent poisoning, pre-registered), [P12](research/results/p12-load.md) (latency at 1/10/50/100 agents).
 - **Threat-mapped security regression suite** (`tests/test_security_regression.py`), **threat model** (`docs/SAFETY_AND_SECURITY.md`), **test plan** (`docs/SECURITY_TEST_PLAN.md`) and **implementation status** (`docs/IMPLEMENTATION_STATUS.md`).
-- **MCP server** — `memory-fabric --db store.db mcp --agent <id>` serves one store to one agent over stdio, so any MCP-capable client can use it. Standard library only. Built on `AgentClient`, so it exposes `recall`, `fetch`, `verify` and `remember` and nothing else: no unenforced read, no scope argument, and deliberately no `record_outcome`, because the model on the pipe is the agent being scored. Exposure tokens stay server-side; the model names memories by id and cannot forge one. Checked against the official MCP Python SDK client as well as its own tests.
-- **Release workflow** (`.github/workflows/release.yml`) on `v*` tags: version agreement check, full tests and fault matrix, GitHub release with wheel and sdist, container image to GHCR. PyPI publishing is wired but **off** until the repository variable `PYPI_PUBLISH` is set, because the name `memory-fabric` is taken on PyPI by an unrelated project.
+- **MCP server** â€” `amberlog --db store.db mcp --agent <id>` serves one store to one agent over stdio, so any MCP-capable client can use it. Standard library only. Built on `AgentClient`, so it exposes `recall`, `fetch`, `verify` and `remember` and nothing else: no unenforced read, no scope argument, and deliberately no `record_outcome`, because the model on the pipe is the agent being scored. Exposure tokens stay server-side; the model names memories by id and cannot forge one. Checked against the official MCP Python SDK client as well as its own tests.
+- **Release workflow** (`.github/workflows/release.yml`) on `v*` tags: version agreement check, full tests and fault matrix, GitHub release with wheel and sdist, container image to GHCR. PyPI publishing is wired but **off** until the repository variable `PYPI_PUBLISH` is set, because the former distribution name was occupied. This historical blocker does not establish the availability of the new target name.
 
 - **Live Claude over MCP** (`experiments/live_claude_mcp.py`): Sonnet 5.5 and Opus 5.5, 20 trials; every run recalled and verified, and a retraction issued from another process mid-session was refused 10/10 with no model recommending the withdrawn fix. [Result](research/results/live-claude-mcp.md)
 - **`mcp --trusted-local`** for a single user's local assistant: the agent's clean writes become active without review, marked `activation: trusted-local` in provenance; the sensitive-data and injection screens still apply.
 - **Prompt-injection screen at ingest** (`governance/injection.py`): instruction overrides, chat-template role tokens and prompt-exfiltration requests are quarantined, on write and again at share time; persona overrides warn. Positive and near-miss negative per pattern.
-- **Obfuscation-aware secret screening**: variant scans undo invisible and full-width characters, look-alike letters, spaced key groups, URL encoding and base64/hex wrappers, plus a `password_in_prose` pattern. Red team: **0/13 → 12/13** caught; 0 near-miss false positives.
-- **`migrate-keys`**: moves an existing store's content keys out of the database, verified by a full replay before anything is cleared. `--keys` defaults to `$MEMORY_FABRIC_KEYS`.
+- **Obfuscation-aware secret screening**: variant scans undo invisible and full-width characters, look-alike letters, spaced key groups, URL encoding and base64/hex wrappers, plus a `password_in_prose` pattern. Red team: **0/13 â†’ 12/13** caught; 0 near-miss false positives.
+- **`migrate-keys`**: moves an existing store's content keys out of the database, verified by a full replay before anything is cleared. `--keys` defaults to `$AMBERLOG_KEYS`.
 - **Container keys on their own volume by default** (`/keys`), with an entrypoint that keeps older in-database-key stores running and tells the operator how to migrate.
 - **Dashboard operators**: `serve --operators-file` gives each operator their own token, and an access log records who looked at what, including refused requests, outside the event log.
 - **Authenticated agent API** (`agent-api`, `agent-api-issue`): recall, fetch, verify and remember over HTTP for agents in other processes or machines, verified per request from signed, expiring credentials. Refuses plain HTTP off loopback, browser requests and oversized bodies.
 - **`erase` and `erasure-scope`** commands, and an erasure-request runbook in `docs/OPERATIONS.md`.
-- **Optional PostgreSQL backend** (`memory-fabric[postgres]`, `--db postgresql://...`) for writers on several machines. Same modules and SQL through a compatibility layer; append-only triggers in the database; writers serialised on a table lock so `seq` stays gapless and the chain ordered. Storage-touching tests run against it in CI.
+- **Optional PostgreSQL backend** (`amberlog[postgres]`, `--db postgresql://...`) for writers on several machines. Same modules and SQL through a compatibility layer; append-only triggers in the database; writers serialised on a table lock so `seq` stays gapless and the chain ordered. Storage-touching tests run against it in CI.
 - **Release supply chain**: SPDX SBOMs for distributions and image; Sigstore build-provenance and SBOM attestations where GitHub allows them (public repository or Enterprise).
 - **macOS** added to the CI test matrix.
 
@@ -636,75 +649,75 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 
 ### Changed
 - **Agent API rate limits.** Per-agent token bucket (default 20/s, burst 40; `--rate-limit`, `--burst`), failed authentications limited per remote address, `429` with `Retry-After`. The per-agent exposure-token cache is bounded (oldest evicted).
-- **Chain search prefers the chain whose weakest link is strongest** (P1d, pre-registered on a fresh holdout: three-hop sufficiency 0.417 → 0.917).
+- **Chain search prefers the chain whose weakest link is strongest** (P1d, pre-registered on a fresh holdout: three-hop sufficiency 0.417 â†’ 0.917).
 - **A broken `cryptography` install no longer crashes every write.** A native panic on import (a `BaseException`) escaped the availability check. The store now falls back to encrypt-then-MAC, warns once, and `doctor` names the reason: a warning, or a failure when AES-GCM content exists that cannot be read there.
 - **`derive` never writes a conclusion less restricted than its premises.** A summary of `restricted` content used to be written `internal`, so it could be shared.
 - **The ingest screen reads `context` and `structured`, and `revise` is screened.** Before, a secret or an injection placed in metadata was stored active and inherited by every memory `derive` drew from it, and a revision could add either to an active memory. Both are quarantined now. Ordinary metadata is unaffected; a test pins that.
-- **The Claude adapter defaults to `claude-opus-5-5`**, the current Opus, instead of `claude-opus-5`. The request shape was checked against the current API reference and needed nothing else: adaptive thinking, explicit effort (the new model defaults to `medium`), strict tools, no forced `tool_choice`, and the `fallbacks: "default"` form with its matching beta. Still not run live — no key here (P3 gate).
+- **The Claude adapter defaults to `claude-opus-5-5`**, the current Opus, instead of `claude-opus-5`. The request shape was checked against the current API reference and needed nothing else: adaptive thinking, explicit effort (the new model defaults to `medium`), strict tools, no forced `tool_choice`, and the `fallbacks: "default"` form with its matching beta. Still not run live â€” no key here (P3 gate).
 
 ### Fixed
 - **CI was red on `main` for seven pushes.** The real-embedder benchmark arms raised when no Ollama embedder was reachable, which is always true in CI; they are now skipped and reported as skipped, as their docstring promised. Asking for one by name still raises.
 - **A copy of withdrawn evidence read as justified.** Copy recognition (0.8.0) contested it; `JustificationGraph.recompute` called it a root observation with nothing to lose. `faultsim`'s `cycle_terminates` caught the disagreement. `recompute` now checks the copy component first.
-- **`memory_fabric.__version__` said 0.7.0** while the wheel said 0.8.0. A test now keeps them in step.
-- **A running fabric did not see other processes' writes.** An operator's CLI quarantine did not reach an already-running MCP server, app or dashboard until restart; verify kept reporting the withdrawn memory usable. Measured live before the fix: refused 0/3. Every serving, enforcing and writing entry point now catches up on the log (`refresh()`), at ~5.5 µs when nothing changed.
-- **`backup` crashed on every store with external keys** — the custody SECURITY.md recommends — because its verification replay used the in-database key provider.
+- **`amberlog.__version__` said 0.7.0** while the wheel said 0.8.0. A test now keeps them in step.
+- **A running fabric did not see other processes' writes.** An operator's CLI quarantine did not reach an already-running MCP server, app or dashboard until restart; verify kept reporting the withdrawn memory usable. Measured live before the fix: refused 0/3. Every serving, enforcing and writing entry point now catches up on the log (`refresh()`), at ~5.5 Âµs when nothing changed.
+- **`backup` crashed on every store with external keys** â€” the custody SECURITY.md recommends â€” because its verification replay used the in-database key provider.
 - **SECURITY.md contradicted itself** on whether content encryption is authenticated and whether credentials can be revoked; docs/AUDIT.md still listed action-time re-checking as missing.
 - **A float's digits could pass as a credit card** in the secret screen (Luhn on the fractional part).
 
-## [0.8.0] — 2026-10-12 — copy recognition
-A re-ingested document is recognised as a copy and gets no independent source root; withdrawing a document withdraws its copies. One event type, additive. [SPEC.md §0.8.0](SPEC.md)
+## [0.8.0] â€” 2026-10-12 â€” copy recognition
+A re-ingested document is recognised as a copy and gets no independent source root; withdrawing a document withdraws its copies. One event type, additive. [SPEC.md Â§0.8.0](SPEC.md)
 
-## [0.7.0] — 2026-10-11 — bitemporal validity
-`valid_from` / `valid_to` on `Memory`, `applies_at()`, and `retrieve(as_of=…)` filtering before the index is queried. Additive. [SPEC.md §0.7.0](SPEC.md)
+## [0.7.0] â€” 2026-10-11 â€” bitemporal validity
+`valid_from` / `valid_to` on `Memory`, `applies_at()`, and `retrieve(as_of=â€¦)` filtering before the index is queried. Additive. [SPEC.md Â§0.7.0](SPEC.md)
 
-## [0.6.0] — 2026-10-11 — authenticated content encryption
-`enc:v1` was unauthenticated and malleable. `enc:v2` (encrypt-then-MAC, zero-dependency) and `enc:v3` (AES-256-GCM when `cryptography` is installed) replace it for writes, with associated data binding store, memory and version; key custody can leave the database. Older code must not open a newer store. [SPEC.md §0.6.0](SPEC.md)
+## [0.6.0] â€” 2026-10-11 â€” authenticated content encryption
+`enc:v1` was unauthenticated and malleable. `enc:v2` (encrypt-then-MAC, zero-dependency) and `enc:v3` (AES-256-GCM when `cryptography` is installed) replace it for writes, with associated data binding store, memory and version; key custody can leave the database. Older code must not open a newer store. [SPEC.md Â§0.6.0](SPEC.md)
 
-## [0.5.0] — 2026-10-11 — tenant identity
-`tenant_id` on `Memory`, enforced at the handle rather than per call. Additive. [SPEC.md §0.5.0](SPEC.md)
+## [0.5.0] â€” 2026-10-11 â€” tenant identity
+`tenant_id` on `Memory`, enforced at the handle rather than per call. Additive. [SPEC.md Â§0.5.0](SPEC.md)
 
-## [0.4.0] — 2026-10-11 — the share record, and a per-hop retraction target
-`MemoryShared` records what a recipient store called its copy, so a retraction can follow a memory past the first hop. Additive events plus one storage migration. [SPEC.md §0.4.0](SPEC.md)
+## [0.4.0] â€” 2026-10-11 â€” the share record, and a per-hop retraction target
+`MemoryShared` records what a recipient store called its copy, so a retraction can follow a memory past the first hop. Additive events plus one storage migration. [SPEC.md Â§0.4.0](SPEC.md)
 
-## [0.3.0] — 2026-10-10 — withdrawal basis, store identity, retraction protocol
-A withdrawal records its `basis`; each store gets an opaque `store_id`; origin records carry the exact version imported; retraction-protocol, access-denied, support-recomputed and content-erased events; per-memory sealed content. Additive. [SPEC.md §0.3.0](SPEC.md)
+## [0.3.0] â€” 2026-10-10 â€” withdrawal basis, store identity, retraction protocol
+A withdrawal records its `basis`; each store gets an opaque `store_id`; origin records carry the exact version imported; retraction-protocol, access-denied, support-recomputed and content-erased events; per-memory sealed content. Additive. [SPEC.md Â§0.3.0](SPEC.md)
 
-## [0.2.0] — 2026-10-07
+## [0.2.0] â€” 2026-10-07
 
 ### Added
-- **Packaging.** Installable wheel, a `memory-fabric` console script, and the dashboard bundled as package data. CI checks the wheel actually contains it, because a missing static file only fails in front of a user.
+- **Packaging.** Installable wheel, a `amberlog` console script, and the dashboard bundled as package data. CI checks the wheel actually contains it, because a missing static file only fails in front of a user.
 - **Duplicate suppression.** `remember` returns the existing memory and emits `MemoryDuplicateSuppressed` when an agent rewrites content it already wrote *in the same episode*, compared after normalising whitespace and case. Scoped to one episode deliberately: the same claim on two occasions is two observations, and that genuinely is more evidence.
 - **Token accounting on every model call.** AGENTS.md requires that LLM calls go through one wrapper logging model, prompt hash and token counts, and the Ollama client was logging none of it. It now keeps a ledger. The prompt is hashed rather than stored, because a prompt contains memory content and may contain exactly what the governance layer exists to keep out of secondary surfaces. Cost stays in tokens: multiplying by a made-up price would be a number without a run behind it.
-- **Ollama adapter** — local models and real embeddings (`OllamaEmbedder`), with no new dependency since Ollama speaks HTTP over `urllib`. This replaces the hashed bag-of-words placeholder wherever a model is available.
+- **Ollama adapter** â€” local models and real embeddings (`OllamaEmbedder`), with no new dependency since Ollama speaks HTTP over `urllib`. This replaces the hashed bag-of-words placeholder wherever a model is available.
 - **Federation** across store boundaries: the recipient's firewall decides, imports arrive unvalidated, and provenance crosses with them.
-- **`AgentSession`** — writes scoped to one agent and one episode, so an adapter cannot attribute work to another agent.
+- **`AgentSession`** â€” writes scoped to one agent and one episode, so an adapter cannot attribute work to another agent.
 - **What the withdrawal bases have actually been measured to be worth.** `co_occurrence` and `unstated` are flagged as weak on the strength of two runs. `contrastive_harm` is documented as resting on thin evidence rather than silently treated as equal to a sensitive-data finding: PA' is its only measurement, where it fired three times in 120 episodes and all three withdrawals were irrelevant to the episode that triggered them. Three events cannot establish a rate, so it stays out of `WEAK_BASES`; what it currently supports is "rare", not "accurate".
 - **Schema version reporting.** `overview` names the installed schema version and every version that wrote into the log, and warns when the log is newer than the build reading it. A projection silently skips events it does not recognise, which is the right behaviour and a terrible failure mode to hit without being told. Versions compare numerically, because `0.10.0` sorts below `0.2.0` as a string.
 - **Container image.** A wheel on `python:3.13-slim`, non-root, with the store on a volume because the event log is the source of truth. CI builds it and checks the server answers on the published port and refuses unauthenticated requests.
-- **`propagate_retraction`** — a retraction reaches the stores a memory travelled to. PRIOR_ART.md identifies this as the claim that survives the novelty downgrade: none of the four adjacent papers carries provenance across a federation boundary, so none can do it. It existed as hand-written experiment code, which meant the product did not actually have it. It quarantines rather than deletes, because an importer may have built on the memory and its descendants need to become *contested* rather than vanish; it leaves alone an import the recipient had already withdrawn, because the recipient having independently found the problem is the evidence that matters when deciding whether to trust that sender again; and it matches on provenance method as well as origin, because a memory derived locally from an import inherits the parent's origin record and looked like a second copy of it — a bug that quarantined the recipient's own conclusion directly instead of contesting it. The origin can say its observation was wrong; only the recipient can say what follows for the reasoning built on top.
-- **`memory-fabric backup`** — a consistent snapshot of the event log while the store is live, which then **replays the copy** and fails if its event count does not match the source. The log is the source of truth, so a project that says so should not outsource the one operation that protects it to the `sqlite3` CLI; and `cp` is wrong here, because WAL mode means a mid-write copy is a database plus an uncommitted write-ahead log whose restore depends on timing. The replay check matters because a truncated backup opens perfectly well.
-- **[DEPLOYMENT.md](DEPLOYMENT.md)** — backup and restore, serving behind something, measured capacity, upgrades, what to watch, and a plain list of what this is not ready for: one writer, one token with no identity, no encryption at rest, and value-ranked exposure not recommended on current evidence.
+- **`propagate_retraction`** â€” a retraction reaches the stores a memory travelled to. PRIOR_ART.md identifies this as the claim that survives the novelty downgrade: none of the four adjacent papers carries provenance across a federation boundary, so none can do it. It existed as hand-written experiment code, which meant the product did not actually have it. It quarantines rather than deletes, because an importer may have built on the memory and its descendants need to become *contested* rather than vanish; it leaves alone an import the recipient had already withdrawn, because the recipient having independently found the problem is the evidence that matters when deciding whether to trust that sender again; and it matches on provenance method as well as origin, because a memory derived locally from an import inherits the parent's origin record and looked like a second copy of it â€” a bug that quarantined the recipient's own conclusion directly instead of contesting it. The origin can say its observation was wrong; only the recipient can say what follows for the reasoning built on top.
+- **`amberlog backup`** â€” a consistent snapshot of the event log while the store is live, which then **replays the copy** and fails if its event count does not match the source. The log is the source of truth, so a project that says so should not outsource the one operation that protects it to the `sqlite3` CLI; and `cp` is wrong here, because WAL mode means a mid-write copy is a database plus an uncommitted write-ahead log whose restore depends on timing. The replay check matters because a truncated backup opens perfectly well.
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** â€” backup and restore, serving behind something, measured capacity, upgrades, what to watch, and a plain list of what this is not ready for: one writer, one token with no identity, no encryption at rest, and value-ranked exposure not recommended on current evidence.
 - **Secret scanner** (`tools/scan_secrets.py`) pointing the project's own detector at its own repository, wired into CI.
-- [VERSIONING.md](VERSIONING.md) — the guarantee is on the event log, not the Python API, because a renamed argument costs a minute and an unreplayable log costs the data.
-- CI across Python 3.11–3.13 on Linux and Windows, run with **no dependencies installed**, because the zero-dependency claim is only true if it is checked.
+- [VERSIONING.md](VERSIONING.md) â€” the guarantee is on the event log, not the Python API, because a renamed argument costs a minute and an unreplayable log costs the data.
+- CI across Python 3.11â€“3.13 on Linux and Windows, run with **no dependencies installed**, because the zero-dependency claim is only true if it is checked.
 
 ### Fixed
-- **`backup` reported success having copied nothing.** `--db :memory:` opens a fresh, empty store, so the command copied its zero events, compared zero against zero, and printed a verified-looking result — the worst possible failure for the one operation that protects the event log. It now refuses, with a non-zero exit and no file left behind. Found by the live memory-OS validation on the first run after that section was added to it.
-- **Ranking by value was ranking by creation time.** `rank_by="value"` ordered candidates by `(-value_mean, memory_id)`, and `value_mean` is `0.0` for a memory nothing is known about — so in a store with little value evidence every candidate tied at zero and the sort fell through to the id, which is a ULID and therefore time-ordered. Relevance was discarded entirely, a newly written or imported memory could not be exposed, and value evidence can only be earned by exposure. Only the epsilon exploration broke the deadlock, weakly: a four-agent federation retrieved none of 36 imports across eight consecutive episodes. An unevaluated candidate is now ordered by the only signal that exists for it, which is relevance; measured value still outranks relevance wherever there is any. This also means [Phase A](research/results/phase-a-real-agent-benchmark.md)'s `fabric_causal` number is part exploration cost and part this defect, and is corrected in §6a there. The ranking had tests and they all passed, because every one of them gave its candidates distinct values — nothing tested the case that dominates a real cold store.
+- **`backup` reported success having copied nothing.** `--db :memory:` opens a fresh, empty store, so the command copied its zero events, compared zero against zero, and printed a verified-looking result â€” the worst possible failure for the one operation that protects the event log. It now refuses, with a non-zero exit and no file left behind. Found by the live memory-OS validation on the first run after that section was added to it.
+- **Ranking by value was ranking by creation time.** `rank_by="value"` ordered candidates by `(-value_mean, memory_id)`, and `value_mean` is `0.0` for a memory nothing is known about â€” so in a store with little value evidence every candidate tied at zero and the sort fell through to the id, which is a ULID and therefore time-ordered. Relevance was discarded entirely, a newly written or imported memory could not be exposed, and value evidence can only be earned by exposure. Only the epsilon exploration broke the deadlock, weakly: a four-agent federation retrieved none of 36 imports across eight consecutive episodes. An unevaluated candidate is now ordered by the only signal that exists for it, which is relevance; measured value still outranks relevance wherever there is any. This also means [Phase A](research/results/phase-a-real-agent-benchmark.md)'s `fabric_causal` number is part exploration cost and part this defect, and is corrected in Â§6a there. The ranking had tests and they all passed, because every one of them gave its candidates distinct values â€” nothing tested the case that dominates a real cold store.
 - **`explain()` leaked secrets.** Redaction lived in the observability layer, but an explanation is a display surface too: printing one to a terminal showed the exact credential the firewall had quarantined the memory for containing. Found by a live model run, not by the 384 tests that existed at the time. Scrub helpers now live beside the detector in `governance/sensitive.py` and both surfaces share them.
 - **`auto_activate` promoted imports**, defeating the guarantee that value earned in one store does not cross to another.
 - **Mutating HTTP methods desynchronised the connection.** An unhandled POST left its body unread, so the next request on a keep-alive connection parsed mid-body. They are now refused with `405` and an `Allow` header after draining.
-- **Quadratic listings.** The IPS estimator rescanned every exposure record per memory; now indexed once per `fit`. 12× faster at 400 memories, and it scales.
+- **Quadratic listings.** The IPS estimator rescanned every exposure record per memory; now indexed once per `fit`. 12Ã— faster at 400 memories, and it scales.
 - **Retention treated epoch 0 as "no timestamp"**, silently making every memory immortal.
 - **Retrieval had no relevance floor**, so a query with nothing to match returned the least-bad rows in the store.
-- **The API emitted invalid JSON.** `Infinity` for an unknown value estimate — which Python reads back happily and `JSON.parse` rejects outright, so every non-Python client broke while the test suite stayed green.
+- **The API emitted invalid JSON.** `Infinity` for an unknown value estimate â€” which Python reads back happily and `JSON.parse` rejects outright, so every non-Python client broke while the test suite stayed green.
 - **Signed hashing could cancel to zero**, crashing the embedder on `log(0)`.
 - **The CLI crashed on Windows** consoles that cannot encode box-drawing characters, and silently created an empty store when `--db` was mistyped.
 
 ### Changed
-- Schema `0.1.0` → `0.2.0`. Additive; old logs replay unchanged.
+- Schema `0.1.0` â†’ `0.2.0`. Additive; old logs replay unchanged.
 - **`quarantine` now warns against the policy Phase A killed.** Driving a quarantine from "this memory was in context when an episode failed" cut the rate at which a correct memory reached the prompt from 60% of episodes to 18%: six actions span six fault codes, so the memory that asserted what the agent wrongly said was usually a *correct* memory about a different situation. Agreement with a mistake is not evidence of having caused it. The docstring and the CLI help now say so, because the lifecycle makes withdrawal easy and nothing warned that it destroys more correct memory than wrong.
 
-## [0.1.0] — 2026-09-27
+## [0.1.0] â€” 2026-09-27
 
 Initial prototype: append-only event log as the source of truth, rebuildable projections, provenance and lineage, TMS-style retraction, governance (sensitive-data detection, firewall, retention), exposure logging with propensities, value estimation, and read-only observability behind token auth.

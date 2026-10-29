@@ -24,7 +24,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from memory_fabric.governance.sensitive import SensitiveDataDetector
+from amberlog.governance.sensitive import SensitiveDataDetector
 
 SKIP_DIRS = {"__pycache__", ".git", ".venv", "venv", "dist", "build", ".github"}
 SKIP_SUFFIXES = {".db", ".pyc", ".whl"}
@@ -48,8 +48,8 @@ ALLOWED_LINES = {
     # Our own detector's false positives, kept visible rather than silenced:
     # a statistical constant whose digits satisfy the Luhn check, and
     # `token=args.token`, which is code rather than an assignment of a secret.
-    ("memory_fabric/estimators.py", "credit_card"),
-    ("memory_fabric/cli.py", "password_assignment"),
+    ("amberlog/estimators.py", "credit_card"),
+    ("amberlog/cli.py", "password_assignment"),
     # The staging run's adversary submits a fake credential on purpose, to
     # check that the ingest screen quarantines it.
     ("experiments/staging_run.py", "password_in_prose"),
@@ -99,7 +99,7 @@ ALLOWED_LINES = {
     # Deployment templates name where the token comes from (a generated value,
     # a Kubernetes Secret); they never hold one.
     ("DEPLOYMENT.md", "password_assignment"),
-    ("deploy/helm/memory-fabric/templates/deployment.yaml", "password_assignment"),
+    ("deploy/helm/amberlog/templates/deployment.yaml", "password_assignment"),
     ("tests/test_agent_api.py", "password_assignment"),
     ("tests/test_operator_access.py", "password_assignment"),
     # Builds database URLs around a random per-run password to prove the CLI
@@ -135,23 +135,23 @@ ALLOWED_SNIPPETS = {
     # A placeholder for a stubbed HTTP transport: the SDK requires *some*
     # credential to build a client, and no request leaves the process.
     ("tests/test_claude_contract.py", "password_assignment", "api_key=STUB_KEY"),
-    ("memory_fabric/enforcement.py", "password_assignment", "ExposureToken"),
-    ("memory_fabric/enforcement.py", "password_assignment", "token.expired"),
-    ("memory_fabric/fabric.py", "password_assignment", "ExposureToken"),
-    # The recorded public API of MemoryFabric: a signature, `token: 'ExposureToken'`.
-    ("tests/data/memory_fabric_api.json", "password_assignment", "ExposureToken"),
-    ("memory_fabric/_fabric/access.py", "password_assignment", "ExposureToken"),
-    ("memory_fabric/_fabric/access.py", "password_assignment", "self.enforcer.issue"),
-    ("memory_fabric/_fabric/access.py", "password_assignment", "token=token, memory=memory"),
+    ("amberlog/enforcement.py", "password_assignment", "ExposureToken"),
+    ("amberlog/enforcement.py", "password_assignment", "token.expired"),
+    ("amberlog/fabric.py", "password_assignment", "ExposureToken"),
+    # The recorded public API of Amberlog: a signature, `token: 'ExposureToken'`.
+    ("tests/data/amberlog_api.json", "password_assignment", "ExposureToken"),
+    ("amberlog/_fabric/access.py", "password_assignment", "ExposureToken"),
+    ("amberlog/_fabric/access.py", "password_assignment", "self.enforcer.issue"),
+    ("amberlog/_fabric/access.py", "password_assignment", "token=token, memory=memory"),
     ("tests/test_enforcement.py", "password_assignment", "enforcer.issue"),
-    ("memory_fabric/transport.py", "password_assignment", "retraction.sign"),
-    ("memory_fabric/sdk.py", "password_assignment", "ExposureToken"),
-    ("memory_fabric/sdk.py", "password_assignment", "read.token"),
+    ("amberlog/transport.py", "password_assignment", "retraction.sign"),
+    ("amberlog/sdk.py", "password_assignment", "ExposureToken"),
+    ("amberlog/sdk.py", "password_assignment", "read.token"),
     # Named dashboard operators: the code parses and passes tokens by name.
-    ("memory_fabric/observability/auth.py", "password_assignment", "token=token,"),
-    ("memory_fabric/observability/auth.py", "password_assignment", "name, sep, token = line.partition"),
-    ("memory_fabric/observability/auth.py", "password_assignment", "name, token = name.strip()"),
-    ("memory_fabric/observability/server.py", "password_assignment", "token='<your-token>'"),
+    ("amberlog/observability/auth.py", "password_assignment", "token=token,"),
+    ("amberlog/observability/auth.py", "password_assignment", "name, sep, token = line.partition"),
+    ("amberlog/observability/auth.py", "password_assignment", "name, token = name.strip()"),
+    ("amberlog/observability/server.py", "password_assignment", "token='<your-token>'"),
     # The System One client takes an optional bearer token for a remote
     # endpoint. `password_assignment` fires on the two lines that move the
     # caller's parameter into the instance and read it back, neither of which
@@ -160,9 +160,9 @@ ALLOWED_SNIPPETS = {
     # `api_key = <identifier>` would also stop firing on
     # `api_key = "hunter2"`, and weakening a governance rule so that my own
     # file passes the repository scan is the wrong direction.
-    ("memory_fabric/adapters/systemone.py", "password_assignment",
+    ("amberlog/adapters/systemone.py", "password_assignment",
      "self.api_key = api_key"),
-    ("memory_fabric/adapters/systemone.py", "password_assignment",
+    ("amberlog/adapters/systemone.py", "password_assignment",
      "if self.api_key:"),
 }
 

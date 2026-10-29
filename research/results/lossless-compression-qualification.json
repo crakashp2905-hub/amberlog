@@ -1,0 +1,75 @@
+{
+ "commit": "9490f490a6700de15bd9ff271553f39e8741b944",
+ "seeds": [
+  503,
+  509,
+  521,
+  523,
+  541
+ ],
+ "rows": [
+  {
+   "seed": 503,
+   "source_content_bytes": 2504,
+   "summary_content_bytes": 1067,
+   "saved_content_bytes": 1437,
+   "roundtrip_exact": true,
+   "encode_ms": 20.124,
+   "summary_erased": true,
+   "pipeline_bytes_including_retained_sources": 3571
+  },
+  {
+   "seed": 509,
+   "source_content_bytes": 2506,
+   "summary_content_bytes": 1069,
+   "saved_content_bytes": 1437,
+   "roundtrip_exact": true,
+   "encode_ms": 12.313,
+   "summary_erased": true,
+   "pipeline_bytes_including_retained_sources": 3575
+  },
+  {
+   "seed": 521,
+   "source_content_bytes": 2506,
+   "summary_content_bytes": 1069,
+   "saved_content_bytes": 1437,
+   "roundtrip_exact": true,
+   "encode_ms": 16.868,
+   "summary_erased": true,
+   "pipeline_bytes_including_retained_sources": 3575
+  },
+  {
+   "seed": 523,
+   "source_content_bytes": 2506,
+   "summary_content_bytes": 1069,
+   "saved_content_bytes": 1437,
+   "roundtrip_exact": true,
+   "encode_ms": 10.952,
+   "summary_erased": true,
+   "pipeline_bytes_including_retained_sources": 3575
+  },
+  {
+   "seed": 541,
+   "source_content_bytes": 2507,
+   "summary_content_bytes": 1070,
+   "saved_content_bytes": 1437,
+   "roundtrip_exact": true,
+   "encode_ms": 10.828,
+   "summary_erased": true,
+   "pipeline_bytes_including_retained_sources": 3577
+  }
+ ],
+ "decision": "DESCRIPTIVE",
+ "actual_model_tokens": null,
+ "cost": {
+  "model_calls": 0,
+  "model_usd": 0,
+  "hardware_usd": null
+ },
+ "limitations": [
+  "repetitive synthetic English fixture, no independent QA or model study",
+  "sources retained: total stored content grows despite smaller summary",
+  "UTF-8 content bytes exclude log/encryption/index overhead",
+  "dictionary must be decoded or understood by the consuming client"
+ ]
+}

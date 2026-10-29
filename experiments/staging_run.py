@@ -9,7 +9,7 @@ production one:
 
 - **Store:** PostgreSQL when `MF_STAGING_POSTGRES_URL` is set (a fresh
   database per run), else a SQLite file.
-- **Agents talk to `memory-fabric agent-api`** in its own process, over HTTP,
+- **Agents talk to `amberlog agent-api`** in its own process, over HTTP,
   each with its own signed credential and the **default rate limits**.
 - **Operators** act on the same store from this process with the SDK, as a
   reviewer at a terminal would: they review what agents wrote (approving only
@@ -64,7 +64,7 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "research" / "results" / "staging-run"
-CLI = [sys.executable, "-m", "memory_fabric"]
+CLI = [sys.executable, "-m", "amberlog"]
 ATTRS = {"port": ("listens on port", "port"), "replicas": ("is capped at", "replicas"),
          "timeout": ("times out after", "ms"), "budget": ("has an error budget of", "minutes")}
 SERVICES = ["billing-api", "auth-gateway", "search-indexer", "invoice-worker", "ledger-sync",
@@ -166,10 +166,10 @@ def answer_value(text: str) -> str:
 
 
 def run(model: str, quick: bool, seed: int) -> dict[str, Any]:
-    from memory_fabric import MemoryFabric
-    from memory_fabric.adapters.ollama import OllamaClient
-    from memory_fabric.sdk import operator
-    from memory_fabric.validation import assess
+    from amberlog import Amberlog
+    from amberlog.adapters.ollama import OllamaClient
+    from amberlog.sdk import operator
+    from amberlog.validation import assess
 
     rng = random.Random(seed)
     llm = OllamaClient()
@@ -178,7 +178,7 @@ def run(model: str, quick: bool, seed: int) -> dict[str, Any]:
     tmp = tempfile.mkdtemp(prefix="mf-staging-")
     url, backend = store_url(tmp)
     report["backend"] = backend
-    MemoryFabric(url).close()  # create the schema before the server opens it
+    Amberlog(url).close()  # create the schema before the server opens it
 
     writers = ["ag_writer_1", "ag_writer_2", "ag_writer_3"]
     load_agents = [f"ag_load_{n}" for n in range(4 if quick else 8)]
@@ -213,7 +213,7 @@ def run(model: str, quick: bool, seed: int) -> dict[str, Any]:
                                            agents_file, "--agent", a, "--ttl", "7200"],
                                     capture_output=True, text=True, cwd=ROOT)
                   .stdout.strip().splitlines()[-1] for a in everyone}
-        ops = MemoryFabric(url)
+        ops = Amberlog(url)
         reviewer = operator(ops, "lead-reviewer")
         submitted: list[str] = []  # every text an agent submitted: the ungoverned corpus
 
@@ -315,7 +315,7 @@ def run(model: str, quick: bool, seed: int) -> dict[str, Any]:
         for t in loaders:
             t.start()
 
-        from memory_fabric.vectors import LexicalIndex
+        from amberlog.vectors import LexicalIndex
 
         plain = LexicalIndex()
         for n, text in enumerate(submitted):

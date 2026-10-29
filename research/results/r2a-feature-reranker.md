@@ -21,7 +21,7 @@ is below, reranking gains. The two splits of one benchmark **disagree in
 direction**, which is the usual sign that an effect is inside the noise of 33
 cases.
 
-- **Registration:** [r2a-feature-reranker.md](../prereg/r2a-feature-reranker.md), written before `memory_fabric/rerank.py` existed
+- **Registration:** [r2a-feature-reranker.md](../prereg/r2a-feature-reranker.md), written before `amberlog/rerank.py` existed
 - **Runs:** 2026-10-12. Deterministic; no model calls
 - **Off by default.** A mechanism that misses its registered bar does not become a default
 

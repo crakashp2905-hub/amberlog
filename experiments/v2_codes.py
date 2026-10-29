@@ -20,8 +20,8 @@ from pathlib import Path
 from typing import Any, Callable
 from unittest import mock
 
-from memory_fabric import MemoryFabric, conflicts
-from memory_fabric.validation import assess
+from amberlog import Amberlog, conflicts
+from amberlog.validation import assess
 
 ROOT = Path(__file__).resolve().parent.parent
 SEEDS = range(600, 605)
@@ -53,7 +53,7 @@ def code_for(rng: random.Random, used: set[str]) -> str:
 
 def one_case(family: str, rng: random.Random) -> bool:
     """True if the later write is assessed suspicious."""
-    fabric = MemoryFabric(auto_activate=True, hold_suspicious=False, encrypt_content=False)
+    fabric = Amberlog(auto_activate=True, hold_suspicious=False, encrypt_content=False)
     try:
         used: set[str] = set()
         established, other = "ag_tech_a", "ag_tech_b"
@@ -104,7 +104,7 @@ def one_case(family: str, rng: random.Random) -> bool:
 def run(parser: Callable[..., Any] | None = None) -> dict[str, Any]:
     import contextlib
 
-    import memory_fabric.validation as validation
+    import amberlog.validation as validation
 
     out: dict[str, Any] = {}
     with contextlib.ExitStack() as stack:
@@ -125,7 +125,7 @@ _OLD_TOKEN = re.compile(r"[a-z0-9]+(?:\.[0-9]+)?")
 
 def old_claim(content: str) -> tuple[frozenset[str], frozenset[str], frozenset[str]]:
     """The parser before the fix, verbatim, as the baseline."""
-    from memory_fabric.vectors import _STOPWORDS
+    from amberlog.vectors import _STOPWORDS
 
     identifiers, words, values = set(), set(), set()
     for token in _OLD_TOKEN.findall(content.lower()):

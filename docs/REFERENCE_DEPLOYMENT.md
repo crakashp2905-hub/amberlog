@@ -31,15 +31,15 @@ Both should pass before you trust anything else here.
 ## 2. Two stores
 
 ```bash
-memory-fabric --db origin.db --create demo
-memory-fabric --db recipient.db --create demo
+amberlog --db origin.db --create demo
+amberlog --db recipient.db --create demo
 ```
 
 Each store mints an opaque identity on first open and records it in its own log,
 so it survives a restore from backup:
 
 ```bash
-memory-fabric --db origin.db --json overview | python -c "import json,sys; print(json.load(sys.stdin)['schema_version'])"
+amberlog --db origin.db --json overview | python -c "import json,sys; print(json.load(sys.stdin)['schema_version'])"
 ```
 
 Identities are `st_`-prefixed ULIDs. **Never a path** — two containers each
@@ -49,23 +49,23 @@ identify every in-memory store.
 ## 3. The demonstration, in Python
 
 ```python
-from memory_fabric import MemoryFabric, WithdrawalBasis
-from memory_fabric.dispatcher import Dispatcher, reconcile
-from memory_fabric.federation import offer
-from memory_fabric.governance.firewall import (
+from amberlog import Amberlog, WithdrawalBasis
+from amberlog.dispatcher import Dispatcher, reconcile
+from amberlog.federation import offer
+from amberlog.governance.firewall import (
     Firewall, rule_capabilities_must_be_granted,
     rule_must_be_active, rule_restricted_stays_private,
 )
-from memory_fabric.justification import JustificationKind, justification_context
-from memory_fabric.sdk import NotUsable, agent, operator
-from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
+from amberlog.justification import JustificationKind, justification_context
+from amberlog.sdk import NotUsable, agent, operator
+from amberlog.transport import InProcessTransport, Peer, PeerRegistry
 
 firewall = Firewall(rules=(
     rule_restricted_stays_private, rule_must_be_active,
     rule_capabilities_must_be_granted,
 ))
-origin = MemoryFabric("origin.db", firewall=firewall)
-recipient = MemoryFabric("recipient.db", firewall=firewall)
+origin = Amberlog("origin.db", firewall=firewall)
+recipient = Amberlog("recipient.db", firewall=firewall)
 
 # 1. The origin records a fact.
 a, op_a = agent(origin, "ag_a"), operator(origin, "sup_a")
@@ -127,7 +127,7 @@ The in-process transport above exercises the protocol semantics. For the network
 path, serve the recipient and point an `HttpTransport` at it:
 
 ```python
-from memory_fabric.transport import HttpTransport, Peer, PeerRegistry, serve
+from amberlog.transport import HttpTransport, Peer, PeerRegistry, serve
 
 key = b"a-key-shared-between-these-two-stores"
 recipient_registry = PeerRegistry({origin.store_id: Peer(origin.store_id, "unused", key)})
@@ -154,7 +154,7 @@ A signature proves who sent a retraction and that it was unmodified. It proves
 Each store runs its own federation server. On each machine:
 
 ```bash
-memory-fabric --db store.db --share-policy reviewed federate --peers peers.json \
+amberlog --db store.db --share-policy reviewed federate --peers peers.json \
   --host 0.0.0.0 --port 8767 --behind-tls
 ```
 
@@ -169,7 +169,7 @@ that store (32 random bytes, hex) and its address:
 Share a memory from one store to another:
 
 ```bash
-memory-fabric --db store.db --share-policy reviewed offer <memory-id> --to st_... --peers peers.json
+amberlog --db store.db --share-policy reviewed offer <memory-id> --to st_... --peers peers.json
 ```
 
 - It lands at the recipient as a **candidate**, recorded as
@@ -187,10 +187,10 @@ memory-fabric --db store.db --share-policy reviewed offer <memory-id> --to st_..
 ## 6. Operating it
 
 ```bash
-memory-fabric --db origin.db attention      # what needs a human, worst first
-memory-fabric --db origin.db overview       # can this store support a value claim?
-memory-fabric --db origin.db serve          # read-only dashboard on 127.0.0.1
-memory-fabric --db origin.db backup /backups/origin-$(date -u +%Y%m%dT%H%M%SZ).db
+amberlog --db origin.db attention      # what needs a human, worst first
+amberlog --db origin.db overview       # can this store support a value claim?
+amberlog --db origin.db serve          # read-only dashboard on 127.0.0.1
+amberlog --db origin.db backup /backups/origin-$(date -u +%Y%m%dT%H%M%SZ).db
 ```
 
 `backup` takes a consistent snapshot while the store is live, then **replays the
@@ -210,7 +210,7 @@ list of unsupported modes.
 
 | Symptom | Cause |
 |---|---|
-| `memory-fabric: error: unrecognized arguments: --json` | `--json` is a global flag and goes **before** the subcommand. |
+| `amberlog: error: unrecognized arguments: --json` | `--json` is a global flag and goes **before** the subcommand. |
 | `backup` refuses with exit 6 | The store is `:memory:`. There is nothing on disk and `--db :memory:` opens an empty one. |
 | A retraction stays `queued` forever | Nothing is draining the outbox. Run a `Dispatcher`; it is a loop you drive, not a background thread. |
 | `TransportError ... permanent=True` | No peer configured for that store id, or a bad key. Retrying will not help. |

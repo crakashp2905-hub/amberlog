@@ -13,7 +13,7 @@ import random
 import unittest
 from collections import Counter
 
-from memory_fabric.exposure import (
+from amberlog.exposure import (
     AlwaysExposePolicy,
     Candidate,
     EpsilonGreedyPolicy,
@@ -21,7 +21,7 @@ from memory_fabric.exposure import (
     TopKPolicy,
     build_policy,
 )
-from memory_fabric.model import ValueEstimate
+from amberlog.model import ValueEstimate
 
 
 def candidate(name: str, relevance: float, value: float = 0.0) -> Candidate:

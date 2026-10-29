@@ -5,7 +5,7 @@
     python experiments/s1_screen_fp.py report BASE.json HEAD.json
     python experiments/s1_screen_fp.py withholding OUT.json LME.json [LIMIT]
 
-`rates` imports whichever `memory_fabric` is first on the path, so CI runs it
+`rates` loads the package declared by the selected checkout, so CI runs it
 once against a checkout of the base commit and once against the change, in the
 same job: the baseline is measured, not quoted (AGENTS.md 8d). It only reads
 text and calls the screens; nothing from the datasets is executed.
@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from collections import Counter
@@ -24,6 +25,15 @@ from typing import Any
 ROOT = Path(__file__).resolve().parents[1]
 OUT_MD = ROOT / "research" / "results" / "s1-screen-false-positives.md"
 OUT_JSON = ROOT / "research" / "results" / "s1-screen-false-positives.json"
+
+
+def checkout_module(suffix: str) -> Any:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    from experiments.checkout_namespace import load_from_checkout
+
+    checkout = Path(os.environ.get("AMBERLOG_EVAL_CHECKOUT", str(ROOT)))
+    return load_from_checkout(checkout, suffix)
 
 
 def split_of(question_id: str) -> str:
@@ -46,9 +56,7 @@ def lme_turns(path: str) -> dict[str, list[str]]:
 
 
 def screen() -> Any:
-    from memory_fabric.governance.firewall import Firewall
-
-    return Firewall()
+    return checkout_module("governance.firewall").Firewall()
 
 
 def verdict(fw: Any, text: str) -> tuple[bool, bool, list[str]]:
@@ -62,8 +70,8 @@ def verdict(fw: Any, text: str) -> tuple[bool, bool, list[str]]:
 
 
 def injection_flag(text: str) -> bool:
-    from memory_fabric.governance import directive
-    from memory_fabric.governance.injection import InjectionDetector
+    directive = checkout_module("governance.directive")
+    InjectionDetector = checkout_module("governance.injection").InjectionDetector
 
     high = [f for f in InjectionDetector().scan(text) if f.severity == "high"]
     return bool(high) or directive.assess(text).flagged
@@ -188,7 +196,7 @@ def withholding(out: str, lme_path: str, limit: str = "60") -> int:
     """§5: LongMemEval lexical turn recall with hostile-source withholding on and off."""
     sys.path.insert(0, str(ROOT))
     from experiments import longmemeval_bench as lme
-    from memory_fabric import MemoryFabric
+    from amberlog import Amberlog
 
     lme.DATA = Path(lme_path).parent
     lme.SPLITS["s"] = Path(lme_path).name
@@ -200,7 +208,7 @@ def withholding(out: str, lme_path: str, limit: str = "60") -> int:
             gold = {(sid, pos) for sid, sess in zip(inst["haystack_session_ids"],
                                                     inst["haystack_sessions"])
                     for pos, t in enumerate(sess) if t.get("has_answer")}
-            f = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False,
+            f = Amberlog(":memory:", auto_activate=True, encrypt_content=False,
                              recognise_copies=False, retrieval="lexical",
                              withhold_hostile_sources=on)
             try:

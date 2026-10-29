@@ -15,7 +15,7 @@ unreachable. With that gap closed, **X1's own `extraction` arm, same model,
 same records, scores 1.000 on dev.**
 
 - **Registration:** [x3-scoped-adjustments.md](../prereg/x3-scoped-adjustments.md), threshold set as a share of a ceiling measured before the mechanism was written
-- **Mechanism:** `Extracted.is_adjustment`, `applicable_adjustments()`, `MemoryFabric._admit_defaults`
+- **Mechanism:** `Extracted.is_adjustment`, `applicable_adjustments()`, `Amberlog._admit_defaults`
 - **Harness:** `experiments/x1_extraction.py`, arms `adjust_declared` and `adjust_extracted`
 - **Runs:** 2026-10-14, `relevance_v2` `multi_hop_4`, 3 cases a split, k=5, `gemma2:latest` free-form
 - **Off by default**, like all extraction: `retrieve(use_extraction=True)`

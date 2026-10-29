@@ -36,7 +36,7 @@ def _read(rel: str) -> str:
 
 def versions() -> dict[str, str]:
     package = re.search(r'(?m)^version = "([^"]+)"', _read("pyproject.toml"))
-    schema = re.search(r'(?m)^SCHEMA_VERSION = "([^"]+)"', _read("memory_fabric/model.py"))
+    schema = re.search(r'(?m)^SCHEMA_VERSION = "([^"]+)"', _read("amberlog/model.py"))
     spec = re.search(r"Schema version:\*\* `([^`]+)`", _read("SPEC.md"))
     spec_latest = re.search(r"(?m)^### (\d+\.\d+\.\d+) ", _read("SPEC.md"))
     notes = sorted((ROOT / "docs").glob("RELEASE_NOTES_*.md"),
@@ -54,7 +54,7 @@ def tags() -> list[str]:
 
 def tiers() -> dict[str, list[str]]:
     out: dict[str, list[str]] = {}
-    for path in sorted((ROOT / "memory_fabric").rglob("*.py"), key=lambda p: p.as_posix()):
+    for path in sorted((ROOT / "amberlog").rglob("*.py"), key=lambda p: p.as_posix()):
         if "__pycache__" in path.parts:
             continue
         match = re.search(r'(?m)^__stability__ = "(\w+)"', path.read_text(encoding="utf-8"))
@@ -66,8 +66,8 @@ def tiers() -> dict[str, list[str]]:
 
 def preset_experimental(experimental: list[str]) -> list[str]:
     """Experimental modules a preset imports, i.e. turns on by default in that mode."""
-    tree = ast.parse(_read("memory_fabric/presets.py"))
-    used = {f"memory_fabric.{n.module.lstrip('.')}" for n in ast.walk(tree)
+    tree = ast.parse(_read("amberlog/presets.py"))
+    used = {f"amberlog.{n.module.lstrip('.')}" for n in ast.walk(tree)
             if isinstance(n, ast.ImportFrom) and n.module}
     return sorted(used & set(experimental))
 
@@ -121,7 +121,9 @@ def render(sha: str | None = None) -> str:
     defaults = preset_experimental(experimental)
     pinned, unpinned = results()
     found = contradictions(v)
-    released = tags()
+    # Tag availability depends on shallow checkout/fetch settings, not source.
+    # Only stamped runtime release evidence should inspect the checkout refs.
+    released = tags() if sha else []
     lines = [
         "# Status at HEAD",
         "",
@@ -131,7 +133,10 @@ def render(sha: str | None = None) -> str:
         f"- **Commit:** {f'`{sha}`' if sha else 'stamped by CI (`--sha`)'}",
         f"- **Package version:** `{v['package']}`; **schema:** `{v['schema']}`; "
         f"**SPEC.md header:** `{v['spec_header']}`",
-        f"- **Released tags:** {', '.join(f'`{x}`' for x in released) if released else 'none — nothing is tagged or published'}",
+        f"- **Released tags:** " + (
+            ', '.join(f'`{x}`' for x in released) if released else
+            'none visible in this checkout (not proof of publication status)' if sha else
+            'not enumerated in the deterministic tree report; inspect stamped release evidence'),
         f"- **Latest release notes:** `{v['latest_release_notes']}` (they pin their own baseline commit; "
         "work merged since is not part of that release)",
         f"- **Tests CI collects:** {test_count()}",
@@ -143,7 +148,7 @@ def render(sha: str | None = None) -> str:
         "",
         "## Experimental modules on by default",
         "",
-        "Turned on by a preset in `memory_fabric/presets.py`; every other experimental module is opt-in.",
+        "Turned on by a preset in `amberlog/presets.py`; every other experimental module is opt-in.",
         "",
         *([f"- `{m}`" for m in defaults] or ["- none"]),
         "",

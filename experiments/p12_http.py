@@ -45,12 +45,12 @@ def _serve(path: str, agents_file: str, port_out: Any, issued_out: Any,
            agent_ids: list[str], stop: Any) -> None:
     import threading
 
-    from memory_fabric import MemoryFabric
-    from memory_fabric.agent_api import (AgentApi, build_agent_server, encode_credential,
+    from amberlog import Amberlog
+    from amberlog.agent_api import (AgentApi, build_agent_server, encode_credential,
                                          load_agents, register_all)
-    from memory_fabric.service import MemoryService
+    from amberlog.service import MemoryService
 
-    fabric = MemoryFabric(path, auto_activate=True)
+    fabric = Amberlog(path, auto_activate=True)
     service = MemoryService(fabric=fabric)
     register_all(service, load_agents(agents_file))
     server = build_agent_server(AgentApi(service), port=0)
@@ -104,13 +104,13 @@ def _agent(port: int, token: str, name: str, ops: int, seed: int, barrier: Any,
 
 
 def run_one(agents: int, ops: int = OPS_PER_AGENT) -> dict[str, Any]:
-    from memory_fabric import MemoryFabric
-    from memory_fabric.sdk import agent as sdk_agent
-    from memory_fabric.sdk import operator as sdk_operator
+    from amberlog import Amberlog
+    from amberlog.sdk import agent as sdk_agent
+    from amberlog.sdk import operator as sdk_operator
 
     with tempfile.TemporaryDirectory() as tmp:
         path = str(Path(tmp) / "http.db")
-        seed = MemoryFabric(path, auto_activate=True)
+        seed = Amberlog(path, auto_activate=True)
         writer = sdk_agent(seed, "ag_seed", "tn_default")
         reviewer = sdk_operator(seed, "op")
         rng = random.Random(0)

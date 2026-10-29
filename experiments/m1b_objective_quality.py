@@ -153,8 +153,8 @@ def render(memory: Any) -> str:
 
 
 def objectives(client: Any, model: str, cache: Any, plant: str, statement: str) -> dict[str, Any]:
-    from memory_fabric.objective import MemoryObjective, Rule, sanity  # noqa: F401
-    from memory_fabric.objective_v2 import Constraint, MemoryObjectiveV2, from_v1
+    from amberlog.objective import MemoryObjective, Rule, sanity  # noqa: F401
+    from amberlog.objective_v2 import Constraint, MemoryObjectiveV2, from_v1
 
     compiled = _compile(client, model, cache, statement)
     hard = MemoryObjectiveV2(goal=statement, scope=tuple(compiled.include),
@@ -168,8 +168,8 @@ def _compile(client: Any, model: str, cache: Any, statement: str) -> Any:
     import hashlib
     import inspect
 
-    from memory_fabric import objective as om
-    from memory_fabric.objective import MemoryObjective, compile_objective
+    from amberlog import objective as om
+    from amberlog.objective import MemoryObjective, compile_objective
 
     source = (inspect.getsource(om.compile_objective) + inspect.getsource(om.validate)
               + json.dumps(om.SCHEMA, sort_keys=True))
@@ -183,11 +183,11 @@ def _compile(client: Any, model: str, cache: Any, statement: str) -> Any:
 
 
 def run_seed(seed: int, client: Any, model: str, cache: Any) -> list[dict[str, Any]]:
-    from memory_fabric import MemoryFabric
-    from memory_fabric.objective import sanity
+    from amberlog import Amberlog
+    from amberlog.objective import sanity
 
     w = world(seed)
-    fab = MemoryFabric(":memory:", auto_activate=True)
+    fab = Amberlog(":memory:", auto_activate=True)
     truth: dict[str, dict[str, Any]] = {}
     for m in w["memories"]:
         context = dict(m["context"])
@@ -323,7 +323,7 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     from experiments.g4_labnet import Cache
-    from memory_fabric.adapters.claude_chat import make_client
+    from amberlog.adapters.claude_chat import make_client
 
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--split", choices=sorted(SPLITS), default="dev")

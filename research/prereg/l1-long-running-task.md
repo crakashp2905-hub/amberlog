@@ -1,4 +1,4 @@
-# Pre-registration — L1: a long-running task, a plain vector store against Memory Fabric
+# Pre-registration — L1: a long-running task, a plain vector store against Amberlog
 
 **Registered 2026-10-25**, before `experiments/l1_long_running.py` existed.
 

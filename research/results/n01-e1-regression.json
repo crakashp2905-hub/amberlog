@@ -1,0 +1,99 @@
+{
+ "commit": "baefd1df9815955cd95050db5ef48ec8214710d8",
+ "command": "five frozen E1 seeds; benchmarks.enumeration.run_seed/summarise",
+ "seeds": [
+  1,
+  2,
+  3,
+  4,
+  5
+ ],
+ "arms": [
+  "lexical",
+  "nav",
+  "typed",
+  "typed+fallback",
+  "oracle"
+ ],
+ "identical": true,
+ "differences": {},
+ "rows": {
+  "lexical": {
+   "set_exact": 0.6133,
+   "set_exact_narrow": 0.7533,
+   "set_exact_broad": 0.4733,
+   "recall": 0.7719,
+   "precision": 1.0,
+   "contents_read_per_query": 50.0,
+   "per_seed_set_exact": {
+    "1": 0.5667,
+    "2": 0.6333,
+    "3": 0.6167,
+    "4": 0.5333,
+    "5": 0.7167
+   }
+  },
+  "nav": {
+   "set_exact": 0.0167,
+   "set_exact_narrow": 0.0333,
+   "set_exact_broad": 0.0,
+   "recall": 0.5463,
+   "precision": 0.9967,
+   "contents_read_per_query": 50.0,
+   "per_seed_set_exact": {
+    "1": 0.0333,
+    "2": 0.0,
+    "3": 0.0,
+    "4": 0.05,
+    "5": 0.0
+   }
+  },
+  "typed": {
+   "set_exact": 0.1,
+   "set_exact_narrow": 0.18,
+   "set_exact_broad": 0.02,
+   "recall": 0.8963,
+   "precision": 1.0,
+   "contents_read_per_query": 39.8033,
+   "per_seed_set_exact": {
+    "1": 0.0667,
+    "2": 0.1167,
+    "3": 0.1333,
+    "4": 0.1,
+    "5": 0.0833
+   },
+   "certificate_soundness": 1.0,
+   "complete_share": 0.0
+  },
+  "typed+fallback": {
+   "set_exact": 1.0,
+   "set_exact_narrow": 1.0,
+   "set_exact_broad": 1.0,
+   "recall": 1.0,
+   "precision": 1.0,
+   "contents_read_per_query": 198.6033,
+   "per_seed_set_exact": {
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0,
+    "4": 1.0,
+    "5": 1.0
+   }
+  },
+  "oracle": {
+   "set_exact": 1.0,
+   "set_exact_narrow": 1.0,
+   "set_exact_broad": 1.0,
+   "recall": 1.0,
+   "precision": 1.0,
+   "contents_read_per_query": 44.22,
+   "per_seed_set_exact": {
+    "1": 1.0,
+    "2": 1.0,
+    "3": 1.0,
+    "4": 1.0,
+    "5": 1.0
+   }
+  }
+ }
+}

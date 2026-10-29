@@ -75,15 +75,15 @@ class Store:
     """One world's memories in a fresh store, for retrieval."""
 
     def __init__(self, w: dict[str, Any]) -> None:
-        from memory_fabric import MemoryFabric
+        from amberlog import Amberlog
 
-        self.fab = MemoryFabric(":memory:", auto_activate=True)
+        self.fab = Amberlog(":memory:", auto_activate=True)
         self.w = w
         for m in w["memories"]:
             self.fab.remember("staff", m["text"], scope="team", context=m["context"])
 
     def notes(self, question: str, objective: Any = None) -> list[Any]:
-        from memory_fabric.objective import sanity
+        from amberlog.objective import sanity
 
         if objective is not None and (not (objective.include or objective.exclude) or sanity(
                 objective, [m["context"] for m in self.w["memories"]])):
@@ -122,7 +122,7 @@ def misses_text(results: list[dict[str, Any]]) -> str:
 
 def reflect_rules(client: Any, model: str, cache: Any, current: Any,
                   results: list[dict[str, Any]]) -> Any:
-    from memory_fabric.objective import SCHEMA, MemoryObjective, validate
+    from amberlog.objective import SCHEMA, MemoryObjective, validate
 
     described = "\n".join(f"- {k}: one of {sorted(map(str, v))}" for k, v in sorted(FIELDS.items()))
     system = REFLECT.format(fields=described)
@@ -163,8 +163,8 @@ def rules_prompt(objective: Any) -> str:
 
 
 def run_seed(seed: int, client: Any, model: str, cache: Any) -> dict[str, Any]:
-    from memory_fabric import MemoryFabric
-    from memory_fabric.rulebook import Rulebook
+    from amberlog import Amberlog
+    from amberlog.rulebook import Rulebook
 
     rng = random.Random(seed)
     test_world = world(seed)
@@ -172,7 +172,7 @@ def run_seed(seed: int, client: Any, model: str, cache: Any) -> dict[str, Any]:
     train = worlds_at(plant, seed * 1000 + 1, ROUNDS)
     val = worlds_at(plant, seed * 1000 + 501, ROUNDS)
     test_store = Store(test_world)
-    books = MemoryFabric(":memory:", auto_activate=True)
+    books = Amberlog(":memory:", auto_activate=True)
     gated = Rulebook(books, "gated", "agent", statement="Rules learned from outcomes")
     state: dict[str, Any] = {"ungated": gated.current(), "lessons": []}
     gold_rules = gold(plant)
@@ -264,7 +264,7 @@ def analyse(seeds: list[dict[str, Any]]) -> dict[str, Any]:
 
 def main(argv: Sequence[str] | None = None) -> int:
     from experiments.g4_labnet import Cache
-    from memory_fabric.adapters.ollama import OllamaClient
+    from amberlog.adapters.ollama import OllamaClient
 
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--split", choices=sorted(SPLITS), default="dev")

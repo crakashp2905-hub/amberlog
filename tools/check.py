@@ -24,6 +24,7 @@ STEPS = [
     ("regenerate status page and results manifest", [PY, "tools/status_at_head.py", "--write"]),
     ("regenerate results manifest", [PY, "tools/results_manifest.py", "--write"]),
     ("version consistency", [PY, "tools/status_at_head.py", "--check"]),
+    ("canonical branding", [PY, "tools/check_branding.py"]),
     ("ruff", [PY, "-m", "ruff", "check"]),
     ("mypy", [PY, "-m", "mypy"]),
     ("secret scan", [PY, "tools/scan_secrets.py"]),

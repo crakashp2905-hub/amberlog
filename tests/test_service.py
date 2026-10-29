@@ -1,6 +1,6 @@
 """The service trust boundary: escalation, revocation, and what it cannot do.
 
-`MemoryFabric` trusts its caller completely and has to, because inside a
+`Amberlog` trusts its caller completely and has to, because inside a
 library the check and the bypass sit on the same side. `MemoryService` is where
 that stops being true for application code: it owns the fabric, does not expose
 it, and hands out only handles derived from a verified credential.
@@ -18,15 +18,15 @@ from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import MemoryFabric
-from memory_fabric.enforcement import RiskLevel, Verdict
-from memory_fabric.identity import (
+from amberlog import Amberlog
+from amberlog.enforcement import RiskLevel, Verdict
+from amberlog.identity import (
     ROLE_AGENT,
     ROLE_AUDITOR,
     ROLE_OPERATOR,
     IdentityError,
 )
-from memory_fabric.service import MemoryService, Session
+from amberlog.service import MemoryService, Session
 
 
 class ServiceCase(unittest.TestCase):
@@ -34,7 +34,7 @@ class ServiceCase(unittest.TestCase):
         self._tmp = TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
         self.service = MemoryService(
-            MemoryFabric(Path(self._tmp.name) / "store.db", auto_activate=True)
+            Amberlog(Path(self._tmp.name) / "store.db", auto_activate=True)
         )
         self.addCleanup(self.service.close)
 
@@ -161,7 +161,7 @@ class Escalation(ServiceCase):
         public = [
             name
             for name in dir(self.acme)
-            if not name.startswith("_") and isinstance(getattr(self.acme, name, None), MemoryFabric)
+            if not name.startswith("_") and isinstance(getattr(self.acme, name, None), Amberlog)
         ]
         self.assertEqual(public, [])
 
@@ -228,7 +228,7 @@ class Revocation(ServiceCase):
         """Through the real path: the store's millisecond clock. Credentials
         used to expire 1000x early, which only a slow caller exposed."""
         now = [1_800_000_000_000]
-        service = MemoryService(MemoryFabric(":memory:", clock=lambda: now[0]))
+        service = MemoryService(Amberlog(":memory:", clock=lambda: now[0]))
         self.addCleanup(service.close)
         service.register_agent("slow-bot", key=b"k-slow", tenant_id="tn_acme")
         session = service.session(service.issue("slow-bot", ttl_seconds=60))
@@ -292,7 +292,7 @@ class TheBoundaryIsNotASandbox(ServiceCase):
         self.service.close()
 
         reopened = MemoryService(
-            MemoryFabric(Path(self._tmp.name) / "store.db", auto_activate=True)
+            Amberlog(Path(self._tmp.name) / "store.db", auto_activate=True)
         )
         self.addCleanup(reopened.close)
         reopened.register_agent("acme-bot", key=b"k-acme", tenant_id="tn_acme")
@@ -313,14 +313,14 @@ class TheBoundaryIsNotASandbox(ServiceCase):
         """The library primitive keeps the cheap default; the *service* is
         where durability is the right call. A one-process tool should not be
         made to write a table it will never read again."""
-        from memory_fabric.identity import PrincipalRegistry
+        from amberlog.identity import PrincipalRegistry
 
         bare = PrincipalRegistry()
         self.assertFalse(bare.revocations.durable)
 
     def test_durability_can_be_turned_off_deliberately(self) -> None:
         plain = MemoryService(
-            MemoryFabric(":memory:"), durable_revocations=False
+            Amberlog(":memory:"), durable_revocations=False
         )
         self.addCleanup(plain.close)
         self.assertFalse(plain.revocations_are_durable)

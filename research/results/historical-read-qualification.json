@@ -1,0 +1,70 @@
+{
+ "commit": "cb36af428fe419b0566fed7ca78229473812f160",
+ "seeds": [
+  401,
+  409,
+  419,
+  421,
+  431
+ ],
+ "rows": [
+  {
+   "seed": 401,
+   "expected_rows": 8,
+   "returned_rows": 8,
+   "exact": true,
+   "out_of_window_empty": true,
+   "events_replayed": 21,
+   "latency_ms": 4.069,
+   "archival_labels": true
+  },
+  {
+   "seed": 409,
+   "expected_rows": 8,
+   "returned_rows": 8,
+   "exact": true,
+   "out_of_window_empty": true,
+   "events_replayed": 21,
+   "latency_ms": 1.983,
+   "archival_labels": true
+  },
+  {
+   "seed": 419,
+   "expected_rows": 8,
+   "returned_rows": 8,
+   "exact": true,
+   "out_of_window_empty": true,
+   "events_replayed": 21,
+   "latency_ms": 2.698,
+   "archival_labels": true
+  },
+  {
+   "seed": 421,
+   "expected_rows": 8,
+   "returned_rows": 8,
+   "exact": true,
+   "out_of_window_empty": true,
+   "events_replayed": 21,
+   "latency_ms": 2.458,
+   "archival_labels": true
+  },
+  {
+   "seed": 431,
+   "expected_rows": 8,
+   "returned_rows": 8,
+   "exact": true,
+   "out_of_window_empty": true,
+   "events_replayed": 21,
+   "latency_ms": 3.057,
+   "archival_labels": true
+  }
+ ],
+ "decision": "DESCRIPTIVE",
+ "failures": 0,
+ "scope": "scripted functional qualification, not a model or performance-improvement claim",
+ "cost": {
+  "model_calls": 0,
+  "model_usd": 0,
+  "hardware_usd": null
+ }
+}

@@ -11,11 +11,11 @@ pip install crewai
 from crewai import Agent, Crew, Task
 from crewai.tools import tool
 
-from memory_fabric import MemoryFabric
-from memory_fabric.integrations.tools import FabricTools
-from memory_fabric.sdk import agent
+from amberlog import Amberlog
+from amberlog.integrations.tools import FabricTools
+from amberlog.sdk import agent
 
-fabric = MemoryFabric("memory/store.db")
+fabric = Amberlog("memory/store.db")
 researcher_mem = FabricTools(agent(fabric, "researcher"))
 writer_mem = FabricTools(agent(fabric, "writer"))
 
@@ -45,7 +45,7 @@ crew.kickoff()
 ```
 
 The researcher's findings are candidates until reviewed
-(`memory-fabric review`, then `validate` and share to the team), so the
+(`amberlog review`, then `validate` and share to the team), so the
 writer only builds on what a person accepted. For tools that change
 something, wrap them with `FabricTools.guarded` as in the
 [LangGraph guide](langgraph.md).

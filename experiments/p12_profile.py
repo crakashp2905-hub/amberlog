@@ -27,25 +27,25 @@ from experiments import p12_load as P
 
 
 def _profiled(url: str, agent: str, ops: int, seed: int, barrier: Any, out: Any) -> None:
-    from memory_fabric import fabric as F
+    from amberlog import fabric as F
 
     counters = {"replays": 0, "replay_events": 0, "catch_ups": 0, "catch_up_events": 0}
-    original_replay = F.MemoryFabric._replay
+    original_replay = F.Amberlog._replay
 
     def counted_replay(self: Any) -> None:
         counters["replays"] += 1
         counters["replay_events"] += self.log.head_seq
         original_replay(self)
 
-    F.MemoryFabric._replay = counted_replay  # type: ignore[method-assign]
-    original_catch_up = getattr(F.MemoryFabric, "_catch_up", None)
+    F.Amberlog._replay = counted_replay  # type: ignore[method-assign]
+    original_catch_up = getattr(F.Amberlog, "_catch_up", None)
     if original_catch_up is not None:
         def counted_catch_up(self: Any) -> int:
             n = original_catch_up(self)
             counters["catch_ups"] += 1
             counters["catch_up_events"] += n
             return n
-        F.MemoryFabric._catch_up = counted_catch_up  # type: ignore[method-assign]
+        F.Amberlog._catch_up = counted_catch_up  # type: ignore[method-assign]
 
     inner: Any = mp.Queue() if False else _ListQueue()
     profile = cProfile.Profile()
@@ -58,7 +58,7 @@ def _profiled(url: str, agent: str, ops: int, seed: int, barrier: Any, out: Any)
     stats = pstats.Stats(profile, stream=stream).sort_stats("cumulative")
     rows = []
     for (filename, line, name), (cc, nc, tt, ct, _callers) in stats.stats.items():  # type: ignore[attr-defined]
-        if "memory_fabric" in filename or name in ("execute", "fetchone", "fetchall"):
+        if "amberlog" in filename or name in ("execute", "fetchone", "fetchall"):
             rows.append({"function": f"{Path(filename).name}:{line}:{name}",
                          "calls": nc, "cumulative_s": round(ct, 4), "own_s": round(tt, 4)})
     rows.sort(key=lambda r: -r["cumulative_s"])

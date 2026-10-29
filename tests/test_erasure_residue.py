@@ -22,8 +22,8 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from memory_fabric import MemoryFabric
-from memory_fabric.governance.erasure import ERASED_MARKER
+from amberlog import Amberlog
+from amberlog.governance.erasure import ERASED_MARKER
 
 TEXT = "Pump seven bypass valve torque procedure for the coastal depot requires two people"
 
@@ -34,8 +34,8 @@ class ErasureLeavesNoResidue(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.path = str(Path(self.tmp.name) / "store.db")
 
-    def open(self) -> MemoryFabric:
-        fabric = MemoryFabric(self.path, auto_activate=True)
+    def open(self) -> Amberlog:
+        fabric = Amberlog(self.path, auto_activate=True)
         self.addCleanup(fabric.close)
         return fabric
 

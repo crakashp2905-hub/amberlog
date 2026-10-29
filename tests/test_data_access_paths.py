@@ -1,6 +1,6 @@
 """Every public way to get at a memory, classified — and the classification enforced.
 
-`MemoryFabric` has fifty public members. Three of them return memory content:
+`Amberlog` has fifty public members. Three of them return memory content:
 `get`, `use` and `retrieve`. Only two of those are safe for an agent, and the
 unsafe one is the shortest to type.
 
@@ -31,8 +31,8 @@ _UNENFORCED_READ = re.compile(
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import LifecycleState, MemoryFabric
-from memory_fabric.enforcement import RiskLevel, Verdict
+from amberlog import LifecycleState, Amberlog
+from amberlog.enforcement import RiskLevel, Verdict
 
 # --- the classification ----------------------------------------------------
 #
@@ -160,7 +160,7 @@ class TheSurfaceIsFullyClassified(unittest.TestCase):
         """A document listing the surface drifts the moment someone adds a
         method. This does not."""
         public = {
-            name for name in dir(MemoryFabric) if not name.startswith("_")
+            name for name in dir(Amberlog) if not name.startswith("_")
         }
         unclassified = public - set(CLASSIFIED)
         self.assertEqual(
@@ -172,7 +172,7 @@ class TheSurfaceIsFullyClassified(unittest.TestCase):
     def test_nothing_is_classified_that_does_not_exist(self) -> None:
         """The other direction: a stale entry would describe a surface that is
         gone and quietly stop testing anything."""
-        public = {name for name in dir(MemoryFabric) if not name.startswith("_")}
+        public = {name for name in dir(Amberlog) if not name.startswith("_")}
         self.assertEqual(set(CLASSIFIED) - public, set())
 
     def test_a_member_is_in_exactly_one_category(self) -> None:
@@ -207,7 +207,7 @@ class TheAgentSurfacesCannotReachTheUnenforcedRead(unittest.TestCase):
     """Structural, so the separation cannot erode by convenience."""
 
     def test_the_agent_client_has_no_get(self) -> None:
-        from memory_fabric.sdk import AgentClient
+        from amberlog.sdk import AgentClient
 
         for forbidden in ("get", "state", "history", "audit_trail", "quarantine"):
             with self.subTest(forbidden):
@@ -217,7 +217,7 @@ class TheAgentSurfacesCannotReachTheUnenforcedRead(unittest.TestCase):
                 )
 
     def test_the_tenant_view_has_no_get(self) -> None:
-        from memory_fabric.fabric import TenantView
+        from amberlog.fabric import TenantView
 
         for forbidden in ("get", "state", "explain", "erase_content"):
             with self.subTest(forbidden):
@@ -226,7 +226,7 @@ class TheAgentSurfacesCannotReachTheUnenforcedRead(unittest.TestCase):
     def test_a_session_reaches_get_only_through_an_operator_role(self) -> None:
         """`Session.inspect` is the one route, and it requires the operator
         role *and* stays inside the session's tenant."""
-        from memory_fabric.service import Session
+        from amberlog.service import Session
 
         self.assertTrue(hasattr(Session, "inspect"))
         source = inspect.getsource(Session.inspect)
@@ -238,7 +238,7 @@ class TheAgentSurfacesCannotReachTheUnenforcedRead(unittest.TestCase):
         example code teaching an adapter author to use the unenforced read."""
         root = Path(__file__).resolve().parent.parent
         offenders = []
-        for directory in ("examples", "memory_fabric/adapters"):
+        for directory in ("examples", "amberlog/adapters"):
             path = root / directory
             if not path.exists():
                 continue
@@ -269,7 +269,7 @@ class TheEnforcedReadActuallyEnforces(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
-        self.fabric = MemoryFabric(
+        self.fabric = Amberlog(
             Path(self._tmp.name) / "store.db", auto_activate=True
         )
         self.addCleanup(self.fabric.close)
@@ -319,7 +319,7 @@ class TheEnforcedReadActuallyEnforces(unittest.TestCase):
         """A candidate is usable-with-revalidation at low risk and refused at
         high, so the classification's "safe for agents" depends on the risk the
         caller declares."""
-        candidate = MemoryFabric(":memory:")
+        candidate = Amberlog(":memory:")
         self.addCleanup(candidate.close)
         memory_id = candidate.remember(agent_id="ag", content="unvalidated claim")
         low = candidate.use(memory_id, agent_id="ag", risk=RiskLevel.LOW)

@@ -14,13 +14,13 @@ import tempfile
 import threading
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.branching import (
+from amberlog import Amberlog
+from amberlog.branching import (
     BranchError, BranchPermission, Branches, HeadMoved, IdempotencyConflict, StalePreview)
 
 
-def fabric(path: str = ":memory:") -> MemoryFabric:
-    return MemoryFabric(path, auto_activate=True, hold_suspicious=False)
+def fabric(path: str = ":memory:") -> Amberlog:
+    return Amberlog(path, auto_activate=True, hold_suspicious=False)
 
 
 class Base(unittest.TestCase):

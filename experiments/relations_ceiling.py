@@ -35,7 +35,7 @@ from typing import Any, Mapping, Sequence
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import relevance_bench as rb  # noqa: E402
-from memory_fabric.relations import RelationKind  # noqa: E402
+from amberlog.relations import RelationKind  # noqa: E402
 
 # Which memory qualifies which, per family. Read from the fixture, which is
 # what makes this a ceiling.

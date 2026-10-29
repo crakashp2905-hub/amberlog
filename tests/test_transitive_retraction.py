@@ -27,19 +27,19 @@ from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from memory_fabric import LifecycleState, MemoryFabric
-from memory_fabric.federation import offer
-from memory_fabric.dispatcher import Dispatcher
-from memory_fabric.events import EventType
-from memory_fabric.model import MemoryType, ProvenanceMethod
-from memory_fabric.outbox import now_ms
-from memory_fabric.governance.firewall import (
+from amberlog import LifecycleState, Amberlog
+from amberlog.federation import offer
+from amberlog.dispatcher import Dispatcher
+from amberlog.events import EventType
+from amberlog.model import MemoryType, ProvenanceMethod
+from amberlog.outbox import now_ms
+from amberlog.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from memory_fabric.protocol import MAX_HOPS, PropagationState, RejectionCode
+from amberlog.protocol import MAX_HOPS, PropagationState, RejectionCode
 
 
 def permissive() -> Firewall:
@@ -64,8 +64,8 @@ class TransitiveRetractionTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()
         self.dir = Path(self._tmp.name)
-        self.stores: dict[str, MemoryFabric] = {}
-        self._reopened: list[MemoryFabric] = []
+        self.stores: dict[str, Amberlog] = {}
+        self._reopened: list[Amberlog] = []
         self.a = self._store("a")
         self.b = self._store("b")
         self.c = self._store("c")
@@ -79,24 +79,24 @@ class TransitiveRetractionTests(unittest.TestCase):
         self._reopened.clear()
         self._tmp.cleanup()
 
-    def _reopen(self, name: str) -> MemoryFabric:
+    def _reopen(self, name: str) -> Amberlog:
         """A fresh handle on an existing store: how a crash is simulated.
 
         Registered for teardown under a distinct key, because the point is that
         two handles exist and the original must not be dropped from the
         transport while the test is still running.
         """
-        fabric = MemoryFabric(self.dir / f"{name}.db", firewall=permissive())
+        fabric = Amberlog(self.dir / f"{name}.db", firewall=permissive())
         self._reopened.append(fabric)
         return fabric
 
-    def _store(self, name: str) -> MemoryFabric:
-        fabric = MemoryFabric(self.dir / f"{name}.db", firewall=permissive())
+    def _store(self, name: str) -> Amberlog:
+        fabric = Amberlog(self.dir / f"{name}.db", firewall=permissive())
         self.stores[fabric.store_id] = fabric
         return fabric
 
     def _transport(self):
-        from memory_fabric.transport import InProcessTransport
+        from amberlog.transport import InProcessTransport
 
         return InProcessTransport(self.stores)
 
@@ -203,7 +203,7 @@ class TransitiveRetractionTests(unittest.TestCase):
 
         The same guarantee `request_retraction` makes at the origin, one hop
         out. Simulated the way it happens: the process stops and a new
-        `MemoryFabric` opens the same file.
+        `Amberlog` opens the same file.
         """
         origin, at_b, _ = self._chain()
         self.a.request_retraction(
@@ -420,7 +420,7 @@ class InboxMigrationTests(unittest.TestCase):
     def test_an_existing_inbox_gains_the_target_key(self) -> None:
         import sqlite3
 
-        from memory_fabric.outbox import Outbox
+        from amberlog.outbox import Outbox
 
         with TemporaryDirectory() as tmp:
             path = Path(tmp) / "old.db"

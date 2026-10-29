@@ -22,7 +22,9 @@ def _load(path: Path) -> Any:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
 
-def _mark(ok: bool) -> str:
+def _mark(ok: bool | None) -> str:
+    if ok is None:
+        return "**SKIPPED**"
     return "pass" if ok else "**FAIL**"
 
 
@@ -42,7 +44,7 @@ def render(bundle: Path) -> str:
         lines += ["", f"Unit suite: **{tests['run']}** run, {tests['skipped']} skipped, "
                       f"{len(tests['failures'])} failures, {len(tests['errors'])} errors."]
     elif tests:
-        lines += ["", "Unit suite: run by CI on this commit, not repeated in the bundle."]
+        lines += ["", "Unit suite: not run in this bundle; no external CI outcome is verified here."]
 
     gate = _load(bundle / "adversarial-gate.json")
     if gate:

@@ -4,11 +4,11 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import MemoryFabric
-from memory_fabric.federation import imported_from, offer
-from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from amberlog import Amberlog
+from amberlog.federation import imported_from, offer
+from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from memory_fabric.model import Scope
+from amberlog.model import Scope
 
 
 def permissive() -> Firewall:
@@ -18,14 +18,14 @@ def permissive() -> Firewall:
 
 class EchoImport(unittest.TestCase):
     def setUp(self) -> None:
-        self.a, self.b, self.c = (MemoryFabric(":memory:", firewall=permissive(),
+        self.a, self.b, self.c = (Amberlog(":memory:", firewall=permissive(),
                                                auto_activate=True) for _ in range(3))
         for store in (self.a, self.b, self.c):
             self.addCleanup(store.close)
         self.mid = self.a.remember("ana", "valve A runs at 4 bar", scope="team")
         self.a.share(self.mid, Scope.FEDERATED, actor="op")
 
-    def hop(self, source: MemoryFabric, memory_id: str, target: MemoryFabric):
+    def hop(self, source: Amberlog, memory_id: str, target: Amberlog):
         source.share(memory_id, Scope.FEDERATED, actor="op")
         return offer(source, memory_id, target, recipient_agent="x", activate=True)
 
@@ -53,7 +53,7 @@ class EchoImport(unittest.TestCase):
         memory = self.b.get(at_b)
         legacy = dict(memory.context)
         legacy["federation"] = {k: v for k, v in legacy["federation"].items() if k != "chain"}
-        from memory_fabric.federation import _chain
+        from amberlog.federation import _chain
         self.assertEqual(_chain(memory.evolve(context=legacy)), [self.a.store_id])
 
 

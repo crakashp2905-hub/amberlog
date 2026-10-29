@@ -1,6 +1,6 @@
 """Fresh-machine acceptance: install the wheel into a new venv, use it, remove it.
 
-    python tools/fresh_machine.py dist/memory_fabric-*.whl
+    python tools/fresh_machine.py dist/amberlog-*.whl
 
 Runs outside the repository so nothing imports the source tree: the venv is
 created in a temporary directory, the quickstart and the reference agent
@@ -36,7 +36,7 @@ def main(wheel: str) -> int:
     run(sys.executable, "-m", "venv", str(venv), cwd=work)
     bindir = venv / ("Scripts" if os.name == "nt" else "bin")
     py = str(bindir / ("python.exe" if os.name == "nt" else "python"))
-    cli = str(bindir / ("memory-fabric.exe" if os.name == "nt" else "memory-fabric"))
+    cli = str(bindir / ("amberlog.exe" if os.name == "nt" else "amberlog"))
     run(py, "-m", "pip", "install", "--quiet", str(Path(wheel).resolve()), cwd=work)
     for example in ("quickstart.py", "reference_agent.py"):
         shutil.copy(ROOT / "examples" / example, work / example)
@@ -47,8 +47,8 @@ def main(wheel: str) -> int:
                  str(work / "memory" / "keys"), "doctor", cwd=work, check=False)
     if doctor.returncode not in (0,):
         raise SystemExit("doctor did not report the fresh store sound")
-    run(py, "-m", "pip", "uninstall", "--yes", "memory-fabric", cwd=work)
-    left = run(py, "-c", "import memory_fabric", cwd=work, check=False)
+    run(py, "-m", "pip", "uninstall", "--yes", "amberlog", cwd=work)
+    left = run(py, "-c", "import amberlog", cwd=work, check=False)
     if left.returncode == 0 or Path(cli).exists():
         raise SystemExit("uninstall left the package or its console script behind")
     print("fresh-machine acceptance passed")

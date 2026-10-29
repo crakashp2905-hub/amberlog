@@ -7,12 +7,12 @@ pip install openai-agents
 ```python
 from agents import Agent, Runner, function_tool
 
-from memory_fabric import MemoryFabric
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
-from memory_fabric.integrations.tools import FabricTools
-from memory_fabric.sdk import agent
+from amberlog import Amberlog
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog.integrations.tools import FabricTools
+from amberlog.sdk import agent
 
-fabric = MemoryFabric("memory/store.db")
+fabric = Amberlog("memory/store.db")
 mem = FabricTools(agent(fabric, "support-bot"))
 gate = ActionGate(fabric, ActionPolicy(tools={"issue_refund": ToolRule("issue_refund")},
                                        grants={"support-bot": frozenset({"issue_refund"})}))

@@ -78,8 +78,8 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import checks  # noqa: E402
 from experiments import relevance_bench as rb  # noqa: E402
-from memory_fabric import extraction as extracting  # noqa: E402
-from memory_fabric.relations import RelationKind  # noqa: E402
+from amberlog import extraction as extracting  # noqa: E402
+from amberlog.relations import RelationKind  # noqa: E402
 
 FAMILIES = {
     "relevance_v2": ("multi_hop_4",),
@@ -123,11 +123,11 @@ class Cost:
 def build_extractor(model: str, cache: str | None = None,
                     trace: str | None = None,
                     constrained: bool = False) -> tuple[Any, Cost]:
-    from memory_fabric.adapters.ollama import OllamaClient
+    from amberlog.adapters.ollama import OllamaClient
 
     client = OllamaClient()
     if trace:
-        from memory_fabric.adapters.tracing import JsonlSink
+        from amberlog.adapters.tracing import JsonlSink
 
         client.add_sink(JsonlSink(trace))
     extractor = extracting.ModelExtractor(

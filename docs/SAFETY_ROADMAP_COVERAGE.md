@@ -1,6 +1,6 @@
 # AI-safety and security roadmap: coverage
 
-The owner's roadmap ("Memory Fabric: AI Safety, Security, and Novel Research
+The owner's roadmap ("Amberlog: AI Safety, Security, and Novel Research
 Roadmap", 2026-10-19), item by item.
 
 - **done**: implemented and tested here, with the evidence named.

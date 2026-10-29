@@ -20,7 +20,7 @@ import unittest
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from memory_fabric.adapters.systemone import (  # noqa: E402
+from amberlog.adapters.systemone import (  # noqa: E402
     AnswerRecord, SystemOneClient, SystemOneError, brier_score, choice,
     expected_calibration_error, noul, parse_answers, score,
 )

@@ -10,9 +10,9 @@ from __future__ import annotations
 
 import unittest
 
-from memory_fabric import LifecycleState, MemoryFabric
-from memory_fabric.governance.firewall import Firewall, FirewallDecision
-from memory_fabric.governance.injection import PATTERN_KINDS, InjectionDetector
+from amberlog import LifecycleState, Amberlog
+from amberlog.governance.firewall import Firewall, FirewallDecision
+from amberlog.governance.injection import PATTERN_KINDS, InjectionDetector
 
 # kind -> (must be detected as this kind, must NOT be detected at all)
 CASES: dict[str, tuple[str, str]] = {
@@ -72,7 +72,7 @@ class ThePatternsDiscriminate(unittest.TestCase):
 
 class TheWritePathActsOnIt(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = MemoryFabric(":memory:")
+        self.fabric = Amberlog(":memory:")
         self.addCleanup(self.fabric.close)
 
     def test_a_high_confidence_injection_is_quarantined_not_dropped(self) -> None:

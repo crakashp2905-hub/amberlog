@@ -11,12 +11,12 @@ import ast
 import unittest
 from pathlib import Path
 
-from memory_fabric import LifecycleState, MemoryFabric
-from memory_fabric import auditor as A
-from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
-from memory_fabric.certificates import CHECK_INDEPENDENT_SUPPORT
+from amberlog import LifecycleState, Amberlog
+from amberlog import auditor as A
+from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from amberlog.certificates import CHECK_INDEPENDENT_SUPPORT
 
-ROOT = Path(__file__).resolve().parent.parent / "memory_fabric"
+ROOT = Path(__file__).resolve().parent.parent / "amberlog"
 MUTATORS = {"quarantine", "forget", "release", "validate", "erase_content", "revise",
             "remember", "derive", "share", "request_retraction", "receive_retraction",
             "_emit", "append_many", "record_attempt", "advance", "challenge",
@@ -27,7 +27,7 @@ MUTATORS = {"quarantine", "forget", "release", "validate", "erase_content", "rev
 
 class TestObservationOnly(unittest.TestCase):
     def setUp(self) -> None:
-        f = self.fabric = MemoryFabric(auto_activate=True)
+        f = self.fabric = Amberlog(auto_activate=True)
         self.addCleanup(f.close)
         a, b = f.remember("ana", "gauge A 4 bar", scope="team"), f.remember("ben", "gauge B 4 bar", scope="team")
         gate = ActionGate(f, ActionPolicy(

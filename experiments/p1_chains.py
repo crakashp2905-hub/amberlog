@@ -26,7 +26,7 @@ from typing import Any, Mapping, Sequence
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import relevance_bench as rb  # noqa: E402
-from memory_fabric.relevance import ReasonCode  # noqa: E402
+from amberlog.relevance import ReasonCode  # noqa: E402
 
 BENCHMARK = "relevance_v2"
 CHAIN_FAMILIES = ("multi_hop_3", "multi_hop_4")

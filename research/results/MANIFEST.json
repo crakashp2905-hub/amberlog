@@ -1,15 +1,15 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 112,
+ "results": 113,
  "missing_field_counts": {
-  "git_sha": 33,
-  "prereg": 38,
-  "dataset_digest": 110,
-  "model_id": 80,
-  "prompt_hash": 112,
-  "seed": 47,
-  "cost": 92,
-  "verdict": 70
+  "git_sha": 34,
+  "prereg": 39,
+  "dataset_digest": 111,
+  "model_id": 81,
+  "prompt_hash": 113,
+  "seed": 48,
+  "cost": 93,
+  "verdict": 71
  },
  "rows": [
   {
@@ -74,6 +74,23 @@
     "A1a": "ABANDONED (headroom <= 0.05)",
     "A1b": "ABANDONED (headroom <= 0.05)"
    },
+   "parsable": true
+  },
+  {
+   "experiment_id": "amberlog-migration-validation",
+   "file": "research/results/amberlog-migration-validation.json",
+   "file_sha256": "3663871933dd8aa7cce45586c558fa5bfbe439fc19259046b13e435fcc0b1892",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": null,
+   "git_sha": null,
+   "git_sha_source": null,
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": null,
+   "config": null,
+   "cost": null,
+   "verdict": null,
    "parsable": true
   },
   {

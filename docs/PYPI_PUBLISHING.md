@@ -14,6 +14,13 @@ usage therefore need owner review. No alternative name is silently substituted.
 GitHub destination links in package metadata are target URLs; the remote has
 not been renamed. No ownership of a domain, organization or mark is claimed.
 
+A second official-index check on the same date also returned HTTP 404 from
+`https://pypi.org/simple/amberlog/`; pip's explicit official-index lookup,
+including prereleases and ignoring Python-version filters, reported no matching
+distribution. The owner reports an existing package; its page has been requested
+for verification. These observations do not validate availability. Treat the
+candidate name as unresolved and do not rename the remote or publish a package.
+
 ## Local preparation
 
 ```

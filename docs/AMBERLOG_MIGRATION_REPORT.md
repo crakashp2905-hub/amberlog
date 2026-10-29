@@ -26,8 +26,27 @@ optional AES suite is checked when available. Fixed key-derivation/AAD bytes are
 unchanged. Mixed-version federation and historical Python pickles are not
 qualified; communicating peers must be upgraded together.
 
-Broader regression, build, archive inspection, clean installs and exact-head CI
-results will be recorded after execution. No unrun check is a pass.
+Full local regression: 2,231 tests ran in 851.180 seconds, 46 skipped, no failures
+or errors. Two historical-namespace tests added afterward passed separately;
+the current collected suite is 2,233. Lint, typing of 152 source files, secret
+scanning (zero unexpected findings), documentation checks and the adversarial
+gate passed. An initial documentation run raced the rename's index staging;
+the link checks passed after staging and in the full regression. This does not
+claim that a single full local invocation ran all 2,233 current tests.
+
+Wheel and source archive built and passed strict twine validation. The wheel
+contains 141 members including the dashboard, typing marker and license, with
+no tests, benchmark datasets, databases or bytecode. Independent wheel and
+sdist environments outside the source checkout passed import, assets, CLI,
+initialization and doctor checks. Wheel removal left no import or launcher.
+
+The actual v0.11.0 upgrade/backup/rollback/re-upgrade drill passed after repairing
+its launcher to read each checkout's own declared namespace. Historical screen
+comparisons also resolve modules from the selected checkout and reject ambient
+modules from elsewhere, avoiding an invalid current-code-as-baseline result.
+The initial CI rollback failure was caused by the renamed launcher targeting
+the historical checkout; it was not hidden or waived. Corrected-head CI remains
+a separate merge gate. No unrun check is a pass.
 
 Publication is **NO-GO**: name clearance, target repository URLs, index account
 setup, trusted publishers, protected environments, independent review, pilot and

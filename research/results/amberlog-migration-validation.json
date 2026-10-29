@@ -1,0 +1,52 @@
+{
+  "scope": "local migration qualification; not release approval",
+  "code_commit": "9ab8228e92dcfb85baa6a21b4f24a5deef9abcbe",
+  "baseline_tests": 56,
+  "full_local_suite": {
+    "run": 2231,
+    "skipped": 46,
+    "failures": 0,
+    "errors": 0,
+    "seconds": 851.18,
+    "note": "two subsequently added historical namespace tests passed separately"
+  },
+  "current_collected_tests": 2233,
+  "prior_store": {
+    "identity": true,
+    "event_digest_unchanged": true,
+    "decrypted": true,
+    "hash_chain": true
+  },
+  "validation": {
+    "lint": true,
+    "mypy_source_files": 152,
+    "unexpected_secret_findings": 0,
+    "adversarial_gate": true,
+    "wheel_clean_install": true,
+    "sdist_clean_install": true,
+    "rollback_v011": true,
+    "retired_brand_files": 0
+  },
+  "artifacts": [
+    {
+      "filename": "amberlog-0.14.0-py3-none-any.whl",
+      "sha256": "2a35cc48c4bb26c3ac0d86a60208c5c131bf1cfa688e32f5463dd42e550ad09a"
+    },
+    {
+      "filename": "amberlog-0.14.0.tar.gz",
+      "sha256": "a63eb66bf150869af78414f9fc70622e3b0e2377f55a4723d06a2bf9c0b5463f"
+    }
+  ],
+  "publication": {
+    "decision": "NO_GO",
+    "name_clearance": false,
+    "remote_renamed": false,
+    "uploaded": false,
+    "pypi_json_http": 404,
+    "pypi_simple_http": 404,
+    "testpypi_json_http": 404,
+    "existing_software_usage": "https://amberlog.cc/",
+    "owner_package_link_requested": true
+  },
+  "ci": "corrected-head CI remains a separate merge gate"
+}

@@ -26,7 +26,7 @@ jobs:
         run: python -m unittest discover -s tests -t .
 
       - name: Everything compiles
-        run: python -m compileall -q amberlog experiments tests examples
+        run: python -m compileall -q src/amberlog experiments tests examples
 
   package:
     # A wheel that builds but omits the dashboard, or whose console script does
@@ -85,6 +85,11 @@ jobs:
               print(f"{finding['status']:<4} {finding['name']}: {finding['detail']}")
           sys.exit(1 if bad or not report["sound"] else 0)
           EOF
+
+      - name: Installed-wheel public types are consumed and checked
+        run: |
+          python -m pip install "mypy==2.1.0"
+          python tools/check_typed_consumer.py dist/amberlog-*.whl
 
   docker:
     # The image is a wheel on a slim base and nothing else, so the thing worth
@@ -371,6 +376,16 @@ jobs:
           python-version: "3.13"
       - run: pip install "langchain-core>=0.3"
       - run: python -m unittest tests.test_integrations -v
+
+  mcp-contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install "mcp==1.26.0"
+      - run: python -m unittest tests.test_mcp_official -v
 
   document-formats:
     runs-on: ubuntu-latest

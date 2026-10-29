@@ -29,6 +29,7 @@ OUT_JSON = ROOT / "research" / "results" / "s1-screen-false-positives.json"
 
 def checkout_module(suffix: str) -> Any:
     if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT / "src"))
         sys.path.insert(0, str(ROOT))
     from experiments.checkout_namespace import load_from_checkout
 
@@ -194,6 +195,7 @@ Test-split turns still quarantined after the change, for a reader to judge:
 
 def withholding(out: str, lme_path: str, limit: str = "60") -> int:
     """§5: LongMemEval lexical turn recall with hostile-source withholding on and off."""
+    sys.path.insert(0, str(ROOT / "src"))
     sys.path.insert(0, str(ROOT))
     from experiments import longmemeval_bench as lme
     from amberlog import Amberlog

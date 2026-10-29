@@ -18,20 +18,23 @@ Exits non-zero on the first step that does not behave as documented.
 from __future__ import annotations
 
 import argparse
+import os
 import shutil
 import subprocess
 import sys
 import tempfile
 from pathlib import Path
 
-from experiments.checkout_namespace import namespace_at
+from experiments.checkout_namespace import layout_at
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
 def run(cwd: Path, *args: str) -> subprocess.CompletedProcess:
-    return subprocess.run([sys.executable, "-m", namespace_at(cwd), *args], cwd=cwd,
-                          capture_output=True, text=True, timeout=300)
+    namespace, source = layout_at(cwd)
+    env = dict(os.environ, PYTHONPATH=str(source))
+    return subprocess.run([sys.executable, "-m", namespace, *args], cwd=cwd,
+                          capture_output=True, text=True, timeout=300, env=env)
 
 
 def main(argv: list[str] | None = None) -> int:

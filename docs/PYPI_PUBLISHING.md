@@ -45,10 +45,15 @@ Resolve naming rights and package-index acceptance first. Configure distinct
 deployment restrictions to approved version tags. Verify those protections
 exist; a workflow declaration does not create review rules.
 
-A read-only settings check on 29 October 2026 found no GitHub environments
-configured. The workflow and this guide are preparation, not completed publisher
-setup. Do not enable approval variables or create a version tag during a
-preparation-only task: the separate release workflow also reacts to tags.
+The GitHub `testpypi` and `pypi` environments are now configured and were read
+back on 30 October 2026. Both require review by `crakashp2905-hub` and accept only
+`v*` tags. Owner self-review is allowed; this is a human release-approval gate,
+not an independent security assessment. Both name-clearance and release-gate
+variables are explicitly `false`. Index-side trusted publishers have not been
+verified: the browser integration could not initialize to inspect those accounts.
+No upload, tag or approved-SHA flag has been created. Do not enable approval
+variables or create a tag during preparation: the separate release workflow also
+reacts to tags.
 
 On each index, configure a trusted publisher (or pending publisher) with:
 

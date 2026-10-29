@@ -13,9 +13,9 @@
       "status": "available",
       "user_problem": "I need memories stored with provenance, and secrets or injections kept out.",
       "modules": [
-        "amberlog/_fabric/writes.py",
-        "amberlog/governance/firewall.py",
-        "amberlog/governance/sensitive.py"
+        "src/amberlog/_fabric/writes.py",
+        "src/amberlog/governance/firewall.py",
+        "src/amberlog/governance/sensitive.py"
       ],
       "tests": [
         "tests/test_fabric.py",
@@ -39,8 +39,8 @@
       "status": "available",
       "user_problem": "An agent must only see memories it may use now.",
       "modules": [
-        "amberlog/_fabric/retrieval.py",
-        "amberlog/model.py"
+        "src/amberlog/_fabric/retrieval.py",
+        "src/amberlog/model.py"
       ],
       "tests": [
         "tests/test_scope_visibility.py",
@@ -63,8 +63,8 @@
       "status": "available",
       "user_problem": "I need to know why the system remembers this.",
       "modules": [
-        "amberlog/explain.py",
-        "amberlog/lineage.py"
+        "src/amberlog/explain.py",
+        "src/amberlog/lineage.py"
       ],
       "tests": [
         "tests/test_observability.py",
@@ -86,8 +86,8 @@
       "status": "available",
       "user_problem": "I need to see what was derived from a memory.",
       "modules": [
-        "amberlog/lineage.py",
-        "amberlog/observability/report.py"
+        "src/amberlog/lineage.py",
+        "src/amberlog/observability/report.py"
       ],
       "tests": [
         "tests/test_observability.py"
@@ -108,8 +108,8 @@
       "status": "available",
       "user_problem": "I need to see how a memory changed and who changed it.",
       "modules": [
-        "amberlog/observability/report.py",
-        "amberlog/eventlog.py"
+        "src/amberlog/observability/report.py",
+        "src/amberlog/eventlog.py"
       ],
       "tests": [
         "tests/test_observability.py",
@@ -129,8 +129,8 @@
       "status": "available",
       "user_problem": "Before withdrawing a memory I need to see what it touches, and the preview must still hold when applied.",
       "modules": [
-        "amberlog/correction.py",
-        "amberlog/incident.py"
+        "src/amberlog/correction.py",
+        "src/amberlog/incident.py"
       ],
       "tests": [
         "tests/test_correction.py"
@@ -151,10 +151,10 @@
       "status": "available",
       "user_problem": "A withdrawn memory must not survive in copies or conclusions.",
       "modules": [
-        "amberlog/lineage.py",
-        "amberlog/justification.py",
-        "amberlog/outbox.py",
-        "amberlog/transport.py"
+        "src/amberlog/lineage.py",
+        "src/amberlog/justification.py",
+        "src/amberlog/outbox.py",
+        "src/amberlog/transport.py"
       ],
       "tests": [
         "tests/test_retraction.py",
@@ -180,7 +180,7 @@
       "status": "available",
       "user_problem": "I need to know what the store has and has not established about a memory.",
       "modules": [
-        "amberlog/status.py"
+        "src/amberlog/status.py"
       ],
       "tests": [
         "tests/test_status.py"
@@ -201,8 +201,8 @@
       "status": "available",
       "user_problem": "When sources disagree I need both claims, not a silent overwrite.",
       "modules": [
-        "amberlog/conflicts.py",
-        "amberlog/adapters/context.py"
+        "src/amberlog/conflicts.py",
+        "src/amberlog/adapters/context.py"
       ],
       "tests": [
         "tests/test_conflicts.py"
@@ -223,9 +223,9 @@
       "status": "available",
       "user_problem": "A memory withdrawn after it was read must not drive an action.",
       "modules": [
-        "amberlog/actions.py",
-        "amberlog/enforcement.py",
-        "amberlog/certificates.py"
+        "src/amberlog/actions.py",
+        "src/amberlog/enforcement.py",
+        "src/amberlog/certificates.py"
       ],
       "tests": [
         "tests/test_action_fence.py",
@@ -248,8 +248,8 @@
       "status": "available",
       "user_problem": "One tenant must never read or infer another's memories.",
       "modules": [
-        "amberlog/tenancy.py",
-        "amberlog/identity.py"
+        "src/amberlog/tenancy.py",
+        "src/amberlog/identity.py"
       ],
       "tests": [
         "tests/test_tenancy.py",
@@ -272,7 +272,7 @@
       "status": "experimental",
       "user_problem": "A later session cannot read every turn of an earlier one.",
       "modules": [
-        "amberlog/compaction.py"
+        "src/amberlog/compaction.py"
       ],
       "tests": [
         "tests/test_compaction.py",
@@ -294,7 +294,7 @@
       "status": "available",
       "user_problem": "I need to reproduce and explain exactly what context an agent received.",
       "modules": [
-        "amberlog/context_receipt.py"
+        "src/amberlog/context_receipt.py"
       ],
       "tests": [
         "tests/test_cli_versioning.py",
@@ -319,7 +319,7 @@
       "status": "experimental",
       "user_problem": "Long histories must fit a token budget without losing their sources or using stale summaries.",
       "modules": [
-        "amberlog/context_map.py"
+        "src/amberlog/context_map.py"
       ],
       "tests": [
         "tests/test_context_map.py"
@@ -341,7 +341,7 @@
       "status": "experimental",
       "user_problem": "A session needs what is currently known within a fixed budget, without withdrawn or superseded values.",
       "modules": [
-        "amberlog/decay.py"
+        "src/amberlog/decay.py"
       ],
       "tests": [
         "tests/test_decay.py",
@@ -366,7 +366,7 @@
       "status": "available",
       "user_problem": "I need to try memory changes in isolation and merge them with conflicts surfaced.",
       "modules": [
-        "amberlog/branching.py"
+        "src/amberlog/branching.py"
       ],
       "tests": [
         "tests/test_branching.py",
@@ -391,9 +391,9 @@
       "status": "available",
       "user_problem": "Stores on different machines must share validated memories and retractions safely.",
       "modules": [
-        "amberlog/federation.py",
-        "amberlog/transport.py",
-        "amberlog/protocol.py"
+        "src/amberlog/federation.py",
+        "src/amberlog/transport.py",
+        "src/amberlog/protocol.py"
       ],
       "tests": [
         "tests/test_federation.py",
@@ -417,8 +417,8 @@
       "status": "available",
       "user_problem": "Deleted personal data must not be recoverable from history.",
       "modules": [
-        "amberlog/governance/erasure.py",
-        "amberlog/governance/cipher.py"
+        "src/amberlog/governance/erasure.py",
+        "src/amberlog/governance/cipher.py"
       ],
       "tests": [
         "tests/test_erasure.py",
@@ -440,8 +440,8 @@
       "status": "available",
       "user_problem": "I need to detect a rewritten or truncated history.",
       "modules": [
-        "amberlog/integrity.py",
-        "amberlog/eventlog.py"
+        "src/amberlog/integrity.py",
+        "src/amberlog/eventlog.py"
       ],
       "tests": [
         "tests/test_integrity_chain.py",
@@ -463,8 +463,8 @@
       "status": "available",
       "user_problem": "An operator needs to see the store without changing it.",
       "modules": [
-        "amberlog/observability/server.py",
-        "amberlog/observability/report.py"
+        "src/amberlog/observability/server.py",
+        "src/amberlog/observability/report.py"
       ],
       "tests": [
         "tests/test_observability.py",

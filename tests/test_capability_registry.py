@@ -19,9 +19,9 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = json.loads((ROOT / "product" / "capabilities.json").read_text(encoding="utf-8"))
-CLI = (ROOT / "amberlog" / "cli.py").read_text(encoding="utf-8")
-MCP = (ROOT / "amberlog" / "adapters" / "mcp.py").read_text(encoding="utf-8")
-SERVER = (ROOT / "amberlog" / "observability" / "server.py").read_text(encoding="utf-8")
+CLI = (ROOT / "src" / "amberlog" / "cli.py").read_text(encoding="utf-8")
+MCP = (ROOT / "src" / "amberlog" / "adapters" / "mcp.py").read_text(encoding="utf-8")
+SERVER = (ROOT / "src" / "amberlog" / "observability" / "server.py").read_text(encoding="utf-8")
 
 
 def _resolve_sdk(name: str) -> object:

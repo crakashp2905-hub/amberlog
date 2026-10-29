@@ -32,22 +32,22 @@ remain checkable.
 
 ## Protection
 
-**GitHub cannot protect branches here.** Branch protection and rulesets
-return "Upgrade to GitHub Pro or make this repository public" for a private
-repository on the free plan, so the server refuses nothing. The repository
-stays private, and protection is enforced from the clone instead:
+Verified on 30 October 2026: this repository is public and `main` has
+server-side branch protection. All 31 job contexts from its last successful
+CI run are required, bound to the GitHub Actions app. Branches must be current
+with `main`, administrators are included, force pushes and deletion are
+blocked, and review conversations must be resolved. Pull requests are required;
+the approving-review count is zero because no independent reviewer has been
+assigned. This does not satisfy the independent security-review gate.
 
-- **`tools/hooks/pre-push`** refuses to delete `main`, `rc/*`, `archive/*` or
-  `wip/*` on the remote, and refuses any push to them that is not a
-  fast-forward. A forced rewind is caught too, because the hook checks
-  ancestry itself. Install it in every clone with `sh tools/install-hooks.sh`.
-  An intended exception needs `--no-verify`, visibly.
-- **`tools/backup.sh`** writes every branch and tag into one verified
-  `git bundle` outside the repository, by default `../Memory-backups/`. To
-  restore: `git clone <bundle>`. A bundle survives the loss of the GitHub
-  repository, which no hook can.
+The added official MCP-client check must also become required once its first
+candidate CI run succeeds. Release and package workflows separately require
+name clearance, release approval and an approved exact source SHA. Those
+approval variables remain unset or false; branch protection is not permission
+to publish.
 
-If the account moves to GitHub Pro, server-side protection on `main` and
-`rc/*` should replace the hook: no force-push, no deletion. Do not require
-status checks while CI billing is broken (WORKPLAN X-CI), or nothing could
-merge.
+Install `tools/hooks/pre-push` with `sh tools/install-hooks.sh` as a local
+additional guard for other branches. `tools/backup.sh` creates a verified Git
+bundle outside the checkout; test restoration separately from CI protection.
+
+API reference: [GitHub branch protection](https://docs.github.com/en/rest/branches/branch-protection).

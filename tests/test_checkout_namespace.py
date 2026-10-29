@@ -43,3 +43,17 @@ class CheckoutNamespace(unittest.TestCase):
                 (root / name).mkdir()
             with self.assertRaises(ValueError):
                 namespace_at(root)
+
+    def test_src_layout_launcher_resolves_the_declared_source_root(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            package = root / "src" / "src_fixture_package"
+            package.mkdir(parents=True)
+            (root / "pyproject.toml").write_text(
+                '[tool.setuptools.packages.find]\nwhere=["src"]\ninclude=["src_fixture_package*"]\n')
+            (package / "__init__.py").write_text("")
+            (package / "__main__.py").write_text('print("src-launcher")\n')
+            self.assertEqual(namespace_at(root), "src_fixture_package")
+            done = run(root)
+            self.assertEqual(done.returncode, 0, done.stderr)
+            self.assertEqual(done.stdout.strip(), "src-launcher")

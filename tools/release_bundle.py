@@ -68,6 +68,7 @@ def sbom(project: dict) -> dict:
 
 
 def run_tests() -> dict:
+    sys.path.insert(0, str(ROOT / "src"))
     sys.path.insert(0, str(ROOT))
     suite = unittest.TestLoader().discover(str(ROOT / "tests"), top_level_dir=str(ROOT))
     result = unittest.TestResult()
@@ -97,6 +98,7 @@ def main(argv: list[str] | None = None) -> int:
     out = args.out / sha[:12]
     out.mkdir(parents=True, exist_ok=True)
     project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))["project"]
+    sys.path.insert(0, str(ROOT / "src"))
     sys.path.insert(0, str(ROOT))
     from amberlog.model import SCHEMA_VERSION
 

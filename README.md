@@ -268,12 +268,19 @@ know before you start:
 
 ## Development
 
+Canonical implementation lives in `src/amberlog`. Install an editable checkout
+before invoking the command directly from development scripts:
+
+```bash
+python -m pip install -e .
+```
+
 ```bash
 python tools/check.py           # regenerate docs, lint, type-check, doc tests, adversarial gate
 python tools/check.py --full    # and the full suite, which needs no dependencies
 ```
 
-**2233 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
+**2236 tests** (see [the current baseline](docs/VALIDATION.md#current-baseline)),
 a multi-store fault matrix and an adversarial release gate run
 in CI on Linux, macOS and Windows. Read [AGENTS.md](AGENTS.md), the rules for
 everyone who changes this repository, humans and AI agents alike, and

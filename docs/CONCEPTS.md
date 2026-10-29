@@ -56,7 +56,7 @@ Separate from relevance and from lifecycle. Every memory has a **kind**
 inherited through summaries, copies and other stores. A tool output or a
 web page is untrusted until a reviewer who did not write it **elevates** it.
 An instruction is never evidence. A successful outcome never raises trust
-([authority.py](../amberlog/authority.py)).
+([authority.py](../src/amberlog/authority.py)).
 
 ## Correction
 
@@ -90,7 +90,7 @@ A **protected tool** runs only when four things hold at the moment of
 action, inside one transaction: the agent is granted the tool; a
 **certificate** names the evidence and every piece still verifies; the
 evidence has sufficient authority; and, if required, a short-lived **grant**
-covers this exact target and parameters ([actions.py](../amberlog/actions.py)).
+covers this exact target and parameters ([actions.py](../src/amberlog/actions.py)).
 
 ## Outcomes and value
 

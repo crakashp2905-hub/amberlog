@@ -13,7 +13,7 @@ import sys
 import tempfile
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from amberlog import Amberlog, correction, influence  # noqa: E402
 from amberlog.response import verify_recovery  # noqa: E402

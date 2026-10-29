@@ -71,6 +71,7 @@ Every document in the repository, by what you are trying to do.
 | [SECURITY_TEST_PLAN.md](SECURITY_TEST_PLAN.md) | How security properties are tested |
 | [INDEPENDENT_EVALUATION.md](INDEPENDENT_EVALUATION.md) | What an independent reviewer would need, and what has not happened |
 | [INVARIANTS.md](INVARIANTS.md) | Each integrity invariant and the test that holds it |
+| [ENGINEERING_RESEARCH_CHECKLIST.md](ENGINEERING_RESEARCH_CHECKLIST.md) | Engineering and research acceptance ledger, including external gates |
 | [AUDIT.md](AUDIT.md) | Implementation against the spec |
 | [VALIDATION.md](VALIDATION.md) | What was run and what it showed |
 | [STATUS_AT_HEAD.md](STATUS_AT_HEAD.md) | Versions, tiers, skipped tests and contradictions, generated from the tree |
@@ -114,6 +115,9 @@ use the product.
 
 ## Current checklist work
 
+- [Product readiness assessment](PRODUCT_READINESS.md)
+- [0.14 SDK contracts](SDK_CONTRACTS_0.14.md)
+- [Failure policies and external effects](FAILURE_POLICIES.md)
 - [Amberlog migration plan](AMBERLOG_MIGRATION_PLAN.md)
 - [Amberlog migration guide](MIGRATING_TO_AMBERLOG.md)
 - [Amberlog migration report](AMBERLOG_MIGRATION_REPORT.md)

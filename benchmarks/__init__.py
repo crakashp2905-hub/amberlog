@@ -5,3 +5,8 @@ result: a suite is RUN only when a manifest under
 `research/results/bench_runs/` records it, and a vendor's number is kept as
 theirs, never assigned to Amberlog.
 """
+
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))

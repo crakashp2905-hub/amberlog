@@ -16,7 +16,7 @@ from amberlog import auditor as A
 from amberlog.actions import ActionGate, ActionPolicy, ToolRule
 from amberlog.certificates import CHECK_INDEPENDENT_SUPPORT
 
-ROOT = Path(__file__).resolve().parent.parent / "amberlog"
+ROOT = Path(__file__).resolve().parent.parent / "src" / "amberlog"
 MUTATORS = {"quarantine", "forget", "release", "validate", "erase_content", "revise",
             "remember", "derive", "share", "request_retraction", "receive_retraction",
             "_emit", "append_many", "record_attempt", "advance", "challenge",

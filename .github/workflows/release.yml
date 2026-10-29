@@ -8,8 +8,8 @@ name: Release
 #
 # 0. CI must have passed on this exact commit, every job of it, including
 #    claude-contract, which skips everywhere the anthropic SDK is not installed
-#    and so is the job a local run never catches. Branch protection cannot
-#    require checks on this plan (docs/BRANCHES.md), so the release enforces it.
+#    and so needs its dedicated SDK job. Main also requires CI checks
+#    (docs/BRANCHES.md); tags independently verify the exact source commit.
 # 1. The tag must equal the version in pyproject.toml *and* in
 #    amberlog.__version__. They drifted once (0.8.0 vs 0.7.0) and a
 #    release is the worst place to find out.
@@ -27,8 +27,8 @@ name: Release
 #    The SBOMs are always produced (attached to the release, and the image's as
 #    a workflow artifact). The signed attestations need a public repository or
 #    GitHub Enterprise Cloud for a private one, so they run when the repository
-#    is public or the variable ATTEST is "true"; this repository is private
-#    today, and the steps would otherwise fail the release.
+#    is public or the variable ATTEST is "true". Approval gates apply before
+#    any release artifact or container is published.
 
 on:
   push:
@@ -40,6 +40,10 @@ permissions:
 
 jobs:
   build:
+    if: >-
+      vars.AMBERLOG_NAME_CLEARED == 'true' &&
+      vars.AMBERLOG_RELEASE_GATES_PASSED == 'true' &&
+      vars.AMBERLOG_APPROVED_SHA == github.sha
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -59,7 +63,7 @@ jobs:
         run: |
           python - <<'EOF'
           import os, sys, tomllib
-          sys.path.insert(0, ".")
+          sys.path.insert(0, "src")
           import amberlog
           tag = os.environ["GITHUB_REF_NAME"].removeprefix("v")
           declared = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]

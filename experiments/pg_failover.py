@@ -106,6 +106,7 @@ class Cluster:
 
 
 def run_mode(sync: bool, user: str, writes: int) -> dict[str, Any]:
+    sys.path.insert(0, str(ROOT / "src"))
     sys.path.insert(0, str(ROOT))
     from amberlog import Amberlog
 

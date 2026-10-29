@@ -9,22 +9,30 @@ from pathlib import Path
 from types import ModuleType
 
 
-def namespace_at(checkout: Path) -> str:
+def layout_at(checkout: Path) -> tuple[str, Path]:
     data = tomllib.loads((checkout / "pyproject.toml").read_text(encoding="utf-8"))
-    includes = data["tool"]["setuptools"]["packages"]["find"]["include"]
-    candidates = [name.rstrip("*") for name in includes]
-    candidates = [name for name in candidates if name.isidentifier() and (checkout / name).is_dir()]
+    finder = data["tool"]["setuptools"]["packages"]["find"]
+    candidates = [(name.rstrip("*"), (checkout / where).resolve())
+                  for name in finder["include"] for where in finder.get("where", ["."])]
+    candidates = [(name, root) for name, root in candidates
+                  if name.isidentifier() and root.is_relative_to(checkout.resolve())
+                  and (root / name).is_dir()]
     if len(candidates) != 1:
         raise ValueError("checkout must declare exactly one implementation package")
     return candidates[0]
 
 
+def namespace_at(checkout: Path) -> str:
+    return layout_at(checkout)[0]
+
+
 @lru_cache(maxsize=32)
 def load_from_checkout(checkout: Path, suffix: str) -> ModuleType:
     checkout = checkout.resolve()
-    if str(checkout) not in sys.path:
-        sys.path.insert(0, str(checkout))
-    module = importlib.import_module(namespace_at(checkout) + "." + suffix)
+    namespace, source = layout_at(checkout)
+    if str(source) not in sys.path:
+        sys.path.insert(0, str(source))
+    module = importlib.import_module(namespace + "." + suffix)
     if not module.__file__ or not Path(module.__file__).resolve().is_relative_to(checkout):
         raise RuntimeError("historical baseline resolved outside the selected checkout")
     return module

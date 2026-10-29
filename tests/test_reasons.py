@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class TestCoverage(unittest.TestCase):
     def test_every_gate_and_enforcer_code_has_a_sentence(self):
         enforcer = set(re.findall(r'^[A-Z_]+ = "([a-z_]+)"$',
-                                  (ROOT / "amberlog/enforcement.py").read_text(), re.M))
+                                  (ROOT / "src/amberlog/enforcement.py").read_text(), re.M))
         enforcer -= {"low", "medium", "high", "usable", "revalidate", "unknown", "blocked"}
         missing = sorted((codes() | enforcer) - set(REASONS))
         self.assertEqual(missing, [])

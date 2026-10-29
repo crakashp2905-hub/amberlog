@@ -78,7 +78,7 @@ class Init(unittest.TestCase):
 
 class DoctorAlwaysSaysWhatToDo(unittest.TestCase):
     def test_every_warning_and_failure_carries_a_fix(self) -> None:
-        tree = ast.parse((ROOT / "amberlog" / "cli.py").read_text(encoding="utf-8"))
+        tree = ast.parse((ROOT / "src" / "amberlog" / "cli.py").read_text(encoding="utf-8"))
         missing = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "Finding":

@@ -129,13 +129,14 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.typedclaims`
 - `memory_fabric.validation`
 
-## Experimental (22)
+## Experimental (24)
 
 - `memory_fabric.adapters.systemone`
 - `memory_fabric.claimcheck`
 - `memory_fabric.compaction`
 - `memory_fabric.context_map`
 - `memory_fabric.decay`
+- `memory_fabric.decision_models`
 - `memory_fabric.docsource`
 - `memory_fabric.document_formats`
 - `memory_fabric.evidence_completeness`
@@ -151,6 +152,7 @@ and the owner's decision (AGENTS.md principle 9).
 - `memory_fabric.objective_v2`
 - `memory_fabric.receipts`
 - `memory_fabric.rulebook`
+- `memory_fabric.tool_protocol`
 - `memory_fabric.trust`
 - `memory_fabric.typed_query`
 

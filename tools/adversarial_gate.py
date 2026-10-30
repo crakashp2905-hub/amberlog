@@ -53,6 +53,7 @@ FAMILIES: dict[str, tuple[str, ...]] = {
     "privacy": ("tests.test_privacy_federation", "tests.test_receipts"),
     "resource_exhaustion": ("tests.test_limits",),
     "privilege_separation": ("tests.test_permissions",),
+    "governed_code_mode": ("tests.test_tool_protocol",),
     "backup_tamper_and_restore": ("tests.test_backup_custody",),
     "objective_filters_never_drop_safety_evidence": (
         "tests.test_objective_v2.HardSoftUncertain",

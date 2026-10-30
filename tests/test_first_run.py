@@ -59,7 +59,7 @@ class Init(unittest.TestCase):
 
     def test_the_printed_mcp_configuration_works(self) -> None:
         config = json.loads(self.output[self.output.index("{"):self.output.index("\nNext:")])
-        args = config["mcpServers"]["memory_fabric"]["args"]
+        args = config["mcpServers"]["memory-fabric"]["args"]
         messages = [
             {"jsonrpc": "2.0", "id": 1, "method": "initialize",
              "params": {"protocolVersion": "2025-06-18", "capabilities": {},

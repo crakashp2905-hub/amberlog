@@ -4,7 +4,7 @@
 keys. Getting it wrong either way is bad: a new store with in-database keys
 silently loses the protection the image advertises, and an old store pointed at
 an empty key directory cannot be opened at all. CI's docker job builds and runs
-the real image; this pins the decision itself, with a stub `memory_fabric` on
+the real image; this pins the decision itself, with a stub `memory-fabric` on
 PATH that records what it was asked to do.
 """
 
@@ -29,7 +29,7 @@ class TestEntrypoint(unittest.TestCase):
         self.bin = base / "bin"
         self.bin.mkdir()
         self.record = base / "invocation"
-        stub = self.bin / "memory_fabric"
+        stub = self.bin / "memory-fabric"
         stub.write_text(
             "#!/bin/sh\n"
             f'echo "KEYS=${{MEMORY_FABRIC_KEYS:-}} ARGS=$*" > "{self.record}"\n'

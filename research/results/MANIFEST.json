@@ -1,15 +1,15 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 113,
+ "results": 114,
  "missing_field_counts": {
   "git_sha": 34,
   "prereg": 39,
   "dataset_digest": 111,
   "model_id": 81,
-  "prompt_hash": 113,
+  "prompt_hash": 114,
   "seed": 48,
   "cost": 93,
-  "verdict": 71
+  "verdict": 72
  },
  "rows": [
   {
@@ -436,6 +436,33 @@
    ],
    "config": 300,
    "cost": null,
+   "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "decision-routing-contract-v1",
+   "file": "research/results/decision-routing-contract-v1.json",
+   "file_sha256": "8dd8b0937b14d64dd7be2408310697534a1e92e2e7969921771ac57849c49542",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": "research/prereg/decision-routing-contract-v1.md",
+   "git_sha": "72ba645acec8703f89669bb13c04f9505be0a7f3",
+   "git_sha_source": "json",
+   "dataset_digest": "95284b0c1c96b92ed957430f438a253b94c6bfa2138134fe9f5df611029af9d5",
+   "model_id": "deterministic-v1",
+   "prompt_hash": null,
+   "seed": [
+    1,
+    2,
+    3,
+    4,
+    5
+   ],
+   "config": null,
+   "cost": {
+    "currency": "USD",
+    "amount": 0.0,
+    "tokens": 0
+   },
    "verdict": null,
    "parsable": true
   },

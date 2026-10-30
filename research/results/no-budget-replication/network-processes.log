@@ -1,0 +1,16 @@
+{
+  "mode": "processes",
+  "machine": "Windows-11-10.0.26200-SP0",
+  "commit": "8e9a520",
+  "latency_ms_per_hop": 50.0,
+  "stores": 3,
+  "share_chain_s": 0.76,
+  "correction_reached_last_store_s": 1.38,
+  "states_after_correction": {
+    "a": "quarantined",
+    "b": "quarantined",
+    "c": "quarantined"
+  },
+  "last_store_while_offline": "active",
+  "converged_after_restart_s": 1.57
+}

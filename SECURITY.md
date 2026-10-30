@@ -181,6 +181,10 @@ customer data.
 - A fix lands on the latest minor first, and is described in the CHANGELOG
   once released.
 
-The repository is private, so GitHub's private vulnerability reporting is not
-available; email is the channel. This is alpha software with no independent
-review ([docs/INDEPENDENT_EVALUATION.md](docs/INDEPENDENT_EVALUATION.md)).
+The repository is public. GitHub private vulnerability reporting was enabled
+and read back on 30 October 2026. Use the
+[private reporting form](https://github.com/crakashp2905-hub/amberlog/security/advisories/new)
+or the maintainer email above; never post an unremediated finding in a public
+issue. Enabling the channel does not commission a review or certify security.
+This remains alpha software without a completed independent review
+([docs/INDEPENDENT_EVALUATION.md](docs/INDEPENDENT_EVALUATION.md)).

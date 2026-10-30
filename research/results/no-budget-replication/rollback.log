@@ -1,0 +1,8 @@
+  ok  old: seed (exit 0)
+  ok  old: backup (exit 0)
+  ok  new: maintain (writes newer-schema events) (exit 0)
+  ok  new: doctor (exit 0)
+  ok  old: doctor refuses the upgraded store (exit 5)
+  ok  rollback: old doctor on the restored backup (exit 0)
+  ok  re-upgrade: new doctor on the restored store (exit 0)
+rollback drill: every step behaved as documented

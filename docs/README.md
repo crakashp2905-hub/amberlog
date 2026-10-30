@@ -115,6 +115,7 @@ use the product.
 
 ## Current checklist work
 
+- [Zero-budget validation and handoff](NO_BUDGET_VALIDATION.md)
 - [Product readiness assessment](PRODUCT_READINESS.md)
 - [0.14 SDK contracts](SDK_CONTRACTS_0.14.md)
 - [Failure policies and external effects](FAILURE_POLICIES.md)

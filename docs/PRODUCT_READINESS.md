@@ -98,7 +98,7 @@ and execution. This is a proposed buyer/use case, not validated demand.
 |---|---|---|---|
 | R07.01 | Organize canonical code under src/amberlog | IMPLEMENTED | `pyproject.toml`, `MANIFEST.in`. Implementation moved to src/amberlog; import identity and schema remain unchanged. |
 | R07.02 | Keep tests, experiments and datasets out of the production wheel | IMPLEMENTED | `tools/fresh_machine.py`, `.github/workflows/ci.yml`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
-| R07.03 | Run unit, integration, security and contract tests in CI | PARTIAL | `.github/workflows/ci.yml`. Main protection verified: 31 successful CI contexts, strict updates, administrators included, no force pushes/deletion. New MCP context awaits first green run; independent review remains separate. |
+| R07.03 | Run unit, integration, security and contract tests in CI | PARTIAL | `.github/workflows/ci.yml`. Main protection verified: 32 required CI contexts including the passing official MCP check, strict updates, administrators included, no force pushes/deletion; independent review remains separate. |
 | R07.04 | Test supported Python and operating-system matrix | IMPLEMENTED | `.github/workflows/ci.yml`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
 | R07.05 | Run static analysis, type checks and dependency scanning | PARTIAL | `tools/check.py`, `pyproject.toml`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R07.06 | Generate SBOM and artifact provenance attestations | PARTIAL | `tools/release_bundle.py`, `.github/workflows/release.yml`. SBOM generation exists; release attestations need an actual approved release. |
@@ -173,5 +173,11 @@ assignment. `experiments.rollback_drill --old-ref v0.11.0` passed every step.
 The pre-rename encrypted synthetic store retained its identity, plaintext,
 exact event bytes and valid hash chain in `tools/verify_prior_store.py`.
 
-The complete 2,236-test run and candidate remote CI are pending at this point;
-these focused results do not approve a release or complete every PARTIAL row.
+The first full local run executed 2,236 tests (46 skipped) and failed two
+dashboard tests using the old source path. All nine dashboard tests passed
+after correcting that path. Candidate CI also exposed a missing child-process
+source path in the federation launcher; after correction its local delayed
+retraction/reconnect drill passed. A fresh candidate CI run is required. The
+first candidate already passed package, official MCP, Docker, adapter-contract,
+rollback, mutation and isolated-install checks. These focused results do not
+approve a release or complete every PARTIAL row.

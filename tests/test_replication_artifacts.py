@@ -4,8 +4,18 @@ import json
 from pathlib import Path
 import unittest
 
+from tools.reproduce_readiness import conformance_complete
+
 
 class ReplicationArtifacts(unittest.TestCase):
+    def test_empty_skipped_or_failed_conformance_cannot_qualify(self):
+        self.assertTrue(conformance_complete({"run": 1}))
+        for incomplete in ({"run": 0}, {"run": 1, "skipped": {"test": "optional dependency"}},
+                           {"run": 1, "failures": ["test"]}, {"run": 1, "missing": ["test"]},
+                           {"run": 1, "discovery_errors": ["import failed"]}):
+            with self.subTest(incomplete=incomplete):
+                self.assertFalse(conformance_complete(incomplete))
+
     def test_published_bundle_matches_every_frozen_hash(self):
         root = Path(__file__).resolve().parents[1]
         summary = json.loads((root / "research/results/no-budget-replication.json").read_text())

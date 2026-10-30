@@ -17,6 +17,11 @@ import time
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def conformance_complete(data: dict) -> bool:
+    return (data.get("run", 0) > 0 and not any(data.get(key) for key in
+            ("skipped", "failures", "missing", "discovery_errors")))
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", type=Path, required=True)
@@ -76,7 +81,10 @@ def main() -> int:
         match = project(json.loads(observed.read_text())) == project(json.loads(reference.read_text()))
     manifest["frozen_reference_sha256"] = hashlib.sha256(reference.read_bytes()).hexdigest()
     manifest["deterministic_outcomes_match"] = match
-    manifest["execution_status"] = "PASS" if match and all(step["exit_code"] == 0 for step in manifest["steps"]) else "FAIL"
+    conformance_path = out / "conformance.json"
+    complete = conformance_path.exists() and conformance_complete(json.loads(conformance_path.read_text()))
+    manifest["conformance_complete"] = complete
+    manifest["execution_status"] = "PASS" if match and complete and all(step["exit_code"] == 0 for step in manifest["steps"]) else "FAIL"
     manifest["files"] = {path.name: hashlib.sha256(path.read_bytes()).hexdigest()
                          for path in sorted(out.iterdir()) if path.is_file()}
     (out / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")

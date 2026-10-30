@@ -12,7 +12,7 @@ def main() -> int:
     # Code points let the acceptance rule itself satisfy the removal contract.
     first = "".join(map(chr, (109, 101, 109, 111, 114, 121)))
     second = "".join(map(chr, (102, 97, 98, 114, 105, 99)))
-    retired = re.compile(first + r"[ _-]?" + second, re.IGNORECASE)
+    retired = re.compile(first + r"[\s_-]*" + second, re.IGNORECASE)
     names = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT).decode().split("\0")
     violations = []
     for name in names:

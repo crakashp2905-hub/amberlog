@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SOURCE = ROOT / "product" / "capabilities.json"
 PAGE = ROOT / "docs" / "product" / "CAPABILITY_REGISTRY.md"
 # The dashboard's status badges read this copy, shipped as package data.
-BADGES = ROOT / "amberlog" / "observability" / "static" / "capabilities.json"
+BADGES = ROOT / "src" / "amberlog" / "observability" / "static" / "capabilities.json"
 ORDER = ("available", "experimental", "planned", "unsupported")
 
 

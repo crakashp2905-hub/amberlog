@@ -34,6 +34,7 @@ CURRENT = (
 
 
 def count() -> int:
+    sys.path.insert(0, str(ROOT / "src"))
     sys.path.insert(0, str(ROOT))
     suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"), top_level_dir=str(ROOT))
     return suite.countTestCases()

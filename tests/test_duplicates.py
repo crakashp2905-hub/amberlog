@@ -14,6 +14,7 @@ import sys
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 from amberlog import Amberlog, duplicates  # noqa: E402

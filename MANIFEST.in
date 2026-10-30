@@ -1,5 +1,5 @@
 include LICENSE README.md pyproject.toml
-recursive-include amberlog *.py py.typed *.html *.json
+recursive-include src/amberlog *.py py.typed *.html *.json
 prune tests
 prune research
 prune benchmarks

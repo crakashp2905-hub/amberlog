@@ -15,6 +15,15 @@ from __future__ import annotations
 import atexit
 import itertools
 import os
+import sys
+from pathlib import Path
+
+# Source tests intentionally exercise the checkout. Packaging acceptance clears
+# these variables and runs in a separate directory against an installed wheel.
+_SOURCE = str(Path(__file__).resolve().parents[1] / "src")
+sys.path.insert(0, _SOURCE)
+os.environ["PYTHONPATH"] = _SOURCE + (os.pathsep + os.environ["PYTHONPATH"]
+                                     if os.environ.get("PYTHONPATH") else "")
 
 _URL = os.environ.get("MF_TEST_POSTGRES_URL")
 

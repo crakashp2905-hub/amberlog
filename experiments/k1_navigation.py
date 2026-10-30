@@ -15,7 +15,7 @@ import time
 from pathlib import Path
 from typing import Any
 
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from experiments import longmemeval_bench as lme  # noqa: E402
 from amberlog import Amberlog  # noqa: E402

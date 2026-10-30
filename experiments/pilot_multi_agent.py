@@ -95,6 +95,7 @@ def run_agent(name: str, prompt: str, workdir: Path, bindir: Path, model: str | 
 
 
 def one_run(n: int, model: str | None, workdir: Path) -> dict[str, Any]:
+    sys.path.insert(0, str(ROOT / "src"))
     sys.path.insert(0, str(ROOT))
     from amberlog import Amberlog
 
@@ -103,7 +104,7 @@ def one_run(n: int, model: str | None, workdir: Path) -> dict[str, Any]:
     agents_file = workdir / f"agents-{n}"
     agents_file.write_text("".join(f"ag_{a}:tn_default:{os.urandom(32).hex()}\n" for a in AGENTS))
     port = free_port()
-    env = {**os.environ, "PYTHONPATH": str(ROOT)}
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join((str(ROOT / "src"), str(ROOT)))}
     cli = [sys.executable, "-m", "amberlog", "--db", str(db)]
     server = subprocess.Popen(cli + ["agent-api", "--agents-file", str(agents_file), "--port",
                                      str(port)], cwd=workdir, env=env,

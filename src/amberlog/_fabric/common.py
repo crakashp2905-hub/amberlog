@@ -8,7 +8,7 @@ __stability__ = "stable"
 import functools
 
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, Any, Mapping
+from typing import TYPE_CHECKING, Any, Callable, Concatenate, Mapping, ParamSpec, TypeVar
 
 if TYPE_CHECKING:
     from ..fabric import Amberlog  # noqa: F401
@@ -130,7 +130,11 @@ def _screened_text(content: str, *metadata: Any) -> str:
     return "\n".join(parts)
 
 
-def _fresh(method):
+_P = ParamSpec("_P")
+_R = TypeVar("_R")
+
+
+def _fresh(method: Callable[Concatenate[Any, _P], _R]) -> Callable[Concatenate[Any, _P], _R]:
     """Catch up on other processes' writes before serving, enforcing or writing.
 
     See `Amberlog.refresh`. Applied to the public entry points only:
@@ -139,7 +143,7 @@ def _fresh(method):
     """
 
     @functools.wraps(method)
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: Any, *args: _P.args, **kwargs: _P.kwargs) -> _R:
         # Under the fabric's lock: the projection is plain dicts and the
         # connection is one sqlite3 connection, and neither may be used from
         # two threads at once. Re-entrant, so a public method calling another

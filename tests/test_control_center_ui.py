@@ -13,7 +13,7 @@ from amberlog import Amberlog
 from amberlog.observability.control import agents, graph, knowledge_map
 from amberlog.observability.server import Api
 
-HTML = Path(__file__).resolve().parents[1] / "amberlog" / "observability" / "static" / "dashboard.html"
+HTML = Path(__file__).resolve().parents[1] / "src" / "amberlog" / "observability" / "static" / "dashboard.html"
 
 
 class TestViews(unittest.TestCase):

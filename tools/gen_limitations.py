@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DOC = ROOT / "docs" / "LIMITATIONS.md"
-OUT = ROOT / "amberlog" / "observability" / "static" / "limitations.json"
+OUT = ROOT / "src" / "amberlog" / "observability" / "static" / "limitations.json"
 ROW = re.compile(r"^\|\s*\*\*(?P<title>.+?)\*\*(?P<rest>.*?)\|\s*(?P<todo>.+?)\s*\|\s*$")
 
 

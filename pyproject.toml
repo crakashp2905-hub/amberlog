@@ -61,7 +61,11 @@ Changelog = "https://github.com/crakashp2905-hub/amberlog/blob/main/CHANGELOG.md
 Issues = "https://github.com/crakashp2905-hub/amberlog/issues"
 Security = "https://github.com/crakashp2905-hub/amberlog/blob/main/SECURITY.md"
 
+[tool.setuptools]
+package-dir = {"" = "src"}
+
 [tool.setuptools.packages.find]
+where = ["src"]
 include = ["amberlog*"]
 
 [tool.setuptools.package-data]
@@ -81,14 +85,15 @@ include = ["amberlog*"]
 # code is written to.
 [tool.ruff]
 line-length = 100
-include = ["amberlog/**/*.py", "memeval/**/*.py"]
+include = ["src/amberlog/**/*.py", "memeval/**/*.py"]
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
 
 [tool.mypy]
 python_version = "3.11"
-files = ["amberlog", "memeval", "benchmarks"]
+files = ["src/amberlog", "memeval", "benchmarks"]
+mypy_path = "src"
 # psycopg, anthropic and cryptography are optional; their absence must not
 # fail a check of the zero-dependency core.
 ignore_missing_imports = true

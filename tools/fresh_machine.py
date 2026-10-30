@@ -23,7 +23,9 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def run(*cmd: str, cwd: Path, check: bool = True) -> subprocess.CompletedProcess:
     print("$", " ".join(cmd), flush=True)
-    done = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+    env = {key: value for key, value in os.environ.items()
+           if key not in {"PYTHONPATH", "PYTHONHOME"}}
+    done = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, env=env)
     print(done.stdout[-2000:], done.stderr[-2000:], sep="", flush=True)
     if check and done.returncode != 0:
         raise SystemExit(f"failed ({done.returncode}): {' '.join(cmd)}")

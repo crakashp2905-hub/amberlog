@@ -13,6 +13,7 @@ import sys
 import unittest
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 from amberlog import chains  # noqa: E402
@@ -208,7 +209,7 @@ class TestItNeverReadsLabels(unittest.TestCase):
     def test_the_module_does_not_reference_benchmark_labels(self):
         """Registered constraint: the mechanism may use content, edges and
         gates, and must not use `critical`, `requirements` or `stale`."""
-        source = (ROOT / "amberlog" / "chains.py").read_text(encoding="utf-8")
+        source = (ROOT / "src" / "amberlog" / "chains.py").read_text(encoding="utf-8")
         for forbidden in ('"critical"', '"requirements"', '"stale"', "labels"):
             self.assertNotIn(forbidden, source)
 

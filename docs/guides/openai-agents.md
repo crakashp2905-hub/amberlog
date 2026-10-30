@@ -46,3 +46,29 @@ result = Runner.run_sync(bot, "Customer 1182 says the refund policy changed. Wha
 Without the Agents SDK, `mem.specs("openai")` gives the four memory tools as
 Chat Completions function definitions and `mem.call(name, arguments)` runs a
 tool call (the JSON string a model returns is accepted as is).
+
+## Reproduce the runtime contract without model spending
+
+In a development virtual environment, from an editable checkout:
+
+```bash
+python -m pip install "openai-agents==0.24.0" "langgraph==1.2.11"
+python -m unittest tests.test_framework_contracts -v
+```
+
+The Agents SDK test uses the real `Agent`, `FunctionTool` and `Runner` with
+Amberlog's existing governed dispatcher. A local `Model` supplies deterministic
+function calls. It checks successful retrieval, foreign-tenant refusal, a
+positive verification control and refusal after correction. Tracing is disabled
+and HTTP client sends raise an error, so the test cannot silently call a hosted
+model. The separate `framework-contracts` CI job installs the pinned SDKs; core
+tests skip these optional contracts when they are absent.
+
+This is runtime/tool interoperability evidence, not evidence of model reasoning,
+task success, streaming, handoffs or an external pilot. The example above still
+needs a configured model and a real billing implementation before live use.
+Host-owned side effects require the action fence and external idempotency
+described in [failure policies](../FAILURE_POLICIES.md).
+
+References: [official agent definitions](https://developers.openai.com/api/docs/guides/agents/define-agents)
+and [models and providers](https://developers.openai.com/api/docs/guides/agents/models).

@@ -85,6 +85,7 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--report", type=Path, default=None)
     args = parser.parse_args(argv)
+    sys.path.insert(0, str(ROOT / "src"))
     sys.path.insert(0, str(ROOT))
     report = {family: run_family(names) for family, names in FAMILIES.items()}
     failed = [f for f, r in report.items() if not r["passed"]]

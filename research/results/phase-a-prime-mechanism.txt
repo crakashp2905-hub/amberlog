@@ -40,9 +40,7 @@ plain ratio of the two is misleading for exactly the arms that strip the
 store. The column that matters is `from memory`: the share of an arm's
 success that a memory actually supplied.
 
-arm                     success  coverage  P|right  P|none  from memory
-------------------------------------------------------------------------
-fabric_blame                18%       15%      72%      9%          59%
+arm                     success  coverage  P|right  P|none  from Amberlog_blame                18%       15%      72%      9%          59%
 fabric_contrastive          35%       33%      98%      4%          93%
 fabric_loo                  48%       51%      93%      2%          98%
 no_memory                    9%        0%      n/a      9%           0%

@@ -82,7 +82,7 @@ def run_trial(arm: str, n: int, model: str | None, workdir: str) -> base.Trial:
     agents = os.path.join(workdir, "agents")
     Path(agents).write_text(f"{AGENT_ID}:tn_default:{KEY}\n")
     port = free_port()
-    env = {**os.environ, "PYTHONPATH": str(ROOT)}
+    env = {**os.environ, "PYTHONPATH": os.pathsep.join((str(ROOT / "src"), str(ROOT)))}
     server = subprocess.Popen(
         [sys.executable, "-m", "amberlog", "--db", db, "agent-api",
          "--agents-file", agents, "--port", str(port)],

@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-root = ROOT / "amberlog"
+root = ROOT / "src" / "amberlog"
 tiers = {"stable": [], "beta": [], "experimental": []}
 for path in sorted(root.rglob("*.py")):
     m = re.search(r'^__stability__ = "(\w+)"', path.read_text(encoding="utf-8"), re.M)

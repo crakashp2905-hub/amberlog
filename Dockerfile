@@ -4,7 +4,7 @@
 FROM python:3.13-slim AS build
 WORKDIR /src
 COPY pyproject.toml README.md LICENSE ./
-COPY amberlog ./amberlog
+COPY src ./src
 RUN pip install --no-cache-dir build && python -m build --wheel --outdir /dist
 
 FROM python:3.13-slim

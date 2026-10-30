@@ -5,8 +5,7 @@ metric, the baselines, the ceiling, the share of headroom that counts as
 success, and the smallest effect worth acting on. `evaluate()` then applies it
 to what the run produced, mechanically.
 
-The point is the verdicts it refuses to give. Each refusal is a mistake Memory
-Fabric's own experiments made and published:
+The point is the verdicts it refuses to give. Each refusal is a mistake Amberlog's own experiments made and published:
 
 | refusal | the case |
 |---|---|

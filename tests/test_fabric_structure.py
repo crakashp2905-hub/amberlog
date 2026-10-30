@@ -24,7 +24,7 @@ from pathlib import Path
 from amberlog import Amberlog
 
 ROOT = Path(__file__).resolve().parents[1]
-PKG = ROOT / "amberlog" / "_fabric"
+PKG = ROOT / "src" / "amberlog" / "_fabric"
 SERVICES = ("federation", "sealing", "retrieval", "lifecycle", "sharing", "access", "writes")
 
 
@@ -82,7 +82,7 @@ class Structure(unittest.TestCase):
 
     def test_no_module_grows_back_into_a_monolith(self) -> None:
         sizes = {p.name: len(p.read_text(encoding="utf-8").splitlines())
-                 for p in [ROOT / "amberlog" / "fabric.py", *PKG.glob("*.py")]}
+                 for p in [ROOT / "src" / "amberlog" / "fabric.py", *PKG.glob("*.py")]}
         self.assertLess(sizes["fabric.py"], 300, sizes)
         self.assertEqual({k: v for k, v in sizes.items() if v > 1200}, {})
 

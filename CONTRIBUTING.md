@@ -2,6 +2,10 @@
 
 Read [AGENTS.md](AGENTS.md) first; its rules are binding.
 
+The implementation uses `src/amberlog`. Use `python -m pip install -e .` for
+interactive development. Source test packages add that source root explicitly;
+clean-wheel acceptance clears source-path overrides and runs outside the checkout.
+
 ## Before you push
 
 ```bash

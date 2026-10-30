@@ -162,7 +162,7 @@ def run_trial(arm: str, n: int, model: str | None, workdir: str) -> Trial:
             "args": ["-m", "amberlog", "--db", db, "mcp", "--agent", AGENT_ID],
             # The run happens in a scratch directory, so the package must be
             # importable from there whether or not it is installed.
-            "env": {"PYTHONPATH": REPO_ROOT},
+            "env": {"PYTHONPATH": os.pathsep.join((os.path.join(REPO_ROOT, "src"), REPO_ROOT))},
         }}}, fh)
 
     stop = threading.Event()

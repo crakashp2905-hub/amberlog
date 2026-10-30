@@ -77,7 +77,13 @@ class ConcurrentWriters(unittest.TestCase):
             encoding="utf-8",
         )
 
-    def _spawn(self, label: str, count: int, timeout_ms: int = 5_000):
+    def _spawn(self, label: str, count: int, timeout_ms: int = 30_000):
+        # This test establishes serialisation, not the product's default wait
+        # budget.  A busy CI or sandbox volume can let one process retain the
+        # SQLite writer lock for longer than five seconds across its sequence
+        # of transactions.  Give every contender enough patience to test the
+        # stated property; the deterministic tests below separately pin the
+        # configured 5 s default and the zero-timeout failure semantics.
         return subprocess.Popen(
             [sys.executable, str(self.script), str(self.path), label,
              str(count), str(timeout_ms)],

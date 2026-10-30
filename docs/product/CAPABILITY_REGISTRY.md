@@ -16,7 +16,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `memory.write.screened` — I need memories stored with provenance, and secrets or injections kept out.
 
 - **Surfaces:** sdk: `Amberlog.remember`, mcp: `remember`
-- **Code:** `amberlog/_fabric/writes.py`, `amberlog/governance/firewall.py`, `amberlog/governance/sensitive.py`
+- **Code:** `src/amberlog/_fabric/writes.py`, `src/amberlog/governance/firewall.py`, `src/amberlog/governance/sensitive.py`
 - **Tests:** `tests/test_fabric.py`, `tests/test_governance.py`, `tests/test_sensitive_patterns.py`
 - **Limitation:** Screens catch known patterns only; a novel injection can pass.
 - **Limitation:** A plausible first claim about something the store has never seen cannot be checked (staging run).
@@ -26,7 +26,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `memory.retrieve.governed` — An agent must only see memories it may use now.
 
 - **Surfaces:** sdk: `Amberlog.retrieve`, mcp: `recall`, cli: `search`, dashboard: `search`
-- **Code:** `amberlog/_fabric/retrieval.py`, `amberlog/model.py`
+- **Code:** `src/amberlog/_fabric/retrieval.py`, `src/amberlog/model.py`
 - **Tests:** `tests/test_scope_visibility.py`, `tests/test_access_matrix.py`, `tests/test_properties_authz.py`
 - **Limitation:** Lexical ranking by default; recall@1 is low when many notes share a tag (research/results/product-bench.md).
 
@@ -35,7 +35,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `memory.provenance.inspect` — I need to know why the system remembers this.
 
 - **Surfaces:** sdk: `Amberlog.explain`, mcp: `trace_provenance`, cli: `show`, dashboard: `memories/{id}`
-- **Code:** `amberlog/explain.py`, `amberlog/lineage.py`
+- **Code:** `src/amberlog/explain.py`, `src/amberlog/lineage.py`
 - **Tests:** `tests/test_observability.py`, `tests/test_transitive_retraction.py`
 - **Limitation:** Only provenance the system recorded can be shown.
 
@@ -44,7 +44,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `memory.lineage.graph` — I need to see what was derived from a memory.
 
 - **Surfaces:** sdk: `Amberlog.lineage`, cli: `lineage`, dashboard: `memories/{id}/lineage`
-- **Code:** `amberlog/lineage.py`, `amberlog/observability/report.py`
+- **Code:** `src/amberlog/lineage.py`, `src/amberlog/observability/report.py`
 - **Tests:** `tests/test_observability.py`
 - **Limitation:** Depth-bounded; lineage recorded by callers through parents only.
 
@@ -53,7 +53,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `memory.history.audit` — I need to see how a memory changed and who changed it.
 
 - **Surfaces:** cli: `audit`, dashboard: `memories/{id}/audit`
-- **Code:** `amberlog/observability/report.py`, `amberlog/eventlog.py`
+- **Code:** `src/amberlog/observability/report.py`, `src/amberlog/eventlog.py`
 - **Tests:** `tests/test_observability.py`, `tests/test_integrity_chain.py`
 
 ### Preview and apply a withdrawal, with stale-preview protection
@@ -61,7 +61,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `governance.correction.preview` — Before withdrawing a memory I need to see what it touches, and the preview must still hold when applied.
 
 - **Surfaces:** sdk: `correction.preview`, mcp: `preview_correction`, cli: `correct`, dashboard: `memories/{id}/correction`
-- **Code:** `amberlog/correction.py`, `amberlog/incident.py`
+- **Code:** `src/amberlog/correction.py`, `src/amberlog/incident.py`
 - **Tests:** `tests/test_correction.py`
 - **Limitation:** Recipients outside this store report on themselves; delivery is verified only by their acknowledgement.
 
@@ -70,7 +70,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `governance.retraction.propagation` — A withdrawn memory must not survive in copies or conclusions.
 
 - **Surfaces:** sdk: `Amberlog.request_retraction`, cli: `correct`, dashboard: `propagation`
-- **Code:** `amberlog/lineage.py`, `amberlog/justification.py`, `amberlog/outbox.py`, `amberlog/transport.py`
+- **Code:** `src/amberlog/lineage.py`, `src/amberlog/justification.py`, `src/amberlog/outbox.py`, `src/amberlog/transport.py`
 - **Tests:** `tests/test_retraction.py`, `tests/test_transitive_retraction.py`, `tests/test_retraction_protocol.py`, `tests/test_multihop_http.py`, `tests/test_restatements.py`
 - **Limitation:** A peer that never acknowledges stays pending; it is shown, not forced.
 - **Limitation:** Restatements of a value (notes not linked by lineage) are contested only on a revision or a withdrawal recorded as contradicted.
@@ -80,7 +80,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `governance.status.labels` — I need to know what the store has and has not established about a memory.
 
 - **Surfaces:** sdk: `status.labels`, cli: `show`, dashboard: `memories/{id}`
-- **Code:** `amberlog/status.py`
+- **Code:** `src/amberlog/status.py`
 - **Tests:** `tests/test_status.py`
 - **Limitation:** No label says a memory is true.
 
@@ -89,7 +89,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `governance.conflicts.preserved` — When sources disagree I need both claims, not a silent overwrite.
 
 - **Surfaces:** sdk: `adapters.context.build_context`, mcp: `recall`
-- **Code:** `amberlog/conflicts.py`, `amberlog/adapters/context.py`
+- **Code:** `src/amberlog/conflicts.py`, `src/amberlog/adapters/context.py`
 - **Tests:** `tests/test_conflicts.py`
 - **Limitation:** Detected for structured claims and value statements; free-text disagreement can be missed.
 
@@ -98,7 +98,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `governance.action.fence` — A memory withdrawn after it was read must not drive an action.
 
 - **Surfaces:** sdk: `actions.ActionGate`, mcp: `verify`
-- **Code:** `amberlog/actions.py`, `amberlog/enforcement.py`, `amberlog/certificates.py`
+- **Code:** `src/amberlog/actions.py`, `src/amberlog/enforcement.py`, `src/amberlog/certificates.py`
 - **Tests:** `tests/test_action_fence.py`, `tests/test_visibility_at_action.py`, `tests/test_action_crash.py`
 - **Limitation:** Covers tools run through the gate only.
 
@@ -107,7 +107,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `tenancy.isolation` — One tenant must never read or infer another's memories.
 
 - **Surfaces:** sdk: `Amberlog.for_tenant`, cli: `tenants`
-- **Code:** `amberlog/tenancy.py`, `amberlog/identity.py`
+- **Code:** `src/amberlog/tenancy.py`, `src/amberlog/identity.py`
 - **Tests:** `tests/test_tenancy.py`, `tests/test_access_matrix.py`, `tests/test_metadata_leakage.py`
 - **Limitation:** Single store; tenants share a process and its keys.
 
@@ -116,7 +116,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `context.receipt` — I need to reproduce and explain exactly what context an agent received.
 
 - **Surfaces:** sdk: `context_receipt.build_context`, mcp: `build_context`, cli: `context`, dashboard: `receipts`
-- **Code:** `amberlog/context_receipt.py`
+- **Code:** `src/amberlog/context_receipt.py`
 - **Tests:** `tests/test_cli_versioning.py`, `tests/test_context_map.py`, `tests/test_dashboard_versioning.py`, `tests/test_mcp_extended.py`
 - **Limitation:** Token counts are estimates (characters / 4), not a tokenizer.
 - **Limitation:** Exclusions list candidates retrieval returned; memories below the relevance floor are not listed.
@@ -126,7 +126,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `versioning.branches` — I need to try memory changes in isolation and merge them with conflicts surfaced.
 
 - **Surfaces:** sdk: `branching.Branches`, mcp: `branch_create`, cli: `branch`, dashboard: `branches`
-- **Code:** `amberlog/branching.py`
+- **Code:** `src/amberlog/branching.py`
 - **Tests:** `tests/test_branching.py`, `tests/test_cli_versioning.py`, `tests/test_dashboard_versioning.py`, `tests/test_mcp_extended.py`
 - **Limitation:** No branch of a branch; merges go into main only.
 - **Limitation:** Branch retrieval is the overlay view; it is not ranked by the store's retrieval arms.
@@ -136,7 +136,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `federation.signed` — Stores on different machines must share validated memories and retractions safely.
 
 - **Surfaces:** sdk: `Amberlog.share`, cli: `federate`
-- **Code:** `amberlog/federation.py`, `amberlog/transport.py`, `amberlog/protocol.py`
+- **Code:** `src/amberlog/federation.py`, `src/amberlog/transport.py`, `src/amberlog/protocol.py`
 - **Tests:** `tests/test_federation.py`, `tests/test_federation_transport.py`, `tests/test_remote_offer.py`, `tests/test_key_rotation_drill.py`
 - **Limitation:** No consensus; each store decides for itself.
 
@@ -145,7 +145,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `privacy.erasure` — Deleted personal data must not be recoverable from history.
 
 - **Surfaces:** sdk: `Amberlog.erase_content`, cli: `erase`
-- **Code:** `amberlog/governance/erasure.py`, `amberlog/governance/cipher.py`
+- **Code:** `src/amberlog/governance/erasure.py`, `src/amberlog/governance/cipher.py`
 - **Tests:** `tests/test_erasure.py`, `tests/test_erasure_residue.py`
 - **Limitation:** Backups taken before erasure hold their own copy until they expire (docs/LIMITATIONS.md).
 
@@ -154,7 +154,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `integrity.chain` — I need to detect a rewritten or truncated history.
 
 - **Surfaces:** cli: `checkpoint`, dashboard: `posture`
-- **Code:** `amberlog/integrity.py`, `amberlog/eventlog.py`
+- **Code:** `src/amberlog/integrity.py`, `src/amberlog/eventlog.py`
 - **Tests:** `tests/test_integrity_chain.py`, `tests/test_checkpoint_rewrite.py`
 - **Limitation:** Detects rewrites against a checkpoint held elsewhere; does not prevent them.
 
@@ -163,7 +163,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `operations.dashboard` — An operator needs to see the store without changing it.
 
 - **Surfaces:** cli: `serve`, dashboard: `overview`
-- **Code:** `amberlog/observability/server.py`, `amberlog/observability/report.py`
+- **Code:** `src/amberlog/observability/server.py`, `src/amberlog/observability/report.py`
 - **Tests:** `tests/test_observability.py`, `tests/test_auth.py`
 - **Limitation:** Read-only by design; changes go through the CLI or SDK.
 
@@ -183,7 +183,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `context.compaction.session` — A later session cannot read every turn of an earlier one.
 
 - **Surfaces:** sdk: `compaction.compact_session`
-- **Code:** `amberlog/compaction.py`
+- **Code:** `src/amberlog/compaction.py`
 - **Tests:** `tests/test_compaction.py`, `tests/test_context_compact.py`
 - **Limitation:** One summary per episode; no hierarchy.
 
@@ -192,7 +192,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `context.map` — Long histories must fit a token budget without losing their sources or using stale summaries.
 
 - **Surfaces:** sdk: `context_map.ContextMap`
-- **Code:** `amberlog/context_map.py`
+- **Code:** `src/amberlog/context_map.py`
 - **Tests:** `tests/test_context_map.py`
 - **Limitation:** extractive-v1 keeps every distinct fact verbatim, so it saves tokens only on restatements and chatter.
 - **Limitation:** Summary nodes live in process memory and are rebuilt per process.
@@ -202,7 +202,7 @@ Generated from `product/capabilities.json` by `tools/gen_capabilities.py`; do no
 `context.decay` — A session needs what is currently known within a fixed budget, without withdrawn or superseded values.
 
 - **Surfaces:** sdk: `decay.DecayView`, mcp: `wake`, cli: `context`
-- **Code:** `amberlog/decay.py`
+- **Code:** `src/amberlog/decay.py`
 - **Tests:** `tests/test_decay.py`, `tests/test_mcp_extended.py`, `tests/test_cli_versioning.py`
 - **Limitation:** Pre-registered bars narrowly not met (research/results/decay-view.md), though the view beat recency on every seed.
 - **Limitation:** Inspired by OptMem's published design; no OptMem code is used (upstream has no licence).

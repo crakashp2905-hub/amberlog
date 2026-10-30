@@ -141,11 +141,14 @@ class Topology:
         # stderr to a file, never a pipe nobody reads: a full pipe blocks the
         # server, and macOS's small pipe buffer did exactly that in CI.
         log = open(self.dir / f"{n}.log", "ab")
+        env = dict(os.environ)
+        env["PYTHONPATH"] = os.pathsep.join(
+            part for part in (str(ROOT / "src"), env.get("PYTHONPATH", "")) if part)
         self.procs[n] = subprocess.Popen(
             [sys.executable, "-m", "amberlog", "--db", str(self.db[n]),
              "--share-policy", "reviewed", "federate", "--peers", str(self.peers_file(n)),
              "--port", str(self.port[n]), "--maintain-interval", "1"],
-            cwd=ROOT, stdout=subprocess.DEVNULL, stderr=log)
+            cwd=ROOT, env=env, stdout=subprocess.DEVNULL, stderr=log)
         log.close()
         try:
             wait_health(f"http://127.0.0.1:{self.port[n]}", timeout_s=60)

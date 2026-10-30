@@ -16,8 +16,8 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from experiments import c3_free_text as c3  # noqa: E402
-from amberlog import Amberlog  # noqa: E402
-from amberlog.typedclaims import TypedClaimChecker  # noqa: E402
+from memory_fabric import MemoryFabric  # noqa: E402
+from memory_fabric.typedclaims import TypedClaimChecker  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 SEEDS = (1, 2, 3, 4, 5)
@@ -62,7 +62,7 @@ def world(places: tuple[str, ...], kinds: dict[str, tuple[str, ...]], seed: int,
 def held(arm: str, w: dict[str, Any], claim: dict[str, Any]) -> bool:
     if arm == "oracle":
         return claim["type"] == "contradiction"
-    f = Amberlog(":memory:", auto_activate=True,
+    f = MemoryFabric(":memory:", auto_activate=True,
                      claim_checker=TypedClaimChecker() if arm == "typed" else None)
     try:
         for text in w["established"]:

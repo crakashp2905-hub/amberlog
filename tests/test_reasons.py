@@ -7,9 +7,9 @@ import sys
 import unittest
 from pathlib import Path
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.reasons import REASONS, badge, describe, say
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.reasons import REASONS, badge, describe, say
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from test_troubleshooting import codes  # noqa: E402
@@ -20,7 +20,7 @@ ROOT = Path(__file__).resolve().parents[1]
 class TestCoverage(unittest.TestCase):
     def test_every_gate_and_enforcer_code_has_a_sentence(self):
         enforcer = set(re.findall(r'^[A-Z_]+ = "([a-z_]+)"$',
-                                  (ROOT / "src/amberlog/enforcement.py").read_text(), re.M))
+                                  (ROOT / "src/memory_fabric/enforcement.py").read_text(), re.M))
         enforcer -= {"low", "medium", "high", "usable", "revalidate", "unknown", "blocked"}
         missing = sorted((codes() | enforcer) - set(REASONS))
         self.assertEqual(missing, [])
@@ -34,7 +34,7 @@ class TestCoverage(unittest.TestCase):
 
 class TestDescribe(unittest.TestCase):
     def test_names_the_withdrawn_memory_who_and_why(self):
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         mid = f.remember("ag_inspector", "Pump P-14 relief valve is set to 12 bar.", scope="team")
         gate = ActionGate(f, ActionPolicy(tools={"set_relief": ToolRule("set_relief")},
@@ -53,7 +53,7 @@ class TestDescribe(unittest.TestCase):
 
 class TestBadge(unittest.TestCase):
     def test_counts_independent_sources_not_agents(self):
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         a = f.remember("ag_a", "Pump P-14 relief valve is set to 12 bar.", scope="team")
         f.remember("ag_b", "Measured today: the P-14 relief valve setting reads 12 bar.",

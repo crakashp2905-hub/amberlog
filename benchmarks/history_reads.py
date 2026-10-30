@@ -6,9 +6,9 @@ from pathlib import Path
 import random
 
 from benchmarks.manifest import head
-from amberlog import Amberlog
-from amberlog.identity import DEFAULT_TENANT
-from amberlog.history_query import query
+from memory_fabric import MemoryFabric
+from memory_fabric.identity import DEFAULT_TENANT
+from memory_fabric.history_query import query
 
 SEEDS = (401, 409, 419, 421, 431)
 ROOT = Path(__file__).resolve().parents[1]
@@ -16,7 +16,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def run_seed(seed: int) -> dict:
     rng = random.Random(seed)
-    f = Amberlog(":memory:", recognise_copies=False)
+    f = MemoryFabric(":memory:", recognise_copies=False)
     records = []
     try:
         for i in range(20):

@@ -39,7 +39,7 @@ from typing import Any, Callable, Iterable, Mapping, Sequence
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
-from amberlog.vectors import (  # noqa: E402
+from memory_fabric.vectors import (  # noqa: E402
     HashingEmbedder,
     LexicalIndex,
     VectorIndex,
@@ -200,7 +200,7 @@ def _real_embedder():
     global _SHARED_EMBEDDER
     if _SHARED_EMBEDDER is not None:
         return _SHARED_EMBEDDER
-    from amberlog.adapters.ollama import OllamaClient, OllamaEmbedder
+    from memory_fabric.adapters.ollama import OllamaClient, OllamaEmbedder
 
     client = OllamaClient()
     model = client.resolve("nomic-embed-text", client.available())
@@ -217,7 +217,7 @@ def _reranked(dataset: Dataset, k: int, base, mode: str):
     `research/prereg/r2a-feature-reranker.md`: a reranker that fixes one
     benchmark and breaks SciFact has moved the problem rather than solved it.
     """
-    from amberlog.rerank import rerank as _rerank
+    from memory_fabric.rerank import rerank as _rerank
 
     lexical = _lexical_index(dataset)
     idf = lexical._idf()

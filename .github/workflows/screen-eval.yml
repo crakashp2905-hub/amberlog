@@ -8,10 +8,10 @@ on:
     paths:
       - experiments/s1_screen_fp.py
       - experiments/s1b_model_screen.py
-      - src/amberlog/governance/injection.py
-      - src/amberlog/governance/directive.py
-      - src/amberlog/governance/firewall.py
-      - src/amberlog/_fabric/retrieval.py
+      - src/memory_fabric/governance/injection.py
+      - src/memory_fabric/governance/directive.py
+      - src/memory_fabric/governance/firewall.py
+      - src/memory_fabric/_fabric/retrieval.py
       - .github/workflows/screen-eval.yml
 
 permissions:
@@ -48,7 +48,7 @@ jobs:
         run: python experiments/s1_screen_fp.py show data/lme_s.json 60
       - name: Baseline (base commit's screen)
         working-directory: base
-        run: AMBERLOG_EVAL_CHECKOUT="$PWD" PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/experiments/s1_screen_fp.py" rates "$GITHUB_WORKSPACE/base.json" "$GITHUB_WORKSPACE/data/lme_s.json" "$GITHUB_WORKSPACE/data/deepset"
+        run: MEMORY_FABRIC_EVAL_CHECKOUT="$PWD" PYTHONPATH="$PWD" python "$GITHUB_WORKSPACE/experiments/s1_screen_fp.py" rates "$GITHUB_WORKSPACE/base.json" "$GITHUB_WORKSPACE/data/lme_s.json" "$GITHUB_WORKSPACE/data/deepset"
       - name: This commit's screen
         run: python experiments/s1_screen_fp.py rates head.json data/lme_s.json data/deepset
       - name: Own memories are not withheld from their author (prereg §5)

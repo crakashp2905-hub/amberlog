@@ -21,8 +21,8 @@ from typing import Any
 
 from experiments import stats
 from experiments.d1_downstream import ask
-from amberlog import Amberlog
-from amberlog.answerability import INSUFFICIENT
+from memory_fabric import MemoryFabric
+from memory_fabric.answerability import INSUFFICIENT
 
 ROOT = Path(__file__).resolve().parent.parent
 KINDS = ("pump", "compressor", "hoist", "generator", "conveyor", "chiller")
@@ -53,9 +53,9 @@ def make_code(rng: random.Random, used: set[str]) -> tuple[str, str, int]:
             return code, swapped, 0
 
 
-def build(seed: int) -> tuple[Amberlog, list[dict[str, Any]]]:
+def build(seed: int) -> tuple[MemoryFabric, list[dict[str, Any]]]:
     rng = random.Random(f"a1/{seed}")
-    fabric = Amberlog(auto_activate=True)
+    fabric = MemoryFabric(auto_activate=True)
     used: set[str] = set()
     units = []
     for _ in range(14):
@@ -107,7 +107,7 @@ def build(seed: int) -> tuple[Amberlog, list[dict[str, Any]]]:
     return fabric, questions
 
 
-def evidence_for(fabric: Amberlog, q: dict[str, Any]) -> tuple[str, str]:
+def evidence_for(fabric: MemoryFabric, q: dict[str, Any]) -> tuple[str, str]:
     result = fabric.retrieve("ag_reader", q["q"], k=5)
     q["verdict"] = result.answerability(q["q"]).verdict
     lines = "\n".join(f"- {m.content}" for m in result.exposed) or "(none)"

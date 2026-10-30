@@ -1,6 +1,6 @@
 # Pre-registration — X1: extraction at ingest
 
-**Registered 2026-10-13, before `amberlog/extraction.py` exists.**
+**Registered 2026-10-13, before `memory-fabric/extraction.py` exists.**
 
 > **Amended 2026-10-13, before any model call of the primary arm — see
 > [§8](#8-amendment-the-primary-was-invalid-as-registered).** §4's 8c check is

@@ -4,7 +4,7 @@
 keys. Getting it wrong either way is bad: a new store with in-database keys
 silently loses the protection the image advertises, and an old store pointed at
 an empty key directory cannot be opened at all. CI's docker job builds and runs
-the real image; this pins the decision itself, with a stub `amberlog` on
+the real image; this pins the decision itself, with a stub `memory_fabric` on
 PATH that records what it was asked to do.
 """
 
@@ -29,10 +29,10 @@ class TestEntrypoint(unittest.TestCase):
         self.bin = base / "bin"
         self.bin.mkdir()
         self.record = base / "invocation"
-        stub = self.bin / "amberlog"
+        stub = self.bin / "memory_fabric"
         stub.write_text(
             "#!/bin/sh\n"
-            f'echo "KEYS=${{AMBERLOG_KEYS:-}} ARGS=$*" > "{self.record}"\n'
+            f'echo "KEYS=${{MEMORY_FABRIC_KEYS:-}} ARGS=$*" > "{self.record}"\n'
         )
         stub.chmod(0o755)
         self.db = base / "data" / "store.db"
@@ -43,8 +43,8 @@ class TestEntrypoint(unittest.TestCase):
     def run_entrypoint(self) -> tuple[str, str]:
         env = {
             "PATH": f"{self.bin}:/usr/bin:/bin",
-            "AMBERLOG_DB": str(self.db),
-            "AMBERLOG_KEYS": str(self.keys),
+            "MEMORY_FABRIC_DB": str(self.db),
+            "MEMORY_FABRIC_KEYS": str(self.keys),
         }
         done = subprocess.run(["sh", str(ENTRYPOINT)], env=env,
                               capture_output=True, text=True, timeout=30)

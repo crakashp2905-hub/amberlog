@@ -1,7 +1,7 @@
-# SPEC.md — Amberlog Specification v0
+# SPEC.md — Memory Fabric Specification v0
 
 - **Schema version:** `0.14.0`
-- **Status:** implemented. Where this document and `amberlog/` disagree,
+- **Status:** implemented. Where this document and `memory-fabric/` disagree,
   the code is authoritative and the disagreement is a bug in this file.
 
 Words in the glossary in [AGENTS.md](AGENTS.md) are used with those meanings.
@@ -144,7 +144,7 @@ Reference estimators (v0):
 ## 6. API v0 (Python SDK)
 
 ```python
-fabric = Amberlog(store=..., estimator="dr", exposure_policy="eps_greedy", seed=0)
+fabric = MemoryFabric(store=..., estimator="dr", exposure_policy="eps_greedy", seed=0)
 
 ep  = fabric.start_episode(agent_id, task_id, context)
 mid = fabric.remember(agent_id, content, type="semantic", context=..., source_episodes=[ep.id])
@@ -269,7 +269,7 @@ unchanged, and a 0.11.0 reader skips all seven.
   recipient.
 
 Behaviour: `serve`, `agent-api` and `mcp` start the manager unless
-`--no-maintain` is given. `amberlog maintain` runs it on its own.
+`--no-maintain` is given. `memory-fabric maintain` runs it on its own.
 Retention deletions are applied only with `--retention-delete`.
 
 ### 0.11.0 — the action fence, exposure records and the provenance chain
@@ -338,7 +338,7 @@ other version, any unknown field and any check it cannot run.
 
 `derive` takes an optional `security_class` and writes the strictest of it,
 `internal` and every premise's class, so a conclusion is never less restricted
-than what it rests on. `Amberlog(conceal_cross_tenant=True)` makes a
+than what it rests on. `MemoryFabric(conceal_cross_tenant=True)` makes a
 cross-tenant refusal identical to a missing id. Mental models
 (`mental_models.py`) are derived memories with the context keys
 `mental_model` and `model_watermark`. No event type is added for them.

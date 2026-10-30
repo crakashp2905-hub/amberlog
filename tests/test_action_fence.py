@@ -11,23 +11,23 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog
-from amberlog.actions import (ALREADY_EXECUTED, EXECUTED, FAILED, REFUSED, TIMED_OUT,
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import (ALREADY_EXECUTED, EXECUTED, FAILED, REFUSED, TIMED_OUT,
                                    ActionGate, ActionPolicy, ToolRule, unfenced_changes)
-from amberlog.events import EventType
-from amberlog.model import LifecycleState
+from memory_fabric.events import EventType
+from memory_fabric.model import LifecycleState
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def gate_for(fabric: Amberlog) -> ActionGate:
+def gate_for(fabric: MemoryFabric) -> ActionGate:
     return ActionGate(fabric, ActionPolicy(tools={"open_valve": ToolRule("open_valve")},
                                            grants={"ops": frozenset({"open_valve"})}))
 
 
 class Fence(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.m = self.f.remember("ana", "valve 7 is safe to open below 4 bar", scope="team")
         self.cert = self.f.certify("open-7", [self.m], "ops")
@@ -63,7 +63,7 @@ class Fence(unittest.TestCase):
         so it is refused by the certificate check even with no grant check at
         all (found by tools/mutation_check.py).
         """
-        from amberlog.actions import TOOL_NOT_GRANTED
+        from memory_fabric.actions import TOOL_NOT_GRANTED
 
         own = self.f.certify("open-7", [self.m], "mallory")
         decision = self.gate.authorize("open_valve", "mallory", own)
@@ -161,15 +161,15 @@ class AcrossProcesses(unittest.TestCase):
     def test_a_writer_in_another_process_waits_for_the_action(self) -> None:
         with TemporaryDirectory() as tmp:
             path = _shared_store_path(tmp)
-            f = Amberlog(path, auto_activate=True)
+            f = MemoryFabric(path, auto_activate=True)
             try:
                 m = f.remember("ana", "valve 7 is safe to open below 4 bar", scope="team")
                 cert = f.certify("open-7", [m], "ops")
                 marks: dict[str, float] = {}
                 child = subprocess.Popen(
                     [sys.executable, "-c",
-                     "import sys, time; from amberlog import Amberlog; "
-                     "f = Amberlog(sys.argv[1]); print('ready', flush=True); "
+                     "import sys, time; from memory_fabric import MemoryFabric; "
+                     "f = MemoryFabric(sys.argv[1]); print('ready', flush=True); "
                      "sys.stdin.readline(); f.quarantine(sys.argv[2], reason='wrong', actor='op'); "
                      "print(time.time(), flush=True); f.close()", path, m],
                     stdin=subprocess.PIPE, stdout=subprocess.PIPE, text=True, cwd=ROOT)

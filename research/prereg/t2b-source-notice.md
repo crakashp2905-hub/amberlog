@@ -6,7 +6,7 @@ screen catches the attacker, but its verdict never leaves the origin store.
 
 - **Mechanism:**
   - `protocol.SourceNotice`: signed, and verified at the recipient;
-  - `Amberlog.discredit_source` and `receive_notice`;
+  - `Memory Fabric.discredit_source` and `receive_notice`;
   - the manager's `sources` task;
   - `hindsight.withhold(signals=HOSTILE)`.
 - **Harness:** `experiments/t2b_notice.py`. It uses T2's world, including

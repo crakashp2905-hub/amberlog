@@ -1,6 +1,6 @@
 # Retrieval: getting the best results
 
-Amberlog decides **what may be shown** (lifecycle, tenancy, scope,
+Memory Fabric decides **what may be shown** (lifecycle, tenancy, scope,
 withdrawals). How well it **finds** the right memory depends on the retriever.
 The default needs nothing installed; a trained retriever is one extra install
 and one line.
@@ -12,10 +12,10 @@ pip install ".[retrieval]"          # ONNX models on CPU, no PyTorch
 ```
 
 ```python
-from amberlog import Amberlog
-from amberlog.retrievers import best_available
+from memory_fabric import MemoryFabric
+from memory_fabric.retrievers import best_available
 
-fabric = Amberlog("memory/store.db", **best_available(cache_path="memory/vectors.db"))
+fabric = MemoryFabric("memory/store.db", **best_available(cache_path="memory/vectors.db"))
 ```
 
 `best_available()` returns the configuration that won a measured comparison
@@ -37,9 +37,9 @@ What it chose, and by how much: see **Measured** below.
 | an embeddings service (OpenAI, vLLM, TEI, LiteLLM, Ollama) | `HttpEmbedder(url, model, api_key_env="...")` with `retrieval="hybrid"` |
 
 ```python
-from amberlog.retrievers import CrossEncoderReranker, FastEmbedEmbedder, HttpEmbedder
+from memory_fabric.retrievers import CrossEncoderReranker, FastEmbedEmbedder, HttpEmbedder
 
-fabric = Amberlog("store.db", retrieval="hybrid",
+fabric = MemoryFabric("store.db", retrieval="hybrid",
                       embedder=FastEmbedEmbedder("BAAI/bge-base-en-v1.5", cache_path="vectors.db"),
                       rerank=CrossEncoderReranker("jinaai/jina-reranker-v1-turbo-en"))
 

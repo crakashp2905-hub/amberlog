@@ -7,12 +7,12 @@ import re
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-root = ROOT / "src" / "amberlog"
+root = ROOT / "src" / "memory_fabric"
 tiers = {"stable": [], "beta": [], "experimental": []}
 for path in sorted(root.rglob("*.py")):
     m = re.search(r'^__stability__ = "(\w+)"', path.read_text(encoding="utf-8"), re.M)
     if m:
-        tiers[m.group(1)].append("amberlog." + path.relative_to(root).with_suffix("").as_posix().replace("/", "."))
+        tiers[m.group(1)].append("memory_fabric." + path.relative_to(root).with_suffix("").as_posix().replace("/", "."))
 
 
 def table(tier):

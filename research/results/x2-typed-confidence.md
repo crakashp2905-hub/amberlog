@@ -12,7 +12,7 @@ classes is **0.03** (0.261 answerable against 0.231 unanswerable). The signal
 points the right way and is far too compressed to threshold.
 
 - **Registration:** [x2-typed-confidence.md](../prereg/x2-typed-confidence.md), written before the model finished installing and before any call
-- **Mechanism:** `amberlog/adapters/systemone.py`, one `noul` question per instance
+- **Mechanism:** `memory-fabric/adapters/systemone.py`, one `noul` question per instance
 - **Harness:** `experiments/x2_typed_abstention.py`
 - **Run:** 2026-10-14, LongMemEval `s` split, 500 instances (30 unanswerable), k=10, `jaredpalmer/kev-0.8b` on CPU via its own server, **500 calls, 803,738 input tokens, 14,931 s (4.15 h)**
 - **Raw:** [x2-run.json](x2-run.json) · pilot: [x2-pilot-run.json](x2-pilot-run.json)

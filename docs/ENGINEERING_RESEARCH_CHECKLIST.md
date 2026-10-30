@@ -18,11 +18,11 @@ results remain published in [the research scorecard](../research/SCORECARD.md).
 | Acceptance item | State | Evidence |
 |---|---|---|
 | Formal lifecycle, authority, causality, and deletion invariants | COMPLETE | [INVARIANTS.md](INVARIANTS.md), [SPEC.md](../SPEC.md), `tests/test_lifecycle.py`, `tests/test_authority.py`, `tests/test_erasure.py` |
-| Explicit memory transition state machines | COMPLETE | [PROTOCOL.md](PROTOCOL.md#4-two-state-machines-deliberately-separate), `src/amberlog/model.py`, `src/amberlog/protocol.py`, `tests/test_properties_state_machines.py` |
+| Explicit memory transition state machines | COMPLETE | [PROTOCOL.md](PROTOCOL.md#4-two-state-machines-deliberately-separate), `src/memory_fabric/model.py`, `src/memory_fabric/protocol.py`, `tests/test_properties_state_machines.py` |
 | Append-only log integrity, replay, tamper, and crash recovery | COMPLETE | `tests/test_eventlog.py`, `tests/test_integrity_chain.py`, `tests/test_verified_recovery.py`, `tests/test_multiprocess_crash.py` |
 | Idempotent externally retried operations | COMPLETE | `tests/test_duplicates.py`, `tests/test_retraction_protocol.py`, `tests/test_import_preview.py`, `tests/test_action_crash.py` |
 | Concurrent corrections and contradictory updates | COMPLETE | [documented conflict semantics](CONCEPTS.md), `tests/test_concurrency.py`, `tests/test_conflicts.py`, `tests/test_concurrent_requests.py` |
-| TOCTOU protection | COMPLETE | transactional evidence boundary in `src/amberlog/enforcement.py`; `tests/test_action_fence.py`, `tests/test_visibility_at_action.py` |
+| TOCTOU protection | COMPLETE | transactional evidence boundary in `src/memory_fabric/enforcement.py`; `tests/test_action_fence.py`, `tests/test_visibility_at_action.py` |
 | Exact action-gate guarantee | COMPLETE | [SAFETY_AND_SECURITY.md](SAFETY_AND_SECURITY.md), `tests/test_enforcement.py`, `tests/test_action_receipt.py`, `tests/test_action_crash.py` |
 | Schema, event, and cryptographic compatibility | COMPLETE | [VERSIONING.md](../VERSIONING.md), `tests/test_version_skew.py`, `tests/test_vectors.py`, `tests/test_key_migration.py`, `experiments/rollback_drill.py` |
 | Property-based and stateful adversarial testing | COMPLETE | deterministic generated properties in `tests/test_properties.py`, `tests/test_properties_authz.py`, and `tests/test_properties_state_machines.py`; no third-party test dependency is required |
@@ -36,7 +36,7 @@ results remain published in [the research scorecard](../research/SCORECARD.md).
 | Contradictory and withdrawn evidence surfaced | COMPLETE | `tests/test_conflicts.py`, `tests/test_withdrawal_basis.py`, `tests/test_abstention_premise.py` |
 | Relevance separated from authority | COMPLETE | [RELEVANCE_SPEC.md](RELEVANCE_SPEC.md), `tests/test_relevance_contract.py`, `tests/test_authority.py` |
 | Independent supporting sources survive one withdrawal | COMPLETE | `tests/test_independence.py`, `tests/test_min_sources_enforced.py`, `tests/test_transitive_retraction.py` |
-| Derivation confidence and source uncertainty | COMPLETE | `src/amberlog/typedclaims.py`, `tests/test_typedclaims.py`, `tests/test_reasons.py`; limitations are reported in `research/results/x2-typed-confidence.md` |
+| Derivation confidence and source uncertainty | COMPLETE | `src/memory_fabric/typedclaims.py`, `tests/test_typedclaims.py`, `tests/test_reasons.py`; limitations are reported in `research/results/x2-typed-confidence.md` |
 | Safe abstention and escalation states | COMPLETE | `tests/test_answerability.py`, `tests/test_abstention_premise.py`, `research/results/a1-abstention.md` |
 | Provenance-preserving summarization/compression | COMPLETE | [LOSSLESS_COMPACTION.md](LOSSLESS_COMPACTION.md), `tests/test_lossless_compaction.py`, `tests/test_compaction.py` |
 | Held-out 3–6 hop dependency chains | COMPLETE | `tests/test_chains.py`, `tests/test_evidence_completeness.py`, `research/results/p1-evidence-chain-reconstruction.md` |
@@ -48,7 +48,7 @@ results remain published in [the research scorecard](../research/SCORECARD.md).
 | Acceptance item | State | Evidence |
 |---|---|---|
 | Consistency and failure semantics | COMPLETE | [PROTOCOL.md](PROTOCOL.md), [REFERENCE_DEPLOYMENT.md](REFERENCE_DEPLOYMENT.md), [LIMITATIONS.md](LIMITATIONS.md) |
-| Durable outbox/inbox delivery, acknowledgement, and retry | COMPLETE | `src/amberlog/outbox.py`, `src/amberlog/dispatcher.py`, `tests/test_retraction_protocol.py` |
+| Durable outbox/inbox delivery, acknowledgement, and retry | COMPLETE | `src/memory_fabric/outbox.py`, `src/memory_fabric/dispatcher.py`, `tests/test_retraction_protocol.py` |
 | Duplicate and reordered application | COMPLETE | `tests/test_federation_transport.py`, `tests/test_catch_up.py`, `tests/test_retraction_protocol.py` |
 | Correction freshness budget and stale-action policy | COMPLETE | `tests/test_freshness.py`, `tests/test_action_fence.py`, [DEPLOYMENT.md](../DEPLOYMENT.md) |
 | Partition, reconnect, and split-brain recovery | COMPLETE | `experiments/faultsim.py`, `experiments/multihost.py`, `tests/test_federation_world.py` |
@@ -94,9 +94,9 @@ results remain published in [the research scorecard](../research/SCORECARD.md).
 |---|---|---|
 | Import-safe installable package | COMPLETE | `pyproject.toml`, CI `package` and `fresh-machine` jobs; the project deliberately keeps the import package at repository root rather than imposing a compatibility-risking directory move |
 | PyPI wheel/sdist with Trusted Publishing | GATED | `.github/workflows/publish-pypi.yml`, [PYPI_PUBLISHING.md](PYPI_PUBLISHING.md); publication requires owner approval and index/name readiness |
-| Legacy `Amberlog` migration window | COMPLETE | [MIGRATING_TO_AMBERLOG.md](MIGRATING_TO_AMBERLOG.md), `tests/test_amberlog_migration.py`, `tests/test_verify_unfetched.py` |
+| Legacy `Memory Fabric` migration window | COMPLETE | [MIGRATING_TO_MEMORY_FABRIC.md](MIGRATING_TO_MEMORY_FABRIC.md), `tests/test_memory-fabric_migration.py`, `tests/test_verify_unfetched.py` |
 | Public API and semantic versioning | COMPLETE | [API.md](API.md), [VERSIONING.md](../VERSIONING.md), `tests/test_sdk.py`, `tests/test_cli_versioning.py` |
-| Typed SDK and stable errors | COMPLETE | `src/amberlog/py.typed`, typed public interfaces, `tests/test_sdk.py`, CI `mypy` |
+| Typed SDK and stable errors | COMPLETE | `src/memory_fabric/py.typed`, typed public interfaces, `tests/test_sdk.py`, CI `mypy` |
 | Python/MCP/HTTP conformance | COMPLETE | `tools/conformance_audit.py`, `tests/test_mcp_extended.py`, `tests/test_multihop_http.py`, `research/results/local-conformance-audit.json` |
 | Supported OS/Python matrix | COMPLETE | CI tests Python 3.11–3.13 on Linux, macOS, and Windows |
 | SBOM, provenance, and vulnerability controls | COMPLETE | `tools/release_bundle.py`, CI `release-evidence`, pinned release actions, secret and adversarial gates |

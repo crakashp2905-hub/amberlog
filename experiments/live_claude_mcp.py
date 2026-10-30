@@ -40,8 +40,8 @@ import time
 from dataclasses import asdict, dataclass, field
 from typing import Any
 
-from amberlog import Amberlog
-from amberlog.sdk import agent, operator
+from memory_fabric import MemoryFabric
+from memory_fabric.sdk import agent, operator
 
 AGENT_ID = "ag_claude"
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -84,7 +84,7 @@ class Trial:
 
 
 def _seed_store(db: str) -> str:
-    fabric = Amberlog(db)
+    fabric = MemoryFabric(db)
     try:
         writer = agent(fabric, "ag_field_notes")
         op = operator(fabric, "supervisor")
@@ -120,7 +120,7 @@ def _watch_and_retract(db: str, seed: str, stop: threading.Event, out: dict) -> 
             rows = []
         if any(seed in payload for _, payload in rows):
             result = subprocess.run(
-                [sys.executable, "-m", "amberlog", "--db", db, "quarantine",
+                [sys.executable, "-m", "memory_fabric", "--db", db, "quarantine",
                  seed, "--reason", "root cause was the controller board",
                  "--basis", "contradicted", "--actor", "supervisor"],
                 capture_output=True, text=True, timeout=60,
@@ -132,7 +132,7 @@ def _watch_and_retract(db: str, seed: str, stop: threading.Event, out: dict) -> 
 
 
 def _score(db: str, seed: str, trial: Trial) -> None:
-    fabric = Amberlog(db)
+    fabric = MemoryFabric(db)
     try:
         for event in fabric.log.read():
             payload = json.dumps(event.payload)
@@ -159,7 +159,7 @@ def run_trial(arm: str, n: int, model: str | None, workdir: str) -> Trial:
     with open(config, "w") as fh:
         json.dump({"mcpServers": {"fabric": {
             "command": sys.executable,
-            "args": ["-m", "amberlog", "--db", db, "mcp", "--agent", AGENT_ID],
+            "args": ["-m", "memory_fabric", "--db", db, "mcp", "--agent", AGENT_ID],
             # The run happens in a scratch directory, so the package must be
             # importable from there whether or not it is installed.
             "env": {"PYTHONPATH": os.pathsep.join((os.path.join(REPO_ROOT, "src"), REPO_ROOT))},

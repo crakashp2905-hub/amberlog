@@ -1,6 +1,6 @@
 """Build the dashboard's limitations list from docs/LIMITATIONS.md.
 
-    python tools/gen_limitations.py           # write amberlog/observability/static/limitations.json
+    python tools/gen_limitations.py           # write memory_fabric/observability/static/limitations.json
     python tools/gen_limitations.py --check   # exit 1 if it is out of date
 """
 
@@ -13,7 +13,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 DOC = ROOT / "docs" / "LIMITATIONS.md"
-OUT = ROOT / "src" / "amberlog" / "observability" / "static" / "limitations.json"
+OUT = ROOT / "src" / "memory_fabric" / "observability" / "static" / "limitations.json"
 ROW = re.compile(r"^\|\s*\*\*(?P<title>.+?)\*\*(?P<rest>.*?)\|\s*(?P<todo>.+?)\s*\|\s*$")
 
 

@@ -20,14 +20,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 # Windows consoles default to a legacy code page that cannot encode the
 # punctuation below; this reconfigures stdout the way the CLI does.
-from amberlog.cli import configure_output
+from memory_fabric.cli import configure_output
 
 configure_output()
 
-from amberlog.sdk import operator
-from amberlog import Amberlog
-from amberlog.adapters import ingest_transcript
-from amberlog.adapters.claude import ClaudeMemoryAgent
+from memory_fabric.sdk import operator
+from memory_fabric import MemoryFabric
+from memory_fabric.adapters import ingest_transcript
+from memory_fabric.adapters.claude import ClaudeMemoryAgent
 
 
 # --- a scripted stand-in for the model --------------------------------------
@@ -79,7 +79,7 @@ def rule(title: str) -> None:
 
 
 def main() -> None:
-    fabric = Amberlog(seed=0)  # candidates stay candidates until reviewed
+    fabric = MemoryFabric(seed=0)  # candidates stay candidates until reviewed
 
     rule("1. Seed the store from an existing transcript")
 
@@ -169,7 +169,7 @@ def main() -> None:
     health = fabric.health()
     print(f"  memories {health.total}  by state {health.by_state}")
     print(f"  episodes {health.episodes} ({health.episodes_with_outcome} with a verified outcome)")
-    print(f"\n  amberlog --db <path> attention   # to review the candidate")
+    print(f"\n  memory_fabric --db <path> attention   # to review the candidate")
 
     fabric.close()
     print()

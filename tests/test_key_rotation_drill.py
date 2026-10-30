@@ -16,10 +16,10 @@ signed at send time, so it goes out under k2 and lands.
 
 from __future__ import annotations
 
-from amberlog import LifecycleState
-from amberlog.dispatcher import Dispatcher
-from amberlog.federation import offer
-from amberlog.transport import HttpTransport, Peer, PeerRegistry, TransportError, serve
+from memory_fabric import LifecycleState
+from memory_fabric.dispatcher import Dispatcher
+from memory_fabric.federation import offer
+from memory_fabric.transport import HttpTransport, Peer, PeerRegistry, TransportError, serve
 
 from tests.test_federation_transport import FederationCase
 

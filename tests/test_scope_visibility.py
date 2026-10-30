@@ -12,16 +12,16 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.enforcement import NOT_VISIBLE, RiskLevel
-from amberlog.fabric import PolicyViolation
-from amberlog.model import FirewallDecision, Scope
-from amberlog.sdk import agent, operator
+from memory_fabric import MemoryFabric
+from memory_fabric.enforcement import NOT_VISIBLE, RiskLevel
+from memory_fabric.fabric import PolicyViolation
+from memory_fabric.model import FirewallDecision, Scope
+from memory_fabric.sdk import agent, operator
 
 
 class PrivateMeansTheWriter(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = Amberlog(":memory:", auto_activate=True)
+        self.fabric = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.fabric.close)
         self.mine = self.fabric.remember("ana", "valve 7 sticks below 4 C")
 
@@ -56,7 +56,7 @@ class PrivateMeansTheWriter(unittest.TestCase):
 
 class RestrictedStaysPrivate(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = Amberlog(":memory:", auto_activate=True)
+        self.fabric = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.fabric.close)
 
     def test_it_cannot_be_written_wider(self) -> None:
@@ -72,7 +72,7 @@ class RestrictedStaysPrivate(unittest.TestCase):
 
 class DerivedIsNoWiderThanItsPremises(unittest.TestCase):
     def test_a_conclusion_from_a_private_premise_stays_private(self) -> None:
-        fabric = Amberlog(":memory:", auto_activate=True)
+        fabric = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(fabric.close)
         premise = fabric.remember("ana", "valve 7 sticks below 4 C")
         conclusion = fabric.derive("ana", "warm valve 7 before winter starts",
@@ -80,7 +80,7 @@ class DerivedIsNoWiderThanItsPremises(unittest.TestCase):
         self.assertIs(fabric.state.memories[conclusion].scope, Scope.PRIVATE)
 
     def test_a_conclusion_from_team_premises_can_be_team(self) -> None:
-        fabric = Amberlog(":memory:", auto_activate=True)
+        fabric = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(fabric.close)
         premise = fabric.remember("ana", "valve 7 sticks below 4 C", scope="team")
         conclusion = fabric.derive("ana", "warm valve 7 before winter starts",
@@ -90,7 +90,7 @@ class DerivedIsNoWiderThanItsPremises(unittest.TestCase):
 
 class TheAgentFacingSdk(unittest.TestCase):
     def test_an_agents_write_is_its_own_until_an_operator_shares_it(self) -> None:
-        fabric = Amberlog(":memory:")
+        fabric = MemoryFabric(":memory:")
         self.addCleanup(fabric.close)
         ana, ben, op = agent(fabric, "ana"), agent(fabric, "ben"), operator(fabric, "op")
         mid = ana.remember("pump 3 needs a new seal")
@@ -108,11 +108,11 @@ class TheUpgradeCommand(unittest.TestCase):
         import os
         import tempfile
 
-        from amberlog.cli import main
+        from memory_fabric.cli import main
 
         with tempfile.TemporaryDirectory() as tmp:
             db = os.path.join(tmp, "s.db")
-            fabric = Amberlog(db, auto_activate=True)
+            fabric = MemoryFabric(db, auto_activate=True)
             plain = fabric.remember("ana", "pump 3 needs a new seal")
             restricted = fabric.remember("ana", "salary bands", security_class="restricted")
             fabric.close()
@@ -122,7 +122,7 @@ class TheUpgradeCommand(unittest.TestCase):
             self.assertEqual(code, 0)
             self.assertIn("shared 1", out.getvalue())
             self.assertIn(restricted, out.getvalue(), "the refusal names what it refused")
-            reopened = Amberlog(db)
+            reopened = MemoryFabric(db)
             try:
                 self.assertIs(reopened.state.memories[plain].scope, Scope.TEAM)
                 self.assertIs(reopened.state.memories[restricted].scope, Scope.PRIVATE)

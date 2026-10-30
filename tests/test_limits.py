@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.federation import offer
-from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from memory_fabric import MemoryFabric
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from amberlog.limits import LimitExceeded, Limits
-from amberlog.model import Scope
+from memory_fabric.limits import LimitExceeded, Limits
+from memory_fabric.model import Scope
 
 
 class Clock:
@@ -22,7 +22,7 @@ class Clock:
 
 class StoreLimits(unittest.TestCase):
     def test_an_oversized_payload_is_refused(self) -> None:
-        f = Amberlog(":memory:", limits=Limits(max_content_bytes=100))
+        f = MemoryFabric(":memory:", limits=Limits(max_content_bytes=100))
         self.addCleanup(f.close)
         with self.assertRaises(LimitExceeded) as caught:
             f.remember("a", "x" * 101)
@@ -31,7 +31,7 @@ class StoreLimits(unittest.TestCase):
 
     def test_the_write_quota_is_per_agent_and_recovers(self) -> None:
         clock = Clock()
-        f = Amberlog(":memory:", clock=clock,
+        f = MemoryFabric(":memory:", clock=clock,
                          limits=Limits(writes_per_window=3, window_ms=1_000))
         self.addCleanup(f.close)
         for i in range(3):
@@ -46,8 +46,8 @@ class StoreLimits(unittest.TestCase):
     def test_a_peer_cannot_flood_a_recipient(self) -> None:
         rules = (rule_restricted_stays_private, rule_must_be_active,
                  rule_capabilities_must_be_granted)
-        origin = Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=rules))
-        target = Amberlog(":memory:", firewall=Firewall(rules=rules),
+        origin = MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=rules))
+        target = MemoryFabric(":memory:", firewall=Firewall(rules=rules),
                               limits=Limits(imports_per_window=2))
         self.addCleanup(origin.close)
         self.addCleanup(target.close)

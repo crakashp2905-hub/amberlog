@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.observability.metrics import StoreMetrics
-from amberlog.observability.server import Api
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.observability.metrics import StoreMetrics
+from memory_fabric.observability.server import Api
 
 
 class TestMetrics(unittest.TestCase):
     def test_counts_and_stays_incremental(self):
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         mid = f.remember("ag_secretive", "Pump P-14 relief valve is set to 12 bar.", scope="team")
         f.retrieve("ag_reader", "relief valve", k=3)
@@ -35,7 +35,7 @@ class TestMetrics(unittest.TestCase):
         self.assertNotIn(mid, text)
 
     def test_served_through_the_dashboard_api(self):
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         self.assertIn("mf_events_total", Api(f).metrics_text())
 

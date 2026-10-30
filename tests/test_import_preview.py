@@ -6,9 +6,9 @@ import sys
 from tempfile import TemporaryDirectory
 from unittest import mock
 
-from amberlog import Amberlog
-from amberlog.docsource import import_document
-from amberlog.import_preview import plan_batch, apply_batch
+from memory_fabric import MemoryFabric
+from memory_fabric.docsource import import_document
+from memory_fabric.import_preview import plan_batch, apply_batch
 
 
 def doc(identity="guide", text="Unit P1 limit is 10 bar.", version="1"):
@@ -19,12 +19,12 @@ class ImportPreview(unittest.TestCase):
     def test_cli_batch_preview_and_guarded_commit(self):
         with TemporaryDirectory() as directory:
             database = Path(directory) / "batch.db"
-            initial = Amberlog(str(database))
+            initial = MemoryFabric(str(database))
             head = initial.log.head_seq
             initial.close()
             source = Path(directory) / "batch.json"
             source.write_text(json.dumps([doc("one"), doc("two")]), encoding="utf-8")
-            command = [sys.executable, "-m", "amberlog", "--db", str(database),
+            command = [sys.executable, "-m", "memory_fabric", "--db", str(database),
                        "--json", "import-docs", str(source), "--batch"]
             preview = subprocess.run(command + ["--dry-run"], capture_output=True, text=True)
             self.assertEqual(preview.returncode, 0, preview.stderr)
@@ -37,12 +37,12 @@ class ImportPreview(unittest.TestCase):
             self.assertEqual(len(json.loads(committed.stdout)["reports"]), 2)
 
     def setUp(self):
-        self.f = Amberlog(":memory:", recognise_copies=False)
+        self.f = MemoryFabric(":memory:", recognise_copies=False)
         self.addCleanup(self.f.close)
 
     def test_preview_is_read_only_and_reports_potential_downstream_impact(self):
         initial = import_document(self.f, doc(), activate=True)
-        from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+        from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
         gate = ActionGate(self.f, ActionPolicy(tools={"inspect": ToolRule("inspect")},
             grants={"reader": frozenset({"inspect"})}, approvers=frozenset({"reviewer"})))
         self.f.elevate(initial.added[0], approver="reviewer", reason="checked source")
@@ -68,7 +68,7 @@ class ImportPreview(unittest.TestCase):
         self.assertEqual(self.f.log.head_seq, head)
 
     def test_partial_batch_failure_rolls_back_log_and_projection_then_retry_is_idempotent(self):
-        from amberlog import import_preview
+        from memory_fabric import import_preview
         original = import_preview.import_document
         calls = 0
 

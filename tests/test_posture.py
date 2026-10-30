@@ -7,17 +7,17 @@ import os
 import tempfile
 import unittest
 
-from amberlog import Amberlog
-from amberlog.integrity import Checkpoint
-from amberlog.posture import ACCEPTED_GAPS, export_audit, posture
+from memory_fabric import MemoryFabric
+from memory_fabric.integrity import Checkpoint
+from memory_fabric.posture import ACCEPTED_GAPS, export_audit, posture
 
 DISTINCTIVE = "the vendor's 2024 pricing page listed tier 3 at $400 per month"
 
 
 class Posture(unittest.TestCase):
     def test_controls_follow_the_store_settings(self) -> None:
-        reviewed = Amberlog(":memory:")
-        auto = Amberlog(":memory:", auto_activate=True, conceal_cross_tenant=True)
+        reviewed = MemoryFabric(":memory:")
+        auto = MemoryFabric(":memory:", auto_activate=True, conceal_cross_tenant=True)
         self.addCleanup(reviewed.close)
         self.addCleanup(auto.close)
         state = lambda f, name: next(c["state"] for c in posture(f)["controls"] if c["name"] == name)
@@ -42,7 +42,7 @@ class AuditExport(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.fabric = Amberlog(":memory:", auto_activate=True)
+        self.fabric = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.fabric.close)
         self.mid = self.fabric.remember("ana", DISTINCTIVE)
         self.fabric.revise(self.mid, DISTINCTIVE + " and tier 4 at $900", agent_id="ana",
@@ -68,7 +68,7 @@ class AuditExport(unittest.TestCase):
     def test_every_kind_is_there_with_actors(self) -> None:
         manifest = export_audit(self.fabric, self.path)
         rows = self.lines()
-        self.assertEqual(rows[0]["export"], "amberlog audit")
+        self.assertEqual(rows[0]["export"], "memory_fabric audit")
         self.assertEqual(set(manifest["counts"]), {"decisions", "changes", "access", "deletions"})
         erased = [r for r in rows[1:-1] if r.get("type") == "ContentErased"]
         self.assertEqual(erased[0]["actor"], "dpo")

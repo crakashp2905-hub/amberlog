@@ -15,16 +15,16 @@ import math
 import random
 import unittest
 
-from amberlog import events as ev
-from amberlog.estimators import (
+from memory_fabric import events as ev
+from memory_fabric.estimators import (
     AmortizedEstimator,
     DoublyRobustEstimator,
     IPSEstimator,
     NaiveUsageEstimator,
     _wilson_interval,
 )
-from amberlog.eventlog import EventLog
-from amberlog.projections import Projection
+from memory_fabric.eventlog import EventLog
+from memory_fabric.projections import Projection
 
 EASY_OUTCOME = 0.9
 HARD_OUTCOME = 0.3
@@ -101,7 +101,7 @@ def build_population(
     memory there is nothing to borrow strength from, and declining is the right
     answer rather than a bug.
     """
-    from amberlog.model import Memory, MemoryType, Provenance
+    from memory_fabric.model import Memory, MemoryType, Provenance
 
     rng = random.Random(seed)
     log = EventLog(":memory:")
@@ -342,7 +342,7 @@ class TestAmortized(unittest.TestCase):
 
 
 def _ghost_memory():
-    from amberlog.model import Memory, MemoryType, Provenance
+    from memory_fabric.model import Memory, MemoryType, Provenance
 
     return Memory(
         id="ghost",
@@ -478,7 +478,7 @@ class TestExposureIndex(unittest.TestCase):
         self.assertIsInstance(ips.estimate("M").mean, float)
 
     def test_index_groups_by_memory(self) -> None:
-        from amberlog.estimators import build_exposure_index
+        from memory_fabric.estimators import build_exposure_index
 
         projection = build_confounded_world(n_episodes=100)
         index = build_exposure_index(projection.state)
@@ -486,7 +486,7 @@ class TestExposureIndex(unittest.TestCase):
         self.assertTrue(all(r.memory_id == "M" for r, _, _ in index["M"]))
 
     def test_index_drops_episodes_without_verified_outcomes(self) -> None:
-        from amberlog.estimators import build_exposure_index
+        from memory_fabric.estimators import build_exposure_index
 
         log = EventLog(":memory:")
         projection = Projection()
@@ -505,7 +505,7 @@ class TestExposureIndex(unittest.TestCase):
     def test_index_deduplicates_repeated_steps_in_one_episode(self) -> None:
         """One episode has one outcome, so a memory exposed at several steps is
         still a single observation."""
-        from amberlog.estimators import build_exposure_index
+        from memory_fabric.estimators import build_exposure_index
 
         log = EventLog(":memory:")
         projection = Projection()

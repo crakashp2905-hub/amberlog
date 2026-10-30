@@ -10,17 +10,17 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog, WithdrawalBasis
-from amberlog.status import labels, labels_for
+from memory_fabric import MemoryFabric, WithdrawalBasis
+from memory_fabric.status import labels, labels_for
 
 
-def by_key(fabric: Amberlog, memory_id: str) -> dict:
+def by_key(fabric: MemoryFabric, memory_id: str) -> dict:
     return {label.key: label for label in labels(fabric, memory_id)}
 
 
 class Labels(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = Amberlog(":memory:")
+        self.fabric = MemoryFabric(":memory:")
         self.addCleanup(self.fabric.close)
 
     def test_every_label_says_what_it_does_not_establish(self) -> None:
@@ -91,17 +91,17 @@ class Labels(unittest.TestCase):
 
 class VerifiedInDestination(unittest.TestCase):
     def test_it_holds_only_after_the_recipient_reports_enforcement(self) -> None:
-        from amberlog.dispatcher import Dispatcher
-        from amberlog.federation import offer
-        from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+        from memory_fabric.dispatcher import Dispatcher
+        from memory_fabric.federation import offer
+        from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                        rule_must_be_active,
                                                        rule_restricted_stays_private)
-        from amberlog.transport import InProcessTransport, Peer, PeerRegistry
+        from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
 
         permissive = Firewall(rules=(rule_restricted_stays_private, rule_must_be_active,
                                      rule_capabilities_must_be_granted))
-        origin = Amberlog(":memory:", firewall=permissive)
-        recipient = Amberlog(":memory:", firewall=permissive)
+        origin = MemoryFabric(":memory:", firewall=permissive)
+        recipient = MemoryFabric(":memory:", firewall=permissive)
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
         source = origin.remember("ag_n", "Tug tyre pressure is 3.5 bar in winter.")

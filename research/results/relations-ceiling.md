@@ -10,7 +10,7 @@ qualifier can only attach to a memory the chain actually found.
 Nothing in the product discovers them, and §4 is about why I did not build a
 discoverer.
 
-- **Mechanism:** `amberlog/relations.py`, `Amberlog.relate()`, `follow_relations=` on `retrieve` and `reconstruct`
+- **Mechanism:** `memory-fabric/relations.py`, `Memory Fabric.relate()`, `follow_relations=` on `retrieve` and `reconstruct`
 - **Harness:** `experiments/relations_ceiling.py`
 - **Run:** 2026-10-12, `relevance_v2` `multi_hop_4`, 3 cases a split, k=5
 - **Off by default**, and not registered as a method — a ceiling does not ship

@@ -5,21 +5,21 @@ from __future__ import annotations
 import secrets
 import unittest
 
-from amberlog import Amberlog
-from amberlog.events import EventType
-from amberlog.fabric import PolicyViolation
-from amberlog.identity import ROLE_AGENT, IdentityError
-from amberlog.model import LifecycleState
-from amberlog.service import MemoryService
+from memory_fabric import MemoryFabric
+from memory_fabric.events import EventType
+from memory_fabric.fabric import PolicyViolation
+from memory_fabric.identity import ROLE_AGENT, IdentityError
+from memory_fabric.model import LifecycleState
+from memory_fabric.service import MemoryService
 
 
-def ids(fabric: Amberlog, agent: str, query: str) -> list[str]:
+def ids(fabric: MemoryFabric, agent: str, query: str) -> list[str]:
     return [m.id for m in fabric.retrieve(agent, query, k=5).exposed]
 
 
 class Attachment(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = Amberlog(":memory:", auto_activate=True)
+        self.fabric = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.fabric.close)
         self.mid = self.fabric.remember("ana", "valve 7 sticks below 4 C")
 
@@ -65,7 +65,7 @@ class Attachment(unittest.TestCase):
                          {"members": [self.mid], "grants": {"ben": ["read"]}})
 
     def test_reach_names_the_collection_readers(self) -> None:
-        from amberlog.reach import reach
+        from memory_fabric.reach import reach
 
         self.fabric.collection_add("winter", self.mid, actor="lead")
         self.fabric.collection_grant("winter", "ben", ["read"], actor="lead")

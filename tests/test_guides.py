@@ -7,10 +7,10 @@ import re
 import unittest
 from pathlib import Path
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.integrations.tools import FabricTools
-from amberlog.sdk import agent
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.integrations.tools import FabricTools
+from memory_fabric.sdk import agent
 
 GUIDES = Path(__file__).resolve().parents[1] / "docs" / "guides"
 
@@ -25,7 +25,7 @@ class TestGuides(unittest.TestCase):
         self.assertGreaterEqual(blocks, 4)
 
     def test_guarded_runs_then_blocks_with_a_reason(self):
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         fact = f.remember("insp", "Pump P-14 relief valve is set to 12 bar.", scope="team")
         mem = FabricTools(agent(f, "ops"))

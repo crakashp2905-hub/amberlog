@@ -16,8 +16,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from amberlog import chains  # noqa: E402
-from amberlog.relevance import ReasonCode  # noqa: E402
+from memory_fabric import chains  # noqa: E402
+from memory_fabric.relevance import ReasonCode  # noqa: E402
 
 # bay 7 -> tug-3 -> heavy axle set -> pressure. The query names the bay, the
 # site and the season; the middle memory names none of them.
@@ -209,7 +209,7 @@ class TestItNeverReadsLabels(unittest.TestCase):
     def test_the_module_does_not_reference_benchmark_labels(self):
         """Registered constraint: the mechanism may use content, edges and
         gates, and must not use `critical`, `requirements` or `stale`."""
-        source = (ROOT / "src" / "amberlog" / "chains.py").read_text(encoding="utf-8")
+        source = (ROOT / "src" / "memory_fabric" / "chains.py").read_text(encoding="utf-8")
         for forbidden in ('"critical"', '"requirements"', '"stale"', "labels"):
             self.assertNotIn(forbidden, source)
 
@@ -253,9 +253,9 @@ class TestInAStore(unittest.TestCase):
     """The chain runs inside the same gates as retrieval (plan Task 7)."""
 
     def setUp(self):
-        from amberlog import Amberlog
+        from memory_fabric import MemoryFabric
 
-        self.fabric = Amberlog(auto_activate=True, seed=0)
+        self.fabric = MemoryFabric(auto_activate=True, seed=0)
         self.addCleanup(self.fabric.close)
         self.ids = {k: self.fabric.remember("ag", v, tenant_id="tn_a")
                     for k, v in CHAIN.items()}

@@ -2,7 +2,7 @@
 
 Read [AGENTS.md](AGENTS.md) first; its rules are binding.
 
-The implementation uses `src/amberlog`. Use `python -m pip install -e .` for
+The implementation uses `src/memory_fabric`. Use `python -m pip install -e .` for
 interactive development. Source test packages add that source root explicitly;
 clean-wheel acceptance clears source-path overrides and runs outside the checkout.
 
@@ -44,9 +44,9 @@ including the CHANGELOG.
 2. If it changes the memory schema or event types, update [SPEC.md](SPEC.md), bump `schema_version`, and add a migration.
 3. Add unit tests. For estimators or policies, also add known-answer tests on RuleWorld.
 4. A change to the store's behaviour goes in the service that owns it
-   (`amberlog/_fabric/`, table in ARCHITECTURE.md §6), not in
-   `fabric.py`. A new public `Amberlog` method is added to
-   `tests/data/amberlog_api.json`, deliberately.
+   (`memory-fabric/_fabric/`, table in ARCHITECTURE.md §6), not in
+   `fabric.py`. A new public `Memory Fabric` method is added to
+   `tests/data/memory-fabric_api.json`, deliberately.
 5. A new security guard (a tenant, visibility, signature, grant or limit
    check) gets a mutant in `tools/mutation_check.py` naming the tests that
    must notice it removed; CI fails on a survivor.

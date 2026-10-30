@@ -12,7 +12,7 @@ Companions: [DEPLOYMENT.md](../DEPLOYMENT.md) for choosing a topology,
 ## 1. The one command to run first
 
 ```bash
-amberlog --db store.db doctor
+memory-fabric --db store.db doctor
 ```
 
 Ten checks, three outcomes, and exit codes meant for a script: **0** sound,
@@ -38,7 +38,7 @@ reason — never `ok`.
 ### Backup
 
 ```bash
-amberlog --db store.db backup /backups/store-$(date +%F).db
+memory-fabric --db store.db backup /backups/store-$(date +%F).db
 ```
 
 Takes a consistent snapshot **and replays it** before reporting success — a
@@ -61,8 +61,8 @@ What a backup does **not** contain:
 ### Integrity checkpoint
 
 ```bash
-amberlog --db store.db checkpoint            # print it
-amberlog --db store.db checkpoint --verify saved.json
+memory-fabric --db store.db checkpoint            # print it
+memory-fabric --db store.db checkpoint --verify saved.json
 ```
 
 Prints `(seq, chain_digest)`. **Store it where the database cannot reach it** —
@@ -79,14 +79,14 @@ store's writer cannot rewrite, and `--verify` checks the store against all of
 them:
 
 ```bash
-amberlog --db store.db anchor --to dir:/mnt/other-disk/anchors \
+memory-fabric --db store.db anchor --to dir:/mnt/other-disk/anchors \
                                    --to git:/srv/anchors-repo \
                                    --to https://audit.example/anchors
-amberlog --db store.db anchor --verify dir:/mnt/other-disk/anchors   # exit 0 or 5
+memory-fabric --db store.db anchor --verify dir:/mnt/other-disk/anchors   # exit 0 or 5
 ```
 
 Run it from cron or a systemd timer, for example every 15 minutes:
-`*/15 * * * * amberlog --db /srv/store.db anchor --to git:/srv/anchors-repo`.
+`*/15 * * * * memory-fabric --db /srv/store.db anchor --to git:/srv/anchors-repo`.
 Choose a git repository the database host can commit to but not rewrite (a
 pushed-to remote with protected history), or an HTTP endpoint that keeps what
 it receives. Each target reports separately, so one failing target does not
@@ -122,8 +122,8 @@ places this store cannot see.
 **1. Find every memory about the subject.**
 
 ```bash
-amberlog --db store.db list -q "<name, email or id>" --limit 500
-amberlog --db store.db search "<name, email or id>" --limit 50
+memory-fabric --db store.db list -q "<name, email or id>" --limit 500
+memory-fabric --db store.db search "<name, email or id>" --limit 50
 ```
 
 `list -q` is a substring match over content and ids; `search` uses the index
@@ -138,7 +138,7 @@ retraction propagates to every store it was shared with.
 **3. Erase each one.**
 
 ```bash
-amberlog --db store.db erase <memory-id> --reason "<ticket id>" --actor <you>
+memory-fabric --db store.db erase <memory-id> --reason "<ticket id>" --actor <you>
 ```
 
 This destroys the memory's content key and prints the scope report: what the
@@ -176,7 +176,7 @@ expected, a missing key store is an operational fault.
 
 ### "Acting on withdrawn knowledge"
 
-1. `amberlog --db store.db attention` lists what needs a human, worst first.
+1. `memory-fabric --db store.db attention` lists what needs a human, worst first.
 2. For a federated memory, check the propagation view: `OperatorClient.propagation()` or `/api/propagation`. A recipient stuck in `retrying` or `failed` is the cause.
 3. A withdrawal recorded on a weak basis (`co_occurrence`, `unstated`) is more likely to be a mistake than the memory is to be wrong — PA′ measured 57 of 87 naive withdrawals as being about a completely different fault. The remedy is usually `release`, not deeper propagation.
 
@@ -207,7 +207,7 @@ every active memory was readable by its whole tenant. To keep that visibility
 for memories written before the upgrade, decide it once, explicitly:
 
 ```bash
-amberlog --db store.db share --all-private-active --actor <you>
+memory-fabric --db store.db share --all-private-active --actor <you>
 ```
 
 It shares each active private memory to `team` through the firewall, so a
@@ -287,7 +287,7 @@ sequence gap, and the client resumed in about 0.1 s. Steps:
    anything writes:** `ALTER SYSTEM SET synchronous_standby_names = ''; SELECT pg_reload_conf();`
    (or attach a new standby). The setting is copied by `pg_basebackup`, and
    without a standby every commit waits forever, with no error.
-4. **Check:** `amberlog --db <new primary URL> doctor`, then
+4. **Check:** `memory-fabric --db <new primary URL> doctor`, then
    `anchor --verify` against your anchors.
 
 Asynchronous replication can lose the last acknowledged commits on failover
@@ -300,7 +300,7 @@ same token as the dashboard (`Authorization: Bearer <token>`):
 
 ```yaml
 scrape_configs:
-  - job_name: amberlog
+  - job_name: memory-fabric
     authorization: {credentials_file: /etc/prometheus/mf-token}
     static_configs: [{targets: ["fabric-host:8765"]}]
 ```
@@ -334,20 +334,20 @@ Said plainly rather than left for an incident to discover.
 - **No concurrency beyond serialised single-writer.** Measured, not assumed: 4 processes × 20 appends land all 80 with a gapless sequence and a verifying chain. Throughput is bounded by that one writer (§4a).
 - **No multi-host story.** Distribution was declined on measurement — 25× the memories cost 1.7× the latency.
 - **No automated erasure across caches, exports or model traces.** Crypto-erasure covers the store. Anything you exported, logged, or sent to a model provider is outside it, and `doctor` cannot see those — `erasure_scope` reports them as unknown rather than pretending otherwise, which is the most a store can honestly do.
-- **Alerting is one webhook.** `amberlog doctor --webhook URL` POSTs a JSON alert when the store is not sound (`--webhook-on warn` for warnings too). Run it from cron or a systemd timer. Escalation, deduplication and paging rules are still yours.
+- **Alerting is one webhook.** `memory-fabric doctor --webhook URL` POSTs a JSON alert when the store is not sound (`--webhook-on warn` for warnings too). Run it from cron or a systemd timer. Escalation, deduplication and paging rules are still yours.
 - **Revocation durability depends on which surface you use.** A `MemoryService` writes revocations to the database; a bare `PrincipalRegistry` keeps them in memory. `service.revocations_are_durable` answers it rather than leaving it to be inferred.
 - **Untested here:** restore onto a different OS, stores above a few hundred thousand events, and recovery from filesystem-level corruption rather than logical tampering.
 
 ## Background maintenance (0.12.0)
 
 The store maintains itself. `serve`, `agent-api` and `mcp` each start the
-background manager. Run it alone with `amberlog --db <store> maintain`,
+background manager. Run it alone with `memory-fabric --db <store> maintain`,
 or for one cycle with `--once`.
 
 **What it does, every `--maintain-interval` seconds (60 by default):**
 
 - delivers owed retractions to peers (`--peers peers.json`, or
-  `AMBERLOG_PEERS`; the file holds keys, so keep it readable by the
+  `MEMORY_FABRIC_PEERS`; the file holds keys, so keep it readable by the
   service user only);
 - applies retention: deprecations always, deletions only with
   `--retention-delete`;
@@ -356,7 +356,7 @@ or for one cycle with `--once`.
   storage, or it is only recorded in the log;
 - runs the doctor's checks.
 
-**Seeing what it did:** `amberlog maintain --status` shows the last
+**Seeing what it did:** `memory-fabric maintain --status` shows the last
 cycle and everything it found that needs a person. Conflicts and audit
 findings are never resolved automatically. `doctor` warns when the manager
 has not run for an hour.

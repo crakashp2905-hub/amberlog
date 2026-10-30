@@ -221,7 +221,7 @@ Headroom is always `oracle_share − best_simple`, where `best_simple = max(isol
 
 - **Model:** `qwen2.5:3b`, as Phase A, so the two are comparable.
 - **Agents:** 4. **Seeds:** 5. **Episodes:** 12 per agent (amended; see below), interleaved round-robin so sharing happens between episodes rather than in a batch at the end.
-- **Sharing:** through `amberlog.federation.offer`, with each agent's own firewall deciding. Imports arrive unvalidated and provenance crosses with them. No arm is permitted to bypass the recipient's firewall — if a policy needs that, the policy is wrong and gets recorded as such.
+- **Sharing:** through `memory_fabric.federation.offer`, with each agent's own firewall deciding. Imports arrive unvalidated and provenance crosses with them. No arm is permitted to bypass the recipient's firewall — if a policy needs that, the policy is wrong and gets recorded as such.
 - **Statistics:** paired by (seed, agent, episode). Bootstrap CIs, 10,000 resamples.
 - **Verification:** the environment. No self-reported outcomes.
 

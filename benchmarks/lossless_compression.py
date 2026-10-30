@@ -7,19 +7,19 @@ import random
 import time
 
 from benchmarks.manifest import head
-from amberlog import Amberlog
-from amberlog.compaction import compact_session
-from amberlog.lossless_compaction import dictionary_summary
+from memory_fabric import MemoryFabric
+from memory_fabric.compaction import compact_session
+from memory_fabric.lossless_compaction import dictionary_summary
 
 ROOT = Path(__file__).resolve().parents[1]
 SEEDS = (503, 509, 521, 523, 541)
 
 
 def run_seed(seed: int) -> dict:
-    from amberlog.lossless_compaction import decode_records
+    from memory_fabric.lossless_compaction import decode_records
 
     rng = random.Random(seed)
-    f = Amberlog(":memory:", recognise_copies=False)
+    f = MemoryFabric(":memory:", recognise_copies=False)
     try:
         episode = f.start_episode("writer", "inspection")
         source = [f"Unit P{i} limit is {rng.randint(3, 80)} bar. "

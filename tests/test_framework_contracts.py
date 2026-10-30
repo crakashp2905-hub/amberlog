@@ -7,9 +7,9 @@ import unittest
 from typing import TypedDict
 from unittest.mock import patch
 
-from amberlog import Amberlog
-from amberlog.integrations.tools import FabricTools
-from amberlog.sdk import agent
+from memory_fabric import MemoryFabric
+from memory_fabric.integrations.tools import FabricTools
+from memory_fabric.sdk import agent
 
 
 class WorkflowState(TypedDict, total=False):
@@ -23,10 +23,10 @@ class LangGraphContract(unittest.TestCase):
     def test_real_graph_rechecks_evidence_after_correction(self):
         from langgraph.graph import END, START, StateGraph
 
-        from amberlog.integrations.langchain import fabric_retriever
+        from memory_fabric.integrations.langchain import fabric_retriever
 
         for correct in (False, True):
-            with self.subTest(correct=correct), Amberlog(":memory:") as store:
+            with self.subTest(correct=correct), MemoryFabric(":memory:") as store:
                 evidence = store.remember("observer", "Valve dispatch requires a reviewed seal.",
                                           scope="team", tenant_id="tn_work", auto_activate=True)
                 foreign = store.remember("observer", "Valve FOREIGN_PRIVATE_MARKER seal.",
@@ -87,7 +87,7 @@ class OpenAIAgentsContract(unittest.IsolatedAsyncioTestCase):
                 raise AssertionError("this contract uses non-streaming Runner.run")
                 yield  # pragma: no cover
 
-        with Amberlog(":memory:") as store:
+        with MemoryFabric(":memory:") as store:
             evidence = store.remember("observer", "Valve dispatch requires a reviewed seal.",
                                       scope="team", tenant_id="tn_work", auto_activate=True)
             foreign = store.remember("observer", "FOREIGN_PRIVATE_MARKER", scope="team",

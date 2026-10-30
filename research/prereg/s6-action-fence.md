@@ -4,7 +4,7 @@
 test seeds (0–4).** This is research direction S6 in
 [WORKPLAN.md](../../docs/WORKPLAN.md), and it closes or bounds threat S14 in
 [SAFETY_AND_SECURITY.md](../../docs/SAFETY_AND_SECURITY.md). Mechanism:
-`ActionGate.execute` in `amberlog/actions.py` (schema 0.11.0). Harness:
+`ActionGate.execute` in `memory-fabric/actions.py` (schema 0.11.0). Harness:
 `experiments/s6_race_sim.py`. Both are committed with this file.
 
 **Disclosed: the dev pilot changed the harness.**

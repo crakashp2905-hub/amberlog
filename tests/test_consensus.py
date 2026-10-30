@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.consensus import support
+from memory_fabric import MemoryFabric
+from memory_fabric.consensus import support
 
 CLAIM = "Compressor K-31: the relief pressure is 14 bar."
 
 
 class Consensus(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(auto_activate=True, hold_suspicious=False)
+        self.f = MemoryFabric(auto_activate=True, hold_suspicious=False)
         self.addCleanup(self.f.close)
 
     def test_five_agents_repeating_one_source_are_one_source(self) -> None:

@@ -19,21 +19,21 @@ from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.dispatcher import Dispatcher, reconcile
-from amberlog.enforcement import RiskLevel, Verdict
-from amberlog.federation import offer
-from amberlog.governance.firewall import (
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.dispatcher import Dispatcher, reconcile
+from memory_fabric.enforcement import RiskLevel, Verdict
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from amberlog.justification import JustificationKind, justification_context
-from amberlog.identity import ROLE_AGENT, ROLE_OPERATOR, IdentityError
-from amberlog.protocol import PropagationState
-from amberlog.service import MemoryService
-from amberlog.transport import InProcessTransport
+from memory_fabric.justification import JustificationKind, justification_context
+from memory_fabric.identity import ROLE_AGENT, ROLE_OPERATOR, IdentityError
+from memory_fabric.protocol import PropagationState
+from memory_fabric.service import MemoryService
+from memory_fabric.transport import InProcessTransport
 
 # Synthetic secret: the AWS documentation example key id, which is not a real
 # credential and is published as an example.
@@ -48,7 +48,7 @@ class ServiceFixture(unittest.TestCase):
         self._tmp = TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
         self.path = Path(self._tmp.name) / "store.db"
-        self.service = MemoryService(Amberlog(self.path))
+        self.service = MemoryService(MemoryFabric(self.path))
         self.addCleanup(self.service.close)
         self.service.register_agent("alice", key=b"k-alice", tenant_id="tn_a")
         self.service.register_agent("mallory", key=b"k-mallory", tenant_id="tn_a")
@@ -219,7 +219,7 @@ class TestStaleAndRetractedEvidence(ServiceFixture):
         exposure = self.alice.use(self.fact, risk=RiskLevel.HIGH).token
         self.ops.quarantine(self.fact, reason="wrong", basis="contradicted")
         self.service.close()
-        reopened = MemoryService(Amberlog(self.path))
+        reopened = MemoryService(MemoryFabric(self.path))
         self.addCleanup(reopened.close)
         reopened.register_agent("alice", key=b"k-alice", tenant_id="tn_a")
         alice = reopened.session(reopened.issue("alice"))
@@ -277,8 +277,8 @@ class FederationFixture(unittest.TestCase):
     def setUp(self) -> None:
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        self.origin = Amberlog(Path(tmp.name) / "o.db", firewall=_permissive())
-        self.recipient = Amberlog(Path(tmp.name) / "r.db", firewall=_permissive())
+        self.origin = MemoryFabric(Path(tmp.name) / "o.db", firewall=_permissive())
+        self.recipient = MemoryFabric(Path(tmp.name) / "r.db", firewall=_permissive())
         self.addCleanup(self.origin.close)
         self.addCleanup(self.recipient.close)
         self.memory_id = self.origin.remember("ag_n", "valve 7 is upstream")

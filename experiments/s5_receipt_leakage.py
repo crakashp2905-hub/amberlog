@@ -46,19 +46,19 @@ ATTRIBUTES = ("activity", "copies", "peers", "dependents")
 
 
 def store() -> Any:
-    from amberlog import Amberlog
-    from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+    from memory_fabric import MemoryFabric
+    from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                    rule_must_be_active,
                                                    rule_restricted_stays_private)
 
-    return Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=(
+    return MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=(
         rule_restricted_stays_private, rule_must_be_active, rule_capabilities_must_be_granted)))
 
 
 def one_recipient(rng: random.Random, n: int) -> dict[str, Any]:
-    from amberlog.federation import offer
-    from amberlog.model import Scope
-    from amberlog.receipts import CorrectionReceipt, ReceiptError, audit, issue
+    from memory_fabric.federation import offer
+    from memory_fabric.model import Scope
+    from memory_fabric.receipts import CorrectionReceipt, ReceiptError, audit, issue
 
     truth = {"activity": rng.randint(0, 300), "copies": rng.randint(1, 3),
              "peers": rng.randint(0, 3), "dependents": rng.randint(0, 3)}

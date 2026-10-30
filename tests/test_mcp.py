@@ -15,9 +15,9 @@ import sys
 import tempfile
 import unittest
 
-from amberlog import Amberlog
-from amberlog.adapters.mcp import PROTOCOL_VERSIONS, TOOLS, McpServer, serve_stdio
-from amberlog.sdk import agent, operator
+from memory_fabric import MemoryFabric
+from memory_fabric.adapters.mcp import PROTOCOL_VERSIONS, TOOLS, McpServer, serve_stdio
+from memory_fabric.sdk import agent, operator
 
 
 def _request(method: str, params: dict | None = None, msg_id: int = 1) -> dict:
@@ -29,7 +29,7 @@ def _request(method: str, params: dict | None = None, msg_id: int = 1) -> dict:
 
 class McpCase(unittest.TestCase):
     def setUp(self) -> None:
-        self.fabric = Amberlog(":memory:")
+        self.fabric = MemoryFabric(":memory:")
         self.addCleanup(self.fabric.close)
         self.operator = operator(self.fabric, "supervisor")
         writer = agent(self.fabric, "ag_writer")
@@ -64,10 +64,10 @@ class TestLifecycle(McpCase):
         self.assertEqual(result["protocolVersion"], PROTOCOL_VERSIONS[0])
 
     def test_server_version_is_the_package_version(self) -> None:
-        import amberlog
+        import memory_fabric
 
         result = self.server.handle(_request("initialize", {}))["result"]
-        self.assertEqual(result["serverInfo"]["version"], amberlog.__version__)
+        self.assertEqual(result["serverInfo"]["version"], memory_fabric.__version__)
 
     def test_notifications_get_no_response(self) -> None:
         self.assertIsNone(
@@ -238,7 +238,7 @@ class TestCli(unittest.TestCase):
                     "content": "The north gate sticks below freezing."}}, msg_id=2),
             ]
             proc = subprocess.run(
-                [sys.executable, "-m", "amberlog", "--db", db, "--create",
+                [sys.executable, "-m", "memory_fabric", "--db", db, "--create",
                  "mcp", "--agent", "ag_cli"],
                 input="".join(json.dumps(m) + "\n" for m in messages),
                 capture_output=True, text=True, timeout=60,
@@ -256,12 +256,12 @@ class TestVersion(unittest.TestCase):
         import pathlib
         import tomllib
 
-        import amberlog
+        import memory_fabric
 
         root = pathlib.Path(__file__).resolve().parent.parent
         with open(root / "pyproject.toml", "rb") as fh:
             declared = tomllib.load(fh)["project"]["version"]
-        self.assertEqual(amberlog.__version__, declared)
+        self.assertEqual(memory_fabric.__version__, declared)
 
 
 if __name__ == "__main__":

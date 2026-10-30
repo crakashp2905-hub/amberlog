@@ -14,7 +14,7 @@ rather than about extraction.**
 3. **Checking prediction 3 found a published AUC reported as its own complement.** `abstention-signals.md`'s pooled AUC is **0.682, not 0.319** — above chance, not below. Every other figure in that result reproduces exactly. Its practical verdict survives untouched, which means the right decision was reached on the strength of a number that was upside down. It cited no harness, which is why it survived; there is one now.
 
 - **Registration:** [x1-extraction-at-ingest.md](../prereg/x1-extraction-at-ingest.md) — its own §8 amends the primary, written before any model call of the primary arm
-- **Mechanism:** `amberlog/extraction.py`, `Amberlog.index_extraction()`, `applicable_defaults()`, `infer_relations()`
+- **Mechanism:** `memory-fabric/extraction.py`, `Memory Fabric.index_extraction()`, `applicable_defaults()`, `infer_relations()`
 - **Harnesses:** `experiments/x1_extraction_quality.py` (extraction quality), `experiments/x1_extraction.py` (the retrieval arms), `experiments/x1_abstention_premise.py` (prediction 3, and §5's correction)
 - **Runs:** 2026-10-13 via Ollama 0.40, k=5. Models: `gemma2:latest`, `qwen2.5:7b`, `qwen2.5:3b`, `qwen2.5:1.5b`, `llama3.2:3b`, `qwen3:1.7b`, `gemma3:4b`, and `finsenti-llama3.2-1b:latest` (a domain fine-tune, §2)
 - **A fourth finding, about method:** schema-constrained decoding, added mid-session in the belief that it was the accuracy and cost fix, **changes no accuracy and costs ~50% more wall time** (§8). Recorded here because the mistake has the same shape as finding 1 — a number accepted before the control that bounded it was run.
@@ -420,7 +420,7 @@ family the primary needs.
 
 Ollama enforces a JSON schema **during** sampling. The client wrapper did not
 pass one, so every figure in §2 came from a model free-forming its way to JSON
-with `parse()` cleaning up after it. `amberlog/extraction.py` now defines
+with `parse()` cleaning up after it. `memory-fabric/extraction.py` now defines
 `SCHEMA`, and the unconstrained path is kept so the two modes can be compared.
 
 The first constrained call looked decisive: **`qwen2.5:1.5b` returned
@@ -512,7 +512,7 @@ statement, and the fix is a GPU or a hosted endpoint, not a smaller model".
 
 AGENTS.md requires LLM calls to go through one wrapper logging model, prompt
 hash, token counts and cost. `OllamaClient.calls` is that ledger and remains
-the record of truth; `amberlog/adapters/tracing.py` adds exporters on top
+the record of truth; `memory-fabric/adapters/tracing.py` adds exporters on top
 of it, registered with `client.add_sink()`.
 
 - **`JsonlSink`** — one JSON object per call, appended. **No dependencies**, because CI runs this project with none installed and the zero-dependency claim is only true if it is checked. Both X1 harnesses take `--trace PATH`.

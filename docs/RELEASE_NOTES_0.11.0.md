@@ -1,4 +1,4 @@
-# Amberlog 0.11.0 — release candidate notes
+# Memory Fabric 0.11.0 — release candidate notes
 
 **Released as `v0.11.0`** from `rc/0.11.0`, after CI and acceptance passed on
 the tagged commit ([RELEASE_EVALUATION.md](RELEASE_EVALUATION.md)). Not on PyPI:
@@ -10,7 +10,7 @@ the distribution name is not decided yet.
    readable only by its writer and by agents granted `read` on a collection
    containing it. Until now every agent in the tenant could read it. To keep
    the old effective visibility for existing memories:
-   `amberlog --db store.db share --all-private-active --actor <you>`.
+   `memory-fabric --db store.db share --all-private-active --actor <you>`.
    Restricted memories are refused and listed, by design.
 2. The schema goes to 0.11.0, which is additive: two new event types and a few
    projection fields. Older logs replay unchanged. No migration step.

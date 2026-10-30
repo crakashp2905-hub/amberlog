@@ -116,13 +116,13 @@ def where_of(q: dict[str, Any]) -> dict[str, Any]:
 
 
 def run_seed(seed: int, arms: tuple[str, ...]) -> dict[str, Any]:
-    from amberlog import Amberlog
-    from amberlog.navigation import navigate
-    from amberlog.typed_query import select
+    from memory_fabric import MemoryFabric
+    from memory_fabric.navigation import navigate
+    from memory_fabric.typed_query import select
 
     records, notes, queries = world(seed)
     rng = random.Random(seed * 101)
-    f = Amberlog(":memory:", auto_activate=True, encrypt_content=False, recognise_copies=False,
+    f = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False, recognise_copies=False,
                      retrieval="lexical")
     rid_of: dict[str, str] = {}
     try:

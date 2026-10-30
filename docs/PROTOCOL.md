@@ -1,4 +1,4 @@
-# Amberlog federation protocol — v1 (specification)
+# Memory Fabric federation protocol — v1 (specification)
 
 **Status: implemented as of Phase 2 (2026-10-10).** §§1–7 are built and tested:
 `protocol.py` (identities, events, acknowledgements, the state machine),
@@ -187,7 +187,7 @@ and part of its sharing graph (security review F13, measured in
 falls when the recipient regresses, which is the field's job. Both counts stay
 in the recipient's own log. The wire format is unchanged. For a receipt that
 proves enforcement to an auditor without revealing anything, see
-`amberlog/receipts.py`.
+`memory-fabric/receipts.py`.
 
 ## 7. Reconciliation after an outage
 

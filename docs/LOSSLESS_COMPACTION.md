@@ -1,8 +1,8 @@
 # Optional phrase-dictionary compaction (experimental)
 
 ```python
-from amberlog.compaction import compact_session
-from amberlog.lossless_compaction import dictionary_summary
+from memory_fabric.compaction import compact_session
+from memory_fabric.lossless_compaction import dictionary_summary
 
 report = compact_session(fabric, episode_id, "writer", summarise=dictionary_summary)
 ```

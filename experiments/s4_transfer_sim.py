@@ -25,7 +25,7 @@ Per episode, a random (context, fault). Arms:
   oracle            rely on a valid import if there is one, else the default
 
 Lessons are written at four real sender stores and imported by federation.
-The fabric arms run on a real recipient Amberlog: retrieval logs exposure
+The fabric arms run on a real recipient MemoryFabric: retrieval logs exposure
 with propensities, the agent cites what it relied on, and a separate
 verifier records the outcome.
 
@@ -84,22 +84,22 @@ def query(fault: int) -> str:
 
 class FabricArm:
     def __init__(self, seed: int, w: dict[str, Any], *, policy: str, contextual: bool) -> None:
-        from amberlog import Amberlog
-        from amberlog.exposure import AlwaysExposePolicy, TopKPolicy, TransferGatePolicy
-        from amberlog.federation import offer
-        from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+        from memory_fabric import MemoryFabric
+        from memory_fabric.exposure import AlwaysExposePolicy, TopKPolicy, TransferGatePolicy
+        from memory_fabric.federation import offer
+        from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                        rule_must_be_active,
                                                        rule_restricted_stays_private)
-        from amberlog.model import Scope
+        from memory_fabric.model import Scope
 
         exposure = {"gate": TransferGatePolicy(0.2), "top_k": TopKPolicy("relevance"),
                     "trust": AlwaysExposePolicy()}[policy]
         rules = (rule_restricted_stays_private, rule_must_be_active,
                  rule_capabilities_must_be_granted)
-        self.fab = Amberlog(":memory:", auto_activate=True, estimator="dr",
+        self.fab = MemoryFabric(":memory:", auto_activate=True, estimator="dr",
                                 exposure_policy=exposure, seed=seed,
                                 firewall=Firewall(rules=rules))
-        senders = [Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=rules))
+        senders = [MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=rules))
                    for _ in range(4)]
         self.ids = []
         for lesson in w["lessons"]:
@@ -117,7 +117,7 @@ class FabricArm:
         self.rng = random.Random(seed * 17 + 3)
 
     def choose(self, t: int, c: int, f: int) -> tuple[int | None, str]:
-        from amberlog.trust import TransferTrust
+        from memory_fabric.trust import TransferTrust
 
         context = {"ctx": c} if self.contextual else None
         episode = self.fab.start_episode("agent", f"t{t}", context=context)

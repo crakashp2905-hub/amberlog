@@ -10,15 +10,15 @@ from __future__ import annotations
 import json
 import unittest
 
-from amberlog import Amberlog
-from amberlog.adapters.mcp import EXTENDED_TOOLS, McpServer
-from amberlog.branching import Branches
-from amberlog.sdk import agent
+from memory_fabric import MemoryFabric
+from memory_fabric.adapters.mcp import EXTENDED_TOOLS, McpServer
+from memory_fabric.branching import Branches
+from memory_fabric.sdk import agent
 
 
 class Extended(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.p1 = self.f.remember("ag_mcp", "Pump P1 runs at 4 bar.", scope="team")
         self.child = self.f.derive("ag_mcp", "Line 1 is safe at 4 bar.", parents=[self.p1],
@@ -52,7 +52,7 @@ class Extended(unittest.TestCase):
         self.assertTrue(all(s["admissible_now"] for s in explained["selected"]))
 
     def test_another_agents_receipt_is_not_readable(self) -> None:
-        from amberlog.context_receipt import build_context
+        from memory_fabric.context_receipt import build_context
 
         rid = build_context(self.f, "other", "pump").receipt["receipt_id"]
         out, err = self.call("explain_context", receipt_id=rid)
@@ -98,7 +98,7 @@ class Extended(unittest.TestCase):
 
 class DecayTools(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         for i in range(30):
             self.f.remember("ag_mcp", f"Pump P{i} runs at {i + 10} bar.", scope="team")

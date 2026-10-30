@@ -30,16 +30,16 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.dispatcher import Dispatcher
-from amberlog.governance.firewall import (
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.dispatcher import Dispatcher
+from memory_fabric.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from amberlog.protocol import PropagationState
-from amberlog.transport import InProcessTransport
+from memory_fabric.protocol import PropagationState
+from memory_fabric.transport import InProcessTransport
 
 WORKER = Path(__file__).resolve().parent / "crashworker.py"
 CRASHED = 70
@@ -82,8 +82,8 @@ class MultiProcessCase(unittest.TestCase):
         )
         return result.stdout.strip()
 
-    def open(self, path: Path) -> Amberlog:
-        fabric = Amberlog(path, firewall=permissive(), auto_activate=True)
+    def open(self, path: Path) -> MemoryFabric:
+        fabric = MemoryFabric(path, firewall=permissive(), auto_activate=True)
         self.addCleanup(fabric.close)
         return fabric
 
@@ -116,7 +116,7 @@ class MultiProcessCase(unittest.TestCase):
             ("bob", self.bob_path),
         ):
             if path.exists():
-                fabric = Amberlog(path, firewall=permissive())
+                fabric = MemoryFabric(path, firewall=permissive())
                 try:
                     ids[name] = fabric.store_id
                 finally:
@@ -155,7 +155,7 @@ class CrashInsideATransaction(MultiProcessCase):
         _, at_alice, at_bob = self.seed_chain()
         ids = self.store_ids()
 
-        origin = Amberlog(self.origin_path, firewall=permissive(), auto_activate=True)
+        origin = MemoryFabric(self.origin_path, firewall=permissive(), auto_activate=True)
         try:
             memory_id = next(
                 mid for mid, m in origin.state.memories.items()
@@ -194,7 +194,7 @@ class CrashInsideATransaction(MultiProcessCase):
         self.assertEqual(len(origin.state.memories), 1, "uncommitted writes are gone")
         # And the log still replays to the same state, which is the actual
         # integrity claim rather than "it opened".
-        from amberlog.projections import Projection
+        from memory_fabric.projections import Projection
 
         rebuilt = Projection.rebuild(origin.log, unsealer=origin._unseal_content)
         self.assertEqual(
@@ -260,7 +260,7 @@ class CrashAfterACommit(MultiProcessCase):
         )
         ids = self.store_ids()
 
-        origin = Amberlog(self.origin_path, firewall=permissive(), auto_activate=True)
+        origin = MemoryFabric(self.origin_path, firewall=permissive(), auto_activate=True)
         try:
             memory_id = next(iter(origin.state.memories))
             origin.request_retraction(

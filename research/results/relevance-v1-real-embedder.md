@@ -108,8 +108,8 @@ P1.
 **It is one line to switch**, and the numbers above are the argument:
 
 ```python
-from amberlog.adapters.ollama import OllamaEmbedder
-fabric = Amberlog("memory.db", embedder=OllamaEmbedder())
+from memory_fabric.adapters.ollama import OllamaEmbedder
+fabric = MemoryFabric("memory.db", embedder=OllamaEmbedder())
 ```
 
 Cost, now measurable because it was not: embedding calls go through the one

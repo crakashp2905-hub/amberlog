@@ -56,7 +56,7 @@ task):
 | `no_memory` | none | — |
 | `shared_store` | one lexical store per site, every write copied to all three, no lifecycle, no screens | the origin deletes its own copy; copies elsewhere remain (what a basic delete does) |
 | `shared_delete_all` | as above | a delete reaches every copy instantly, including the offline site (an idealised naive store) |
-| `fabric` | Amberlog per site: governed writes, ingest screens, federation by offer, scope and enforcement | `request_retraction` and the dispatcher; South is unreachable at stage 2 and reconciles at stage 3 |
+| `fabric` | Memory Fabric per site: governed writes, ingest screens, federation by offer, scope and enforcement | `request_retraction` and the dispatcher; South is unreachable at stage 2 and reconciles at stage 3 |
 | `oracle` | only the memories that are true at that stage, **same retrieval, same k, same prompt** | — |
 | `abstain` | none; always declines | — |
 

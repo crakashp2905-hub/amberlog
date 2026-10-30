@@ -58,7 +58,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import checks as harness_checks  # noqa: E402
 from experiments import longmemeval_bench as lb  # noqa: E402
-from amberlog.vectors import LexicalIndex  # noqa: E402
+from memory_fabric.vectors import LexicalIndex  # noqa: E402
 
 
 def _round(value: float | None) -> float | None:

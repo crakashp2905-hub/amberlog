@@ -23,7 +23,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import external_bench as sf  # noqa: E402
 from experiments import longmemeval_bench as lme  # noqa: E402
-from amberlog.vectors import VectorIndex, fuse  # noqa: E402
+from memory_fabric.vectors import VectorIndex, fuse  # noqa: E402
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 K = 10
@@ -48,7 +48,7 @@ missing: dict[str, str] = {}
 
 def embedder(name: str):
     if name not in _embedders:
-        from amberlog.retrievers import FastEmbedEmbedder
+        from memory_fabric.retrievers import FastEmbedEmbedder
 
         _embedders[name] = FastEmbedEmbedder(EMBEDDERS[name], batch_size=64)
     return _embedders[name]
@@ -56,7 +56,7 @@ def embedder(name: str):
 
 def reranker(name: str):
     if name not in _rerankers:
-        from amberlog.retrievers import CrossEncoderReranker
+        from memory_fabric.retrievers import CrossEncoderReranker
 
         _rerankers[name] = CrossEncoderReranker(RERANKERS[name], pool=POOL)
     return _rerankers[name]
@@ -176,7 +176,7 @@ def lme_config(arm: str) -> dict[str, Any] | None:
 
 
 def longmemeval(instances: Sequence[Mapping[str, Any]], arms: Sequence[str]) -> dict[str, Any]:
-    from amberlog import Amberlog
+    from memory_fabric import MemoryFabric
 
     rows: dict[str, dict[str, list[float]]] = {}
     for arm in ["lexical", *[a for a in arms if a != "lexical"], "oracle"]:
@@ -194,7 +194,7 @@ def longmemeval(instances: Sequence[Mapping[str, Any]], arms: Sequence[str]) -> 
             gold = {(sid, pos) for sid, session in zip(inst["haystack_session_ids"],
                                                          inst["haystack_sessions"])
                     for pos, turn in enumerate(session) if turn.get("has_answer")}
-            fabric = Amberlog(":memory:", auto_activate=True, encrypt_content=False,
+            fabric = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False,
                                   recognise_copies=False, withhold_hostile_sources=False,
                                   **(config or {"retrieval": "lexical"}))
             try:

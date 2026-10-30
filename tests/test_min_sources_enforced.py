@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.certificates import INSUFFICIENT_INDEPENDENT_SUPPORT
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.certificates import INSUFFICIENT_INDEPENDENT_SUPPORT
 
 
 class MinSourcesEnforced(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(auto_activate=True)
+        self.f = MemoryFabric(auto_activate=True)
         self.addCleanup(self.f.close)
         self.a = self.f.remember("s1", "Valve V-7 pressure reads 4 bar.", scope="team")
         self.b = self.f.remember("s2", "Gauge G-2 on valve V-7 shows 4 bar.", scope="team")

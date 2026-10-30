@@ -17,7 +17,7 @@ skins, not a cosmetic renaming of development. Freeze generator version, split,
 task order, budgets and SHA-256 before tuning any memory mechanism.
 
 Arms: no memory, ungoverned shared lexical/vector store, local summary/static
-procedure analogue, governed Amberlog, oracle. The analogue is labelled a
+procedure analogue, governed Memory Fabric, oracle. The analogue is labelled a
 local design, not a TencentDB reproduction. Match model, context and content-read
 budgets, tools, task order, permissions and retry rules. The oracle gets the same
 mechanisms and budgets, differing only in hidden knowledge.

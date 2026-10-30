@@ -66,11 +66,11 @@ def task_log(rng: random.Random, task: int) -> list[tuple[str, str, str]]:
 
 
 def run_seed(seed: int) -> dict[str, Any]:
-    from amberlog import Amberlog
-    from amberlog.compaction import compact_session
+    from memory_fabric import MemoryFabric
+    from memory_fabric.compaction import compact_session
 
     rng = random.Random(seed)
-    f = Amberlog(":memory:", auto_activate=True, recognise_copies=False, retrieval="lexical")
+    f = MemoryFabric(":memory:", auto_activate=True, recognise_copies=False, retrieval="lexical")
     results: dict[str, Any] = {str(b): {a: [] for a in ("raw", "summary", "summary+drill", "oracle")}
                                for b in BUDGETS}
     invariants = {"withdrawn_resurrected": 0, "erased_returned_text": 0, "summary_still_exposable": 0,
@@ -106,7 +106,7 @@ def run_seed(seed: int) -> dict[str, Any]:
                     invariants["withdrawn_resurrected"] += 1
                 if mid == erased and any(m.id == erased and m.content for m in got):
                     invariants["erased_returned_text"] += 1
-            from amberlog.model import EXPOSABLE_STATES
+            from memory_fabric.model import EXPOSABLE_STATES
 
             invariants["checks"] += 1
             if f.state.memories[report.summary_id].lifecycle_state in EXPOSABLE_STATES:

@@ -1,6 +1,6 @@
 # ADR-003: Context receipts
 
-**Status:** accepted, implemented in `amberlog/context_receipt.py`.
+**Status:** accepted, implemented in `memory-fabric/context_receipt.py`.
 
 ## Context
 

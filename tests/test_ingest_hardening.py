@@ -6,10 +6,10 @@ import random
 import unittest
 from unittest import mock
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.identity import DEFAULT_TENANT
-from amberlog.docsource import current_sections, import_document
-from amberlog.knowledge_compiler import MAX_BYTES, PARSER_VERSION, compile_markdown
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.identity import DEFAULT_TENANT
+from memory_fabric.docsource import current_sections, import_document
+from memory_fabric.knowledge_compiler import MAX_BYTES, PARSER_VERSION, compile_markdown
 
 
 def tree(text: str, version: str = "1", doc_id: str = "d") -> dict:
@@ -47,7 +47,7 @@ class SpanFidelity(unittest.TestCase):
             self.assertIn(s["text"].split("\n")[0], span_text(crlf, s))
 
     def test_spans_reach_the_stored_provenance(self) -> None:
-        f = Amberlog(":memory:")
+        f = MemoryFabric(":memory:")
         self.addCleanup(f.close)
         r = import_document(f, tree(self.SOURCE))
         src = f.get(r.added[0]).context["source"]
@@ -109,7 +109,7 @@ class TenantIsolation(unittest.TestCase):
 
     def test_property(self) -> None:
         rng = random.Random(11)
-        f = Amberlog(":memory:")
+        f = MemoryFabric(":memory:")
         self.addCleanup(f.close)
         tenants = [None, "t1", "t2", "t3"]
         texts = ["# A\nalpha", "# A\nbeta", "# A\nalpha\n# B\nbravo", "# B\nbravo"]
@@ -128,7 +128,7 @@ class TenantIsolation(unittest.TestCase):
 
 class RecoverableImport(unittest.TestCase):
     def test_a_crash_mid_import_is_repaired_by_running_it_again(self) -> None:
-        f = Amberlog(":memory:")
+        f = MemoryFabric(":memory:")
         self.addCleanup(f.close)
         import_document(f, tree("# A\nold a\n# B\nold b"), activate=True)
         new = tree("# A\nnew a\n# B\nnew b\n# C\nc", "2")

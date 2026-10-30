@@ -36,7 +36,7 @@ here is a formal security proof, and nothing here has been externally audited.
 | **Network attacker** | Can read, replay, drop and reorder federation traffic | Breaking HMAC-SHA256 or AES-GCM |
 | **Compromised peer store** | Holds its own peer key and sends signed but false retractions | Holding another peer's key |
 | **Database writer** | Can write the SQLite file or the Postgres tables directly | — (see the limit in §5) |
-| **Host code** | Holds `Amberlog` itself and is trusted by design | — |
+| **Host code** | Holds `Memory Fabric` itself and is trusted by design | — |
 
 ## 3. Trust boundaries
 
@@ -90,7 +90,7 @@ Status values:
   rewrite both consistently. Only a checkpoint kept outside their reach detects
   that (`test_integrity_chain.py::test_a_recomputed_chain_is_caught_by_a_checkpoint`).
 - **Logical tenancy.** The tenant boundary is an authorisation check inside one
-  store. It is not physical isolation, and host code holding `Amberlog` can
+  store. It is not physical isolation, and host code holding `Memory Fabric` can
   cross it (`test_service.py::test_the_fabric_is_reachable_by_anyone_who_insists`).
 - **Bearer credentials.** A stolen credential works until it expires or is
   revoked. Transport confidentiality is the deployment's responsibility: the

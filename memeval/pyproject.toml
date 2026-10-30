@@ -18,7 +18,7 @@ license = "LicenseRef-Proprietary"
 license-files = ["LICENSE"]
 
 [tool.setuptools]
-# The package is this directory; it lives inside the Amberlog repository
+# The package is this directory; it lives inside the Memory Fabric repository
 # but is built and installed on its own, with no dependency on it.
 package-dir = { "memeval" = "." }
 packages = ["memeval"]

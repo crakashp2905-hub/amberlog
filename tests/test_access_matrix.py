@@ -13,12 +13,12 @@ import os
 import unittest
 from typing import Any, Callable
 
-from amberlog import Amberlog, sdk
-from amberlog.adapters.mcp import McpServer
-from amberlog.agent_api import AgentApi, encode_credential
-from amberlog.identity import IdentityError
-from amberlog.integrations.tools import FabricTools
-from amberlog.service import MemoryService
+from memory_fabric import MemoryFabric, sdk
+from memory_fabric.adapters.mcp import McpServer
+from memory_fabric.agent_api import AgentApi, encode_credential
+from memory_fabric.identity import IdentityError
+from memory_fabric.integrations.tools import FabricTools
+from memory_fabric.service import MemoryService
 
 QUERY = "valve V7 opens bar"
 TENANT, OTHER = "tn_a", "tn_b"
@@ -47,7 +47,7 @@ def mcp_call(server: McpServer, tool: str, args: dict) -> Any:
 
 class Matrix(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         # A team memory in tn_a, a private one alice shares with bob through a
         # collection, and tn_b's matching memory bob must never see.
@@ -160,7 +160,7 @@ class Matrix(unittest.TestCase):
 
 
 def api_cred(token: str) -> Any:
-    from amberlog.agent_api import decode_credential
+    from memory_fabric.agent_api import decode_credential
 
     return decode_credential(token)
 

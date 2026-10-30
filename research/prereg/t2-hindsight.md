@@ -3,7 +3,7 @@
 **Registered 2026-10-19, after two dev pilots (seed 100) and before the
 held-out seeds (10–14).** This is the second claim scoped from the
 temporal-reasoning review: the backward one. Mechanism:
-`amberlog/hindsight.py`. Harness: `experiments/t2_hindsight.py`, on
+`memory-fabric/hindsight.py`. Harness: `experiments/t2_hindsight.py`, on
 G4b's LabNet.
 
 At stage 2 the origin withdraws what has been detected as false, and also

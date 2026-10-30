@@ -26,7 +26,7 @@ them ([AGENTS.md](AGENTS.md) principle 4).
 ### Backup
 
 ```bash
-amberlog --db store.db backup /backups/store-$(date -u +%Y%m%dT%H%M%SZ).db
+memory-fabric --db store.db backup /backups/store-$(date -u +%Y%m%dT%H%M%SZ).db
 ```
 
 Not `cp`. The store runs in WAL mode, so a plain file copy taken mid-write gives
@@ -47,8 +47,8 @@ which is the backup-retention question in [SECURITY.md](SECURITY.md).
 ### Key custody: keep keys outside the database in production
 
 ```bash
-amberlog --db store.db migrate-keys /secure/keys      # once, for an existing store
-amberlog --db store.db --keys /secure/keys overview   # or set AMBERLOG_KEYS
+memory-fabric --db store.db migrate-keys /secure/keys      # once, for an existing store
+memory-fabric --db store.db --keys /secure/keys overview   # or set MEMORY_FABRIC_KEYS
 ```
 
 By default a store keeps content keys in its own file, which makes erasure
@@ -61,7 +61,7 @@ credentials from the database. The container image does this by default.
 ### Restore
 
 ```bash
-amberlog --db /backups/store-20261010T0900Z.db overview
+memory-fabric --db /backups/store-20261010T0900Z.db overview
 ```
 
 A restore is verified the same way a backup is — by folding the whole log. The
@@ -78,7 +78,7 @@ into the data every value estimate is computed from.
 ### Locally
 
 ```bash
-amberlog --db store.db serve
+memory-fabric --db store.db serve
 ```
 
 Binds `127.0.0.1` and prints a one-time URL carrying a session token.
@@ -86,7 +86,7 @@ Binds `127.0.0.1` and prints a one-time URL carrying a session token.
 ### Behind something
 
 ```bash
-AMBERLOG_TOKEN=... amberlog --db store.db serve \
+MEMORY_FABRIC_TOKEN=... memory-fabric --db store.db serve \
   --host 0.0.0.0 --allowed-host memory.internal.example.com
 ```
 
@@ -98,22 +98,22 @@ them wrong:
 - **Cross-origin requests are refused.**
 - **The token is compared with `hmac.compare_digest`.**
 
-Pass the token through `AMBERLOG_TOKEN` rather than `--token`: an argument
+Pass the token through `MEMORY_FABRIC_TOKEN` rather than `--token`: an argument
 is visible in the process list to every user on the box.
 
 ### In a container
 
 ```bash
-docker build -t amberlog .
+docker build -t memory-fabric .
 docker run -p 8765:8765 -v mf-data:/data -v mf-keys:/keys \
-  -e AMBERLOG_TOKEN=... amberlog
+  -e MEMORY_FABRIC_TOKEN=... memory-fabric
 ```
 
 Runs as uid 10001, not root, with the **production cryptography profile**:
 content is sealed only with AES-256-GCM from the maintained `cryptography`
 library, and the store refuses to open if that library is missing
-(`AMBERLOG_CRYPTO_PROFILE=production`; [CRYPTOGRAPHY.md](docs/CRYPTOGRAPHY.md)).
-Outside the container, install `amberlog[crypto]` and set the same
+(`MEMORY_FABRIC_CRYPTO_PROFILE=production`; [CRYPTOGRAPHY.md](docs/CRYPTOGRAPHY.md)).
+Outside the container, install `memory-fabric[crypto]` and set the same
 variable to get it. **Both volumes are required.** Without `/data` the
 first `docker rm` takes the event log, and §1 is why that is unrecoverable.
 Without `/keys` it takes the content keys, and the content in `/data` becomes
@@ -189,7 +189,7 @@ The version tracks the **memory schema**, not the Python API
 replays on every later version of the same major series.
 
 ```bash
-amberlog --db store.db overview   # the `schema` row
+memory-fabric --db store.db overview   # the `schema` row
 ```
 
 It names the installed schema version and, when they differ, every version that
@@ -205,7 +205,7 @@ none.
 
 ## 5. What to watch
 
-`amberlog --db store.db attention` is the triage list, worst first, each
+`memory-fabric --db store.db attention` is the triage list, worst first, each
 finding carrying the command that acts on it. The ones that need a human:
 
 | Finding | Why it matters |
@@ -234,8 +234,8 @@ but every process must reach the same file, so one machine. For writers on
 **several machines**, use the optional PostgreSQL backend:
 
 ```bash
-pip install "amberlog[postgres]"
-amberlog --db postgresql://user@db.internal:5432/memory overview
+pip install "memory-fabric[postgres]"
+memory-fabric --db postgresql://user@db.internal:5432/memory overview
 ```
 
 Every module runs unchanged against it (every storage-touching test module
@@ -243,7 +243,7 @@ runs on Postgres in CI; only the research benchmarks are left out), with append-
 intact. It does **not** add write throughput: writers still serialise, on a
 table lock instead of a file lock, because the chain needs a total order and
 `seq` must stay gapless. Readers never block. Back it up with `pg_dump`;
-`amberlog backup` refuses and says so. Passwords in the URL are never
+`memory-fabric backup` refuses and says so. Passwords in the URL are never
 printed — but prefer a `.pgpass` file or `PGPASSWORD` over putting one in a
 command line, which other users on the host can see.
 
@@ -272,7 +272,7 @@ one blast radius, and the content keys sit beside the ciphertext. Pick one
 store per tenant when isolation has to survive a compromised process, a
 mis-scoped backup or a support engineer with shell access; pick one store when
 the tenants are teams inside one trust boundary and the operational cost of N
-databases is the real constraint. `amberlog tenants` says which
+databases is the real constraint. `memory-fabric tenants` says which
 arrangement a store is actually in, and `doctor` reports a multi-tenant store
 as a warning rather than as a clean bill of health.
 
@@ -286,12 +286,12 @@ as a warning rather than as a clean bill of health.
 | **D. Host or container per tenant** | pattern C in separate containers or VMs (`deploy/multihost/docker-compose.yml` is the template), with keys on separate volumes | a compromised host for one tenant | shared infrastructure underneath | N hosts |
 
 Whatever the pattern, anchor each store's checkpoint somewhere its own host
-cannot rewrite (`amberlog anchor --to git:...`), and give each tenant its
-own operator tokens. `amberlog tenants` and `doctor` report which pattern a
+cannot rewrite (`memory-fabric anchor --to git:...`), and give each tenant its
+own operator tokens. `memory-fabric tenants` and `doctor` report which pattern a
 store is actually in.
 
 **Content is encrypted; the database is not.** Memory content is sealed per
-memory and `amberlog` can destroy a single memory's key, which makes that
+memory and `memory-fabric` can destroy a single memory's key, which makes that
 content unrecoverable while leaving the audit trail intact — see
 [SECURITY.md](SECURITY.md) for exactly what erasure does and does not reach. But
 the database as a whole is a plain SQLite file: the keys sit beside the
@@ -323,12 +323,12 @@ caution, and §5 says what to do instead.
 
 ## Kubernetes (Helm)
 
-`deploy/helm/amberlog` runs the dashboard, and optionally the agent HTTP
+`deploy/helm/memory-fabric` runs the dashboard, and optionally the agent HTTP
 API, on one pod with the store and its keys on separate volumes:
 
 ```bash
 kubectl create secret generic mf-agents --from-file=agents.txt
-helm install mf deploy/helm/amberlog \
+helm install mf deploy/helm/memory-fabric \
   --set dashboard.token=$(openssl rand -hex 24) \
   --set mode=team --set agentApi.enabled=true --set agentApi.agentsSecret=mf-agents
 ```

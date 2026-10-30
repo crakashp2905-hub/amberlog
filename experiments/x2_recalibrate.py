@@ -62,7 +62,7 @@ from typing import Any, Mapping, Sequence
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import checks  # noqa: E402
-from amberlog.adapters.systemone import (  # noqa: E402
+from memory_fabric.adapters.systemone import (  # noqa: E402
     brier_score, expected_calibration_error,
 )
 from experiments.x1_abstention_premise import best_f1  # noqa: E402

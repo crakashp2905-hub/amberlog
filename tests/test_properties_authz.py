@@ -23,8 +23,8 @@ import random
 import unittest
 from dataclasses import dataclass, field
 
-from amberlog import Amberlog
-from amberlog.model import EXPOSABLE_STATES
+from memory_fabric import MemoryFabric
+from memory_fabric.model import EXPOSABLE_STATES
 
 AGENTS = {"a1": "tn_a", "a2": "tn_a", "b1": "tn_b"}
 
@@ -50,7 +50,7 @@ class Walk:
     def __init__(self, seed: int) -> None:
         self.rng = random.Random(seed)
         self.seed = seed
-        self.f = Amberlog(":memory:", hold_suspicious=False)
+        self.f = MemoryFabric(":memory:", hold_suspicious=False)
         self.model = Model()
         self.mids: list[str] = []
         self.tokens: dict[tuple[str, str], tuple[object, int]] = {}

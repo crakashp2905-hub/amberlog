@@ -22,11 +22,11 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 # Windows consoles default to a legacy code page that cannot encode the
 # punctuation below; this reconfigures stdout the way the CLI does.
-from amberlog.cli import configure_output
+from memory_fabric.cli import configure_output
 
 configure_output()
 
-from amberlog import LifecycleState, Amberlog, MemoryType, Scope
+from memory_fabric import LifecycleState, MemoryFabric, MemoryType, Scope
 
 
 def rule(title: str) -> None:
@@ -34,7 +34,7 @@ def rule(title: str) -> None:
 
 
 def main() -> None:
-    fabric = Amberlog(auto_activate=True, seed=0)
+    fabric = MemoryFabric(auto_activate=True, seed=0)
 
     rule("1. An agent learns something from an episode")
 

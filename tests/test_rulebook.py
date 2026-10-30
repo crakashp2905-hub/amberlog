@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.model import LifecycleState
-from amberlog.objective import MemoryObjective, Rule
-from amberlog.rulebook import Rulebook
+from memory_fabric import MemoryFabric
+from memory_fabric.model import LifecycleState
+from memory_fabric.objective import MemoryObjective, Rule
+from memory_fabric.rulebook import Rulebook
 
 DRAFTS_OUT = MemoryObjective("ignore drafts", exclude=(Rule("status", "eq", "draft"),))
 
 
 class RulebookTests(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.book = Rulebook(self.f, "night-shift", "agent", statement="start")
 

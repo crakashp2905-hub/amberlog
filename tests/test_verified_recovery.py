@@ -5,15 +5,15 @@ from __future__ import annotations
 import time
 import unittest
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.dispatcher import Dispatcher
-from amberlog.federation import offer
-from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.dispatcher import Dispatcher
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from amberlog.model import Scope
-from amberlog.response import contain, influence, verify_recovery
-from amberlog.transport import InProcessTransport, PeerRegistry
+from memory_fabric.model import Scope
+from memory_fabric.response import contain, influence, verify_recovery
+from memory_fabric.transport import InProcessTransport, PeerRegistry
 
 
 def permissive() -> Firewall:
@@ -23,7 +23,7 @@ def permissive() -> Firewall:
 
 class FlagshipIncident(unittest.TestCase):
     def setUp(self) -> None:
-        self.store, self.peer = (Amberlog(":memory:", firewall=permissive(), auto_activate=True)
+        self.store, self.peer = (MemoryFabric(":memory:", firewall=permissive(), auto_activate=True)
                                  for _ in range(2))
         self.addCleanup(self.store.close)
         self.addCleanup(self.peer.close)

@@ -80,7 +80,7 @@ class TrustArm(s4.FabricArm):
         self.cells: dict[tuple[str, int], list[float]] = {}
 
     def choose(self, t: int, c: int, f: int) -> tuple[int | None, str]:
-        from amberlog.trust import DEFAULT, Beta, TransferTrust, origin_of
+        from memory_fabric.trust import DEFAULT, Beta, TransferTrust, origin_of
 
         context = {"ctx": c}
         episode = self.fab.start_episode("agent", f"t{t}", context=context)
@@ -155,7 +155,7 @@ def run_seed(seed: int) -> dict[str, Any]:
     chosen = {}
     for name, arm in fabric.items():
         if name == "trust_adaptive":
-            from amberlog.trust import TransferTrust
+            from memory_fabric.trust import TransferTrust
 
             chosen = TransferTrust(arm.fab, adaptive=True).chosen
         arm.fab.close()

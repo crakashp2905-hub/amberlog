@@ -1,4 +1,4 @@
-"""`amberlog anchor`: one command to keep checkpoints beyond the writer's reach."""
+"""`memory_fabric anchor`: one command to keep checkpoints beyond the writer's reach."""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog
+from memory_fabric import MemoryFabric
 from tests import test_checkpoint_rewrite as rewrite
 
 
@@ -19,7 +19,7 @@ class Anchor(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = Path(self.enterContext(TemporaryDirectory()))
         self.db = self.tmp / "store.db"
-        f = Amberlog(str(self.db), auto_activate=True)
+        f = MemoryFabric(str(self.db), auto_activate=True)
         f.remember("tech", "Valve V7 opens below 4 bar.", scope="team")
         f.remember("tech", "Pump P1 purge time is 30 s.", scope="team")
         self.store_id = f.store_id

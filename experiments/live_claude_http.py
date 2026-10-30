@@ -2,7 +2,7 @@
 
 The second live integration. The first (`live_claude_mcp.py`) gave the model
 the fabric's MCP tools. This one gives it nothing but `curl` and the
-documented HTTP API of a separately launched `amberlog agent-api`
+documented HTTP API of a separately launched `memory_fabric agent-api`
 process, which is the deployment for agents in another language or on another
 machine. The credential reaches the model's shell through an environment
 variable, never through the prompt text.
@@ -84,7 +84,7 @@ def run_trial(arm: str, n: int, model: str | None, workdir: str) -> base.Trial:
     port = free_port()
     env = {**os.environ, "PYTHONPATH": os.pathsep.join((str(ROOT / "src"), str(ROOT)))}
     server = subprocess.Popen(
-        [sys.executable, "-m", "amberlog", "--db", db, "agent-api",
+        [sys.executable, "-m", "memory_fabric", "--db", db, "agent-api",
          "--agents-file", agents, "--port", str(port)],
         cwd=workdir, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     stop = threading.Event()
@@ -97,7 +97,7 @@ def run_trial(arm: str, n: int, model: str | None, workdir: str) -> base.Trial:
             except OSError:
                 time.sleep(0.1)
         bearer = subprocess.run(
-            [sys.executable, "-m", "amberlog", "--db", db, "agent-api-issue",
+            [sys.executable, "-m", "memory_fabric", "--db", db, "agent-api-issue",
              "--agents-file", agents, "--agent", AGENT_ID, "--ttl", "1800"],
             capture_output=True, text=True, env=env, cwd=workdir).stdout.strip().splitlines()[-1]
         if arm == "retracted":
@@ -159,8 +159,8 @@ def run_trial(arm: str, n: int, model: str | None, workdir: str) -> base.Trial:
     # Judged from the store, not from the commands: an attempted call that the
     # shell refused never reached the API, and counting it scored a harness
     # failure as model behaviour.
-    from amberlog import Amberlog
-    store = Amberlog(db)
+    from memory_fabric import MemoryFabric
+    store = MemoryFabric(db)
     try:
         reached = any(e.agent_id == AGENT_ID for e in store.log.read())
     finally:

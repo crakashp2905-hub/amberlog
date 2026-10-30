@@ -17,11 +17,11 @@ import json
 import unittest
 from unittest import mock
 
-from amberlog import Amberlog
-from amberlog.enforcement import RiskLevel, Verdict
-from amberlog.fabric import NotFound, PolicyViolation
-from amberlog.identity import IdentityError
-from amberlog.sdk import AgentClient, agent, operator, public_error
+from memory_fabric import MemoryFabric
+from memory_fabric.enforcement import RiskLevel, Verdict
+from memory_fabric.fabric import NotFound, PolicyViolation
+from memory_fabric.identity import IdentityError
+from memory_fabric.sdk import AgentClient, agent, operator, public_error
 
 INTERNAL = "sqlite3.OperationalError at /srv/secret/store.db: row 41 tn_other"
 
@@ -44,13 +44,13 @@ class TestPublicErrors(unittest.TestCase):
 
 class TestMcpFault(unittest.TestCase):
     def test_an_internal_fault_is_a_generic_tool_error(self) -> None:
-        from amberlog.adapters.mcp import McpServer
+        from memory_fabric.adapters.mcp import McpServer
 
-        fabric = Amberlog(":memory:")
+        fabric = MemoryFabric(":memory:")
         self.addCleanup(fabric.close)
         server = McpServer(agent(fabric, "ag"), fabric)
         with mock.patch.object(AgentClient, "recall", side_effect=RuntimeError(INTERNAL)), \
-                self.assertLogs("amberlog.adapters.mcp", level="WARNING"):
+                self.assertLogs("memory_fabric.adapters.mcp", level="WARNING"):
             response = server.handle({"jsonrpc": "2.0", "id": 1, "method": "tools/call",
                                       "params": {"name": "recall",
                                                  "arguments": {"query": "x"}}})
@@ -67,16 +67,16 @@ class TestAgentApiFault(unittest.TestCase):
         import urllib.error
         import urllib.request
 
-        from amberlog.agent_api import (AgentApi, build_agent_server,
+        from memory_fabric.agent_api import (AgentApi, build_agent_server,
                                              encode_credential, load_agents, register_all)
-        from amberlog.service import MemoryService
+        from memory_fabric.service import MemoryService
 
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         path = os.path.join(tmp.name, "agents")
         with open(path, "w") as fh:
             fh.write(f"ag_a:tn_acme:{'aa' * 32}\n")
-        fabric = Amberlog(":memory:")
+        fabric = MemoryFabric(":memory:")
         service = MemoryService(fabric=fabric)
         register_all(service, load_agents(path))
         server = build_agent_server(AgentApi(service), port=0)
@@ -90,7 +90,7 @@ class TestAgentApiFault(unittest.TestCase):
             data=json.dumps({"query": "x"}).encode(), method="POST",
             headers={"Content-Type": "application/json", "Authorization": f"Bearer {bearer}"})
         with mock.patch.object(AgentClient, "recall", side_effect=RuntimeError(INTERNAL)), \
-                self.assertLogs("amberlog.agent_api", level="WARNING"):
+                self.assertLogs("memory_fabric.agent_api", level="WARNING"):
             with self.assertRaises(urllib.error.HTTPError) as caught:
                 urllib.request.urlopen(request, timeout=10)
         self.assertEqual(caught.exception.code, 422)
@@ -101,7 +101,7 @@ class TestAgentApiFault(unittest.TestCase):
 
 class TestConcealedDerive(unittest.TestCase):
     def test_deriving_from_another_tenant_looks_like_a_missing_id(self) -> None:
-        fabric = Amberlog(auto_activate=True, conceal_cross_tenant=True)
+        fabric = MemoryFabric(auto_activate=True, conceal_cross_tenant=True)
         self.addCleanup(fabric.close)
         theirs = fabric.remember("a", "tenant A fact", tenant_id="tn_a")
         view = fabric.for_tenant("tn_b", "b")
@@ -118,7 +118,7 @@ class TestChecksThatRaiseRefuse(unittest.TestCase):
     """An exception inside a check must surface as a refusal, never as usable."""
 
     def test_a_failing_enforcer_check_is_not_a_usable_read(self) -> None:
-        fabric = Amberlog(auto_activate=True)
+        fabric = MemoryFabric(auto_activate=True)
         self.addCleanup(fabric.close)
         mid = fabric.remember("a", "valve 7 is upstream")
         with mock.patch.object(type(fabric.enforcer), "check", side_effect=RuntimeError("db")):
@@ -127,7 +127,7 @@ class TestChecksThatRaiseRefuse(unittest.TestCase):
 
     def test_a_failing_screen_refuses_the_write(self) -> None:
         """The screen raising must not store the memory unscreened."""
-        fabric = Amberlog(auto_activate=True)
+        fabric = MemoryFabric(auto_activate=True)
         self.addCleanup(fabric.close)
         before = len(fabric.state.memories)
         with mock.patch.object(type(fabric.firewall), "screen_ingest",
@@ -137,7 +137,7 @@ class TestChecksThatRaiseRefuse(unittest.TestCase):
         self.assertEqual(len(fabric.state.memories), before)
 
     def test_an_unmodelled_lifecycle_is_unknown_not_usable(self) -> None:
-        fabric = Amberlog(auto_activate=True)
+        fabric = MemoryFabric(auto_activate=True)
         self.addCleanup(fabric.close)
         mid = fabric.remember("a", "valve 7 is upstream")
         memory = fabric.state.memories[mid]

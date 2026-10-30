@@ -21,7 +21,7 @@ from __future__ import annotations
 import base64
 import unittest
 
-from amberlog.governance.sensitive import SensitiveDataDetector, scrub, secret_values
+from memory_fabric.governance.sensitive import SensitiveDataDetector, scrub, secret_values
 
 AWS = "AKIA" + "QQQQWWWWEEEERRRR"
 GH = "ghp_" + "A1b2C3d4E5f6G7h8I9j0K1l2M3n4O5p6Q7r8"

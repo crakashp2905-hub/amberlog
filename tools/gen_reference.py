@@ -22,50 +22,50 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 API: list[tuple[str, str, list[str]]] = [
-    ("Store and retrieve", "amberlog.fabric:Amberlog",
+    ("Store and retrieve", "memory_fabric.fabric:MemoryFabric",
      ["__init__", "remember", "derive", "revise", "retrieve", "get", "history", "explain",
       "lineage", "audit_trail", "start_episode", "cite", "record_outcome", "end_episode"]),
-    ("Govern", "amberlog.fabric:Amberlog",
+    ("Govern", "memory_fabric.fabric:MemoryFabric",
      ["validate", "quarantine", "release", "forget", "share", "challenge", "erase_content",
       "authority", "elevate", "sweep_retention", "certify", "verify_certificate"]),
-    ("Agent SDK", "amberlog.sdk:agent", []),
-    ("Agent SDK", "amberlog.sdk:AgentClient",
+    ("Agent SDK", "memory_fabric.sdk:agent", []),
+    ("Agent SDK", "memory_fabric.sdk:AgentClient",
      ["recall", "fetch", "verify", "require", "remember", "episode", "record_outcome"]),
-    ("Operator SDK", "amberlog.sdk:operator", []),
-    ("Operator SDK", "amberlog.sdk:OperatorClient",
+    ("Operator SDK", "memory_fabric.sdk:operator", []),
+    ("Operator SDK", "memory_fabric.sdk:OperatorClient",
      ["inspect", "explain", "lineage", "attention", "retract", "validate", "share", "release",
       "erase_content"]),
-    ("Identity and tenancy", "amberlog.service:MemoryService",
+    ("Identity and tenancy", "memory_fabric.service:MemoryService",
      ["register_agent", "issue", "session", "revoke", "revoke_agent"]),
-    ("Identity and tenancy", "amberlog.service:Session",
+    ("Identity and tenancy", "memory_fabric.service:Session",
      ["remember", "retrieve", "use", "certify", "quarantine", "validate", "inspect",
       "export_audit"]),
-    ("Identity and tenancy", "amberlog.identity:Principal", ["permissions", "can"]),
-    ("Identity and tenancy", "amberlog.tenancy:TenantRouter", ["store", "view", "tenants"]),
-    ("Actions", "amberlog.actions:ActionGate",
+    ("Identity and tenancy", "memory_fabric.identity:Principal", ["permissions", "can"]),
+    ("Identity and tenancy", "memory_fabric.tenancy:TenantRouter", ["store", "view", "tenants"]),
+    ("Actions", "memory_fabric.actions:ActionGate",
      ["authorize", "execute", "issue_grant", "revoke_grant"]),
-    ("Actions", "amberlog.actions:ToolRule", []),
-    ("Actions", "amberlog.actions:ActionRequest", []),
-    ("Correction and recovery", "amberlog.correction:preview", []),
-    ("Correction and recovery", "amberlog.correction:apply", []),
-    ("Correction and recovery", "amberlog.correction:status", []),
-    ("Correction and recovery", "amberlog.response:verify_recovery", []),
-    ("Correction and recovery", "amberlog.influence:impact", []),
-    ("Correction and recovery", "amberlog.influence:paraphrases", []),
-    ("Trust", "amberlog.authority:of", []),
-    ("Trust", "amberlog.validation:assess", []),
-    ("Trust", "amberlog.validation:assess_write", []),
-    ("Trust", "amberlog.validation:review_queue", []),
-    ("Objectives", "amberlog.objective_v2:MemoryObjectiveV2",
+    ("Actions", "memory_fabric.actions:ToolRule", []),
+    ("Actions", "memory_fabric.actions:ActionRequest", []),
+    ("Correction and recovery", "memory_fabric.correction:preview", []),
+    ("Correction and recovery", "memory_fabric.correction:apply", []),
+    ("Correction and recovery", "memory_fabric.correction:status", []),
+    ("Correction and recovery", "memory_fabric.response:verify_recovery", []),
+    ("Correction and recovery", "memory_fabric.influence:impact", []),
+    ("Correction and recovery", "memory_fabric.influence:paraphrases", []),
+    ("Trust", "memory_fabric.authority:of", []),
+    ("Trust", "memory_fabric.validation:assess", []),
+    ("Trust", "memory_fabric.validation:assess_write", []),
+    ("Trust", "memory_fabric.validation:review_queue", []),
+    ("Objectives", "memory_fabric.objective_v2:MemoryObjectiveV2",
      ["eligibility", "explain", "omissions", "reviewed"]),
-    ("Objectives", "amberlog.objective_v2:ObjectiveLog", ["propose", "adopt"]),
-    ("Sessions", "amberlog.compaction:compact_session", []),
-    ("Sessions", "amberlog.compaction:summary_for", []),
-    ("Sessions", "amberlog.adapters.transcripts:ingest_transcript", []),
-    ("Federation", "amberlog.federation:offer", []),
-    ("Federation", "amberlog.federation:offer_remote", []),
-    ("Background maintenance", "amberlog.manager:MemoryManager", ["run_once", "start", "stop"]),
-    ("Limits", "amberlog.limits:Limits", []),
+    ("Objectives", "memory_fabric.objective_v2:ObjectiveLog", ["propose", "adopt"]),
+    ("Sessions", "memory_fabric.compaction:compact_session", []),
+    ("Sessions", "memory_fabric.compaction:summary_for", []),
+    ("Sessions", "memory_fabric.adapters.transcripts:ingest_transcript", []),
+    ("Federation", "memory_fabric.federation:offer", []),
+    ("Federation", "memory_fabric.federation:offer_remote", []),
+    ("Background maintenance", "memory_fabric.manager:MemoryManager", ["run_once", "start", "stop"]),
+    ("Limits", "memory_fabric.limits:Limits", []),
 ]
 
 
@@ -125,7 +125,7 @@ def api_md() -> str:
         if title != section:
             lines += [f"## {title}", ""]
             section = title
-        short = module_name.replace("amberlog.", "")
+        short = module_name.replace("memory_fabric.", "")
         lines += [f"### `{short}.{name}` ({stability(module_name)})", ""]
         if inspect.isclass(obj) and not members:
             lines += [f"```python\n{name}{signature(obj)}\n```", ""]
@@ -147,12 +147,12 @@ def api_md() -> str:
 
 
 def cli_md() -> str:
-    from amberlog.cli import build_parser
+    from memory_fabric.cli import build_parser
 
     parser = build_parser()
     lines = ["# CLI reference", "",
              "Generated by `tools/gen_reference.py` from the argument parser.",
-             "Global options go **before** the command: `amberlog --db store.db --json overview`.",
+             "Global options go **before** the command: `memory_fabric --db store.db --json overview`.",
              "", "## Global options", ""]
     for action in parser._actions:
         if action.option_strings and action.dest != "help":

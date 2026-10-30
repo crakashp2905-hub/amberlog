@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://amberlog.dev/protocol/acknowledgement-v1.schema.json",
-  "title": "Amberlog retraction acknowledgement, protocol v1",
+  "$id": "https://memory_fabric.dev/protocol/acknowledgement-v1.schema.json",
+  "title": "Memory Fabric retraction acknowledgement, protocol v1",
   "description": "A recipient's statement of committed state. Specification only. A recipient may report `persisted` only after its own commit and `enforced` only after its projections no longer expose the version.",
   "type": "object",
   "additionalProperties": false,

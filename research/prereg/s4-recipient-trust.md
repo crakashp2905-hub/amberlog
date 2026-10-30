@@ -5,7 +5,7 @@ seeds (0–9).** This is research direction S4 in
 [WORKPLAN.md](../../docs/WORKPLAN.md), registered against Phase B's PB1. PB1
 was killed: selective sharing by the sender's estimated transferability did
 not beat sharing all or none, and the worst agent fell. Mechanism:
-`amberlog/trust.py` (and `exposure.TransferGatePolicy` as a secondary
+`memory-fabric/trust.py` (and `exposure.TransferGatePolicy` as a secondary
 arm). Harness: `experiments/s4_transfer_sim.py`.
 
 **Disclosed: the dev pilot changed the mechanism.** The first mechanism was

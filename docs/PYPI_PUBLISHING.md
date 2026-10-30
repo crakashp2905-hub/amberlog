@@ -1,22 +1,22 @@
-# Amberlog publishing
+# Memory Fabric publishing
 
 **NO-GO for publication.** Nothing has been uploaded, no release tag has been
-created. The owner approved the GitHub rename to `crakashp2905-hub/amberlog`;
+created. The owner approved the GitHub rename to `crakashp2905-hub/memory-fabric`;
 that rename and the About update are complete. Index accounts remain unchanged.
 
 ## Name investigation — 29 October 2026
 
-The [PyPI JSON endpoint](https://pypi.org/pypi/amberlog/json) and
-[TestPyPI JSON endpoint](https://test.pypi.org/pypi/amberlog/json) each returned
+The [PyPI JSON endpoint](https://pypi.org/pypi/memory-fabric/json) and
+[TestPyPI JSON endpoint](https://test.pypi.org/pypi/memory-fabric/json) each returned
 HTTP 404. This is absence of a visible project, not a reservation, permission to
 register, or trademark clearance. An existing software company identifies its
-brand as Amberlog on its [own website](https://amberlog.cc/). Domain and product
+brand as Memory Fabric on its [own website](https://memory_fabric.cc/). Domain and product
 usage therefore need owner review. No alternative name is silently substituted.
 GitHub destination links now match the renamed repository. No ownership of a
 domain, organization or mark is claimed.
 
 A second official-index check on the same date also returned HTTP 404 from
-`https://pypi.org/simple/amberlog/`; pip's explicit official-index lookup,
+`https://pypi.org/simple/memory-fabric/`; pip's explicit official-index lookup,
 including prereleases and ignoring Python-version filters, reported no matching
 distribution. The owner subsequently clarified that no conflicting package page
 was known and chose to retain the candidate name. These observations still do
@@ -28,7 +28,7 @@ not validate registration rights. Publication remains on hold.
 python -m pip install build twine
 python -m build
 python -m twine check --strict dist/*
-python tools/fresh_machine.py dist/amberlog-0.14.0-py3-none-any.whl
+python tools/fresh_machine.py dist/memory-fabric-0.14.0-py3-none-any.whl
 ```
 
 Build wheel and sdist once from the approved clean commit. Inspect archive
@@ -57,9 +57,9 @@ reacts to tags.
 
 On each index, configure a trusted publisher (or pending publisher) with:
 
-- Project: `amberlog`, only if accepted by the index.
+- Project: `memory-fabric`, only if accepted by the index.
 - Owner: `crakashp2905-hub`.
-- Repository: `amberlog`.
+- Repository: `memory-fabric`.
 - Workflow: `publish-pypi.yml`.
 - Environment: `testpypi` or `pypi`, matching the corresponding index.
 
@@ -70,8 +70,8 @@ or guarantee acceptance of a pending project.
 ## Approval and upload
 
 The workflow is manual-only, on an approved version tag. The owner must set
-`AMBERLOG_NAME_CLEARED=true`, `AMBERLOG_RELEASE_GATES_PASSED=true` and
-`AMBERLOG_APPROVED_SHA` to the exact approved commit. Leave these unset while
+`MEMORY_FABRIC_NAME_CLEARED=true`, `MEMORY_FABRIC_RELEASE_GATES_PASSED=true` and
+`MEMORY_FABRIC_APPROVED_SHA` to the exact approved commit. Leave these unset while
 gates remain open. Qualification requires successful CI on that exact SHA,
 matching versions, full tests, strict metadata checks and clean installations.
 Only the publication job receives OIDC permission. It downloads the artifacts
@@ -81,9 +81,9 @@ TestPyPI comes first. After a verified upload, install that exact version into
 a clean environment with no source checkout on the import path:
 
 ```
-python -m pip install --index-url https://test.pypi.org/simple/ --no-deps amberlog==0.14.0
-python -c "import amberlog; print(amberlog.__file__)"
-amberlog --help
+python -m pip install --index-url https://test.pypi.org/simple/ --no-deps memory-fabric==0.14.0
+python -c "import memory_fabric; print(memory_fabric.__file__)"
+memory-fabric --help
 ```
 
 The core has zero dependencies, so no extra index is needed for this smoke test.

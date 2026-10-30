@@ -11,9 +11,9 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from io import StringIO
 from unittest import mock
 
-from amberlog import Amberlog
-from amberlog import cli
-from amberlog.cli import Finding, main
+from memory_fabric import MemoryFabric
+from memory_fabric import cli
+from memory_fabric.cli import Finding, main
 
 
 class Sink:
@@ -39,11 +39,11 @@ class Sink:
         self.server.server_close()
 
 
-def failing(fabric: Amberlog) -> Finding:
+def failing(fabric: MemoryFabric) -> Finding:
     return Finding("fail", "event chain", "the chain does not verify", "restore from backup")
 
 
-def warning(fabric: Amberlog) -> Finding:
+def warning(fabric: MemoryFabric) -> Finding:
     return Finding("warn", "pending deliveries", "3 retractions owed", "run maintain")
 
 
@@ -52,7 +52,7 @@ class DoctorWebhook(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.db = os.path.join(tmp.name, "s.db")
-        Amberlog(self.db).close()
+        MemoryFabric(self.db).close()
         self.sink = Sink()
         self.addCleanup(self.sink.close)
 

@@ -316,11 +316,11 @@ class FabricArm:
     """The real library: screens, kill switch, roots, certificates, gate."""
 
     def __init__(self, mode: str) -> None:
-        from amberlog import Amberlog
-        from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-        from amberlog.certificates import CHECK_INDEPENDENT_SUPPORT
+        from memory_fabric import MemoryFabric
+        from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+        from memory_fabric.certificates import CHECK_INDEPENDENT_SUPPORT
 
-        self.fabric = Amberlog(":memory:", seed=0)
+        self.fabric = MemoryFabric(":memory:", seed=0)
         names = [f"a{i}" for i in range(AGENTS)]
         self.tools = ("set_clearance", "override_interlock")
         self.policy = ActionPolicy(
@@ -334,8 +334,8 @@ class FabricArm:
         self.ids: dict[int, str] = {}
 
     def write(self, w: Write, index: dict[int, int]) -> None:
-        from amberlog.justification import JustificationKind, justification_context
-        from amberlog.model import LifecycleState
+        from memory_fabric.justification import JustificationKind, justification_context
+        from memory_fabric.model import LifecycleState
 
         f = self.fabric
         if w._revises_obj is not None:  # type: ignore[attr-defined]
@@ -371,7 +371,7 @@ class FabricArm:
         self.gate.policy = self.policy
 
     def plan(self, agent: str, pair: tuple[str, str], round_: int, high: bool) -> Plan:
-        from amberlog.certificates import CHECK_DEPENDENCIES_CURRENT
+        from memory_fabric.certificates import CHECK_DEPENDENCIES_CURRENT
         f = self.fabric
         result = f.retrieve(agent, f"{pair[0]} {pair[1]} clearance", k=K)
         top = list(result.exposed)

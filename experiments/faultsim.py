@@ -25,18 +25,18 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Callable, Sequence
 
-from amberlog import LifecycleState, Amberlog, WithdrawalBasis
-from amberlog.dispatcher import Dispatcher, reconcile
-from amberlog.federation import offer
-from amberlog.governance.firewall import (
+from memory_fabric import LifecycleState, MemoryFabric, WithdrawalBasis
+from memory_fabric.dispatcher import Dispatcher, reconcile
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from amberlog.justification import JustificationKind, justification_context
-from amberlog.protocol import PropagationState, Retraction, new_retraction_id
-from amberlog.transport import InProcessTransport, Peer, PeerRegistry
+from memory_fabric.justification import JustificationKind, justification_context
+from memory_fabric.protocol import PropagationState, Retraction, new_retraction_id
+from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
 
 
 def permissive() -> Firewall:
@@ -232,16 +232,16 @@ class World:
     """Real stores on disk, plus the bookkeeping the checks need."""
 
     root: Path
-    stores: dict[str, Amberlog] = field(default_factory=dict)
+    stores: dict[str, MemoryFabric] = field(default_factory=dict)
     registry: PeerRegistry = field(default_factory=PeerRegistry)
     offline: set[str] = field(default_factory=set)
     memories: dict[str, str] = field(default_factory=dict)
     event_counts: dict[str, int] = field(default_factory=dict)
     log: list[str] = field(default_factory=list)
 
-    def store(self, name: str) -> Amberlog:
+    def store(self, name: str) -> MemoryFabric:
         if name not in self.stores:
-            fabric = Amberlog(str(self.root / f"{name}.db"), firewall=permissive())
+            fabric = MemoryFabric(str(self.root / f"{name}.db"), firewall=permissive())
             self.stores[name] = fabric
             self.registry.add(
                 Peer(store_id=fabric.store_id, endpoint="unused", key=b"k-" + name.encode())
@@ -264,11 +264,11 @@ class World:
             offline={self.id_of(n) for n in self.offline if n in self.stores},
         )
 
-    def reopen(self, name: str) -> Amberlog:
+    def reopen(self, name: str) -> MemoryFabric:
         """A crash and restart: close the handle and open the same file."""
         path = str(self.root / f"{name}.db")
         self.stores[name].close()
-        fabric = Amberlog(path, firewall=permissive())
+        fabric = MemoryFabric(path, firewall=permissive())
         self.stores[name] = fabric
         return fabric
 

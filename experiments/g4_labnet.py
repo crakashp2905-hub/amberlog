@@ -140,7 +140,7 @@ class LexStore:
     """A plain store: append, delete, lexical top-k. No lifecycle, no screens."""
 
     def __init__(self) -> None:
-        from amberlog.vectors import LexicalIndex
+        from memory_fabric.vectors import LexicalIndex
 
         self.index = LexicalIndex()
         self.texts: dict[str, str] = {}
@@ -180,20 +180,20 @@ class NaiveArm:
 
 
 class FabricArm:
-    """Amberlog per site: governed writes, screens, offer, retraction, dispatch."""
+    """MemoryFabric per site: governed writes, screens, offer, retraction, dispatch."""
 
     def __init__(self) -> None:
-        from amberlog import Amberlog
-        from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+        from memory_fabric import MemoryFabric
+        from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                        rule_must_be_active,
                                                        rule_restricted_stays_private)
-        from amberlog.transport import InProcessTransport, PeerRegistry
+        from memory_fabric.transport import InProcessTransport, PeerRegistry
 
         # No value gate on federation: there is no outcome signal in LabNet, and
         # Phase B measured that gate blocking nearly all sharing. Screens apply.
         rules = (rule_restricted_stays_private, rule_must_be_active,
                  rule_capabilities_must_be_granted)
-        self.sites = {s: Amberlog(":memory:", firewall=Firewall(rules=rules),
+        self.sites = {s: MemoryFabric(":memory:", firewall=Firewall(rules=rules),
                                       auto_activate=True) for s in SITES}
         self.ids: dict[tuple[str, str], str] = {}   # (doc key, site) -> memory id
         self.transport = InProcessTransport({f.store_id: f for f in self.sites.values()},
@@ -203,7 +203,7 @@ class FabricArm:
         return f"agent-{site}"
 
     def write(self, doc: Doc, reachable: Sequence[str]) -> None:
-        from amberlog.federation import offer
+        from memory_fabric.federation import offer
 
         origin = self.sites[doc.fact.origin]
         mid = origin.remember(doc.author, doc.text, scope="team")
@@ -227,7 +227,7 @@ class FabricArm:
         so the recipients keep the old import beside the new one. Measured as
         it is (it is research direction S1), not worked around here.
         """
-        from amberlog.federation import offer
+        from memory_fabric.federation import offer
 
         origin = self.sites[doc.fact.origin]
         mid = self.ids.get((first_key, doc.fact.origin))
@@ -243,7 +243,7 @@ class FabricArm:
                 self.ids[(doc.key, site)] = result.imported_memory_id
 
     def withdraw(self, key: str, origin: str, offline: set[str]) -> None:
-        from amberlog.dispatcher import Dispatcher
+        from memory_fabric.dispatcher import Dispatcher
 
         mid = self.ids.get((key, origin))
         if mid is None:
@@ -256,7 +256,7 @@ class FabricArm:
         Dispatcher(fabric, self.transport).run_once()
 
     def recover(self, site: str) -> None:
-        from amberlog.dispatcher import Dispatcher
+        from memory_fabric.dispatcher import Dispatcher
 
         self.transport.offline = set()
         for _ in range(40):
@@ -437,7 +437,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--cache")
     parser.add_argument("--out")
     args = parser.parse_args(argv)
-    from amberlog.adapters.ollama import OllamaClient
+    from memory_fabric.adapters.ollama import OllamaClient
 
     client = OllamaClient()
     cache = Cache(args.cache)

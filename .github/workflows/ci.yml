@@ -26,7 +26,7 @@ jobs:
         run: python -m unittest discover -s tests -t .
 
       - name: Everything compiles
-        run: python -m compileall -q src/amberlog experiments tests examples
+        run: python -m compileall -q src/memory_fabric experiments tests examples
 
   package:
     # A wheel that builds but omits the dashboard, or whose console script does
@@ -52,7 +52,7 @@ jobs:
               "tests excluded": not any(n.startswith("tests/") for n in names),
               # PEP 561. Without it the type hints ship and no consuming type
               # checker reads them.
-              "py.typed marker": "amberlog/py.typed" in names,
+              "py.typed marker": "memory-fabric/py.typed" in names,
               "licence recorded": any("LICENSE" in n for n in names),
           }
           for name, ok in checks.items():
@@ -65,10 +65,10 @@ jobs:
           python -m venv /tmp/v
           /tmp/v/bin/pip install --quiet dist/*.whl
           cd /tmp
-          /tmp/v/bin/amberlog --db /tmp/ci.db demo
+          /tmp/v/bin/memory-fabric --db /tmp/ci.db demo
           # --json is a global flag and goes before the subcommand. CI caught
           # this the first time it ran, which is the job working as intended.
-          /tmp/v/bin/amberlog --db /tmp/ci.db --json overview > /tmp/out.json
+          /tmp/v/bin/memory-fabric --db /tmp/ci.db --json overview > /tmp/out.json
           python -c "import json;d=json.load(open('/tmp/out.json'));assert d['total_memories']>0;assert d['schema_version'];print('overview ok', d['schema_version'])"
 
       - name: Doctor reports the installed store sound
@@ -76,7 +76,7 @@ jobs:
           # The one check that only an installed copy can make: `doctor`
           # verifies the dashboard asset is present, which is a packaging
           # failure that otherwise surfaces when an operator opens the page.
-          /tmp/v/bin/amberlog --db /tmp/ci.db --json doctor > /tmp/doc.json
+          /tmp/v/bin/memory-fabric --db /tmp/ci.db --json doctor > /tmp/doc.json
           python - <<'EOF'
           import json, sys
           report = json.load(open("/tmp/doc.json"))
@@ -89,7 +89,7 @@ jobs:
       - name: Installed-wheel public types are consumed and checked
         run: |
           python -m pip install "mypy==2.1.0"
-          python tools/check_typed_consumer.py dist/amberlog-*.whl
+          python tools/check_typed_consumer.py dist/memory-fabric-*.whl
 
   docker:
     # The image is a wheel on a slim base and nothing else, so the thing worth
@@ -99,17 +99,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - run: docker build -t amberlog:ci .
+      - run: docker build -t memory-fabric:ci .
 
       - name: Container serves the dashboard over the published port
         env:
           # Supplied rather than scraped from the startup banner, which is also
           # how an operator should run it: the token never enters the process list.
-          AMBERLOG_TOKEN: ci-token-for-the-container-check
+          MEMORY_FABRIC_TOKEN: ci-token-for-the-container-check
         run: |
-          docker run -d --name mf -p 8765:8765 -e AMBERLOG_TOKEN amberlog:ci
+          docker run -d --name mf -p 8765:8765 -e MEMORY_FABRIC_TOKEN memory-fabric:ci
           for i in $(seq 1 30); do
-            curl -fsS -H "Authorization: Bearer $AMBERLOG_TOKEN" http://localhost:8765/api/overview -o /tmp/ov.json && break
+            curl -fsS -H "Authorization: Bearer $MEMORY_FABRIC_TOKEN" http://localhost:8765/api/overview -o /tmp/ov.json && break
             sleep 1
           done
           python -c "import json; d=json.load(open('/tmp/ov.json')); print('schema', d['schema_version'])"
@@ -117,16 +117,16 @@ jobs:
 
       - name: Content keys live on the key volume, not in the database
         env:
-          AMBERLOG_TOKEN: ci-token-for-the-container-check
+          MEMORY_FABRIC_TOKEN: ci-token-for-the-container-check
         run: |
           # Seeded by a second process while the server runs: the dashboard
           # must see the writes (cross-process freshness) and the keys must
           # land in /keys, leaving none in the database file.
-          docker exec mf amberlog --db /data/store.db demo
+          docker exec mf memory-fabric --db /data/store.db demo
           test -n "$(docker exec mf ls /keys)"
           in_db=$(docker exec mf python -c "import sqlite3; print(sqlite3.connect('/data/store.db').execute('SELECT COUNT(*) FROM content_keys WHERE key_material IS NOT NULL').fetchone()[0])")
           test "$in_db" = "0" || { echo "expected no keys in the database, found $in_db"; exit 1; }
-          curl -fsS -H "Authorization: Bearer $AMBERLOG_TOKEN" http://localhost:8765/api/overview -o /tmp/ov2.json
+          curl -fsS -H "Authorization: Bearer $MEMORY_FABRIC_TOKEN" http://localhost:8765/api/overview -o /tmp/ov2.json
           python -c "import json; d=json.load(open('/tmp/ov2.json')); assert d['total_memories'] > 0, d; print('dashboard sees', d['total_memories'], 'memories')"
 
       - name: Unauthenticated requests are refused
@@ -425,9 +425,9 @@ jobs:
       - uses: azure/setup-helm@v4
       - name: Lint and render the chart
         run: |
-          helm lint deploy/helm/amberlog --set dashboard.token=ci-token
-          helm template t deploy/helm/amberlog --set dashboard.token=ci-token > /tmp/out.yaml
-          helm template t deploy/helm/amberlog --set dashboard.token=ci-token \
+          helm lint deploy/helm/memory-fabric --set dashboard.token=ci-token
+          helm template t deploy/helm/memory-fabric --set dashboard.token=ci-token > /tmp/out.yaml
+          helm template t deploy/helm/memory-fabric --set dashboard.token=ci-token \
             --set agentApi.enabled=true --set agentApi.agentsSecret=agents \
             --set mode=regulated --set embedder=ollama:nomic-embed-text >> /tmp/out.yaml
           python3 -c "import yaml,sys; docs=[d for d in yaml.safe_load_all(open('/tmp/out.yaml')) if d]; kinds=sorted({d['kind'] for d in docs}); print(kinds); assert {'Deployment','Service','PersistentVolumeClaim','Secret'} <= set(kinds)"

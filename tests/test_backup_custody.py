@@ -9,9 +9,9 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog
-from amberlog.cli import main
-from amberlog.governance.erasure import DirectoryKeyProvider
+from memory_fabric import MemoryFabric
+from memory_fabric.cli import main
+from memory_fabric.governance.erasure import DirectoryKeyProvider
 
 
 def quiet(*argv: str) -> int:
@@ -24,7 +24,7 @@ class Custody(unittest.TestCase):
         self.tmp = Path(self.enterContext(TemporaryDirectory()))
         self.assertEqual(quiet("init", str(self.tmp / "memory")), 0)
         self.db, self.keys = self.tmp / "memory" / "store.db", self.tmp / "memory" / "keys"
-        f = Amberlog(str(self.db), key_provider=DirectoryKeyProvider(str(self.keys)))
+        f = MemoryFabric(str(self.db), key_provider=DirectoryKeyProvider(str(self.keys)))
         self.mid = f.remember("a", "Valve V7 opens below 4 bar.", scope="team")
         f.close()
         self.backup = self.tmp / "bk" / "store.bak"
@@ -36,7 +36,7 @@ class Custody(unittest.TestCase):
         dest = self.tmp / "restored"
         self.assertEqual(quiet("restore", str(self.backup), str(dest)), 0)
         self.assertTrue((dest / "config" / "agents.txt").is_file())
-        f = Amberlog(str(dest / "store.db"),
+        f = MemoryFabric(str(dest / "store.db"),
                          key_provider=DirectoryKeyProvider(str(dest / "keys")))
         self.addCleanup(f.close)
         self.assertEqual(f.get(self.mid).content, "Valve V7 opens below 4 bar.")

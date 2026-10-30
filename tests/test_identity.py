@@ -7,7 +7,7 @@ return one belonging to another tenant. That is testable and the tests here are
 the real assurance — one per path, because the paths are where this breaks.
 
 **Authentication** is a property of a *boundary*, and the boundary is the
-handle rather than the store. A caller holding a `Amberlog` can act as
+handle rather than the store. A caller holding a `MemoryFabric` can act as
 anyone; nothing in this file pretends otherwise, and
 `test_the_raw_fabric_is_still_unauthenticated` pins that honestly rather than
 leaving a reader to assume a perimeter that does not exist.
@@ -25,10 +25,10 @@ from dataclasses import replace
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.enforcement import WRONG_TENANT, RiskLevel, Verdict
-from amberlog.federation import offer
-from amberlog.identity import (
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.enforcement import WRONG_TENANT, RiskLevel, Verdict
+from memory_fabric.federation import offer
+from memory_fabric.identity import (
     DEFAULT_TENANT,
     ROLE_AGENT,
     ROLE_OPERATOR,
@@ -37,7 +37,7 @@ from amberlog.identity import (
     Principal,
     PrincipalRegistry,
 )
-from amberlog.model import MemoryType
+from memory_fabric.model import MemoryType
 
 
 class CredentialTests(unittest.TestCase):
@@ -139,7 +139,7 @@ class TenantIsolationTests(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()
         self.path = Path(self._tmp.name) / "shared.db"
-        self.fabric = Amberlog(self.path, auto_activate=True)
+        self.fabric = MemoryFabric(self.path, auto_activate=True)
         self.fabric.principals.register(
             "agent-acme", key=b"k-acme", tenant_id="tn_acme"
         )
@@ -238,7 +238,7 @@ class TenantIsolationTests(unittest.TestCase):
     def test_isolation_survives_a_rebuild(self) -> None:
         """The tenant is a projection of the log, not a runtime label."""
         self.fabric.close()
-        reopened = Amberlog(self.path, auto_activate=True)
+        reopened = MemoryFabric(self.path, auto_activate=True)
         try:
             self.assertEqual(reopened.tenant_of(self.acme_memory), "tn_acme")
             self.assertEqual(reopened.tenants(), {"tn_acme": 1})
@@ -274,7 +274,7 @@ class TenantIsolationTests(unittest.TestCase):
 
 
 def _permissive():
-    from amberlog.governance.firewall import (
+    from memory_fabric.governance.firewall import (
         Firewall,
         rule_capabilities_must_be_granted,
         rule_must_be_active,
@@ -300,7 +300,7 @@ class SdkTenancyTests(unittest.TestCase):
 
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()
-        self.fabric = Amberlog(
+        self.fabric = MemoryFabric(
             Path(self._tmp.name) / "s.db", auto_activate=True
         )
         self.fabric.principals.register("a", key=b"ka", tenant_id="tn_a")
@@ -311,7 +311,7 @@ class SdkTenancyTests(unittest.TestCase):
         self._tmp.cleanup()
 
     def test_a_verified_client_is_bound_to_its_principals_tenant(self) -> None:
-        from amberlog.sdk import agent_for
+        from memory_fabric.sdk import agent_for
 
         client_a = agent_for(
             self.fabric, self.fabric.principals.issue("a", now=self.fabric.now())
@@ -326,7 +326,7 @@ class SdkTenancyTests(unittest.TestCase):
         self.assertEqual(client_b.recall("valve"), [])
 
     def test_a_verified_client_cannot_fetch_across_a_tenant(self) -> None:
-        from amberlog.sdk import NotUsable, agent_for
+        from memory_fabric.sdk import NotUsable, agent_for
 
         client_a = agent_for(
             self.fabric, self.fabric.principals.issue("a", now=self.fabric.now())
@@ -339,7 +339,7 @@ class SdkTenancyTests(unittest.TestCase):
             client_b.fetch(memory_id)
 
     def test_an_unverifiable_credential_raises_rather_than_scoping_to_nothing(self) -> None:
-        from amberlog.sdk import agent_for
+        from memory_fabric.sdk import agent_for
 
         issued = self.fabric.principals.issue("a", now=self.fabric.now())
         with self.assertRaises(IdentityError):
@@ -348,7 +348,7 @@ class SdkTenancyTests(unittest.TestCase):
     def test_the_default_client_is_single_tenant_and_unchanged(self) -> None:
         """Every existing caller keeps working, which is the only acceptable
         answer for a boundary added to a shipped API."""
-        from amberlog.sdk import agent
+        from memory_fabric.sdk import agent
 
         client = agent(self.fabric, "legacy")
         self.assertEqual(client.tenant_id, DEFAULT_TENANT)
@@ -363,10 +363,10 @@ class FederationTenancyTests(unittest.TestCase):
         # The default firewall's value gate refuses an unevaluated memory, and
         # Phase B measured that gate down to 42 imports of a possible 630 — so
         # leaving it on here would mostly be testing the gate.
-        self.source = Amberlog(
+        self.source = MemoryFabric(
             self.dir / "a.db", auto_activate=True, firewall=_permissive()
         )
-        self.target = Amberlog(
+        self.target = MemoryFabric(
             self.dir / "b.db", auto_activate=True, firewall=_permissive()
         )
 
@@ -412,7 +412,7 @@ class LegacyStoreTests(unittest.TestCase):
     def test_a_store_written_before_tenancy_replays_into_the_default(self) -> None:
         """Simulated by stripping the field from the payload, which is exactly
         what an older writer produced."""
-        from amberlog.model import Memory
+        from memory_fabric.model import Memory
 
         payload = {
             "id": "01OLD",

@@ -17,11 +17,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from amberlog import Amberlog
-from amberlog.agent_api import load_agents
-from amberlog.cli import main
-from amberlog.governance.erasure import DirectoryKeyProvider
-from amberlog.posture import posture
+from memory_fabric import MemoryFabric
+from memory_fabric.agent_api import load_agents
+from memory_fabric.cli import main
+from memory_fabric.governance.erasure import DirectoryKeyProvider
+from memory_fabric.posture import posture
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -39,7 +39,7 @@ class Init(unittest.TestCase):
     def test_it_creates_a_sound_store_with_external_keys(self) -> None:
         self.assertEqual(self.code, 0, self.output)
         self.assertIn("Sound.", self.output)
-        fabric = Amberlog(os.path.join(self.dir, "store.db"),
+        fabric = MemoryFabric(os.path.join(self.dir, "store.db"),
                               key_provider=DirectoryKeyProvider(os.path.join(self.dir, "keys")))
         try:
             keys = next(c for c in posture(fabric)["controls"]
@@ -59,7 +59,7 @@ class Init(unittest.TestCase):
 
     def test_the_printed_mcp_configuration_works(self) -> None:
         config = json.loads(self.output[self.output.index("{"):self.output.index("\nNext:")])
-        args = config["mcpServers"]["amberlog"]["args"]
+        args = config["mcpServers"]["memory_fabric"]["args"]
         messages = [
             {"jsonrpc": "2.0", "id": 1, "method": "initialize",
              "params": {"protocolVersion": "2025-06-18", "capabilities": {},
@@ -68,7 +68,7 @@ class Init(unittest.TestCase):
             {"jsonrpc": "2.0", "id": 2, "method": "tools/list"},
         ]
         proc = subprocess.run(
-            [sys.executable, "-m", "amberlog", *args],
+            [sys.executable, "-m", "memory_fabric", *args],
             input="\n".join(json.dumps(m) for m in messages) + "\n",
             capture_output=True, text=True, timeout=60, cwd=str(ROOT))
         replies = [json.loads(line) for line in proc.stdout.splitlines() if line.strip()]
@@ -78,7 +78,7 @@ class Init(unittest.TestCase):
 
 class DoctorAlwaysSaysWhatToDo(unittest.TestCase):
     def test_every_warning_and_failure_carries_a_fix(self) -> None:
-        tree = ast.parse((ROOT / "src" / "amberlog" / "cli.py").read_text(encoding="utf-8"))
+        tree = ast.parse((ROOT / "src" / "memory_fabric" / "cli.py").read_text(encoding="utf-8"))
         missing = []
         for node in ast.walk(tree):
             if isinstance(node, ast.Call) and getattr(node.func, "id", "") == "Finding":

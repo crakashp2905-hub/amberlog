@@ -17,20 +17,20 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 def run_seed(seed: int, topology: str = "chain") -> dict[str, Any]:
-    from amberlog import Amberlog, LifecycleState
-    from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-    from amberlog.dispatcher import Dispatcher
-    from amberlog.federation import offer
-    from amberlog.governance.firewall import (
+    from memory_fabric import MemoryFabric, LifecycleState
+    from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+    from memory_fabric.dispatcher import Dispatcher
+    from memory_fabric.federation import offer
+    from memory_fabric.governance.firewall import (
         Firewall, rule_must_be_active, rule_restricted_stays_private,
         rule_capabilities_must_be_granted,
     )
-    from amberlog.transport import InProcessTransport
+    from memory_fabric.transport import InProcessTransport
 
     if topology not in {"chain", "star"}:
         raise ValueError("topology must be chain or star")
     rng = random.Random(seed)
-    stores = [Amberlog(":memory:", recognise_copies=False,
+    stores = [MemoryFabric(":memory:", recognise_copies=False,
                            firewall=Firewall(rules=[rule_must_be_active,
                                rule_restricted_stays_private, rule_capabilities_must_be_granted]))
               for _ in range(5)]

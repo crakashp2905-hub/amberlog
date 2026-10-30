@@ -4,7 +4,7 @@
 held-out seeds (5–9), which no run has used.** This follows from G4's
 registered finding: before detection, the store ranked the poison above the
 honest note in 35 of 40 poisoned questions. Mechanism:
-`amberlog/conflicts.py`. Harness: `experiments/g4b_conflicts.py`. G4's
+`memory-fabric/conflicts.py`. Harness: `experiments/g4b_conflicts.py`. G4's
 world, arms, prompt, k and models are unchanged, except that whether the
 attack or the honest note is written first is randomised per fact, for every
 arm.

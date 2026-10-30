@@ -20,8 +20,8 @@ URL = os.environ.get("MF_TEST_POSTGRES_URL")
 
 WRITER = r"""
 import sys
-from amberlog.eventlog import EventLog
-from amberlog.events import Event
+from memory_fabric.eventlog import EventLog
+from memory_fabric.events import Event
 log = EventLog(sys.argv[1])
 for i in range(int(sys.argv[3])):
     log.append(Event(type="Probe", ts=i, payload={"writer": sys.argv[2], "i": i}))
@@ -52,7 +52,7 @@ class TestConcurrentWriters(PostgresCase):
         """The reason to run on Postgres at all: writers that are not on one
         machine. They serialise on the table lock, so the sequence stays
         gapless and the hash chain stays a total order."""
-        from amberlog.eventlog import EventLog
+        from memory_fabric.eventlog import EventLog
 
         EventLog(self.url).close()  # schema first, so writers do not race it
         procs = [subprocess.Popen([sys.executable, "-c", WRITER, self.url, f"w{n}", "25"])
@@ -75,10 +75,10 @@ class TestSimultaneousStartup(PostgresCase):
         starting together failed with "tuple concurrently updated" -- 5 of 80
         in a local reproduction, and the first CI run of this file. Now it is
         created once, under the schema lock."""
-        from amberlog.eventlog import EventLog
+        from memory_fabric.eventlog import EventLog
 
         EventLog(self.url).close()
-        opener = "import sys; from amberlog.eventlog import EventLog; EventLog(sys.argv[1]).close()"
+        opener = "import sys; from memory_fabric.eventlog import EventLog; EventLog(sys.argv[1]).close()"
         for _ in range(3):
             procs = [subprocess.Popen([sys.executable, "-c", opener, self.url],
                                       stderr=subprocess.PIPE, text=True)
@@ -90,9 +90,9 @@ class TestSimultaneousStartup(PostgresCase):
 
 class TestAppendOnly(PostgresCase):
     def test_update_and_delete_are_refused_by_the_database(self) -> None:
-        from amberlog import Amberlog
+        from memory_fabric import MemoryFabric
 
-        fabric = Amberlog(self.url)
+        fabric = MemoryFabric(self.url)
         try:
             fabric.remember("ag", "a fact")
             for statement in ("UPDATE events SET ts = ts + 1", "DELETE FROM events",
@@ -106,7 +106,7 @@ class TestAppendOnly(PostgresCase):
 
 class TestOperations(PostgresCase):
     def cli(self, *args: str) -> subprocess.CompletedProcess:
-        return subprocess.run([sys.executable, "-m", "amberlog", "--db", *args],
+        return subprocess.run([sys.executable, "-m", "memory_fabric", "--db", *args],
                               capture_output=True, text=True, timeout=120)
 
     def test_doctor_reports_sound(self) -> None:
@@ -121,7 +121,7 @@ class TestOperations(PostgresCase):
         self.assertIn("pg_dump", done.stdout + done.stderr)
 
     def test_a_password_in_the_url_is_never_printed(self) -> None:
-        from amberlog.pgcompat import redact
+        from memory_fabric.pgcompat import redact
 
         secret = "s3cr3t-" + uuid.uuid4().hex
         self.assertNotIn(secret, redact(f"postgresql://user:{secret}@db.example:5432/mf"))
@@ -139,9 +139,9 @@ if __name__ == "__main__":
 
 BRANCH_WRITER = r"""
 import sys
-from amberlog import Amberlog
-from amberlog.branching import Branches, HeadMoved
-f = Amberlog(sys.argv[1], auto_activate=True, hold_suspicious=False)
+from memory_fabric import MemoryFabric
+from memory_fabric.branching import Branches, HeadMoved
+f = MemoryFabric(sys.argv[1], auto_activate=True, hold_suspicious=False)
 b = Branches(f)
 for n in range(int(sys.argv[3])):
     while True:
@@ -158,17 +158,17 @@ f.close()
 class TestConcurrentBranchCommits(PostgresCase):
     def test_processes_committing_to_one_branch_lose_nothing(self) -> None:
         """Compare-and-swap of a branch head across processes on Postgres."""
-        from amberlog import Amberlog
-        from amberlog.branching import Branches
+        from memory_fabric import MemoryFabric
+        from memory_fabric.branching import Branches
 
-        f = Amberlog(self.url)
+        f = MemoryFabric(self.url)
         Branches(f).create("shared", owner="w0", members=("w1", "w2"))
         f.close()
         procs = [subprocess.Popen([sys.executable, "-c", BRANCH_WRITER, self.url, f"w{n}", "5"])
                  for n in range(3)]
         for proc in procs:
             self.assertEqual(proc.wait(timeout=300), 0)
-        f = Amberlog(self.url)
+        f = MemoryFabric(self.url)
         try:
             history = Branches(f).history("shared")
             self.assertEqual(len(history), 15)

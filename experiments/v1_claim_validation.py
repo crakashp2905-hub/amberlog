@@ -32,7 +32,7 @@ import subprocess
 from pathlib import Path
 from typing import Any
 
-from amberlog import Amberlog, correction, validation
+from memory_fabric import MemoryFabric, correction, validation
 
 ROOT = Path(__file__).resolve().parents[1]
 SPLITS = {"dev": range(400, 403), "test": range(500, 510)}
@@ -57,7 +57,7 @@ def run_seed(seed: int, hold: bool = False) -> list[dict[str, Any]]:
     """`hold=False` is the registered configuration (every write goes live);
     `hold=True` is the shipped default, where a suspicious write is held."""
     rng = random.Random(seed)
-    f = Amberlog(":memory:", auto_activate=True, clock=Clock(), hold_suspicious=hold)
+    f = MemoryFabric(":memory:", auto_activate=True, clock=Clock(), hold_suspicious=hold)
     authors = [f"tech-{i}" for i in range(8)]
     facts = []
     used: set[str] = set()

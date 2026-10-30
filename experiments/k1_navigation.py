@@ -18,8 +18,8 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
 from experiments import longmemeval_bench as lme  # noqa: E402
-from amberlog import Amberlog  # noqa: E402
-from amberlog.navigation import navigate  # noqa: E402
+from memory_fabric import MemoryFabric  # noqa: E402
+from memory_fabric.navigation import navigate  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 K = 10
@@ -39,7 +39,7 @@ def run(instances: list[dict[str, Any]]) -> dict[str, dict[str, list[float]]]:
     for inst in instances:
         gold = {(sid, pos) for sid, s in zip(inst["haystack_session_ids"], inst["haystack_sessions"])
                 for pos, t in enumerate(s) if t.get("has_answer")}
-        f = Amberlog(":memory:", auto_activate=True, encrypt_content=False, recognise_copies=False,
+        f = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False, recognise_copies=False,
                          retrieval="lexical")
         try:
             mapping = lme._write_history(f, inst)

@@ -14,8 +14,8 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
-from amberlog import Amberlog
-from amberlog.claimcheck import ModelClaimChecker
+from memory_fabric import MemoryFabric
+from memory_fabric.claimcheck import ModelClaimChecker
 
 ROOT = Path(__file__).resolve().parent.parent
 SEEDS = (1, 2, 3, 4, 5)
@@ -74,7 +74,7 @@ def one_claim(arm: str, w: dict[str, Any], claim: dict[str, Any]) -> tuple[bool,
     checker = None
     if arm in ("haiku", "sonnet"):
         checker = ModelClaimChecker(f"claude-cli:{arm}")
-    f = Amberlog(":memory:", auto_activate=True, claim_checker=checker)
+    f = MemoryFabric(":memory:", auto_activate=True, claim_checker=checker)
     try:
         for text in w["established"]:
             f.remember("inspector", text, scope="team")

@@ -12,9 +12,9 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import LifecycleState, Amberlog
-from amberlog import mental_models as MM
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric import mental_models as MM
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
 
 
 class Fixture(unittest.TestCase):
@@ -22,7 +22,7 @@ class Fixture(unittest.TestCase):
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.path = Path(tmp.name) / "s.db"
-        self.fabric = Amberlog(self.path, auto_activate=True)
+        self.fabric = MemoryFabric(self.path, auto_activate=True)
         self.addCleanup(lambda: self.fabric.close())
         self.models = MM.MentalModels(self.fabric)
         f = self.fabric
@@ -101,7 +101,7 @@ class TestRefresh(Fixture):
         self.assertEqual(self.models.status("tugs").state, MM.STALE)
 
     def test_an_unreviewed_refresh_is_pending_not_requeued(self) -> None:
-        fabric = Amberlog()  # no auto-activation: writes need review
+        fabric = MemoryFabric()  # no auto-activation: writes need review
         self.addCleanup(fabric.close)
         models = MM.MentalModels(fabric)
         fact = fabric.remember("ag", "Hoist 6 is rated 2 tonnes.")
@@ -131,7 +131,7 @@ class TestDurability(Fixture):
     def test_the_registry_survives_a_restart(self) -> None:
         self.fabric.quarantine(self.c2, reason="wrong", basis="contradicted")
         self.fabric.close()
-        self.fabric = Amberlog(self.path, auto_activate=True)
+        self.fabric = MemoryFabric(self.path, auto_activate=True)
         models = MM.MentalModels(self.fabric)
         self.assertEqual(models.model_ids(), ["cranes", "tugs"])
         self.assertEqual(models.refresh_queue(), ["cranes"])

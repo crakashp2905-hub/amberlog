@@ -39,16 +39,16 @@ import time
 from dataclasses import dataclass, field
 from typing import Sequence
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.adapters.ollama import (
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.adapters.ollama import (
     OllamaClient,
     OllamaEmbedder,
     OllamaError,
     OllamaMemoryAgent,
 )
-from amberlog.cli import configure_output
-from amberlog.federation import offer
-from amberlog.governance.firewall import (
+from memory_fabric.cli import configure_output
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
@@ -198,14 +198,14 @@ def run_trial(
 ) -> tuple[Trial, list[tuple[str, str]]]:
     """One trial. `shared_memories` lets the two arms reuse the same observer
     output, so the arms differ only in what the consolidator keeps active."""
-    consolidator = Amberlog(seed=7, embedder=embedder, firewall=federating_firewall())
+    consolidator = MemoryFabric(seed=7, embedder=embedder, firewall=federating_firewall())
     try:
         if shared_memories is None:
             # Two observers get the wrong lead, one gets the right one.
             leads = [wrong, wrong, truth]
             shared_memories = []
             for model, lead in zip(observer_models, leads):
-                store = Amberlog(
+                store = MemoryFabric(
                     seed=1, embedder=embedder, firewall=federating_firewall()
                 )
                 try:
@@ -231,7 +231,7 @@ def run_trial(
 
         imported: list[tuple[str, str]] = []
         for lead, content in shared_memories:
-            source = Amberlog(seed=2, embedder=embedder,
+            source = MemoryFabric(seed=2, embedder=embedder,
                                   firewall=federating_firewall())
             try:
                 mid = source.remember(
@@ -316,7 +316,7 @@ def generate_observations(
         for fault in faults:
             # Observers 0 and 1 get the wrong lead, observer 2 the right one.
             lead = truths[fault] if position == 2 else wrongs[fault]
-            store = Amberlog(seed=1, embedder=embedder,
+            store = MemoryFabric(seed=1, embedder=embedder,
                                  firewall=federating_firewall())
             try:
                 agent = OllamaMemoryAgent(

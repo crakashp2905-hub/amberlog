@@ -1,7 +1,7 @@
 # Governed decay view (OptMem-inspired compression)
 
 Pre-registration: [decay-view.md](../prereg/decay-view.md). Module:
-`amberlog/decay.py`. Harness: `experiments/decay_eval.py`. Budget 300
+`memory-fabric/decay.py`. Harness: `experiments/decay_eval.py`. Budget 300
 estimated tokens for every arm; 32 assets, 160 notes per seed. Raw:
 `decay-view.json` (registered, seeds 1–5), `decay-view-posthoc.json`
 (repaired, same seeds), `decay-view-confirm.json` (repaired, seeds 6–10).

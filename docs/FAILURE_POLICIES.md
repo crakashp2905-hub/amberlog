@@ -2,7 +2,7 @@
 
 This matrix describes current behavior, not a claim that a database transaction
 can atomically commit an arbitrary external service's side effect. The decision
-and execution paths are in `src/amberlog/actions.py`, `enforcement.py`, and
+and execution paths are in `src/memory_fabric/actions.py`, `enforcement.py`, and
 `certificates.py`; regression evidence includes `tests/test_action_fence.py`,
 `tests/test_action_crash.py`, `tests/test_visibility_at_action.py`,
 `tests/test_certificates.py`, `tests/test_sdk.py` and `tests/test_identity.py`.

@@ -49,8 +49,8 @@ from typing import Any, Callable, Mapping, Sequence
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments.stats import report_ceiling  # noqa: E402
-from amberlog.relevance import ReasonCode  # noqa: E402
-from amberlog.vectors import HashingEmbedder, VectorIndex  # noqa: E402
+from memory_fabric.relevance import ReasonCode  # noqa: E402
+from memory_fabric.vectors import HashingEmbedder, VectorIndex  # noqa: E402
 
 BENCH_DIR = pathlib.Path(__file__).resolve().parent.parent / "research" / "bench"
 BENCHMARK = "relevance_v1"
@@ -208,7 +208,7 @@ def real_embedder():
         return _REAL_EMBEDDER
     _REAL_EMBEDDER_TRIED = True
     try:
-        from amberlog.adapters.ollama import OllamaClient, OllamaEmbedder
+        from memory_fabric.adapters.ollama import OllamaClient, OllamaEmbedder
 
         client = OllamaClient()
         available = client.available()
@@ -376,19 +376,19 @@ def insertion_order(corpus):
 
 
 def arm_current(case: Mapping[str, Any], k: int) -> list[str]:
-    """`Amberlog.retrieve()` exactly as it ships.
+    """`MemoryFabric.retrieve()` exactly as it ships.
 
     Built through the real store rather than reimplemented, so this arm cannot
     quietly diverge from the product. Memories are written with their labelled
     lifecycle state, so the store's own eligibility filter runs too.
     """
-    from amberlog import Amberlog
-    from amberlog.model import LifecycleState
+    from memory_fabric import MemoryFabric
+    from memory_fabric.model import LifecycleState
 
-    fabric = Amberlog(
+    fabric = MemoryFabric(
         ":memory:", auto_activate=True, encrypt_content=False,
         # No default here. `current` means "the product exactly as it ships",
-        # so it must follow `Amberlog`'s own default rather than carry a
+        # so it must follow `MemoryFabric`'s own default rather than carry a
         # copy of it — a hardcoded "hybrid" kept this arm reporting the old
         # ranking after the product default changed, which is the one thing
         # this arm exists not to do.
@@ -458,9 +458,9 @@ def _build_fabric(case: Mapping[str, Any], retrieval: str | None = None):
     inside the loop meant a retracted parent had no children yet to propagate
     to, so the store was left in a state the product never produces.
     """
-    from amberlog import Amberlog
+    from memory_fabric import MemoryFabric
 
-    fabric = Amberlog(
+    fabric = MemoryFabric(
         ":memory:", auto_activate=True, encrypt_content=False,
         **({"retrieval": retrieval} if retrieval else {}),
     )
@@ -491,7 +491,7 @@ def _build_fabric(case: Mapping[str, Any], retrieval: str | None = None):
 
 
 def arm_chain(case: Mapping[str, Any], k: int) -> list[str]:
-    """`Amberlog.reconstruct()` — bounded search for a connected chain.
+    """`MemoryFabric.reconstruct()` — bounded search for a connected chain.
 
     Scored through the same harness as every other arm, so its nDCG and
     sufficiency are comparable rather than computed by its own experiment.

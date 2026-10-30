@@ -1,7 +1,7 @@
 """C2 — which decisions genuinely depended on a corrected memory?
 
 Registered in `research/prereg/c2-decision-dependence.md` before this file
-and `amberlog/dependence.py` existed. Deterministic, known answers.
+and `memory_fabric/dependence.py` existed. Deterministic, known answers.
 
     python -m experiments.c2_dependence
 """
@@ -16,9 +16,9 @@ from pathlib import Path
 from typing import Any
 
 from experiments import stats
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.dependence import decisions_depending_on
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.dependence import decisions_depending_on
 
 ROOT = Path(__file__).resolve().parent.parent
 SEEDS = tuple(int(x) for x in sys.argv[1:]) or (1, 2, 3, 4, 5)
@@ -26,7 +26,7 @@ SEEDS = tuple(int(x) for x in sys.argv[1:]) or (1, 2, 3, 4, 5)
 
 def run_seed(seed: int) -> dict[str, Any]:
     rng = random.Random(f"c2/{seed}")
-    fabric = Amberlog(auto_activate=True, hold_suspicious=False)
+    fabric = MemoryFabric(auto_activate=True, hold_suspicious=False)
     try:
         root_of: dict[str, int] = {}
         group: dict[int, list[str]] = {}

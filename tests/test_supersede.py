@@ -5,13 +5,13 @@ from __future__ import annotations
 import time
 import unittest
 
-from amberlog import Amberlog
-from amberlog.dispatcher import Dispatcher
-from amberlog.federation import offer
-from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from memory_fabric import MemoryFabric
+from memory_fabric.dispatcher import Dispatcher
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from amberlog.model import LifecycleState, Scope
-from amberlog.transport import InProcessTransport, PeerRegistry
+from memory_fabric.model import LifecycleState, Scope
+from memory_fabric.transport import InProcessTransport, PeerRegistry
 
 
 def permissive() -> Firewall:
@@ -21,8 +21,8 @@ def permissive() -> Firewall:
 
 class Supersede(unittest.TestCase):
     def setUp(self) -> None:
-        self.origin = Amberlog(":memory:", firewall=permissive(), auto_activate=True)
-        self.recipient = Amberlog(":memory:", firewall=permissive())
+        self.origin = MemoryFabric(":memory:", firewall=permissive(), auto_activate=True)
+        self.recipient = MemoryFabric(":memory:", firewall=permissive())
         self.addCleanup(self.origin.close)
         self.addCleanup(self.recipient.close)
         self.transport = InProcessTransport({self.recipient.store_id: self.recipient},

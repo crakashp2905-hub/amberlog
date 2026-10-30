@@ -1,16 +1,16 @@
 # Public SDK contract — 0.14 series
 
-Amberlog remains alpha. This contract describes the existing 0.14 surface; it
+Memory Fabric remains alpha. This contract describes the existing 0.14 surface; it
 does not turn experimental modules into stable APIs. The exact public method
-signatures are pinned in `tests/data/amberlog_api.json` and checked by
+signatures are pinned in `tests/data/memory-fabric_api.json` and checked by
 `tests/test_data_access_paths.py`. [API.md](API.md) is generated from the code;
 [STABILITY.md](../STABILITY.md) defines the promises of each module tier.
 
 ## Supported behavior
 
-- `from amberlog import Amberlog` is the canonical store entry point. Construct
+- `from memory_fabric import MemoryFabric` is the canonical store entry point. Construct
   it with an existing SQLite file or the documented optional PostgreSQL URL.
-- `amberlog.sdk.agent` returns an agent-scoped client. Agent reads use `recall`,
+- `memory_fabric.sdk.agent` returns an agent-scoped client. Agent reads use `recall`,
   `fetch` and `verify`; they must not be replaced by raw operator inspection.
 - Raw store `get`, history and inspection can expose withdrawn records to an
   authorized operator. They are not agent authorization or action credentials.
@@ -33,7 +33,7 @@ contracts. Keep schema compatibility separate from Python API compatibility.
 
 ## Qualification
 
-The source layout is `src/amberlog`; the installed import remains `amberlog`.
+The source layout is `src/memory_fabric`; the installed import remains `memory-fabric`.
 `tools/check_typed_consumer.py` installs a built wheel outside the checkout,
 clears `PYTHONPATH`/`PYTHONHOME`, verifies the import comes from that installation,
 accepts a strictly typed consumer and rejects an incompatible assignment.
@@ -49,4 +49,4 @@ Legacy import aliases remain deliberately excluded under the owner's complete
 rename decision. The prior distribution identity is not controlled by this
 project; a shim could shadow unrelated software. Existing data compatibility,
 authenticated pre-migration vectors and the upgrade/rollback drill remain the
-migration contract. See [MIGRATING_TO_AMBERLOG.md](MIGRATING_TO_AMBERLOG.md).
+migration contract. See [MIGRATING_TO_MEMORY_FABRIC.md](MIGRATING_TO_MEMORY_FABRIC.md).

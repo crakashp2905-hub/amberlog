@@ -1,4 +1,4 @@
-# L1 — a long-running task: a plain vector store against Amberlog
+# L1 — a long-running task: a plain vector store against Memory Fabric
 
 Registered in [l1-long-running-task.md](../prereg/l1-long-running-task.md) before the
 harness existed. Amendment 1 (L1′): recall in the words of the job, fresh seeds. Produced by `python -m experiments.l1_long_running --amended` at commit

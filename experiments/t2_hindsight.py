@@ -46,7 +46,7 @@ SPLITS = {"dev": range(100, 101), "test": range(10, 15)}
 
 
 def hindsight_notes(fabric: FabricArm, site: str, question: str, mode: str) -> list[str]:
-    from amberlog import hindsight
+    from memory_fabric import hindsight
 
     store = fabric.sites[site]
     hits = store.retrieve(fabric.agent(site), question, k=K).exposed
@@ -153,7 +153,7 @@ def analyse(rows: list[dict[str, Any]], seeds: int) -> dict[str, Any]:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    from amberlog.adapters.ollama import OllamaClient
+    from memory_fabric.adapters.ollama import OllamaClient
 
     parser = argparse.ArgumentParser(description=(__doc__ or "").splitlines()[0])
     parser.add_argument("--split", choices=sorted(SPLITS), default="dev")

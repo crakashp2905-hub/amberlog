@@ -1,6 +1,6 @@
 """Folding another process's events gives the state a full replay gives.
 
-`Amberlog._catch_up` replaced a full `_replay` on every cross-process
+`MemoryFabric._catch_up` replaced a full `_replay` on every cross-process
 refresh, which was 95% of a contending agent's time in P12. The replacement is
 only correct if folding the new suffix onto the live projection reaches the
 same state as rebuilding from the whole log. That is checked here directly:
@@ -20,17 +20,17 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from amberlog import Amberlog
-from amberlog.fabric import FabricError
-from amberlog.governance.erasure import ERASED_MARKER
-from amberlog.model import LifecycleState
+from memory_fabric import MemoryFabric
+from memory_fabric.fabric import FabricError
+from memory_fabric.governance.erasure import ERASED_MARKER
+from memory_fabric.model import LifecycleState
 
 OPS = ("remember", "remember", "remember", "validate", "quarantine", "release",
        "forget", "revise", "derive", "challenge", "erase", "retrieve", "retrieve",
        "outcome")
 
 
-def _searchable(fabric: Amberlog) -> dict[str, frozenset[str]]:
+def _searchable(fabric: MemoryFabric) -> dict[str, frozenset[str]]:
     """The lexical index, restricted to memories retrieval can return.
 
     A live process unindexes a memory it deprecates or erases, while a replay
@@ -53,8 +53,8 @@ class CatchUpEqualsReplay(unittest.TestCase):
         rng = random.Random(seed)
         with tempfile.TemporaryDirectory() as tmp:
             path = str(Path(tmp) / "store.db")
-            handles = [Amberlog(path, auto_activate=True, seed=seed),
-                       Amberlog(path, auto_activate=True, seed=seed + 1)]
+            handles = [MemoryFabric(path, auto_activate=True, seed=seed),
+                       MemoryFabric(path, auto_activate=True, seed=seed + 1)]
             ids: list[str] = []
             episodes: list[str] = []
             for step in range(steps):
@@ -98,7 +98,7 @@ class CatchUpEqualsReplay(unittest.TestCase):
                     pass  # an operation the current state refuses is not a failure
             live = handles[0]
             live.refresh()
-            fresh = Amberlog(path, auto_activate=True)
+            fresh = MemoryFabric(path, auto_activate=True)
             try:
                 self.assertEqual(live.log.head_seq, fresh.log.head_seq)
                 for name, value in vars(fresh.state).items():
@@ -119,21 +119,21 @@ class CatchUpEqualsReplay(unittest.TestCase):
     def test_catch_up_folds_only_the_suffix(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             path = str(Path(tmp) / "store.db")
-            a = Amberlog(path, auto_activate=True)
-            b = Amberlog(path, auto_activate=True)
+            a = MemoryFabric(path, auto_activate=True)
+            b = MemoryFabric(path, auto_activate=True)
             try:
                 for i in range(20):
                     a.remember("a", f"fact {i} about pump {i}")
                 b.refresh()
                 a.remember("a", "one more fact about valve 9")
                 calls = {"replay": 0}
-                original = Amberlog._replay
-                Amberlog._replay = lambda self: (calls.__setitem__("replay", 1),  # type: ignore[method-assign]
+                original = MemoryFabric._replay
+                MemoryFabric._replay = lambda self: (calls.__setitem__("replay", 1),  # type: ignore[method-assign]
                                                      original(self))[1]
                 try:
                     folded = b._catch_up()
                 finally:
-                    Amberlog._replay = original  # type: ignore[method-assign]
+                    MemoryFabric._replay = original  # type: ignore[method-assign]
                 self.assertEqual(calls["replay"], 0)
                 self.assertLessEqual(folded, 3, "only the new events are read")
                 self.assertTrue(any("valve" in m.content for m in b.state.memories.values()))

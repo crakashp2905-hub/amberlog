@@ -1,4 +1,4 @@
-"""L1 — a long-running task: a plain vector store against Amberlog.
+"""L1 — a long-running task: a plain vector store against MemoryFabric.
 
 Registered in `research/prereg/l1-long-running-task.md` before this file
 existed. Deterministic; known answers.
@@ -17,9 +17,9 @@ import sys
 from pathlib import Path
 from typing import Any, Callable
 
-from amberlog import Amberlog, correction
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.vectors import LexicalIndex
+from memory_fabric import MemoryFabric, correction
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.vectors import LexicalIndex
 
 ROOT = Path(__file__).resolve().parent.parent
 SEEDS = (1, 2, 3, 4, 5)
@@ -119,7 +119,7 @@ class VectorArm:
 class FabricArm:
     def __init__(self, lineage: bool) -> None:
         self.lineage = lineage
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.gate = ActionGate(self.f, ActionPolicy(
             tools={"set": ToolRule("set")}, grants={w: frozenset({"set"}) for w in WORKERS}))
         self.original: dict[str, str] = {}
@@ -282,7 +282,7 @@ def main() -> int:
 
     def mark(arm: str, key: str) -> str:
         return ("pass" if v[arm][key] else "fail") if arm in v else "n/a"
-    (out / f"{name}.md").write_text(f"""# L1 — a long-running task: a plain vector store against Amberlog
+    (out / f"{name}.md").write_text(f"""# L1 — a long-running task: a plain vector store against MemoryFabric
 
 Registered in [l1-long-running-task.md](../prereg/l1-long-running-task.md) before the
 harness existed. {"Amendment 1 (L1′): recall in the words of the job, fresh seeds. " if AMENDED else ""}Produced by `python -m experiments.l1_long_running{" --amended" if AMENDED else ""}` at commit

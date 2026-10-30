@@ -1,8 +1,8 @@
 """A running fabric must see what other processes wrote to the same log.
 
-Each `Amberlog` folds its own writes into an in-memory projection. Before
+Each `MemoryFabric` folds its own writes into an in-memory projection. Before
 this was fixed, nothing folded anyone else's: an operator ran
-`amberlog quarantine` from a terminal while an MCP server, an app or the
+`memory_fabric quarantine` from a terminal while an MCP server, an app or the
 dashboard was running, and the running process went on recalling the withdrawn
 memory until it restarted. A fresh process said `quarantined`; the live one
 served it. That breaks the guarantee the project is built on -- a known-invalid
@@ -10,7 +10,7 @@ version is never served -- for exactly the deployment shape the MCP server and
 the dashboard create. Found while setting up the live Claude-over-MCP run.
 
 The other writer here is a real second process through the real CLI, because a
-second `Amberlog` in this process would share nothing that matters less
+second `MemoryFabric` in this process would share nothing that matters less
 than the thing under test.
 """
 
@@ -22,16 +22,16 @@ import sys
 import tempfile
 import unittest
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.enforcement import RiskLevel
-from amberlog.sdk import agent, operator
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.enforcement import RiskLevel
+from memory_fabric.sdk import agent, operator
 
 CONTENT = "E01 at coastal sites: swap the pilot cable before anything else."
 
 
 def _cli(db: str, *args: str) -> subprocess.CompletedProcess:
     return subprocess.run(
-        [sys.executable, "-m", "amberlog", "--db", db, *args],
+        [sys.executable, "-m", "memory_fabric", "--db", db, *args],
         capture_output=True, text=True, timeout=60,
     )
 
@@ -41,7 +41,7 @@ class CrossProcessCase(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.db = os.path.join(self.tmp.name, "store.db")
-        self.fabric = Amberlog(self.db)
+        self.fabric = MemoryFabric(self.db)
         self.addCleanup(self.fabric.close)
         self.agent = agent(self.fabric, "ag_live")
         self.memory_id = self.agent.remember(CONTENT)
@@ -83,7 +83,7 @@ class TestARunningFabricSeesAnotherProcessesRetraction(CrossProcessCase):
         self.assertIs(self.fabric.lifecycle_of(self.memory_id),
                       LifecycleState.QUARANTINED)
         self.assertIn(second, self.fabric.state.memories)
-        reopened = Amberlog(self.db)
+        reopened = MemoryFabric(self.db)
         try:
             self.assertEqual(set(reopened.state.memories), set(self.fabric.state.memories))
         finally:

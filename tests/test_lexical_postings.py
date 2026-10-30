@@ -6,8 +6,8 @@ import math
 import random
 import unittest
 
-from amberlog import Amberlog
-from amberlog.vectors import LexicalIndex
+from memory_fabric import MemoryFabric
+from memory_fabric.vectors import LexicalIndex
 
 WORDS = "pump valve boiler seal bar pressure leak rotterdam porto night shift handover p1 p2 p3 v7".split()
 
@@ -49,7 +49,7 @@ class Equivalence(unittest.TestCase):
 
 class ChangeTracking(unittest.TestCase):
     def test_every_transition_reaches_the_index(self) -> None:
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         mid = f.remember("a", "Valve V7 opens at 3 bar.", scope="team")
         f.revise(mid, "Valve V7 opens at 4 bar.", agent_id="a", reason="r")

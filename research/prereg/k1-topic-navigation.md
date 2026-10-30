@@ -6,7 +6,7 @@ tree (`navigation.py`) existed.
 ## 1. Question
 
 Sarvam's knowledge fabric reports large gains from letting agents *walk* a
-compiled structure instead of retrieving passages. Amberlog already
+compiled structure instead of retrieving passages. Memory Fabric already
 groups memories into named topics for its map. Does entering through a topic
 find the evidence lexical search misses?
 

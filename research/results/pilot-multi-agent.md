@@ -6,7 +6,7 @@ versions kept: [v1](pilot-multi-agent-v1-validate-only.json),
 [v2](pilot-multi-agent-v2-before-verify-fix.json). A deployment rehearsal, not an
 experiment: there are no thresholds, and the point is the record of what failed.
 
-The setup: one `amberlog agent-api` process and three Claude agents (Claude Code
+The setup: one `memory-fabric agent-api` process and three Claude agents (Claude Code
 headless, `curl` only), each with its own credential. **Inspector** stores facts
 from field notes. A reviewer script validates them. **Planner** answers a
 maintenance question from memory. **Operator** withdraws the relief-setting fact

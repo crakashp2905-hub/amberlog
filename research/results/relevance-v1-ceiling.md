@@ -75,7 +75,7 @@ ranking improves agent outcomes". That needs R6.
 
 ## 3. The shipping retrieval path is the weakest real arm
 
-`current` — `Amberlog.retrieve()` exactly as it ships — scores **0.728 on
+`current` — `Memory Fabric.retrieve()` exactly as it ships — scores **0.728 on
 dev and 0.485 on test**, tying `vector` because it *is* vector retrieval over a
 hashing embedder, and losing to a plain IDF-weighted token overlap by 5 points
 on dev and **32 points on test**.

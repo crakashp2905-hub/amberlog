@@ -34,27 +34,27 @@ from dataclasses import dataclass, field, asdict
 from pathlib import Path
 from typing import Sequence
 
-from amberlog import (
+from memory_fabric import (
     EpsilonGreedyPolicy,
     LifecycleState,
-    Amberlog,
+    MemoryFabric,
     MemoryType,
     TopKPolicy,
 )
-from amberlog.adapters.context import (
+from memory_fabric.adapters.context import (
     CLOSE as CONTEXT_CLOSE,
     INJECTION_PREAMBLE,
     OPEN as CONTEXT_OPEN,
     MemoryBlock,
     build_context,
 )
-from amberlog.adapters.ollama import (
+from memory_fabric.adapters.ollama import (
     OllamaClient,
     OllamaEmbedder,
     OllamaError,
 )
-from amberlog.cli import configure_output
-from amberlog.vectors import VectorIndex
+from memory_fabric.cli import configure_output
+from memory_fabric.vectors import VectorIndex
 
 from . import stats
 from . import depotworld as W
@@ -443,7 +443,7 @@ def run_fabric_arm(
     is the project's central claim reduced to one switch.
     """
     causal = arm == "fabric_causal"
-    fabric = Amberlog(
+    fabric = MemoryFabric(
         ":memory:",
         seed=seed,
         embedder=embedder,

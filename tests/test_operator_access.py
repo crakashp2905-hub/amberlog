@@ -17,12 +17,12 @@ import unittest
 import urllib.error
 import urllib.request
 
-from amberlog import Amberlog
-from amberlog.observability.auth import (
+from memory_fabric import MemoryFabric
+from memory_fabric.observability.auth import (
     AuthConfig, Authenticator, InsecureConfiguration, build_config,
     default_allowed_hosts, load_operators,
 )
-from amberlog.observability.server import build_server
+from memory_fabric.observability.server import build_server
 
 ALICE = "alice-" + "a" * 40
 BOB = "bob-" + "b" * 40
@@ -92,7 +92,7 @@ class TestAccessLog(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.tmp = tempfile.TemporaryDirectory()
         cls.log_path = os.path.join(cls.tmp.name, "access.jsonl")
-        cls.fabric = Amberlog(auto_activate=True, seed=1)
+        cls.fabric = MemoryFabric(auto_activate=True, seed=1)
         cls.mid = cls.fabric.remember("agent-a", "A memory worth protecting.")
         config = AuthConfig(token=None, allowed_hosts=default_allowed_hosts("127.0.0.1"),
                             operators={"alice": ALICE, "bob": BOB})

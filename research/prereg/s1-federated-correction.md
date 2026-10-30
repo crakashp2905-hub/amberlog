@@ -35,7 +35,7 @@ evidence still supports?
 
 ## 4. Design: CorrectionSim (deterministic, no model)
 
-Five stores with real `Amberlog` instances and the real dispatcher over an
+Five stores with real `Memory Fabric` instances and the real dispatcher over an
 in-process transport. Per seed (20 seeds): 12 facts written at random origins
 and shared to 2–4 other stores, some re-shared onward (one cycle per seed);
 1–3 corrections per fact at random times, two of them concurrent (the second

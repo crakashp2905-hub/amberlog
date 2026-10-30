@@ -35,16 +35,16 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog
+from memory_fabric import MemoryFabric
 
 WRITER = textwrap.dedent(
     """
     import json, sys, time
     sys.path.insert(0, {root!r})
-    from amberlog import Amberlog
+    from memory_fabric import MemoryFabric
 
     path, label, count, timeout = sys.argv[1], sys.argv[2], int(sys.argv[3]), int(sys.argv[4])
-    fabric = Amberlog(path, auto_activate=True, encrypt_content=False,
+    fabric = MemoryFabric(path, auto_activate=True, encrypt_content=False,
                           busy_timeout_ms=timeout)
     written, failures = 0, []
     try:
@@ -69,7 +69,7 @@ class ConcurrentWriters(unittest.TestCase):
         self.path = self.dir / "store.db"
         # Create the store first so the writers do not race on schema creation,
         # which is a separate question from racing on appends.
-        fabric = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        fabric = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         fabric.close()
         self.script = self.dir / "writer.py"
         self.script.write_text(
@@ -116,7 +116,7 @@ class ConcurrentWriters(unittest.TestCase):
         self.assertEqual(failures, [], "writers should wait, not fail")
         self.assertEqual(total, 80)
 
-        fabric = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        fabric = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         self.addCleanup(fabric.close)
         self.assertEqual(len(fabric.state.memories), 80)
 
@@ -130,7 +130,7 @@ class ConcurrentWriters(unittest.TestCase):
         processes = [self._spawn(f"w{i}", 15) for i in range(3)]
         self._collect(processes)
 
-        fabric = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        fabric = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         self.addCleanup(fabric.close)
         sequences = [event.seq for event in fabric.log.read()]
         self.assertEqual(sequences, sorted(sequences))
@@ -143,7 +143,7 @@ class ConcurrentWriters(unittest.TestCase):
         processes = [self._spawn(f"w{i}", 15) for i in range(3)]
         self._collect(processes)
 
-        fabric = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        fabric = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         self.addCleanup(fabric.close)
         result = fabric.log.chain.verify(fabric.log.read())
         self.assertTrue(result.ok, result.detail)
@@ -166,7 +166,7 @@ class ConcurrentWriters(unittest.TestCase):
         for failure in failures:
             self.assertIn("locked", failure.lower(), failure)
 
-        fabric = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        fabric = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         self.addCleanup(fabric.close)
         written = sum(r["written"] for r in results)
         self.assertEqual(len(fabric.state.memories), written)
@@ -188,7 +188,7 @@ class ContentionIsDeterministic(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         self.dir = Path(self._tmp.name)
         self.path = self.dir / "store.db"
-        fabric = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        fabric = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         fabric.close()
         self.script = self.dir / "one_write.py"
         self.ready = self.dir / "child-ready"
@@ -197,9 +197,9 @@ class ContentionIsDeterministic(unittest.TestCase):
                 """
                 import pathlib, sys
                 sys.path.insert(0, {root!r})
-                from amberlog import Amberlog
+                from memory_fabric import MemoryFabric
                 path, timeout, ready = sys.argv[1], int(sys.argv[2]), sys.argv[3]
-                fabric = Amberlog(path, auto_activate=True,
+                fabric = MemoryFabric(path, auto_activate=True,
                                       encrypt_content=False,
                                       busy_timeout_ms=timeout)
                 # Announced *after* the store is open and *before* the write, so
@@ -247,7 +247,7 @@ class ContentionIsDeterministic(unittest.TestCase):
         effect, since it is the only way to get a timeout *below* the 5 seconds
         `sqlite3.connect` provides by default.
         """
-        holder = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        holder = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         self.addCleanup(holder.close)
         manager = holder.log.transaction()
         manager.__enter__()
@@ -274,7 +274,7 @@ class ContentionIsDeterministic(unittest.TestCase):
         """
         import time
 
-        holder = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        holder = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         self.addCleanup(holder.close)
         manager = holder.log.transaction()
         manager.__enter__()
@@ -299,7 +299,7 @@ class ContentionIsDeterministic(unittest.TestCase):
         self.assertEqual(child.returncode, 0, err[-400:])
         self.assertEqual(out.strip().splitlines()[-1], "WROTE", out)
 
-        reopened = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        reopened = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         self.addCleanup(reopened.close)
         self.assertTrue(reopened.log.chain.verify(reopened.log.read()).ok)
 
@@ -311,7 +311,7 @@ class ReadersAreNotBlocked(unittest.TestCase):
         self._tmp = TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
         self.path = Path(self._tmp.name) / "store.db"
-        self.fabric = Amberlog(
+        self.fabric = MemoryFabric(
             self.path, auto_activate=True, encrypt_content=False
         )
         self.addCleanup(self.fabric.close)
@@ -354,7 +354,7 @@ class ReadersAreNotBlocked(unittest.TestCase):
             self.fabric.log._conn.execute("PRAGMA busy_timeout").fetchone()[0],
             5_000,
         )
-        other = Amberlog(":memory:", busy_timeout_ms=250)
+        other = MemoryFabric(":memory:", busy_timeout_ms=250)
         self.addCleanup(other.close)
         self.assertEqual(
             other.log._conn.execute("PRAGMA busy_timeout").fetchone()[0], 250

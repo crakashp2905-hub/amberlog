@@ -6,9 +6,9 @@ import sys
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog, LifecycleState
-from amberlog.docsource import import_document
-from amberlog.knowledge_compiler import compile_markdown
+from memory_fabric import MemoryFabric, LifecycleState
+from memory_fabric.docsource import import_document
+from memory_fabric.knowledge_compiler import compile_markdown
 
 
 def compile_doc(text, version="1"):
@@ -20,7 +20,7 @@ class CompilerTests(unittest.TestCase):
         with TemporaryDirectory() as directory:
             source = Path(directory) / "source.md"
             source.write_text("# Release\nReview every release.", encoding="utf-8")
-            command = [sys.executable, "-m", "amberlog", "--db", ":memory:",
+            command = [sys.executable, "-m", "memory_fabric", "--db", ":memory:",
                        "--json", "import-docs", str(source), "--format", "markdown"]
             missing = subprocess.run(command, capture_output=True, text=True)
             self.assertEqual(missing.returncode, 4, missing.stderr)
@@ -49,7 +49,7 @@ class CompilerTests(unittest.TestCase):
             compile_markdown("text", doc_id=" ", version="1")
 
     def test_compilation_does_not_approve_and_correction_contests_derivative(self):
-        fabric = Amberlog(":memory:")
+        fabric = MemoryFabric(":memory:")
         self.addCleanup(fabric.close)
         first = import_document(fabric, compile_doc("# Release\nReview every release."))
         mid = first.added[0]
@@ -63,7 +63,7 @@ class CompilerTests(unittest.TestCase):
         self.assertIs(fabric.get(second.added[0]).lifecycle_state, LifecycleState.CANDIDATE)
 
     def test_unchanged_section_does_not_write_another_memory(self):
-        fabric = Amberlog(":memory:")
+        fabric = MemoryFabric(":memory:")
         self.addCleanup(fabric.close)
         tree = compile_doc("# Release\nReview every release.")
         first = import_document(fabric, tree)
@@ -72,7 +72,7 @@ class CompilerTests(unittest.TestCase):
         self.assertEqual(second.added, [])
 
     def test_default_import_cannot_withdraw_another_tenants_document(self):
-        fabric = Amberlog(":memory:")
+        fabric = MemoryFabric(":memory:")
         self.addCleanup(fabric.close)
         other = import_document(fabric, compile_doc("# Release\nReview every release."),
                                 tenant_id="other", activate=True)
@@ -85,7 +85,7 @@ class ReviewRegressions(unittest.TestCase):
     """Edits that change no section's text withdraw nothing."""
 
     def setUp(self):
-        self.fabric = Amberlog(":memory:")
+        self.fabric = MemoryFabric(":memory:")
         self.addCleanup(self.fabric.close)
 
     def reimport(self, old, new):

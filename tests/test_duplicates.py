@@ -17,8 +17,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from amberlog import Amberlog, duplicates  # noqa: E402
-from amberlog.model import LifecycleState  # noqa: E402
+from memory_fabric import MemoryFabric, duplicates  # noqa: E402
+from memory_fabric.model import LifecycleState  # noqa: E402
 
 BULLETIN = ("Contractor bulletin CB-9: the inland quay is limited to 26 tonnes "
             "per square metre pending re-survey.")
@@ -78,7 +78,7 @@ class TestTheRule(unittest.TestCase):
 
 class TestInAStore(unittest.TestCase):
     def _fabric(self, **kw):
-        return Amberlog(":memory:", auto_activate=True,
+        return MemoryFabric(":memory:", auto_activate=True,
                             encrypt_content=False, retrieval="lexical", **kw)
 
     def test_a_copy_shares_the_original_source_root(self):
@@ -213,13 +213,13 @@ class TestInAStore(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = str(pathlib.Path(tmp) / "store.db")
-            first = Amberlog(path, auto_activate=True, encrypt_content=False)
+            first = MemoryFabric(path, auto_activate=True, encrypt_content=False)
             try:
                 r1 = first.remember(agent_id="a", content=BULLETIN)
                 r2 = first.remember(agent_id="b", content=COPY)
             finally:
                 first.close()
-            again = Amberlog(path, auto_activate=True, encrypt_content=False)
+            again = MemoryFabric(path, auto_activate=True, encrypt_content=False)
             try:
                 self.assertEqual(again.state.copy_of.get(r2), r1)
                 self.assertEqual(again.source_root(r2), again.source_root(r1))
@@ -232,7 +232,7 @@ class TestIndependentKnowledgeSurvives(unittest.TestCase):
     genuinely independent corroboration."""
 
     def test_an_independent_measurement_is_untouched(self):
-        fabric = Amberlog(":memory:", auto_activate=True,
+        fabric = MemoryFabric(":memory:", auto_activate=True,
                               encrypt_content=False, retrieval="lexical")
         try:
             r1 = fabric.remember(agent_id="a", content=BULLETIN)
@@ -249,7 +249,7 @@ class TestIndependentKnowledgeSurvives(unittest.TestCase):
             fabric.close()
 
     def test_a_conclusion_on_alternative_premises_survives_losing_one(self):
-        fabric = Amberlog(":memory:", auto_activate=True,
+        fabric = MemoryFabric(":memory:", auto_activate=True,
                               encrypt_content=False)
         try:
             a = fabric.remember(
@@ -289,18 +289,18 @@ class EncodingNoise(unittest.TestCase):
     }
 
     def test_each_variant_is_recognised_as_the_document(self) -> None:
-        from amberlog.duplicates import is_copy
+        from memory_fabric.duplicates import is_copy
 
         for name, variant in self.VARIANTS.items():
             with self.subTest(name):
                 self.assertTrue(is_copy(self.DOC, variant))
 
     def test_a_reingested_variant_of_a_withdrawn_document_arrives_contested(self) -> None:
-        from amberlog import LifecycleState, Amberlog
+        from memory_fabric import LifecycleState, MemoryFabric
 
         for name, variant in self.VARIANTS.items():
             with self.subTest(name):
-                fabric = Amberlog(auto_activate=True)
+                fabric = MemoryFabric(auto_activate=True)
                 try:
                     original = fabric.remember("a", self.DOC)
                     fabric.quarantine(original, reason="wrong torque", basis="contradicted")
@@ -312,7 +312,7 @@ class EncodingNoise(unittest.TestCase):
 
     def test_a_corrected_value_is_not_a_copy(self) -> None:
         """Normalisation must never merge distinct words: a correction stays new."""
-        from amberlog.duplicates import is_copy
+        from memory_fabric.duplicates import is_copy
 
         self.assertFalse(is_copy(self.DOC, self.DOC.replace("450", "420")))
 

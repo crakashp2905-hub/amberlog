@@ -33,7 +33,7 @@ def checkout_module(suffix: str) -> Any:
         sys.path.insert(0, str(ROOT))
     from experiments.checkout_namespace import load_from_checkout
 
-    checkout = Path(os.environ.get("AMBERLOG_EVAL_CHECKOUT", str(ROOT)))
+    checkout = Path(os.environ.get("MEMORY_FABRIC_EVAL_CHECKOUT", str(ROOT)))
     return load_from_checkout(checkout, suffix)
 
 
@@ -198,7 +198,7 @@ def withholding(out: str, lme_path: str, limit: str = "60") -> int:
     sys.path.insert(0, str(ROOT / "src"))
     sys.path.insert(0, str(ROOT))
     from experiments import longmemeval_bench as lme
-    from amberlog import Amberlog
+    from memory_fabric import MemoryFabric
 
     lme.DATA = Path(lme_path).parent
     lme.SPLITS["s"] = Path(lme_path).name
@@ -210,7 +210,7 @@ def withholding(out: str, lme_path: str, limit: str = "60") -> int:
             gold = {(sid, pos) for sid, sess in zip(inst["haystack_session_ids"],
                                                     inst["haystack_sessions"])
                     for pos, t in enumerate(sess) if t.get("has_answer")}
-            f = Amberlog(":memory:", auto_activate=True, encrypt_content=False,
+            f = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False,
                              recognise_copies=False, retrieval="lexical",
                              withhold_hostile_sources=on)
             try:

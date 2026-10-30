@@ -1,4 +1,4 @@
-# Critical Review — Distributed Cognitive Memory Ecology / Agent Amberlog
+# Critical Review — Distributed Cognitive Memory Ecology / Agent Memory Fabric
 
 - **Date:** 2026-09-27
 - **Subject:** the consolidated research + product document ("Distributed Cognitive Memory Ecology for Agentic Systems")
@@ -37,7 +37,7 @@
 | Memory firewall | Memory poisoning: AgentPoison (2024), MINJA (2025) | Defending against poisoning in the *federated* setting (a Sybil agent that inflates credit) |
 | Distributed layer (FSDP, ZeRO, gossip, compression) | Established systems work | Negligible research value for this project (see §6) |
 
-**Name collision:** "MemOS" and "MemoryOS" are already the names of 2025 papers and projects, and "Amberlog" is used in hardware (CXL amberlogs). Settle the name before anything is published.
+**Name collision:** "MemOS" and "MemoryOS" are already the names of 2025 papers and projects, and "Memory Fabric" is used in hardware (CXL memory-fabrics). Settle the name before anything is published.
 
 **What remains genuinely open (ranked):**
 1. Estimating memory value online, amortized and correctly for selection bias, in LLM agents.

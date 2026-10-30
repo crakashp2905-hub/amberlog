@@ -70,33 +70,33 @@ and execution. This is a proposed buyer/use case, not validated demand.
 
 | ID | Acceptance item | State | Evidence / remaining work |
 |---|---|---|---|
-| R05.01 | Publish installable amberlog wheel and source distribution | PARTIAL | `docs/AMBERLOG_MIGRATION_REPORT.md`, `tools/fresh_machine.py`. Wheel/sdist can be built and installed locally; index publication is not complete. |
+| R05.01 | Publish installable memory-fabric wheel and source distribution | PARTIAL | `docs/MEMORY_FABRIC_MIGRATION_REPORT.md`, `tools/fresh_machine.py`. Wheel/sdist can be built and installed locally; index publication is not complete. |
 | R05.02 | Verify PyPI package name and release ownership | EXTERNAL | `docs/PYPI_PUBLISHING.md`. No visible exact-name index project was found; account-side ownership and name rights are not verified. |
 | R05.03 | Implement secure GitHub OIDC Trusted Publishing | PARTIAL | `.github/workflows/publish-pypi.yml`, `docs/PYPI_PUBLISHING.md`. GitHub environments/reviewers/tag policies verified on 30 October; index-side publishers unverified and approval flags false. |
 | R05.04 | Provide first-class Python SDK with type hints | IMPLEMENTED | `tools/check_typed_consumer.py`, `docs/SDK_CONTRACTS_0.14.md`. Positive/negative typed consumer and clean import-origin checks added; qualification results recorded separately. |
 | R05.05 | Test MCP interoperability using an official client | IMPLEMENTED | `tests/test_mcp_official.py`. Official SDK 1.26.0 negotiates and checks isolation/late withdrawal locally. This is not a model-backed workflow. |
 | R05.06 | Validate LangGraph and OpenAI Agents SDK integration | IMPLEMENTED | `tests/test_framework_contracts.py`, `docs/guides/openai-agents.md`, `docs/guides/langgraph.md`. Real graph and SDK Runner contracts pass locally with positive/refusal/correction controls and deterministic local model output; no live-model or pilot claim. Dedicated CI added. |
 | R05.07 | Provide consistent CLI, HTTP and SDK semantics | PARTIAL | `tests/test_lifecycle_through_mcp.py`, `tests/test_agent_api.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
-| R05.08 | Ship an interactive 60-second demonstration | PARTIAL | `src/amberlog/tour.py`, `tests/test_first_run.py`. Interactive demo exists; external new-user onboarding observation is still required. |
-| R05.09 | Legacy import aliases during migration | EXCLUDED | `docs/MIGRATING_TO_AMBERLOG.md`. Intentionally excluded: retain the complete rename and data compatibility; avoid shadowing an unrelated distribution. |
-| R05.10 | Publish migration, troubleshooting and upgrade guides | IMPLEMENTED | `docs/MIGRATING_TO_AMBERLOG.md`, `docs/TROUBLESHOOTING.md`, `experiments/rollback_drill.py`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
+| R05.08 | Ship an interactive 60-second demonstration | PARTIAL | `src/memory_fabric/tour.py`, `tests/test_first_run.py`. Interactive demo exists; external new-user onboarding observation is still required. |
+| R05.09 | Legacy import aliases during migration | EXCLUDED | `docs/MIGRATING_TO_MEMORY_FABRIC.md`. Intentionally excluded: retain the complete rename and data compatibility; avoid shadowing an unrelated distribution. |
+| R05.10 | Publish migration, troubleshooting and upgrade guides | IMPLEMENTED | `docs/MIGRATING_TO_MEMORY_FABRIC.md`, `docs/TROUBLESHOOTING.md`, `experiments/rollback_drill.py`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
 ## 6. Control Center and operator experience (P1)
 
 | ID | Acceptance item | State | Evidence / remaining work |
 |---|---|---|---|
-| R06.01 | Show memory origin, lineage, status and confidence evidence | PARTIAL | `src/amberlog/observability/report.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
-| R06.02 | Expose correction propagation and pending delivery status | PARTIAL | `src/amberlog/observability/report.py`, `tests/test_observability.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
+| R06.01 | Show memory origin, lineage, status and confidence evidence | PARTIAL | `src/memory_fabric/observability/report.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
+| R06.02 | Expose correction propagation and pending delivery status | PARTIAL | `src/memory_fabric/observability/report.py`, `tests/test_observability.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R06.03 | Implement contested-memory review and approval workflow | PARTIAL | `tests/test_lifecycle_through_mcp.py`. Read-only dashboard is not a full authorized administrative review UI. |
 | R06.04 | Provide policy and tenant administration | PARTIAL | `tests/test_identity.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R06.05 | Support searchable, exportable audit trails | PARTIAL | `tests/test_access_log_chain.py`, `tests/test_observability.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
-| R06.06 | Expose system health, failures and resource metrics | PARTIAL | `src/amberlog/observability/report.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
+| R06.06 | Expose system health, failures and resource metrics | PARTIAL | `src/memory_fabric/observability/report.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R06.07 | Make failures actionable rather than opaque | PARTIAL | `docs/TROUBLESHOOTING.md`, `tests/test_reasons.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R06.08 | Test dashboard accessibility and browser security | PARTIAL | `tests/test_auth.py`. HTTP/browser-security tests exist; a complete accessibility audit remains open. |
 ## 7. Packaging, CI/CD and supply chain (P0)
 
 | ID | Acceptance item | State | Evidence / remaining work |
 |---|---|---|---|
-| R07.01 | Organize canonical code under src/amberlog | IMPLEMENTED | `pyproject.toml`, `MANIFEST.in`. Implementation moved to src/amberlog; import identity and schema remain unchanged. |
+| R07.01 | Organize canonical code under src/memory_fabric | IMPLEMENTED | `pyproject.toml`, `MANIFEST.in`. Implementation moved to src/memory_fabric; import identity and schema remain unchanged. |
 | R07.02 | Keep tests, experiments and datasets out of the production wheel | IMPLEMENTED | `tools/fresh_machine.py`, `.github/workflows/ci.yml`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
 | R07.03 | Run unit, integration, security and contract tests in CI | PARTIAL | `.github/workflows/ci.yml`. Main protection verified: 33 required CI contexts including official MCP and framework contracts, strict updates, administrators included, no force pushes/deletion; independent review remains separate. |
 | R07.04 | Test supported Python and operating-system matrix | IMPLEMENTED | `.github/workflows/ci.yml`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
@@ -113,7 +113,7 @@ and execution. This is a proposed buyer/use case, not validated demand.
 | R08.01 | Compare against ordinary shared memory and vector retrieval | PARTIAL | `research/results/local-three-agent.json`. Strong shared metadata recheck matches oracle in the scripted study; external vector/model comparisons remain separate. |
 | R08.02 | Run real multi-agent workflows with changing evidence | EXTERNAL | `docs/LOCAL_AGENT_AUDIT.md`. Needs a real held-out workflow and changing evidence, not scripted-role substitution. |
 | R08.03 | Measure unsafe actions and false blocking together | IMPLEMENTED | `research/results/local-three-agent.json`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
-| R08.04 | Evaluate abstention and incomplete evidence chains | PARTIAL | `src/amberlog/chains.py`, `tests/test_abstention_premise.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
+| R08.04 | Evaluate abstention and incomplete evidence chains | PARTIAL | `src/memory_fabric/chains.py`, `tests/test_abstention_premise.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R08.05 | Benchmark LongMemEval and external retrieval datasets | PARTIAL | `benchmarks/registry.json`, `research/results/BENCHMARK_SCOREBOARD.md`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R08.06 | Measure prompt-injection and poisoning resistance | PARTIAL | `docs/SECURITY_REVIEW.md`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R08.07 | Test adversarial retractions, copies and contradictory sources | IMPLEMENTED | `tests/test_properties.py`, `tests/test_properties_state_machines.py`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
@@ -124,11 +124,11 @@ and execution. This is a proposed buyer/use case, not validated demand.
 
 | ID | Acceptance item | State | Evidence / remaining work |
 |---|---|---|---|
-| R09.01 | Publish reference Docker and PostgreSQL deployment | PARTIAL | `Dockerfile`, `deploy/helm/amberlog/Chart.yaml`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
+| R09.01 | Publish reference Docker and PostgreSQL deployment | PARTIAL | `Dockerfile`, `deploy/helm/memory-fabric/Chart.yaml`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R09.02 | Provide backup, restore and disaster-recovery procedures | PARTIAL | `docs/OPERATIONS.md`, `tests/test_backup.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R09.03 | Support secure TLS, reverse proxy and secrets management | PARTIAL | `DEPLOYMENT.md`, `tests/test_auth.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R09.04 | Add SSO/OIDC and enterprise authorization where required | PARTIAL | `docs/KNOWN_GAPS.md`. Enterprise SSO/OIDC is demand-gated; source-level credentials do not establish it. |
-| R09.05 | Provide OpenTelemetry-compatible observability | PARTIAL | `src/amberlog/adapters/tracing.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
+| R09.05 | Provide OpenTelemetry-compatible observability | PARTIAL | `src/memory_fabric/adapters/tracing.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R09.06 | Test upgrades and rollback with persistent customer data | EXTERNAL | `experiments/rollback_drill.py`. Synthetic real-version rollback passes; no customer-data staged qualification is claimed. |
 | R09.07 | Document data residency and data-flow boundaries | PARTIAL | `docs/product/LEGAL_PRIVACY_REVIEW_BRIEF.md`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R09.08 | Define support, escalation and incident ownership | PARTIAL | `docs/OPERATIONS.md`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
@@ -137,7 +137,7 @@ and execution. This is a proposed buyer/use case, not validated demand.
 
 | ID | Acceptance item | State | Evidence / remaining work |
 |---|---|---|---|
-| R10.01 | Finalize Amberlog name, domain and trademark screening | EXTERNAL | `docs/PYPI_PUBLISHING.md`. Candidate retained by owner; existing brand usage remains documented without trademark clearance. |
+| R10.01 | Finalize Memory Fabric name, domain and trademark screening | EXTERNAL | `docs/PYPI_PUBLISHING.md`. Candidate retained by owner; existing brand usage remains documented without trademark clearance. |
 | R10.02 | Define ideal customer profile and primary use case | PARTIAL | `docs/product/decisions/2026-10-28-packaging-options.md`. Packaging/buyer options are hypotheses; customer discovery and owner selection remain needed. |
 | R10.03 | Rewrite README around a demonstrated failure and solution | PARTIAL | `README.md`, `examples/wrong_memory_demo.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R10.04 | Publish architecture, quickstart, API and integration docs | PARTIAL | `docs/README.md`, `docs/API.md`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |

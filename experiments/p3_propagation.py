@@ -171,9 +171,9 @@ class Context:
 
 
 def build_context(case: Mapping[str, Any]) -> Context:
-    from amberlog import Amberlog
+    from memory_fabric import MemoryFabric
 
-    fabric = Amberlog(
+    fabric = MemoryFabric(
         ":memory:", auto_activate=True, encrypt_content=False, retrieval="lexical"
     )
     store_id: dict[str, str] = {}

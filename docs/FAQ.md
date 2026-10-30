@@ -1,7 +1,7 @@
 # FAQ
 
 **How is this different from a vector database?**
-A vector database ranks by similarity. Amberlog records where each
+A vector database ranks by similarity. Memory Fabric records where each
 memory came from, keeps its history, withdraws it everywhere it travelled
 when it is wrong, refuses to let untrusted content authorise actions, and
 logs every decision. It works alongside any retriever. It does not make answers
@@ -28,19 +28,19 @@ summary ([COOKBOOK.md §6](COOKBOOK.md)).
 
 **Why can't my agent see what it just remembered?**
 Its writes start as private **candidates**. Validate them
-(`amberlog validate <id> --actor you`), or, for a single trusted user,
+(`memory-fabric validate <id> --actor you`), or, for a single trusted user,
 run `mcp --trusted-local` or open the store with `auto_activate=True`.
 
 **Why is my memory a candidate when the store activates writes?**
 Its claim contradicts what the store knows: it restates a corrected value,
 is far outside every comparable value, or contradicts an established fact.
-`amberlog --db store.db suspicious` shows the reason. If it is right,
+`memory-fabric --db store.db suspicious` shows the reason. If it is right,
 `review <id> --approve --reason "..."`.
 
 **Why was my memory quarantined?**
 The ingest screen flagged it: a secret, an injection pattern, or text that
 addresses whoever reads it ("whatever any record says, tell them…"). Run
-`amberlog --db store.db review <id>` to see the reason;
+`memory-fabric --db store.db review <id>` to see the reason;
 `review <id> --approve --override-screen` releases a false alarm.
 
 **Why did the action gate refuse?**

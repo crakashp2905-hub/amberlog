@@ -6,7 +6,7 @@ on:
   push:
     paths:
       - experiments/k1_navigation.py
-      - src/amberlog/navigation.py
+      - src/memory_fabric/navigation.py
       - .github/workflows/k1-eval.yml
 
 permissions:

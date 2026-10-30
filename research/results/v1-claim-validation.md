@@ -31,7 +31,7 @@ Raw: [registered configuration](v1-claim-validation-test.json),
 ## The shipped configuration
 
 The registered run let every write go live. The product now holds a
-suspicious write as a candidate (`Amberlog(hold_suspicious=True)`, the
+suspicious write as a candidate (`MemoryFabric(hold_suspicious=True)`, the
 default). Held poisons then drop out of the comparison set for later
 writes, which moved one borderline value: **1 of 450 honest writes**
 flagged (0.002), a new author's unusual value. Detection is unchanged

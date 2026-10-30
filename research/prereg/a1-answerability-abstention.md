@@ -1,7 +1,7 @@
 # Pre-registration — A1: answerability verdicts and abstention policies with a real model
 
 **Registered 2026-10-24**, before `experiments/a1_abstention.py` existed and
-before any model call. `amberlog/answerability.py` exists and has unit
+before any model call. `memory-fabric/answerability.py` exists and has unit
 tests. It was not tuned on the world below, which does not exist yet.
 
 ## 1. Question

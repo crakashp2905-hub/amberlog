@@ -22,7 +22,7 @@ processes and, in a tenth, the same workload under `cProfile`
 | | before | after |
 |---|---|---|
 | profiled agent's operation time, 20 operations | 7,012 ms | **540 ms** |
-| of which `Amberlog._replay` | 6,855 ms (95%) | — |
+| of which `Memory Fabric._replay` | 6,855 ms (95%) | — |
 | full replays | 30 | 1 (opening the store) |
 | events re-read by replays | 38,529 | 202 |
 | memories re-indexed | 7,017 | — |

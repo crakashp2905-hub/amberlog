@@ -17,7 +17,7 @@ So the guarantee is placed where the irreversible damage is:
 > **Any event ever written by a released version replays on every later version of
 > the same major series.**
 
-`SCHEMA_VERSION` in `amberlog/model.py` is the authority on the schema;
+`SCHEMA_VERSION` in `memory-fabric/model.py` is the authority on the schema;
 the version in `pyproject.toml` is what `pip` sees. They are equal today, at
 `0.14.0`, and the invariant that is actually tested
 (`test_package_version_is_not_behind_the_schema`) is the weaker one:
@@ -80,7 +80,7 @@ live agents rather than only RuleWorld. Neither is true today.
 ## Checking a store
 
 ```bash
-amberlog --db store.db overview
+memory-fabric --db store.db overview
 ```
 
 The `schema` row names the installed version and, when they differ, every version

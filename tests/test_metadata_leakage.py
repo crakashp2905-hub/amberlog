@@ -11,15 +11,15 @@ from __future__ import annotations
 import unittest
 from typing import Any, Callable
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
 
 CONFIDENTIAL = "Tenant A plans to acquire Contoso for 4.2 billion in Q3."
 MINE = "Tenant B notes: Contoso is a supplier of valves."
 
 
-def world(with_secret: bool) -> tuple[Amberlog, Any, str, str]:
-    f = Amberlog(":memory:", auto_activate=True, conceal_cross_tenant=True, seed=7)
+def world(with_secret: bool) -> tuple[MemoryFabric, Any, str, str]:
+    f = MemoryFabric(":memory:", auto_activate=True, conceal_cross_tenant=True, seed=7)
     theirs = (f.remember("a", CONFIDENTIAL, tenant_id="tn_a", scope="team") if with_secret
               else "01NOTAREALMEMORYID00000000")
     view = f.for_tenant("tn_b", "b")

@@ -50,8 +50,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from experiments import checks  # noqa: E402
 from experiments import depotworld as W  # noqa: E402
 from experiments import phase_a_prime as PA  # noqa: E402
-from amberlog import Amberlog  # noqa: E402
-from amberlog.adapters.context import (  # noqa: E402
+from memory_fabric import MemoryFabric  # noqa: E402
+from memory_fabric.adapters.context import (  # noqa: E402
     CLOSE, INJECTION_PREAMBLE, OPEN, build_context,
 )
 
@@ -86,7 +86,7 @@ class Trial:
     prompt_tokens: dict[str, int] = field(default_factory=dict)
 
 
-def render(kind: str, fabric: Amberlog, exposed: Sequence[Any],
+def render(kind: str, fabric: MemoryFabric, exposed: Sequence[Any],
            query: str) -> str:
     """One exposed set, four ways.
 
@@ -141,7 +141,7 @@ def run_seed(seed: int, client: Any, embedder: Any, model: str,
           f"{sum(1 for l in lessons if l.poisoned)} poisoned", flush=True)
 
     policy, estimator = PA._policy("shared_memory")
-    fabric = Amberlog(":memory:", seed=seed, embedder=embedder,
+    fabric = MemoryFabric(":memory:", seed=seed, embedder=embedder,
                           estimator=estimator, exposure_policy=policy)
     trials: list[Trial] = []
     try:
@@ -227,7 +227,7 @@ def paired(trials: Sequence[Trial], left: str, right: str,
 
 
 def run(seeds: int, episodes: int, model: str, verbose: bool) -> dict[str, Any]:
-    from amberlog.adapters.ollama import OllamaClient, OllamaEmbedder
+    from memory_fabric.adapters.ollama import OllamaClient, OllamaEmbedder
 
     client = OllamaClient()
     embedder = OllamaEmbedder(client=client)

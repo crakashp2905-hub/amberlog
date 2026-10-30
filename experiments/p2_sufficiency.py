@@ -297,9 +297,9 @@ class Context:
 
 
 def build_context(case: Mapping[str, Any]) -> Context:
-    from amberlog import Amberlog
+    from memory_fabric import MemoryFabric
 
-    fabric = Amberlog(":memory:", auto_activate=True, encrypt_content=False,
+    fabric = MemoryFabric(":memory:", auto_activate=True, encrypt_content=False,
                           retrieval="lexical")
     store_id, bench_id, retracted = {}, {}, set()
     for memory in rb.insertion_order(case["corpus"]):

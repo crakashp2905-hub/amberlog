@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from amberlog.connect import TARGETS, snippet, write
+from memory_fabric.connect import TARGETS, snippet, write
 
 
 class TestConnect(unittest.TestCase):
@@ -38,7 +38,7 @@ class TestConnect(unittest.TestCase):
         data = json.loads(path.read_text())
         self.assertEqual(data["mcpServers"]["other"], {"command": "x"})
         self.assertEqual(data["theme"], 1)
-        self.assertIn("cursor-alice", data["mcpServers"]["amberlog"]["args"])
+        self.assertIn("cursor-alice", data["mcpServers"]["memory-fabric"]["args"])
         self.assertTrue((path.parent / "mcp.json.bak").exists())
 
     def test_codex_toml_appends_once(self):
@@ -48,7 +48,7 @@ class TestConnect(unittest.TestCase):
         write("codex", "store.db", "codex")
         parsed = tomllib.loads(path.read_text())
         self.assertEqual(parsed["model"], "o4")
-        self.assertEqual(parsed["mcp_servers"]["amberlog"]["args"][-1], "codex")
+        self.assertEqual(parsed["mcp_servers"]["memory-fabric"]["args"][-1], "codex")
         with self.assertRaises(ValueError):
             write("codex", "store.db", "codex")
 

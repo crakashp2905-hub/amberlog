@@ -34,16 +34,16 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 
-from amberlog import Amberlog, WithdrawalBasis  # noqa: E402
-from amberlog.federation import offer  # noqa: E402
-from amberlog.governance.firewall import (  # noqa: E402
+from memory_fabric import MemoryFabric, WithdrawalBasis  # noqa: E402
+from memory_fabric.federation import offer  # noqa: E402
+from memory_fabric.governance.firewall import (  # noqa: E402
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from amberlog.outbox import now_ms  # noqa: E402
-from amberlog.protocol import PropagationState  # noqa: E402
+from memory_fabric.outbox import now_ms  # noqa: E402
+from memory_fabric.protocol import PropagationState  # noqa: E402
 
 CRASHED = 70
 
@@ -58,8 +58,8 @@ def permissive() -> Firewall:
     )
 
 
-def open_store(path: str) -> Amberlog:
-    return Amberlog(path, firewall=permissive(), auto_activate=True)
+def open_store(path: str) -> MemoryFabric:
+    return MemoryFabric(path, firewall=permissive(), auto_activate=True)
 
 
 def die() -> None:
@@ -71,7 +71,7 @@ def die() -> None:
 _HELD: list = []
 
 
-def open_transaction(fabric: Amberlog):
+def open_transaction(fabric: MemoryFabric):
     """Enter the store's real transaction and never leave it.
 
     `__enter__` by hand rather than a `with` block, because the point is to die
@@ -235,8 +235,8 @@ def dispatch_then_crash(path: str, *_: str) -> int:
     outcome. Its outbox row must still be owed, so a restart re-delivers rather
     than assuming the worst or the best.
     """
-    from amberlog.dispatcher import Dispatcher
-    from amberlog.transport import InProcessTransport
+    from memory_fabric.dispatcher import Dispatcher
+    from memory_fabric.transport import InProcessTransport
 
     fabric = open_store(path)
     rows = fabric.outbox.due(now_ms())

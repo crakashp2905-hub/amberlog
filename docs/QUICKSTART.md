@@ -7,10 +7,10 @@ Windows with Python 3.11 to 3.13.
 ## 1. Install (1 minute)
 
 ```bash
-git clone https://github.com/crakashp2905-hub/amberlog.git
-cd amberlog
+git clone https://github.com/crakashp2905-hub/memory_fabric.git
+cd memory-fabric
 pip install .
-amberlog init ./memory --mode personal     # or team (default), or regulated
+memory-fabric init ./memory --mode personal     # or team (default), or regulated
 ```
 
 `init` creates a store, keeps its keys outside it, registers one agent,
@@ -27,7 +27,7 @@ sources and fresh evidence. In Python: `presets.open_store(path, "team")` and
 name:
 
 ```bash
-pip uninstall amberlog
+pip uninstall memory-fabric
 ```
 
 Then delete `./memory` (the store and its keys) if you no longer want the
@@ -56,7 +56,7 @@ python -m examples.quickstart
   grant for the exact action, executes through the fence and records the verified outcome.
 - **Anything else:** see [INTEGRATIONS.md](INTEGRATIONS.md).
 
-If something fails, `amberlog --db ./memory/store.db doctor` names the
+If something fails, `memory-fabric --db ./memory/store.db doctor` names the
 failing check and the next command, and [TROUBLESHOOTING.md](TROUBLESHOOTING.md)
 lists every error message. Add `--log-format json` for structured logs.
 
@@ -73,9 +73,9 @@ proposed on a branch that main never sees until a reviewer merges it. From
 the command line:
 
 ```bash
-amberlog --db demo.db context build --agent support-bot --query "refund window"
-amberlog --db demo.db branch create trial --actor you --reviewer lead
-amberlog --db demo.db merge preview trial --actor lead
+memory-fabric --db demo.db context build --agent support-bot --query "refund window"
+memory-fabric --db demo.db branch create trial --actor you --reviewer lead
+memory-fabric --db demo.db merge preview trial --actor lead
 ```
 
 Context receipts, the context planner and branches are **experimental**; the

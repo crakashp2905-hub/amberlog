@@ -1,7 +1,7 @@
 """memeval -- an evaluation harness for agent memory that refuses common errors.
 
-Independent of Amberlog: nothing in this package imports it, and it has
-no dependencies beyond the standard library. It was extracted from Amberlog's experiments, where every check in it caught a number that had
+Independent of MemoryFabric: nothing in this package imports it, and it has
+no dependencies beyond the standard library. It was extracted from MemoryFabric's experiments, where every check in it caught a number that had
 already been published wrong.
 
     from memeval import Registration

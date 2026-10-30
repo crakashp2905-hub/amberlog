@@ -9,8 +9,8 @@ import unittest
 from io import StringIO
 from unittest import mock
 
-from amberlog.cli import main
-from amberlog.observability.server import AccessLog, verify_access_log
+from memory_fabric.cli import main
+from memory_fabric.observability.server import AccessLog, verify_access_log
 
 
 class AccessLogChain(unittest.TestCase):

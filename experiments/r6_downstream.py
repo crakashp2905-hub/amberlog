@@ -49,7 +49,7 @@ SYSTEM = (
 
 
 def _client_and_model(model: str):
-    from amberlog.adapters.ollama import OllamaClient
+    from memory_fabric.adapters.ollama import OllamaClient
 
     client = OllamaClient()
     resolved = client.resolve(model, client.available())

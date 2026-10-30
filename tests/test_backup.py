@@ -14,8 +14,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog, WithdrawalBasis
-from amberlog.cli import main
+from memory_fabric import MemoryFabric, WithdrawalBasis
+from memory_fabric.cli import main
 
 
 class TestBackup(unittest.TestCase):
@@ -25,7 +25,7 @@ class TestBackup(unittest.TestCase):
         self.source = str(Path(self.tmp.name) / "store.db")
         self.target = str(Path(self.tmp.name) / "copy.db")
 
-        fabric = Amberlog(self.source)
+        fabric = MemoryFabric(self.source)
         episode = fabric.start_episode("agent-a", task_id="t1")
         kept = fabric.remember("agent-a", "a durable lesson", source_episodes=[episode.id])
         fabric.validate(kept, actor="supervisor")
@@ -44,7 +44,7 @@ class TestBackup(unittest.TestCase):
 
     def test_it_copies_every_event(self) -> None:
         self.assertEqual(main(["--db", self.source, "backup", self.target]), 0)
-        copy = Amberlog(self.target)
+        copy = MemoryFabric(self.target)
         self.addCleanup(copy.close)
         self.assertEqual(len(copy.log), self.events)
         self.assertEqual(len(copy.state.memories), self.memories)
@@ -53,7 +53,7 @@ class TestBackup(unittest.TestCase):
         """Copying the bytes is not the point — the copy has to *fold* into the
         same projections, including the ones that only exist in the log."""
         main(["--db", self.source, "backup", self.target])
-        copy = Amberlog(self.target)
+        copy = MemoryFabric(self.target)
         self.addCleanup(copy.close)
 
         self.assertEqual(
@@ -71,13 +71,13 @@ class TestBackup(unittest.TestCase):
     def test_it_runs_while_the_store_is_open(self) -> None:
         """The reason not to use `cp`: WAL mode means a mid-write copy is a
         database plus an uncommitted write-ahead log."""
-        live = Amberlog(self.source)
+        live = MemoryFabric(self.source)
         self.addCleanup(live.close)
         extra = live.remember("agent-b", "written just before the backup")
         live.validate(extra, actor="supervisor")
 
         self.assertEqual(main(["--db", self.source, "backup", self.target]), 0)
-        copy = Amberlog(self.target)
+        copy = MemoryFabric(self.target)
         self.addCleanup(copy.close)
         self.assertIn(extra, copy.state.memories)
 
@@ -108,9 +108,9 @@ class TestBackup(unittest.TestCase):
         """
         import sqlite3 as sqlite
 
-        import amberlog.cli as cli
+        import memory_fabric.cli as cli
 
-        real_fabric = cli.Amberlog
+        real_fabric = cli.MemoryFabric
         target = Path(self.target).resolve()
 
         def truncate_then_open(path, *args, **kwargs):
@@ -127,18 +127,18 @@ class TestBackup(unittest.TestCase):
                     scratch.close()
             return real_fabric(path, *args, **kwargs)
 
-        cli.Amberlog = truncate_then_open
+        cli.MemoryFabric = truncate_then_open
         try:
             code = main(["--db", self.source, "backup", self.target])
         finally:
-            cli.Amberlog = real_fabric
+            cli.MemoryFabric = real_fabric
         self.assertEqual(code, 5)
 
     def test_the_copy_is_append_only_too(self) -> None:
         """The guarantee has to survive the copy, or a restored store is a
         weaker store than the one it replaced."""
         main(["--db", self.source, "backup", self.target])
-        copy = Amberlog(self.target)
+        copy = MemoryFabric(self.target)
         self.addCleanup(copy.close)
         with self.assertRaises(sqlite3.IntegrityError):
             copy.log._conn.execute(
@@ -182,24 +182,24 @@ class TestExternalKeys(unittest.TestCase):
     provider, which holds nothing for such a store."""
 
     def setUp(self) -> None:
-        from amberlog.governance.erasure import DirectoryKeyProvider
+        from memory_fabric.governance.erasure import DirectoryKeyProvider
 
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
         self.source = str(Path(self.tmp.name) / "store.db")
         self.target = str(Path(self.tmp.name) / "copy.db")
         self.keys = str(Path(self.tmp.name) / "keys")
-        fabric = Amberlog(self.source, key_provider=DirectoryKeyProvider(self.keys))
+        fabric = MemoryFabric(self.source, key_provider=DirectoryKeyProvider(self.keys))
         fabric.remember("agent-a", "a sealed lesson about valve 7")
         self.events = len(fabric.log)
         fabric.close()
 
     def test_backup_verifies_with_the_same_keys(self) -> None:
-        from amberlog.governance.erasure import DirectoryKeyProvider
+        from memory_fabric.governance.erasure import DirectoryKeyProvider
 
         self.assertEqual(
             main(["--db", self.source, "--keys", self.keys, "backup", self.target]), 0)
-        copy = Amberlog(self.target, key_provider=DirectoryKeyProvider(self.keys))
+        copy = MemoryFabric(self.target, key_provider=DirectoryKeyProvider(self.keys))
         self.addCleanup(copy.close)
         self.assertEqual(len(copy.log), self.events)
 

@@ -1,14 +1,14 @@
 # Any agent, any model
 
-Amberlog does not care which agent or which model you use. Each agent
+Memory Fabric does not care which agent or which model you use. Each agent
 connects with its own id, and every model-backed feature uses the model you
 name.
 
 ## 1. Connect your agent tool
 
 ```bash
-amberlog connect --list
-amberlog --db memory/store.db connect cursor --agent cursor-alice --write
+memory-fabric connect --list
+memory-fabric --db memory/store.db connect cursor --agent cursor-alice --write
 ```
 
 | tool | how |
@@ -21,7 +21,7 @@ amberlog --db memory/store.db connect cursor --agent cursor-alice --write
 | Python frameworks | `connect python`: function tools for LangGraph, OpenAI Agents, CrewAI, AutoGen |
 
 `--write` keeps the previous file as `.bak` and touches nothing but the
-`amberlog` entry. Give each tool, or each person's copy of a tool, its own
+`memory-fabric` entry. Give each tool, or each person's copy of a tool, its own
 `--agent` id: that is how the dashboard tells their memories apart.
 
 Several agents, one store: point them all at the same `--db`. For more than a
@@ -30,9 +30,9 @@ few processes, run one `agent-api` and connect the agents over HTTP.
 ## 2. Choose your model
 
 ```bash
-amberlog models                                     # what is ready on this machine
-export AMBERLOG_MODEL=anthropic:claude-opus-5-5     # or any provider below
-amberlog models --test "$AMBERLOG_MODEL"
+memory-fabric models                                     # what is ready on this machine
+export MEMORY_FABRIC_MODEL=anthropic:claude-opus-5-5     # or any provider below
+memory-fabric models --test "$MEMORY_FABRIC_MODEL"
 ```
 
 | provider | example | needs |
@@ -52,7 +52,7 @@ is logged with the model, a hash of the prompt (never the prompt), token
 counts and cost; cost is filled in only from prices you supply, never guessed.
 
 ```python
-from amberlog.models import ModelClient
+from memory_fabric.models import ModelClient
 
 llm = ModelClient("ollama:qwen2.5:7b", prices={"qwen2.5:7b": (0, 0)})
 print(llm.complete("Summarise: ...").text, llm.log.totals())
@@ -61,10 +61,10 @@ print(llm.complete("Summarise: ...").text, llm.log.totals())
 ## 3. Choose your embedding model
 
 ```bash
-export AMBERLOG_EMBEDDER=openai:text-embedding-3-small   # or ollama:nomic-embed-text,
+export MEMORY_FABRIC_EMBEDDER=openai:text-embedding-3-small   # or ollama:nomic-embed-text,
                                                               # fastembed:BAAI/bge-small-en-v1.5
 ```
 
 `serve`, `mcp` and `agent-api` use it when it is set. In Python:
-`Amberlog("store.db", **retrievers.from_environment())`. Details and
+`MemoryFabric("store.db", **retrievers.from_environment())`. Details and
 measurements: [RETRIEVAL.md](../RETRIEVAL.md).

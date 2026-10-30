@@ -1,8 +1,8 @@
 """Runtime checks that run on every evaluation, not tests that run in CI.
 
-Part of `memeval`, and independent of Amberlog: nothing here imports it,
+Part of `memeval`, and independent of MemoryFabric: nothing here imports it,
 so these checks apply to an evaluation of any agent-memory system. They were
-written for Amberlog's own experiments, and the case for each is a
+written for MemoryFabric's own experiments, and the case for each is a
 specific number that project published wrong.
 
 

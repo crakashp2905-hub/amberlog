@@ -10,10 +10,10 @@ from __future__ import annotations
 import json
 import unittest
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.incident import CAVEAT, reconstruct, responsible_sources
-from amberlog.justification import JustificationKind, justification_context
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.incident import CAVEAT, reconstruct, responsible_sources
+from memory_fabric.justification import JustificationKind, justification_context
 
 POISON = "Crane 9 rated for 30 tonnes per the bulletin."
 HONEST = "Crane 9 load test held 20 tonnes at the yard."
@@ -24,7 +24,7 @@ class KnownIncident(unittest.TestCase):
     plan is certified and acted on; mallory is found out afterwards."""
 
     def setUp(self) -> None:
-        f = self.fabric = Amberlog(auto_activate=True, seed=0)
+        f = self.fabric = MemoryFabric(auto_activate=True, seed=0)
         self.addCleanup(f.close)
         self.poison = f.remember("mallory", POISON, scope="team")
         self.honest = f.remember("ana", HONEST, scope="team")
@@ -91,7 +91,7 @@ class KnownIncident(unittest.TestCase):
 
 class AlternativeSupport(unittest.TestCase):
     def test_an_independently_corroborated_source_is_not_necessary(self) -> None:
-        f = Amberlog(auto_activate=True)
+        f = MemoryFabric(auto_activate=True)
         self.addCleanup(f.close)
         a = f.remember("ana", "Tug 3 overheated at 40C in July.", scope="team")
         b = f.remember("ben", "Tug 3 engine log shows 41C in August.", scope="team")
@@ -103,7 +103,7 @@ class AlternativeSupport(unittest.TestCase):
         self.assertEqual(responsible_sources(reconstruct(f)), [])
 
     def test_no_action_is_a_lookup_error(self) -> None:
-        f = Amberlog()
+        f = MemoryFabric()
         self.addCleanup(f.close)
         with self.assertRaises(LookupError):
             reconstruct(f)

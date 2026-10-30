@@ -4,7 +4,7 @@ End to end, as an operator would run it: the background manager writes a
 checkpoint per cycle to a directory off the store's disk; someone with write
 access to the database then edits an event, drops the append-only triggers
 and recomputes every chain link, so the store verifies against itself; and
-`amberlog checkpoint --verify` against the independent file fails.
+`memory_fabric checkpoint --verify` against the independent file fails.
 """
 
 from __future__ import annotations
@@ -16,11 +16,11 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog
-from amberlog.cli import main
-from amberlog.eventlog import EventLog
-from amberlog.integrity import GENESIS, event_digest, link
-from amberlog.manager import MemoryManager
+from memory_fabric import MemoryFabric
+from memory_fabric.cli import main
+from memory_fabric.eventlog import EventLog
+from memory_fabric.integrity import GENESIS, event_digest, link
+from memory_fabric.manager import MemoryManager
 
 
 def run(*argv: str) -> int:
@@ -32,7 +32,7 @@ class CheckpointRewrite(unittest.TestCase):
     def setUp(self) -> None:
         tmp = Path(self.enterContext(TemporaryDirectory()))
         self.db, self.checkpoints = tmp / "store.db", tmp / "elsewhere"
-        f = Amberlog(str(self.db), auto_activate=True)
+        f = MemoryFabric(str(self.db), auto_activate=True)
         f.remember("tech", "Valve V7 opens below 4 bar.", scope="team")
         f.remember("tech", "Pump P1 purge time is 30 s.", scope="team")
         MemoryManager(f, holder="m", checkpoint_dir=str(self.checkpoints)).run_once()

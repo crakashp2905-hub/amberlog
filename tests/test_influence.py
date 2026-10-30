@@ -4,13 +4,13 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog, influence
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric import MemoryFabric, influence
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
 
 
 class Influence(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.bad = self.f.remember("src", "Pump P1 is rated to 12 bar.", scope="team")
         self.summary = self.f.derive("sum", "P1 handles up to 12 bar.", parents=[self.bad],
@@ -50,7 +50,7 @@ class Influence(unittest.TestCase):
 
 class Paraphrases(unittest.TestCase):
     def test_an_unlinked_restatement_is_a_possible_paraphrase_and_a_disagreement_is_not(self) -> None:
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         src = f.remember("a", "The rated pressure of P123 is 12 bar.")
         loose = f.remember("b", "Per the vendor bulletin, operators should note 12 bar as the "

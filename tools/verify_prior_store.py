@@ -15,14 +15,14 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
 
 def main() -> int:
-    from amberlog import Amberlog
+    from memory_fabric import MemoryFabric
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("database", type=Path)
     parser.add_argument("expected", type=Path)
     args = parser.parse_args()
     expected = json.loads(args.expected.read_text())
-    with Amberlog(str(args.database), recognise_copies=False) as fabric:
+    with MemoryFabric(str(args.database), recognise_copies=False) as fabric:
         rows = [tuple(row) for row in fabric.log._conn.execute("SELECT * FROM events ORDER BY seq")]
         checks = {
             "store_identity": fabric.store_id == expected["store_id"],

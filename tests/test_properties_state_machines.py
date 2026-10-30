@@ -24,16 +24,16 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.federation import offer
-from amberlog.governance.firewall import (
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from amberlog.justification import JustificationKind, justification_context
-from amberlog.protocol import (
+from memory_fabric.justification import JustificationKind, justification_context
+from memory_fabric.protocol import (
     ALLOWED_TRANSITIONS,
     SETTLED_STATES,
     TERMINAL_STATES,
@@ -143,12 +143,12 @@ class ThePropagationMachineHolds(unittest.TestCase):
     def test_the_outbox_refuses_an_undeclared_transition_rather_than_raising(self) -> None:
         """`advance` returns False rather than throwing, so a late duplicate
         acknowledgement cannot take down a dispatcher."""
-        from amberlog.outbox import Outbox, now_ms
+        from memory_fabric.outbox import Outbox, now_ms
 
-        fabric = Amberlog(":memory:")
+        fabric = MemoryFabric(":memory:")
         self.addCleanup(fabric.close)
         outbox: Outbox = fabric.outbox
-        from amberlog.protocol import Retraction, new_retraction_id
+        from memory_fabric.protocol import Retraction, new_retraction_id
 
         retraction = Retraction(
             retraction_id=new_retraction_id(),
@@ -197,14 +197,14 @@ class TheLineageGraphHoldsOverRandomShapes(unittest.TestCase):
         self.addCleanup(self._tmp.cleanup)
         self.dir = Path(self._tmp.name)
 
-    def _store(self, name: str) -> Amberlog:
-        fabric = Amberlog(
+    def _store(self, name: str) -> MemoryFabric:
+        fabric = MemoryFabric(
             self.dir / f"{name}.db", firewall=permissive(), auto_activate=True
         )
         self.addCleanup(fabric.close)
         return fabric
 
-    def _random_graph(self, fabric: Amberlog, rng: random.Random, size: int):
+    def _random_graph(self, fabric: MemoryFabric, rng: random.Random, size: int):
         """Build a random DAG of memories.
 
         Parents are always chosen from *already created* memories, which makes
@@ -425,8 +425,8 @@ class TheLineageGraphHoldsOverRandomShapes(unittest.TestCase):
                     shared, reason="contradicted",
                     recipients=[recipient.store_id], basis="contradicted",
                 )
-                from amberlog.dispatcher import Dispatcher
-                from amberlog.transport import InProcessTransport
+                from memory_fabric.dispatcher import Dispatcher
+                from memory_fabric.transport import InProcessTransport
 
                 transport = InProcessTransport(
                     {origin.store_id: origin, recipient.store_id: recipient}

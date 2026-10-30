@@ -8,9 +8,9 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 import unittest
 
-from amberlog import Amberlog, LifecycleState
-from amberlog.document_formats import compile_csv, compile_html, compile_file, compile_docx, compile_pdf
-from amberlog.docsource import import_document
+from memory_fabric import MemoryFabric, LifecycleState
+from memory_fabric.document_formats import compile_csv, compile_html, compile_file, compile_docx, compile_pdf
+from memory_fabric.docsource import import_document
 
 
 class FormatTests(unittest.TestCase):
@@ -109,7 +109,7 @@ class FormatTests(unittest.TestCase):
             self.assertEqual(tree["sections"][0]["byte_end"], len(raw) - 2)
 
     def test_governed_revision_invalidation_and_other_tenant_preservation(self):
-        fabric = Amberlog(":memory:")
+        fabric = MemoryFabric(":memory:")
         self.addCleanup(fabric.close)
         first = compile_csv('name,rule\nrelease,one reviewer\n', doc_id="d", version="1")
         foreign = import_document(fabric, first, tenant_id="other", activate=True)

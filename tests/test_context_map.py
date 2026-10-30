@@ -10,14 +10,14 @@ from __future__ import annotations
 import json
 import unittest
 
-from amberlog import Amberlog
-from amberlog.context_map import (
+from memory_fabric import MemoryFabric
+from memory_fabric.context_map import (
     ContextMap, SummaryRefused, build_l1, estimate_tokens, subject)
-from amberlog.context_receipt import build_context, explain_receipt, receipts
+from memory_fabric.context_receipt import build_context, explain_receipt, receipts
 
 
-def fabric() -> Amberlog:
-    return Amberlog(":memory:", auto_activate=True, hold_suspicious=False)
+def fabric() -> MemoryFabric:
+    return MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False)
 
 
 class Builder(unittest.TestCase):
@@ -52,7 +52,7 @@ class Builder(unittest.TestCase):
         self.assertEqual(len(node.disputes), 1)
 
     def test_a_summary_that_would_drop_a_fact_is_refused(self) -> None:
-        import amberlog.context_map as cm
+        import memory_fabric.context_map as cm
 
         ms = [self._mem("Pump P4 runs at 4 bar."), self._mem("Pump P4 seal is not leaking.")]
         original = cm._carries_fact
@@ -232,11 +232,11 @@ class Receipts(unittest.TestCase):
 
         with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as tmp:
             path = os.path.join(tmp, "s.db")
-            f = Amberlog(path, auto_activate=True)
+            f = MemoryFabric(path, auto_activate=True)
             f.remember("a", "Pump P1 runs at 4 bar.", scope="team")
             rid = build_context(f, "a", "pump p1").receipt["receipt_id"]
             f.close()
-            g = Amberlog(path)
+            g = MemoryFabric(path)
             self.assertEqual(explain_receipt(g, rid)["receipt_id"], rid)
             g.close()
 
@@ -295,8 +295,8 @@ class BudgetIncludesFlags(unittest.TestCase):
                        scope="team")
         for mode in ("compact", "balanced", "evidence-first", "exact"):
             bundle = build_context(f, "a", "boiler lyon plant", budget=45, mode=mode)
-            from amberlog.context_map import estimate_tokens
-            from amberlog.context_receipt import rendered_items
+            from memory_fabric.context_map import estimate_tokens
+            from memory_fabric.context_receipt import rendered_items
 
             used = sum(estimate_tokens(t) for t in rendered_items(bundle.plan))
             self.assertLessEqual(used, 45, mode)

@@ -23,8 +23,8 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog, PolicyViolation
-from amberlog.governance.cipher import (
+from memory_fabric import MemoryFabric, PolicyViolation
+from memory_fabric.governance.cipher import (
     ETM_PREFIX,
     _keystream,
     LEGACY_PREFIX,
@@ -39,7 +39,7 @@ from amberlog.governance.cipher import (
     is_sealed,
     suite_for,
 )
-from amberlog.governance.erasure import (
+from memory_fabric.governance.erasure import (
     ERASED_MARKER,
     CallbackKeyProvider,
     ContentVault,
@@ -138,7 +138,7 @@ class Tamper(unittest.TestCase):
         original = b"pressure is 3.5 bar"
         forged_text = b"pressure is 9.9 bar"
         # v1 cannot be written any more, so build the envelope by hand.
-        from amberlog.governance.cipher import _keystream
+        from memory_fabric.governance.cipher import _keystream
 
         nonce = bytes(range(16))
         stream = _keystream(KEY, nonce, len(original))
@@ -241,7 +241,7 @@ class EndToEndThroughTheFabric(unittest.TestCase):
         self._tmp.cleanup()
 
     def test_new_content_is_sealed_with_an_authenticated_suite(self) -> None:
-        fabric = Amberlog(self.path)
+        fabric = MemoryFabric(self.path)
         try:
             fabric.remember(agent_id="a", content="valve 7 is upstream of the pump")
             rows = [
@@ -265,7 +265,7 @@ class EndToEndThroughTheFabric(unittest.TestCase):
         leaves nothing for the log itself to notice — so the detection has to
         come from the ciphertext.
         """
-        fabric = Amberlog(self.path)
+        fabric = MemoryFabric(self.path)
         try:
             fabric.remember(agent_id="a", content="pressure is 3.5 bar")
         finally:
@@ -300,7 +300,7 @@ class EndToEndThroughTheFabric(unittest.TestCase):
             conn.close()
 
         with self.assertRaises(IntegrityError):
-            Amberlog(self.path)
+            MemoryFabric(self.path)
 
     def test_erasure_still_reads_as_erasure_not_as_tampering(self) -> None:
         """The distinction the marker exists for.
@@ -310,7 +310,7 @@ class EndToEndThroughTheFabric(unittest.TestCase):
         intended" — or tell an operator their data was deliberately destroyed
         when they had in fact mounted the wrong key volume.
         """
-        fabric = Amberlog(self.path)
+        fabric = MemoryFabric(self.path)
         try:
             memory_id = fabric.remember(agent_id="a", content="pressure is 3.5 bar")
             fabric.erase_content(memory_id, reason="subject request", actor="dpo")
@@ -318,7 +318,7 @@ class EndToEndThroughTheFabric(unittest.TestCase):
         finally:
             fabric.close()
 
-        reopened = Amberlog(self.path)
+        reopened = MemoryFabric(self.path)
         try:
             self.assertEqual(reopened.get(memory_id).content, ERASED_MARKER)
         finally:
@@ -332,7 +332,7 @@ class TheErasureScopeIsHonest(unittest.TestCase):
     def setUp(self) -> None:
         self._tmp = TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
-        self.fabric = Amberlog(
+        self.fabric = MemoryFabric(
             Path(self._tmp.name) / "store.db", auto_activate=True
         )
         self.addCleanup(self.fabric.close)
@@ -382,8 +382,8 @@ class TheErasureScopeIsHonest(unittest.TestCase):
     def test_a_federated_copy_is_named(self) -> None:
         """A recipient holds its own key. A retraction withdraws the copy from
         use; it does not destroy the content."""
-        from amberlog.federation import offer
-        from amberlog.governance.firewall import (
+        from memory_fabric.federation import offer
+        from memory_fabric.governance.firewall import (
             Firewall,
             rule_capabilities_must_be_granted,
             rule_must_be_active,
@@ -398,7 +398,7 @@ class TheErasureScopeIsHonest(unittest.TestCase):
             ]
         )
         self.fabric.firewall = permissive
-        other = Amberlog(
+        other = MemoryFabric(
             Path(self._tmp.name) / "other.db", auto_activate=True,
             firewall=permissive,
         )
@@ -436,7 +436,7 @@ class KeyCustody(unittest.TestCase):
     def test_keys_can_live_outside_the_database(self) -> None:
         """The arrangement that makes a stolen `.db` file insufficient."""
         keys = self.dir / "keys"
-        fabric = Amberlog(
+        fabric = MemoryFabric(
             self.dir / "store.db", key_provider=DirectoryKeyProvider(keys)
         )
         try:
@@ -463,7 +463,7 @@ class KeyCustody(unittest.TestCase):
         """
         keys = self.dir / "keys"
         store = self.dir / "store.db"
-        fabric = Amberlog(store, key_provider=DirectoryKeyProvider(keys))
+        fabric = MemoryFabric(store, key_provider=DirectoryKeyProvider(keys))
         try:
             fabric.remember(agent_id="a", content="pressure is 3.5 bar")
         finally:
@@ -476,7 +476,7 @@ class KeyCustody(unittest.TestCase):
         # sealed memory in it is unreadable, and continuing would mean serving
         # a store whose content is silently gone.
         with self.assertRaises(KeyUnavailable):
-            Amberlog(store, key_provider=DirectoryKeyProvider(keys))
+            MemoryFabric(store, key_provider=DirectoryKeyProvider(keys))
 
     def test_a_provider_that_cannot_destroy_says_so(self) -> None:
         """A store reporting an erasure it could not perform is worse than one
@@ -544,7 +544,7 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
         from io import StringIO
         from unittest.mock import patch
 
-        from amberlog.cli import main
+        from memory_fabric.cli import main
 
         buffer = StringIO()
         with patch("sys.stdout", buffer):
@@ -561,7 +561,7 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
         """`ok` where AES-GCM works or is simply not installed. On a host
         where `cryptography` is installed but broken, the right answer is a
         warning naming why, which `BrokenCryptography` pins on every host."""
-        from amberlog.governance.cipher import aead_status
+        from memory_fabric.governance.cipher import aead_status
 
         available, reason = aead_status()
         if available or reason == "not installed":
@@ -571,7 +571,7 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
             self.assertIn("broken", finding["detail"])
 
     def test_an_authenticated_store_reports_ok(self) -> None:
-        fabric = Amberlog(self.path)
+        fabric = MemoryFabric(self.path)
         try:
             fabric.remember(agent_id="a", content="valve 7 is upstream")
         finally:
@@ -585,7 +585,7 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
         """It only goes down: v1 is never written again, and a revision
         re-seals. There is deliberately no bulk migration, because rewriting
         the log is the one thing this design forbids."""
-        fabric = Amberlog(self.path)
+        fabric = MemoryFabric(self.path)
         try:
             fabric.remember(agent_id="a", content="valve 7 is upstream")
         finally:
@@ -637,7 +637,7 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
     def test_an_unencrypted_store_is_reported_as_a_warning(self) -> None:
         """Erasing a key that was never used is cosmetic — the bug that
         produced `_seal_content` in the first place."""
-        fabric = Amberlog(self.path, encrypt_content=False)
+        fabric = MemoryFabric(self.path, encrypt_content=False)
         try:
             fabric.remember(agent_id="a", content="valve 7 is upstream")
         finally:
@@ -647,18 +647,18 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
         from io import StringIO
         from unittest.mock import patch
 
-        from amberlog import cli
+        from memory_fabric import cli
 
-        original = cli.Amberlog
+        original = cli.MemoryFabric
         buffer = StringIO()
         try:
-            cli.Amberlog = lambda *a, **k: original(
+            cli.MemoryFabric = lambda *a, **k: original(
                 *a, **{**k, "encrypt_content": False}
             )
             with patch("sys.stdout", buffer):
                 cli.main(["--json", "--db", str(self.path), "doctor"])
         finally:
-            cli.Amberlog = original
+            cli.MemoryFabric = original
         finding = self._finding(_json.loads(buffer.getvalue()))
         self.assertEqual(finding["status"], "warn")
         self.assertIn("plaintext", finding["detail"])
@@ -674,10 +674,10 @@ class TheDoctorReportsTheCipher(unittest.TestCase):
         from io import StringIO
         from unittest.mock import patch
 
-        from amberlog.cli import main
+        from memory_fabric.cli import main
 
         keys = Path(self._tmp.name) / "keys"
-        fabric = Amberlog(self.path, key_provider=DirectoryKeyProvider(keys))
+        fabric = MemoryFabric(self.path, key_provider=DirectoryKeyProvider(keys))
         try:
             fabric.remember(agent_id="a", content="valve 7 is upstream")
         finally:
@@ -715,7 +715,7 @@ class BrokenCryptography(unittest.TestCase):
     def setUp(self) -> None:
         import builtins
 
-        from amberlog.governance import cipher
+        from memory_fabric.governance import cipher
 
         self.cipher = cipher
         self.real_import = builtins.__import__
@@ -747,7 +747,7 @@ class BrokenCryptography(unittest.TestCase):
 
     def test_writes_and_reads_still_work(self) -> None:
         self.break_import(_Panic("Python API call failed"))
-        fabric = Amberlog()
+        fabric = MemoryFabric()
         self.addCleanup(fabric.close)
         with self.assertWarns(RuntimeWarning):
             mid = fabric.remember("ag", "valve 7 is upstream")
@@ -804,10 +804,10 @@ class BrokenCryptography(unittest.TestCase):
         self.assertEqual(len(calls), 1)
 
     def test_doctor_names_the_fallback(self) -> None:
-        from amberlog import cli
+        from memory_fabric import cli
 
         self.break_import(_Panic("Python API call failed"))
-        fabric = Amberlog(encrypt_content=True)
+        fabric = MemoryFabric(encrypt_content=True)
         self.addCleanup(fabric.close)
         with self.assertWarns(RuntimeWarning):
             fabric.remember("ag", "valve 7 is upstream")

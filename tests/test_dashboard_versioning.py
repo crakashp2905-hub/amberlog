@@ -5,15 +5,15 @@ from __future__ import annotations
 import json
 import unittest
 
-from amberlog import Amberlog
-from amberlog.branching import Branches
-from amberlog.context_receipt import build_context
-from amberlog.observability.server import Api, ApiError
+from memory_fabric import MemoryFabric
+from memory_fabric.branching import Branches
+from memory_fabric.context_receipt import build_context
+from memory_fabric.observability.server import Api, ApiError
 
 
 class Routes(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(self.f.close)
         self.p1 = self.f.remember("ann", "Pump P1 runs at 4 bar.", scope="team")
         b = Branches(self.f)

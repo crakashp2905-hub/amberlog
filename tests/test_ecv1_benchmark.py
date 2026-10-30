@@ -2,8 +2,8 @@ import unittest
 
 from benchmarks.completeness_data import SPLITS, digest, generate
 from benchmarks.evidence_completeness import evaluate, run_seed
-from amberlog import Amberlog
-from amberlog.evidence_completeness import exhaustive
+from memory_fabric import MemoryFabric
+from memory_fabric.evidence_completeness import exhaustive
 
 
 class EvaluationTests(unittest.TestCase):
@@ -16,7 +16,7 @@ class EvaluationTests(unittest.TestCase):
     def test_positive_certificates_match_independent_gold_at_full_diagnostic_budget(self):
         # Not the registered primary read budget. This is a certificate audit:
         # asserting some True certificates prevents an always-incomplete pass.
-        f = Amberlog(":memory:", recognise_copies=False)
+        f = MemoryFabric(":memory:", recognise_copies=False)
         self.addCleanup(f.close)
         data = generate(101, "test")
         mapping = {}

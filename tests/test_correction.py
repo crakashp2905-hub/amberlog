@@ -12,13 +12,13 @@ from __future__ import annotations
 import random
 import unittest
 
-from amberlog import Amberlog
-from amberlog.correction import apply, preview, status
-from amberlog.justification import JustificationKind, justification_context
-from amberlog.model import LifecycleState, Scope
+from memory_fabric import MemoryFabric
+from memory_fabric.correction import apply, preview, status
+from memory_fabric.justification import JustificationKind, justification_context
+from memory_fabric.model import LifecycleState, Scope
 
 
-def random_graph(fabric: Amberlog, rng: random.Random) -> list[str]:
+def random_graph(fabric: MemoryFabric, rng: random.Random) -> list[str]:
     ids = [fabric.remember(f"a{i % 3}", f"observation {i}: unit {rng.randint(1, 99)} "
                            f"at {rng.randint(1, 9)} bar", scope="team")
            for i in range(rng.randint(3, 6))]
@@ -36,7 +36,7 @@ class ThePreviewIsTheOutcome(unittest.TestCase):
         checked = 0
         for seed in range(40):
             rng = random.Random(seed)
-            fabric = Amberlog(":memory:", auto_activate=True)
+            fabric = MemoryFabric(":memory:", auto_activate=True)
             try:
                 ids = random_graph(fabric, rng)
                 target = rng.choice(ids)
@@ -64,7 +64,7 @@ class ThePreviewIsTheOutcome(unittest.TestCase):
 
 class IndependentSupportSurvives(unittest.TestCase):
     def test_a_conclusion_with_another_independent_premise_is_kept(self) -> None:
-        fabric = Amberlog(":memory:", auto_activate=True)
+        fabric = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(fabric.close)
         a = fabric.remember("ana", "tug 3 overheated at 40C in July", scope="team")
         b = fabric.remember("ben", "tug 3 engine log shows 41C in August", scope="team")
@@ -77,17 +77,17 @@ class IndependentSupportSurvives(unittest.TestCase):
 
 class StoresAreOwedTheRetraction(unittest.TestCase):
     def test_apply_owes_every_store_that_received_it_and_status_follows(self) -> None:
-        from amberlog.dispatcher import Dispatcher
-        from amberlog.federation import offer
-        from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+        from memory_fabric.dispatcher import Dispatcher
+        from memory_fabric.federation import offer
+        from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                        rule_must_be_active,
                                                        rule_restricted_stays_private)
-        from amberlog.transport import InProcessTransport, Peer, PeerRegistry
+        from memory_fabric.transport import InProcessTransport, Peer, PeerRegistry
 
         permissive = Firewall(rules=(rule_restricted_stays_private, rule_must_be_active,
                                      rule_capabilities_must_be_granted))
-        origin = Amberlog(":memory:", firewall=permissive, auto_activate=True)
-        recipient = Amberlog(":memory:", firewall=permissive)
+        origin = MemoryFabric(":memory:", firewall=permissive, auto_activate=True)
+        recipient = MemoryFabric(":memory:", firewall=permissive)
         self.addCleanup(origin.close)
         self.addCleanup(recipient.close)
         mid = origin.remember("ana", "tug tyre pressure is 3.5 bar")
@@ -103,7 +103,7 @@ class StoresAreOwedTheRetraction(unittest.TestCase):
         self.assertEqual([s["state"] for s in status(origin, mid)], ["enforced"])
 
     def test_a_correction_needs_a_named_actor(self) -> None:
-        fabric = Amberlog(":memory:", auto_activate=True)
+        fabric = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(fabric.close)
         mid = fabric.remember("ana", "x")
         with self.assertRaises(ValueError):
@@ -114,7 +114,7 @@ class StalePreviewsAreRefused(unittest.TestCase):
     """Blueprint 5.5: a preview is revalidated at apply time, never applied blindly."""
 
     def setUp(self) -> None:
-        self.f = Amberlog(":memory:", auto_activate=True)
+        self.f = MemoryFabric(":memory:", auto_activate=True)
         self.root = self.f.remember("a", "Pump P1 runs at 4 bar.", scope="team")
         self.child = self.f.derive("a", "Line 1 is safe at 4 bar.", parents=[self.root],
                                    scope="team")
@@ -130,7 +130,7 @@ class StalePreviewsAreRefused(unittest.TestCase):
         self.assertEqual(self.f.get(self.root).lifecycle_state, LifecycleState.QUARANTINED)
 
     def test_a_new_descendant_after_the_preview_refuses_the_apply(self) -> None:
-        from amberlog.correction import StalePreview
+        from memory_fabric.correction import StalePreview
 
         shown = preview(self.f, self.root)
         self.f.derive("b", "Line 2 is safe at 4 bar too.", parents=[self.root], scope="team")
@@ -139,7 +139,7 @@ class StalePreviewsAreRefused(unittest.TestCase):
         self.assertEqual(self.f.get(self.root).lifecycle_state, LifecycleState.ACTIVE)
 
     def test_a_revision_after_the_preview_refuses_the_apply(self) -> None:
-        from amberlog.correction import StalePreview
+        from memory_fabric.correction import StalePreview
 
         shown = preview(self.f, self.root)
         self.f.revise(self.child, "Line 1 is safe at 4.5 bar.", agent_id="a", reason="re-measured")
@@ -147,7 +147,7 @@ class StalePreviewsAreRefused(unittest.TestCase):
             apply(self.f, self.root, reason="wrong", actor="lead", preview_digest=shown.digest)
 
     def test_a_short_digest_is_not_enough(self) -> None:
-        from amberlog.correction import StalePreview
+        from memory_fabric.correction import StalePreview
 
         with self.assertRaises(StalePreview):
             apply(self.f, self.root, reason="wrong", actor="lead", preview_digest="ab")
@@ -160,11 +160,11 @@ class TheCommand(unittest.TestCase):
         import os
         import tempfile
 
-        from amberlog.cli import main
+        from memory_fabric.cli import main
 
         with tempfile.TemporaryDirectory() as tmp:
             db = os.path.join(tmp, "s.db")
-            fabric = Amberlog(db, auto_activate=True)
+            fabric = MemoryFabric(db, auto_activate=True)
             root = fabric.remember("ana", "tug 3 overheated at 40C", scope="team")
             child = fabric.derive("cho", "tug 3 runs hot", parents=[root], scope="team")
             fabric.close()
@@ -175,7 +175,7 @@ class TheCommand(unittest.TestCase):
             with contextlib.redirect_stdout(io.StringIO()):
                 self.assertEqual(main(["--db", db, "correct", root, "--apply",
                                        "--reason", "sensor fault", "--actor", "carol"]), 0)
-            reopened = Amberlog(db)
+            reopened = MemoryFabric(db)
             try:
                 self.assertIs(reopened.state.memories[root].lifecycle_state,
                               LifecycleState.QUARANTINED)

@@ -77,23 +77,6 @@
    "parsable": true
   },
   {
-   "experiment_id": "amberlog-migration-validation",
-   "file": "research/results/amberlog-migration-validation.json",
-   "file_sha256": "aec5bb2e192424a5f1a687475cffc8f50f6c2fa8d376374e16fd0080717a3099",
-   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
-   "prereg": null,
-   "git_sha": null,
-   "git_sha_source": null,
-   "dataset_digest": null,
-   "model_id": null,
-   "prompt_hash": null,
-   "seed": null,
-   "config": null,
-   "cost": null,
-   "verdict": null,
-   "parsable": true
-  },
-  {
    "experiment_id": "audit-supported",
    "file": "research/results/audit-supported.json",
    "file_sha256": "9aad214f13021e0fb981400155ba845f7da18c5939dc70f878d5db856e223f20",
@@ -1363,6 +1346,23 @@
     "share_of_headroom": 0.260066,
     "realised_mde": null
    },
+   "parsable": true
+  },
+  {
+   "experiment_id": "memory-fabric-migration-validation",
+   "file": "research/results/memory-fabric-migration-validation.json",
+   "file_sha256": "02883afd100ead8fd0d5a73d84dd476cb673dec2005427731317460fd4aa3ae8",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": null,
+   "git_sha": null,
+   "git_sha_source": null,
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": null,
+   "config": null,
+   "cost": null,
+   "verdict": null,
    "parsable": true
   },
   {

@@ -8,7 +8,7 @@ before the test seeds (0–9).** This is task M1 in
 > what to be kept as relevant and what to be kept as irrelevant … provided to
 > the agents or to the LLMs or to whichever it is needed.
 
-Mechanism: `amberlog/objective.py`. Harness: `experiments/m1_objective.py`.
+Mechanism: `memory-fabric/objective.py`. Harness: `experiments/m1_objective.py`.
 
 **Disclosed: the pilot changed the mechanism and the primary arm.**
 

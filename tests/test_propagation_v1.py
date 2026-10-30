@@ -143,7 +143,7 @@ class TestFixtureReproducesTheProductState(unittest.TestCase):
 
     @needs_build
     def test_descendants_of_a_retracted_memory_are_contested(self):
-        from amberlog.model import LifecycleState
+        from memory_fabric.model import LifecycleState
 
         checked = 0
         for split in ("dev", "test"):

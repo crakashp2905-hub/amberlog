@@ -15,7 +15,7 @@ import sys
 from dataclasses import dataclass, field
 from typing import Sequence
 
-from amberlog.cli import configure_output
+from memory_fabric.cli import configure_output
 
 from . import stats
 from .banditworld import TOPOLOGY_ORDER, BanditConfig, RunOutcome, simulate

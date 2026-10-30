@@ -14,7 +14,7 @@ import unittest
 
 from experiments.ruleworld import CLAIM, DISTRACTOR, RuleWorld, WorldConfig, query_for
 from experiments.runner import RunConfig, ground_truth, estimable_memories, run
-from amberlog.estimators import NaiveUsageEstimator
+from memory_fabric.estimators import NaiveUsageEstimator
 
 
 class TestWorldPolicy(unittest.TestCase):

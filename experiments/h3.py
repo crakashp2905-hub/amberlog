@@ -16,11 +16,11 @@ import sys
 from dataclasses import dataclass, field
 from typing import Sequence
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.cli import configure_output
-from amberlog.estimators import build_estimator
-from amberlog.exposure import EpsilonGreedyPolicy, TopKPolicy
-from amberlog.federation import describe, imported_from, offer_many
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.cli import configure_output
+from memory_fabric.estimators import build_estimator
+from memory_fabric.exposure import EpsilonGreedyPolicy, TopKPolicy
+from memory_fabric.federation import describe, imported_from, offer_many
 
 from . import stats
 from .contexts import build_contexts, true_value_in
@@ -68,7 +68,7 @@ def experiment_firewall():
     memory helps the recipient. The result speaks to whether the rule is asking
     the right question.
     """
-    from amberlog.governance.firewall import (
+    from memory_fabric.governance.firewall import (
         Firewall,
         rule_capabilities_must_be_granted,
         rule_evidence_independence,
@@ -125,7 +125,7 @@ class Cell:
 
 
 def _play(
-    fabric: Amberlog,
+    fabric: MemoryFabric,
     world: RuleWorld,
     symptoms: Sequence[str],
     rng: random.Random,
@@ -146,7 +146,7 @@ def _play(
 
 
 def _probe_and_filter(
-    fabric: Amberlog,
+    fabric: MemoryFabric,
     world: RuleWorld,
     symptoms: Sequence[str],
     rng: random.Random,
@@ -204,7 +204,7 @@ def _probe_and_filter(
     return success
 
 
-def _value_keep_count(fabric: Amberlog, imported: Sequence[str]) -> int:
+def _value_keep_count(fabric: MemoryFabric, imported: Sequence[str]) -> int:
     estimator = build_estimator("amortized")
     estimator.fit(fabric.state)
     return sum(
@@ -226,7 +226,7 @@ def run_cell(overlap: float, arm: str, seeds: Sequence[int], quick: bool) -> lis
 
         fabrics, worlds, rngs, seeded = [], list(pair.worlds()), [], []
         for index, world in enumerate(worlds):
-            fabric = Amberlog(
+            fabric = MemoryFabric(
                 auto_activate=True,
                 seed=seed + index,
                 estimator="amortized",

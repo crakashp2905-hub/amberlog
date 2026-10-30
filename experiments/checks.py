@@ -1,7 +1,7 @@
 """Re-export of `memeval.checks`, where these checks now live.
 
 Kept so every harness that imports `experiments.checks` keeps working. The
-checks moved into `memeval` because they are not specific to Amberlog --
+checks moved into `memeval` because they are not specific to MemoryFabric --
 each one catches a mistake any evaluation of agent memory can make -- and a
 package that evaluates other systems cannot live inside one of them.
 """

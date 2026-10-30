@@ -34,8 +34,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "research" / "results" / "p12-openloop.json"
@@ -50,7 +50,7 @@ def pct(values: list[float], q: float) -> float:
 
 def run_rate(rate: float, seconds: float, seed: int, workers: int) -> dict[str, object]:
     tmp = tempfile.mkdtemp()
-    fabric = Amberlog(str(Path(tmp) / "load.db"), auto_activate=True, seed=seed)
+    fabric = MemoryFabric(str(Path(tmp) / "load.db"), auto_activate=True, seed=seed)
     gate = ActionGate(fabric, ActionPolicy(tools={"act": ToolRule("act")},
                                            grants={"agent": frozenset({"act"})}))
     for i in range(200):

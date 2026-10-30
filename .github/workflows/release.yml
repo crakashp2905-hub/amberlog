@@ -11,7 +11,7 @@ name: Release
 #    and so needs its dedicated SDK job. Main also requires CI checks
 #    (docs/BRANCHES.md); tags independently verify the exact source commit.
 # 1. The tag must equal the version in pyproject.toml *and* in
-#    amberlog.__version__. They drifted once (0.8.0 vs 0.7.0) and a
+#    memory_fabric.__version__. They drifted once (0.8.0 vs 0.7.0) and a
 #    release is the worst place to find out.
 # 2. The full suite runs with nothing installed, and the wheel is installed
 #    clean and exercised, as in CI. A release is not cut from a red tree.
@@ -41,9 +41,9 @@ permissions:
 jobs:
   build:
     if: >-
-      vars.AMBERLOG_NAME_CLEARED == 'true' &&
-      vars.AMBERLOG_RELEASE_GATES_PASSED == 'true' &&
-      vars.AMBERLOG_APPROVED_SHA == github.sha
+      vars.MEMORY_FABRIC_NAME_CLEARED == 'true' &&
+      vars.MEMORY_FABRIC_RELEASE_GATES_PASSED == 'true' &&
+      vars.MEMORY_FABRIC_APPROVED_SHA == github.sha
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -64,10 +64,10 @@ jobs:
           python - <<'EOF'
           import os, sys, tomllib
           sys.path.insert(0, "src")
-          import amberlog
+          import memory_fabric
           tag = os.environ["GITHUB_REF_NAME"].removeprefix("v")
           declared = tomllib.load(open("pyproject.toml", "rb"))["project"]["version"]
-          found = {"tag": tag, "pyproject": declared, "__version__": amberlog.__version__}
+          found = {"tag": tag, "pyproject": declared, "__version__": memory_fabric.__version__}
           print(found)
           sys.exit(0 if len(set(found.values())) == 1 else 1)
           EOF
@@ -86,8 +86,8 @@ jobs:
           python -m venv /tmp/v
           /tmp/v/bin/pip install --quiet dist/*.whl
           cd /tmp
-          /tmp/v/bin/amberlog --db /tmp/r.db demo
-          /tmp/v/bin/amberlog --db /tmp/r.db doctor
+          /tmp/v/bin/memory-fabric --db /tmp/r.db demo
+          /tmp/v/bin/memory-fabric --db /tmp/r.db doctor
 
       - uses: actions/upload-artifact@v4
         with:
@@ -129,7 +129,7 @@ jobs:
           subject-path: "dist/*"
           sbom-path: sbom.spdx.json
 
-      - run: cp sbom.spdx.json dist/amberlog.spdx.json
+      - run: cp sbom.spdx.json dist/memory_fabric.spdx.json
 
       - name: Create the release with the built artifacts
         env:

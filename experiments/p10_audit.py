@@ -10,7 +10,7 @@ problems, plus benign look-alikes that a naive trigger also fires on:
 | a retraction that a peer never acknowledges | (none) |
 | an unresolved contradiction | a contradiction resolved quickly |
 
-The three policies get the same auditor (`amberlog/auditor.py`, read-only)
+The three policies get the same auditor (`memory_fabric/auditor.py`, read-only)
 and differ only in which subjects they audit, and when. A problem counts as
 detected when an audit of its subject returns a finding.
 
@@ -31,11 +31,11 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.auditor import SAMPLE, Auditor, Trigger
-from amberlog.certificates import CHECK_INDEPENDENT_SUPPORT
-from amberlog.outbox import MAX_ATTEMPTS, now_ms
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.auditor import SAMPLE, Auditor, Trigger
+from memory_fabric.certificates import CHECK_INDEPENDENT_SUPPORT
+from memory_fabric.outbox import MAX_ATTEMPTS, now_ms
 
 STEPS = 200
 WINDOW = 20
@@ -44,11 +44,11 @@ AGENTS = [f"a{i}" for i in range(8)]
 SEEDS = tuple(range(10))
 
 
-def build(seed: int) -> tuple[Amberlog, list[tuple[int, int, set[str]]], dict[int, int]]:
+def build(seed: int) -> tuple[MemoryFabric, list[tuple[int, int, set[str]]], dict[int, int]]:
     """Returns the store, the ground-truth problems as (step, seq, subjects),
     and a map from step to log head at the end of that step."""
     rng = random.Random(seed)
-    f = Amberlog(auto_activate=True, seed=seed)
+    f = MemoryFabric(auto_activate=True, seed=seed)
     gate = ActionGate(f, ActionPolicy(
         tools={"override": ToolRule("override", min_independent_sources=2,
                                     required_checks=(CHECK_INDEPENDENT_SUPPORT,))},

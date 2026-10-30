@@ -42,7 +42,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "src"))
 from experiments import checks  # noqa: E402
 from experiments import depotworld as W  # noqa: E402
 from experiments import phase_a_prime as PA  # noqa: E402
-from amberlog.vectors import LexicalIndex  # noqa: E402
+from memory_fabric.vectors import LexicalIndex  # noqa: E402
 
 MODELS = ("qwen2.5:3b", "llama3.2:3b", "gemma3:4b")
 ORACLE = "oracle"
@@ -166,7 +166,7 @@ def read_cell(reader: str, lessons: Sequence[PA.Lesson],
 
 def run(seeds: int, episodes: int, models: Sequence[str], cache_path: str | None,
         verbose: bool) -> dict[str, Any]:
-    from amberlog.adapters.ollama import OllamaClient
+    from memory_fabric.adapters.ollama import OllamaClient
 
     client = OllamaClient()
     cache = Cache(cache_path)

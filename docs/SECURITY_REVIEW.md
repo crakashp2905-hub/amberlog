@@ -25,7 +25,7 @@ release work. Reviewed:
 - **The paths changed in this release cycle:** cross-process refresh, the
   fabric lock, authentication ordering, erasure, the copy index, the CLI's new
   revocation and agent filter.
-- **A pattern sweep of `amberlog/`** for the shapes that produce critical
+- **A pattern sweep of `memory-fabric/`** for the shapes that produce critical
   bugs: SQL built from strings; secret comparisons that are not constant-time;
   non-cryptographic randomness for tokens; shell, `eval`, `exec`, `pickle`,
   `yaml.load`, `marshal`; file paths taken from requests; outbound requests to
@@ -87,7 +87,7 @@ critical or high.
 | O3 | A writer with full database access can rewrite the log and chain consistently | Medium | Detected against an independently stored checkpoint (`--checkpoint-dir`); see `test_checkpoint_rewrite.py` | Inherent to a log the attacker can write; detection, not prevention, is what is claimed | 2027-01-31 |
 | O4 | Tenancy within one store is an authorisation boundary only | Medium | Physical isolation available: `tenancy.TenantRouter`, one store and key directory per tenant | Documented; the physical option exists | 2027-01-31 |
 | O5 | Federation keys rotate manually | Low | Overlap window implemented and drilled (`test_key_rotation_drill.py`) | Manual but rehearsed; no automatic rotation | 2027-03-31 |
-| O6 | The dashboard access log is a plain append-only file, not chained | Low | **Closed 2026-10-24**: each line carries the SHA-256 of the one before it; `amberlog access-log-verify PATH` names the first edited, deleted or reordered line (`test_access_log_chain.py`). A consistent rewrite of the whole file is still only detectable against a copy kept elsewhere | — | — |
+| O6 | The dashboard access log is a plain append-only file, not chained | Low | **Closed 2026-10-24**: each line carries the SHA-256 of the one before it; `memory-fabric access-log-verify PATH` names the first edited, deleted or reordered line (`test_access_log_chain.py`). A consistent rewrite of the whole file is still only detectable against a copy kept elsewhere | — | — |
 | O7 | No external audit, penetration test or independent cryptographic review | — | Unchanged; the brief for one is [INDEPENDENT_EVALUATION.md](INDEPENDENT_EVALUATION.md) and the cryptographic decisions are written down for it in [CRYPTOGRAPHY.md](CRYPTOGRAPHY.md) | Cannot be closed internally. **Blocks a production (1.0) release**, not an alpha | Before 1.0 |
 
 ## 4. Release-blocker criteria

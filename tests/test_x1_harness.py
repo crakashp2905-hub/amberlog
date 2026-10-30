@@ -26,7 +26,7 @@ sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
 from experiments import x1_extraction as x1  # noqa: E402
-from amberlog.extraction import Extracted  # noqa: E402
+from memory_fabric.extraction import Extracted  # noqa: E402
 
 
 def case(n_fillers: int = 200) -> dict:

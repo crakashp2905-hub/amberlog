@@ -3,10 +3,10 @@
 An evaluation harness for agent memory that **refuses to give a verdict when
 the run made one of the usual mistakes**. Proprietary, under the repository's
 [LICENSE](../LICENSE); a separate distribution, not a separate licence. It uses only the standard library and
-doesn't depend on Amberlog, which it was extracted from.
+doesn't depend on Memory Fabric, which it was extracted from.
 
 Most evaluation code works out a number. memeval works out whether the number
-can be believed. It was built because Amberlog published results that
+can be believed. It was built because Memory Fabric published results that
 were wrong in ways no single test caught: a baseline quoted from another
 table, a ceiling that one of the arms beat, a threshold above everything
 achievable, an AUC reported in the wrong orientation, and a run too small to

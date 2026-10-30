@@ -1,6 +1,6 @@
 """memeval: known-answer tests built from this repository's own published errors.
 
-Each case reconstructs, in miniature, a result Amberlog reported and
+Each case reconstructs, in miniature, a result MemoryFabric reported and
 later had to correct, and asserts the contract refuses it. If one of these
 starts passing as SUPPORTED, the harness has lost the property it exists for.
 """

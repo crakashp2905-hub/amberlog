@@ -67,7 +67,7 @@ Even when told explicitly to name an exact action, observers failed to produce a
 | llama3.2:3b | 11/12 |
 | qwen2.5:7b | 10/12 |
 
-Two trials were skipped because the observers did not produce both sides of the disagreement. This is worth stating plainly: **a amberlog fed by agents will receive incomplete and malformed writes as a matter of course**, and the governance path has to treat that as normal rather than exceptional. Here it is handled by filtering and reporting; a deployment would need the same.
+Two trials were skipped because the observers did not produce both sides of the disagreement. This is worth stating plainly: **a memory-fabric fed by agents will receive incomplete and malformed writes as a matter of course**, and the governance path has to treat that as normal rather than exceptional. Here it is handled by filtering and reporting; a deployment would need the same.
 
 ## Cost
 

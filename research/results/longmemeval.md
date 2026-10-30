@@ -40,7 +40,7 @@ By question type, turn recall:
 | `vector` | 0.669 | 0.365 | 0.361 | 0.648 | 0.500 | 0.222 |
 
 **Knowledge updates are the easiest type and preference questions the hardest.**
-That is worth sitting with: the thing Amberlog is built for — a fact being
+That is worth sitting with: the thing Memory Fabric is built for — a fact being
 superseded — is the one retrieval handles best here (0.935), because the
 corrected statement is lexically close to the question. The hard types are
 preference (0.528) and temporal reasoning (0.593), neither of which this
@@ -221,7 +221,7 @@ measurement agreed with.
 
 **And the latency closes P9.** That milestone declined distribution at
 **4.39 ms a retrieval**, measured with the 256-dimension hashing embedder, and
-`amberlog/vectors.py` has carried an open item ever since: the figure was
+`memory-fabric/vectors.py` has carried an open item ever since: the figure was
 taken at the wrong dimension. Here a trained-embedder retrieval costs
 **393 ms**, on a corpus of 23 documents — the cost is **embedding the query**,
 one model call, and is therefore independent of corpus size. That is **89× the

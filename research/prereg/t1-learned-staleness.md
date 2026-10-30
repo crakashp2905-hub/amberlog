@@ -3,7 +3,7 @@
 **Registered 2026-10-18, after two dev pilots (seeds 100–102) and before the
 test seeds (0–9).** This is the first of the two claims scoped from the
 temporal-reasoning review (2026-10-18). Mechanism:
-`TransferTrust(adaptive=True)` in `amberlog/trust.py`: a half-life per
+`TransferTrust(adaptive=True)` in `memory-fabric/trust.py`: a half-life per
 context, chosen from {∞, 200, 60, 20} episodes by prequential log score.
 Harness: `experiments/t1_staleness.py`, S4's world with uneven drift.
 

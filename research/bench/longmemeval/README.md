@@ -3,7 +3,7 @@
 [LongMemEval](https://arxiv.org/abs/2410.10813) (Wu et al., ICLR 2025) —
 500 questions over long chat histories, with turn-level gold evidence written
 by its authors. **The second external benchmark in this project, and the first
-that tests what Amberlog is for.**
+that tests what Memory Fabric is for.**
 
 ## Why it is here
 

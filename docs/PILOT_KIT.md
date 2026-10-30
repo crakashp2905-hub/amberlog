@@ -3,7 +3,7 @@
 *Inviting a team? [PILOT_INVITE.md](PILOT_INVITE.md) is a one-page invitation to send them.*
 
 A two- to four-week pilot with your real agents answers the question no
-benchmark can: does Amberlog stop your agents acting on knowledge that
+benchmark can: does Memory Fabric stop your agents acting on knowledge that
 turned out to be wrong, and how quickly? This kit is everything needed to
 run one and send back a result **without sharing any of your data**.
 
@@ -11,8 +11,8 @@ run one and send back a result **without sharing any of your data**.
 
 ```bash
 pip install .
-amberlog init ./pilot --mode team          # or personal / regulated
-amberlog --db pilot/store.db --keys pilot/keys connect <your tool> --agent <id> --write
+memory-fabric init ./pilot --mode team          # or personal / regulated
+memory-fabric --db pilot/store.db --keys pilot/keys connect <your tool> --agent <id> --write
 ```
 
 Connect every agent that should share knowledge, each with its own `--agent`
@@ -27,7 +27,7 @@ Let agents work as usual. When someone finds a remembered fact is wrong,
 withdraw it the normal way:
 
 ```bash
-amberlog --db pilot/store.db --keys pilot/keys correct <memory id> --apply \
+memory-fabric --db pilot/store.db --keys pilot/keys correct <memory id> --apply \
   --reason "<why>" --actor <your name>
 ```
 
@@ -39,14 +39,14 @@ watch what agents were blocked from doing.
 First, check the pilot has produced enough to be worth sending:
 
 ```bash
-amberlog --db pilot/store.db --keys pilot/keys pilot-report --check
+memory-fabric --db pilot/store.db --keys pilot/keys pilot-report --check
 ```
 
 It lists what is in place and what is missing (two agents sharing, a
 correction, a protected action) in plain words. Then:
 
 ```bash
-amberlog --db pilot/store.db --keys pilot/keys pilot-report > pilot-report.json
+memory-fabric --db pilot/store.db --keys pilot/keys pilot-report > pilot-report.json
 ```
 
 The report holds counts and durations only: no memory content, no queries,

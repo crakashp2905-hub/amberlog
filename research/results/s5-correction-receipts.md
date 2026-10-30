@@ -1,7 +1,7 @@
 # S5 result — correction receipts: **S5b SUPPORTED, S5a NOT SUPPORTED as registered**
 
 Registration: [prereg/s5-correction-receipts.md](../prereg/s5-correction-receipts.md)
-(`4161246`). Mechanism: `amberlog/receipts.py`. Run: `python -m
+(`4161246`). Mechanism: `memory-fabric/receipts.py`. Run: `python -m
 experiments.s5_receipt_leakage --seeds 5` in a worktree pinned at `4161246`.
 150 recipients, deterministic, no model. Raw output:
 [s5-receipt-leakage.json](s5-receipt-leakage.json). Exploratory replication on

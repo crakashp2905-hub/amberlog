@@ -7,10 +7,10 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import LifecycleState, Amberlog
-from amberlog import certificates as C
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.docsource import current_sections, import_document
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric import certificates as C
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.docsource import current_sections, import_document
 
 
 def doc(version: str, **sections: str) -> dict:
@@ -23,7 +23,7 @@ class DocumentSource(unittest.TestCase):
     def setUp(self) -> None:
         self.tmp = TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        self.fabric = Amberlog(str(Path(self.tmp.name) / "s.db"))
+        self.fabric = MemoryFabric(str(Path(self.tmp.name) / "s.db"))
         self.addCleanup(self.fabric.close)
         self.v1 = import_document(self.fabric, doc("v1", s4_1="Set P-14 relief to 12 bar.",
                                                    s4_2="Inspect the seals monthly."), activate=True)
@@ -86,7 +86,7 @@ class DocumentSource(unittest.TestCase):
         f = Path(self.tmp.name) / "doc.json"
         f.write_text(json.dumps(doc("v1", s1="Doors lock at 8 pm.")), encoding="utf-8")
         db = str(Path(self.tmp.name) / "cli.db")
-        out = subprocess.run([sys.executable, "-m", "amberlog", "--db", db, "--create", "--json",
+        out = subprocess.run([sys.executable, "-m", "memory_fabric", "--db", db, "--create", "--json",
                               "import-docs", str(f), "--activate"], capture_output=True, text=True)
         self.assertEqual(out.returncode, 0, out.stderr)
         self.assertEqual(len(json.loads(out.stdout)["added"]), 1)

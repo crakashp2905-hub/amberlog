@@ -100,7 +100,7 @@ Every arm gets the same corpus, the same `k`, the same budget.
 | `lexical` | normalised token overlap, IDF-weighted |
 | `vector` | the store's own `VectorIndex`. **A hashing embedder, not a trained model** — reported as such, since it is the single biggest limitation of these numbers |
 | `hybrid` | lexical + vector, fixed equal weights |
-| `current` | `Amberlog.retrieve()` exactly as it ships today |
+| `current` | `Memory Fabric.retrieve()` exactly as it ships today |
 | `oracle` | returns the labelled relevant set, truncated to the same `k` |
 
 ### The oracle gets no handicap

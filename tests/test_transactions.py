@@ -4,7 +4,7 @@
 nesting, so an inner `with conn:` inside an outer one commits the outer
 transaction too. Every write in this project goes through
 `EventLog.append_many`, which had exactly that — so
-`Amberlog.request_retraction`, whose whole purpose is to commit a
+`MemoryFabric.request_retraction`, whose whole purpose is to commit a
 quarantine, a `RetractionRequested` event and the outbox rows **together**,
 was in fact three separate commits.
 
@@ -28,15 +28,15 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import LifecycleState, Amberlog
-from amberlog.eventlog import EventLog
-from amberlog.governance.firewall import (
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric.eventlog import EventLog
+from memory_fabric.governance.firewall import (
     Firewall,
     rule_capabilities_must_be_granted,
     rule_must_be_active,
     rule_restricted_stays_private,
 )
-from amberlog.txn import depth, transaction
+from memory_fabric.txn import depth, transaction
 
 
 def permissive() -> Firewall:
@@ -153,14 +153,14 @@ class RequestRetractionIsAtomic(unittest.TestCase):
         self._tmp = TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
         self.path = Path(self._tmp.name) / "store.db"
-        fabric = Amberlog(self.path, firewall=permissive(), auto_activate=True)
+        fabric = MemoryFabric(self.path, firewall=permissive(), auto_activate=True)
         self.memory_id = fabric.remember(
             agent_id="ag", content="valve 7 is upstream of the pump"
         )
         fabric.close()
 
-    def _open(self) -> Amberlog:
-        fabric = Amberlog(self.path, firewall=permissive(), auto_activate=True)
+    def _open(self) -> MemoryFabric:
+        fabric = MemoryFabric(self.path, firewall=permissive(), auto_activate=True)
         self.addCleanup(fabric.close)
         return fabric
 
@@ -236,9 +236,9 @@ class RequestRetractionIsAtomic(unittest.TestCase):
         together; if recording the inbox row fails, the withdrawal must go with
         it rather than leaving a store that has forgotten it was told.
         """
-        from amberlog.federation import offer
+        from memory_fabric.federation import offer
 
-        other = Amberlog(
+        other = MemoryFabric(
             Path(self._tmp.name) / "other.db", firewall=permissive(), auto_activate=True
         )
         self.addCleanup(other.close)
@@ -266,7 +266,7 @@ class RequestRetractionIsAtomic(unittest.TestCase):
 
 
 def _event(type_name: str):
-    from amberlog.events import Event
+    from memory_fabric.events import Event
 
     return Event(type=type_name, ts=0, payload={})
 
@@ -282,7 +282,7 @@ class RolledBackWritesLeaveNoIndexEntry(unittest.TestCase):
     """
 
     def test_a_similar_write_after_a_rollback_succeeds(self) -> None:
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         try:
             with self.assertRaises(RuntimeError):
                 with f._transaction():

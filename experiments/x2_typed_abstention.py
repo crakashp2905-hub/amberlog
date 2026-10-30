@@ -62,10 +62,10 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
 
 from experiments import checks as harness_checks  # noqa: E402
 from experiments import x1_abstention_premise as premise  # noqa: E402
-from amberlog.adapters.systemone import (  # noqa: E402
+from memory_fabric.adapters.systemone import (  # noqa: E402
     SystemOneClient, brier_score, expected_calibration_error, noul,
 )
-from amberlog.vectors import LexicalIndex  # noqa: E402
+from memory_fabric.vectors import LexicalIndex  # noqa: E402
 
 QUESTION = (
     "The user asks the question below about their own past conversations. "
@@ -267,7 +267,7 @@ def run(split: str = "s", answerable: int = 500, k: int = 10,
         cache: str | None = None) -> dict[str, Any]:
     client = SystemOneClient(host=host or "http://127.0.0.1:8009", model=model)
     if trace:
-        from amberlog.adapters.tracing import JsonlSink
+        from memory_fabric.adapters.tracing import JsonlSink
 
         client.add_sink(JsonlSink(trace))
     served = client.available()

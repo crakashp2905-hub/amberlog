@@ -8,7 +8,7 @@ import sys
 import unittest
 from pathlib import Path
 
-from amberlog.cli import build_parser
+from memory_fabric.cli import build_parser
 
 ROOT = Path(__file__).resolve().parents[1]
 

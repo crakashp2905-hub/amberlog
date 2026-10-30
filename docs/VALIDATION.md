@@ -19,10 +19,10 @@ billing; see [WORKPLAN.md](WORKPLAN.md), X-CI).
 | Unit, integration, property | `python -m unittest discover -s tests -t .` | **2238 tests**, OK, 15 skipped (Postgres-only file without a server; live-model arms without Ollama or an API key). The count is checked against the suite by `tests/test_suite_hygiene.py`; `python tools/count_tests.py --write` updates it |
 | Fault matrix | `python -m experiments.faultsim` | **17/17** |
 | Secret scan | `python tools/scan_secrets.py` | 103 high-severity findings, **0 unexpected** |
-| Compile | `python -m compileall -q amberlog experiments tests examples tools` | clean |
+| Compile | `python -m compileall -q memory-fabric experiments tests examples tools` | clean |
 | Lint and types | `python -m ruff check` and `python -m mypy`, as configured in `pyproject.toml` (CI job `lint`) | **clean**: 0 findings, 0 errors in 66 files |
 | Package | `python -m build`, then CI's wheel-content checks | wheel and sdist build; dashboard, `py.typed`, LICENSE and the new modules present; experiments and tests excluded |
-| Installed copy | venv outside the tree: `amberlog demo`, then `doctor` | **sound**, no warnings |
+| Installed copy | venv outside the tree: `memory-fabric demo`, then `doctor` | **sound**, no warnings |
 | Examples | each of `examples/*.py` | `action_gate`, `agent_on_the_fabric`, `poisoning_and_rollback` exit 0. `live_memory_os` exits 2: it needs a running Ollama server, which this host does not have |
 | End-to-end, real processes | `python -m experiments.e2e_validation` ([result](../research/results/e2e-validation.md)) | **22/22** after a fix: an action gate in a long-running process verified against a stale projection and **allowed** an action on evidence another process had retracted |
 | Claude adapter contract | `tests/test_claude_contract.py` with `anthropic` 1.15 installed (CI job `claude-contract`) | 5/5: the real SDK accepts every argument and the loop runs append-only. **Not a live call**: there are no direct-API credentials here |
@@ -43,7 +43,7 @@ Later runs in this file are kept as history.
 | 1 | `pytest tests` | **1065 passed**, 924 subtests |
 | 2 | `python -m experiments.faultsim` — deterministic multi-store fault matrix | **17/17 scenarios**, 7 invariant checks after every step |
 | 3 | `tools/scan_secrets.py` (now scoped to files git will commit) | 70 high-severity findings, **0 unexpected** (every one allow-listed with a reason) |
-| 4 | `compileall` over `amberlog`, `experiments`, `tests`, `tools` | clean |
+| 4 | `compileall` over `memory-fabric`, `experiments`, `tests`, `tools` | clean |
 | 5 | Wheel contents | `py.typed`, `identity.py` and `dashboard.html` present; `experiments/` and `tests/` excluded; LICENSE recorded in `dist-info/licenses/` |
 | 6 | Install into a clean venv **outside the source tree**, then run the console script | `demo`, `tenants` and `doctor` all work; `doctor` reports **sound**, 9 ok and 0 warnings, on a store created fresh for the run |
 | 7 | Two-hop retraction over a **real socket** with tenancy on | origin → hop 1 → hop 2 all `quarantined`; tenant preserved at the far end; a well-formed unsigned request refused **401** with a body of exactly `{"rejection_code": "unauthorized"}` |
@@ -56,8 +56,8 @@ Later runs in this file are kept as history.
 | 14 | **Protocol skew** — a hop-0 retraction round-tripped through the 0.3.0 field set | byte-compatible: no new fields serialised, and the minimal payload still applies and enforces |
 | 14a | **External benchmark** — SciFact (BEIR/MTEB), 300 judged queries over 5,183 abstracts, third-party labels | the parameter-free lexical arm scores 0.621 nDCG@10 against published BM25's ~0.665 — a little under properly-tuned BM25, which is where it should be. The shipped hashing embedder scores **0.315**; a trained embedder scores 0.701 and **0.726** fused, above published BM25 |
 | 14b | **Downstream (R6)** — a real model over the benchmark, 3 seeds, blind substring grading | inconclusive against its registered bar (20% of headroom against 40%); retrieval beat stuffing the corpus at a third of the tokens; zero gate violations across every arm and seed |
-| 15a | **Data-access audit** — every public member of `Amberlog` classified, enforced by test | 50 members classified; adding one fails the test until it is. Found 2 real misuses of the unenforced read in shipped code |
-| 16 | **MCP interop** — `amberlog mcp` driven by the official MCP Python SDK client over stdio | negotiates `2025-06-18`; lists exactly `recall`, `fetch`, `verify`, `remember`; a `remember` lands as a private `candidate`; `verify` on a memory not recalled this session is a tool error |
+| 15a | **Data-access audit** — every public member of `Memory Fabric` classified, enforced by test | 50 members classified; adding one fails the test until it is. Found 2 real misuses of the unenforced read in shipped code |
+| 16 | **MCP interop** — `memory-fabric mcp` driven by the official MCP Python SDK client over stdio | negotiates `2025-06-18`; lists exactly `recall`, `fetch`, `verify`, `remember`; a `remember` lands as a private `candidate`; `verify` on a memory not recalled this session is a tool error |
 | 17 | **Live Claude over MCP** — Sonnet 5.5 and Opus 5.5, 5 trials per arm each, retraction issued by a separate CLI process mid-session ([result](../research/results/live-claude-mcp.md)) | 20/20 recalled and verified; retracted arm refused by the store **10/10** and no model recommended the withdrawn fix; $0.43 total |
 | 18 | **Secret-screen red team** — 13 obfuscated credentials and 9 near-miss negatives (`tests/test_sensitive_redteam.py`) | **0/13 → 12/13** caught at high severity; 0 near-miss false positives; display scrubbing removes the disguised value. One known miss (a reversed key), recorded with its reason |
 | 15 | **Tamper detection** — edited payload/timestamp/actor, deleted event, reordered pair, missing link, truncated log, wholesale chain rewrite | each caught, at the right sequence; the rewrite caught only by an external checkpoint |

@@ -86,7 +86,7 @@ To close it: `pip install anthropic`, set credentials, and run `examples/agent_o
 
 ### Postgres deferred out of P2 — then built as an option (2026-10-16)
 
-**Update.** Built as an optional backend (`amberlog[postgres]`), not a
+**Update.** Built as an optional backend (`memory-fabric[postgres]`), not a
 replacement: SQLite stays the default and the core stays dependency-free. It
 earns its place for writers on more than one machine, which SQLite cannot
 serve; it does not add throughput, because writers still serialise for the
@@ -331,7 +331,7 @@ removed rather than the mechanism, and the reasoning is in §5 of the result.
 
 **[P1](research/results/p1-evidence-chain-reconstruction.md) answers the
 question the previous three experiments located and missed its own bar doing
-it.** `Amberlog.reconstruct()` searches for a connected set of currently
+it.** `Memory Fabric.reconstruct()` searches for a connected set of currently
 valid memories that jointly cover a query, rather than ranking candidates
 individually.
 
@@ -587,6 +587,6 @@ population **worse** (−0.042 [−0.081, −0.005]).
 3. **LLM for the agent tier**, and the budget for LLM-agent runs (see CRITICAL_REVIEW §2.1 for the scale).
 4. **Real benchmark** for validation at P4 (ALFWorld, WebShop, τ-bench, a SWE-style set).
 5. **Memory types in v0:** all three, or semantic + procedural with episodic left as the raw log. *(P1 implements all three; the question is which the product surfaces.)*
-6. **Project name**, given the MemOS / MemoryOS collision — **and now a release blocker**: the former distribution name was occupied at the historical 2026-10-16 check. Amberlog is the new target; HTTP 404 responses on 2026-10-29 do not prove registration rights or trademark clearance.
+6. **Project name**, given the MemOS / MemoryOS collision — **and now a release blocker**: the former distribution name was occupied at the historical 2026-10-16 check. Memory Fabric is the new target; HTTP 404 responses on 2026-10-29 do not prove registration rights or trademark clearance.
 7. **Numeric thresholds** for H1–H5 — the numbers above are proposals and must be pre-registered before P4 starts.
 8. **Embedding model.** P1 ships a deterministic, dependency-free hashing embedder so tests are reproducible. A real model is swappable behind the `Embedder` protocol; choosing one is a P2/P3 decision.

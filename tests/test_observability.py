@@ -19,26 +19,26 @@ import urllib.error
 import urllib.request
 from http import HTTPStatus
 
-from amberlog import (
+from memory_fabric import (
     SCHEMA_VERSION,
     EpsilonGreedyPolicy,
     LifecycleState,
-    Amberlog,
+    MemoryFabric,
     MemoryType,
     Scope,
 )
-from amberlog.cli import G, _strip, clip, main
-from amberlog.observability import report
-from amberlog.observability.auth import (
+from memory_fabric.cli import G, _strip, clip, main
+from memory_fabric.observability import report
+from memory_fabric.observability.auth import (
     InsecureConfiguration,
     build_config,
 )
-from amberlog.observability.server import build_server
+from memory_fabric.observability.server import build_server
 
 
-def populated(path: str = ":memory:", **kwargs) -> Amberlog:
+def populated(path: str = ":memory:", **kwargs) -> MemoryFabric:
     """A small store with a retraction, a disagreement and a secret."""
-    fabric = Amberlog(path, auto_activate=True, seed=3, **kwargs)
+    fabric = MemoryFabric(path, auto_activate=True, seed=3, **kwargs)
     root = fabric.remember(
         "agent-a", "The threshold is 45C.", context={"domain": "ev"}, scope="team"
     )
@@ -54,7 +54,7 @@ def populated(path: str = ":memory:", **kwargs) -> Amberlog:
 
 class TestOverview(unittest.TestCase):
     def test_empty_store_says_what_is_missing(self) -> None:
-        with Amberlog() as fabric:
+        with MemoryFabric() as fabric:
             data = report.overview(fabric)
             self.assertEqual(data.total_memories, 0)
             joined = " ".join(data.diagnostics)
@@ -81,7 +81,7 @@ class TestOverview(unittest.TestCase):
         so what a reader happens to have configured says nothing about how the
         stored data was produced."""
         path = ":memory:"
-        fabric = Amberlog(
+        fabric = MemoryFabric(
             path, auto_activate=True, seed=1, exposure_policy=EpsilonGreedyPolicy(epsilon=0.5)
         )
         try:
@@ -99,7 +99,7 @@ class TestOverview(unittest.TestCase):
 
             # Same log, read by a session configured with a deterministic policy:
             # the verdict on the *data* must not change.
-            from amberlog.exposure import TopKPolicy
+            from memory_fabric.exposure import TopKPolicy
 
             fabric.policy = TopKPolicy()
             reread = report.overview(fabric)
@@ -112,7 +112,7 @@ class TestOverview(unittest.TestCase):
             fabric.close()
 
     def test_deterministic_log_is_reported_as_unusable_for_causal_claims(self) -> None:
-        fabric = Amberlog(auto_activate=True, exposure_policy="always")
+        fabric = MemoryFabric(auto_activate=True, exposure_policy="always")
         try:
             fabric.remember("agent-a", "A fact about deploys.", scope="team")
             episode = fabric.start_episode("agent-a", "t", {})
@@ -139,7 +139,7 @@ class TestTheBuilderCannotPublishUnauthenticated(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.fabric = Amberlog(":memory:")
+        self.fabric = MemoryFabric(":memory:")
         self.addCleanup(self.fabric.close)
 
     def test_it_refuses_no_auth_off_loopback(self) -> None:
@@ -212,7 +212,7 @@ class TestAttention(unittest.TestCase):
         """The gate is that a reader can act unaided, which means each finding
         arrives with the command that addresses it."""
         for item in report.attention(self.fabric):
-            self.assertTrue(item.action.startswith("amberlog "))
+            self.assertTrue(item.action.startswith("memory-fabric "))
             self.assertTrue(item.title)
             self.assertTrue(item.detail)
 
@@ -222,7 +222,7 @@ class TestAttention(unittest.TestCase):
         self.assertEqual(ranks, sorted(ranks))
 
     def test_clean_store_needs_no_attention(self) -> None:
-        with Amberlog(auto_activate=True) as fabric:
+        with MemoryFabric(auto_activate=True) as fabric:
             fabric.remember("agent-a", "An ordinary fact.", scope="team")
             self.assertEqual(report.attention(fabric), [])
 
@@ -288,7 +288,7 @@ class TestSecretsAreNotDisplayed(unittest.TestCase):
     """
 
     def setUp(self) -> None:
-        self.fabric = Amberlog(auto_activate=True)
+        self.fabric = MemoryFabric(auto_activate=True)
         self.mid = self.fabric.remember(
             "agent-a", f"To deploy, export AWS_ACCESS_KEY_ID={SECRET} and run make ship.", scope="team"
         )
@@ -448,7 +448,7 @@ class TestServer(unittest.TestCase):
         status, body, ctype = self.get("/")
         self.assertEqual(status, 200)
         self.assertIn("text/html", ctype)
-        self.assertIn("Amberlog", body)
+        self.assertIn("Memory Fabric", body)
 
     def test_dashboard_loads_no_third_party_resources(self) -> None:
         """The page must work offline and leak nothing to a CDN."""
@@ -673,7 +673,7 @@ class TestCli(unittest.TestCase):
 
         with tempfile.TemporaryDirectory() as tmp:
             path = str(Path(tmp) / "store.db")
-            fabric = Amberlog(path, auto_activate=True)
+            fabric = MemoryFabric(path, auto_activate=True)
             fabric.remember("agent-a", "An ordinary fact.", scope="team")
             fabric.close()
             buffer = io.StringIO()
@@ -681,7 +681,7 @@ class TestCli(unittest.TestCase):
                 clean = self.run_cli("--db", path, "attention")
             self.assertEqual(clean, 0)
 
-            fabric = Amberlog(path, auto_activate=True)
+            fabric = MemoryFabric(path, auto_activate=True)
             fabric.remember("agent-b", "token AKIAIOSFODNN7EXAMPLE", scope="team")
             fabric.close()
             with contextlib.redirect_stdout(buffer):

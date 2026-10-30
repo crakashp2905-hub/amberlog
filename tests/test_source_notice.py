@@ -4,21 +4,21 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog, hindsight
-from amberlog.federation import offer
-from amberlog.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
+from memory_fabric import MemoryFabric, hindsight
+from memory_fabric.federation import offer
+from memory_fabric.governance.firewall import (Firewall, rule_capabilities_must_be_granted,
                                                rule_must_be_active, rule_restricted_stays_private)
-from amberlog.manager import MemoryManager
-from amberlog.model import LifecycleState, Scope
-from amberlog.protocol import SourceNotice
-from amberlog.transport import (HttpTransport, InProcessTransport, Peer, PeerRegistry,
+from memory_fabric.manager import MemoryManager
+from memory_fabric.model import LifecycleState, Scope
+from memory_fabric.protocol import SourceNotice
+from memory_fabric.transport import (HttpTransport, InProcessTransport, Peer, PeerRegistry,
                                      serve)
 
 KEY = b"shared-key-origin-peer"
 
 
-def store() -> Amberlog:
-    return Amberlog(":memory:", auto_activate=True, firewall=Firewall(rules=(
+def store() -> MemoryFabric:
+    return MemoryFabric(":memory:", auto_activate=True, firewall=Firewall(rules=(
         rule_restricted_stays_private, rule_must_be_active, rule_capabilities_must_be_granted)))
 
 

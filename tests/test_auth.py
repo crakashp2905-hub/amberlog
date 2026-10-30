@@ -14,8 +14,8 @@ import urllib.parse
 import urllib.request
 from http import HTTPStatus
 
-from amberlog import Amberlog
-from amberlog.observability.auth import (
+from memory_fabric import MemoryFabric
+from memory_fabric.observability.auth import (
     COOKIE_NAME,
     AuthConfig,
     Authenticator,
@@ -26,7 +26,7 @@ from amberlog.observability.auth import (
     host_without_port,
     redact_token,
 )
-from amberlog.observability.server import build_server
+from memory_fabric.observability.server import build_server
 
 TOKEN = "test-token-abcdefghijklmnop"
 
@@ -227,7 +227,7 @@ class ServerCase(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls) -> None:
-        cls.fabric = Amberlog(auto_activate=True, seed=1)
+        cls.fabric = MemoryFabric(auto_activate=True, seed=1)
         cls.mid = cls.fabric.remember("agent-a", "A memory worth protecting.")
         cls.server = build_server(
             cls.fabric, host="127.0.0.1", port=0, quiet=True, auth=cls.AUTH

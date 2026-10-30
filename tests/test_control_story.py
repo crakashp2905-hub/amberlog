@@ -4,14 +4,14 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.observability.control import action_detail, action_rows, if_wrong, story, timeline
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.observability.control import action_detail, action_rows, if_wrong, story, timeline
 
 
 class StoryCase(unittest.TestCase):
     def setUp(self) -> None:
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         self.f = f
         self.mid = f.remember("ag_inspector", "Pump P-14 relief valve is set to 12 bar.",
@@ -62,7 +62,7 @@ class StoryCase(unittest.TestCase):
 
 class TestSecretsStayMasked(unittest.TestCase):
     def test_story_and_timeline_mask_secret_values(self):
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         secret = "AKIAIOSFODNN7EXAMPLE"
         mid = f.remember("ag", f"To deploy, export AWS_ACCESS_KEY_ID={secret} and run make.",

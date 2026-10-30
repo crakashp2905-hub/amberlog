@@ -74,7 +74,7 @@ package version string only.
 | New and changed modules on Postgres 16 | the same modules with `MF_TEST_POSTGRES_URL` | **195 OK**. CI runs every storage module on Postgres |
 | Fault matrix | `python -m experiments.faultsim` | 17/17 |
 | Secret scan | `python tools/scan_secrets.py` | exit 0 |
-| Compile | `python -m compileall -q amberlog experiments tests examples tools` | exit 0 |
+| Compile | `python -m compileall -q memory-fabric experiments tests examples tools` | exit 0 |
 
 The 36 skips are unchanged from the baseline: the Postgres-only file, and live
 model harnesses without Ollama or an API key.

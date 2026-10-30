@@ -1,6 +1,6 @@
 # Evidence Completeness v1 (experimental)
 
-`amberlog.evidence_completeness.classify` partitions the eligible scoped
+`memory_fabric.evidence_completeness.classify` partitions the eligible scoped
 corpus into typed matches, typed nonmatches, and unknown candidates. A false
 conjunct excludes a record even when another field is missing. `None` tenant
 means the default tenant; cross-tenant operator enumeration is not supported.
@@ -14,7 +14,7 @@ An exception propagates rather than producing a positive certificate. No
 extracted fields, inferred authority or new persistent index are created.
 
 ```python
-from amberlog.evidence_completeness import exhaustive
+from memory_fabric.evidence_completeness import exhaustive
 
 result = exhaustive(
     fabric, "reader", {"kind": "sensor", "status": "open"},

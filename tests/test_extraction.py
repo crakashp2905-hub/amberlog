@@ -1,6 +1,6 @@
 """Extraction: the structural half, with no model in the loop.
 
-`amberlog/extraction.py` has two halves. One calls a model; the other
+`memory_fabric/extraction.py` has two halves. One calls a model; the other
 turns its output into relations and applicability, and that half is pure. Every
 test here exercises the pure half, using `StubExtractor` or hand-built records.
 
@@ -20,12 +20,12 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT))
 
-from amberlog import Amberlog  # noqa: E402
-from amberlog.extraction import (  # noqa: E402
+from memory_fabric import MemoryFabric  # noqa: E402
+from memory_fabric.extraction import (  # noqa: E402
     Extracted, StubExtractor, _entities, applicable_defaults, infer_relations,
     parse,
 )
-from amberlog.relations import RelationKind  # noqa: E402
+from memory_fabric.relations import RelationKind  # noqa: E402
 
 RULE = "All yard vehicles run 3.9 bar in winter, except at the harbour and quarry sites."
 MARGIN = "At the depot-12 site, add 0.35 bar to the axle-set figure as a salt-corrosion margin."
@@ -261,7 +261,7 @@ class TestRelationInference(unittest.TestCase):
 
 class TestInTheStore(unittest.TestCase):
     def _fabric(self):
-        return Amberlog(":memory:", auto_activate=True,
+        return MemoryFabric(":memory:", auto_activate=True,
                             encrypt_content=False, retrieval="lexical")
 
     def test_an_applicable_default_is_admitted(self):

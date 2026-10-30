@@ -142,7 +142,7 @@ the rest are deterministic and will be reported as such.
 ## Amendment 1 — 2026-10-16, before any P2b number
 
 §6 required that the arm under test value a connector by path-finding before
-the comparison was worth running. That now exists: `Amberlog.reconstruct`
+the comparison was worth running. That now exists: `Memory Fabric.reconstruct`
 (P1), whose link-strength selection P1d supported on a fresh holdout. Nothing
 below was chosen after seeing a P2b number; none exists yet.
 

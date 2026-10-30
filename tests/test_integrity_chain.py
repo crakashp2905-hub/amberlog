@@ -21,10 +21,10 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog
-from amberlog.eventlog import EventLog
-from amberlog.events import Event
-from amberlog.integrity import (
+from memory_fabric import MemoryFabric
+from memory_fabric.eventlog import EventLog
+from memory_fabric.events import Event
+from memory_fabric.integrity import (
     GENESIS,
     Checkpoint,
     IntegrityChain,
@@ -38,7 +38,7 @@ class ChainCase(unittest.TestCase):
         self._tmp = TemporaryDirectory()
         self.addCleanup(self._tmp.cleanup)
         self.path = Path(self._tmp.name) / "store.db"
-        fabric = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+        fabric = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         try:
             for index in range(5):
                 fabric.remember(agent_id="ag", content=f"observation {index}")
@@ -46,8 +46,8 @@ class ChainCase(unittest.TestCase):
         finally:
             fabric.close()
 
-    def reopen(self) -> Amberlog:
-        fabric = Amberlog(self.path, auto_activate=True, encrypt_content=False)
+    def reopen(self) -> MemoryFabric:
+        fabric = MemoryFabric(self.path, auto_activate=True, encrypt_content=False)
         self.addCleanup(fabric.close)
         return fabric
 

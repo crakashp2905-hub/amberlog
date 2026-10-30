@@ -20,15 +20,15 @@ import sys
 import tempfile
 import unittest
 
-from amberlog import Amberlog
-from amberlog.governance.erasure import DirectoryKeyProvider, KeyUnavailable
+from memory_fabric import MemoryFabric
+from memory_fabric.governance.erasure import DirectoryKeyProvider, KeyUnavailable
 
 
 def _cli(*args: str, env: dict | None = None) -> subprocess.CompletedProcess:
     full_env = dict(os.environ)
-    full_env.pop("AMBERLOG_KEYS", None)
+    full_env.pop("MEMORY_FABRIC_KEYS", None)
     full_env.update(env or {})
-    return subprocess.run([sys.executable, "-m", "amberlog", *args],
+    return subprocess.run([sys.executable, "-m", "memory_fabric", *args],
                           capture_output=True, text=True, timeout=120, env=full_env)
 
 
@@ -48,7 +48,7 @@ class MigrationCase(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.db = os.path.join(self.tmp.name, "store.db")
         self.keys = os.path.join(self.tmp.name, "keys")
-        fabric = Amberlog(self.db)
+        fabric = MemoryFabric(self.db)
         try:
             self.ids = [fabric.remember("ag", f"memory {i}: valve {i} is upstream")
                         for i in range(5)]
@@ -64,7 +64,7 @@ class TestMigrateKeys(MigrationCase):
         result = _cli("--db", self.db, "migrate-keys", self.keys)
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertEqual(_key_material_rows(self.db), 0)
-        fabric = Amberlog(self.db, key_provider=DirectoryKeyProvider(self.keys))
+        fabric = MemoryFabric(self.db, key_provider=DirectoryKeyProvider(self.keys))
         try:
             for i, mid in enumerate(self.ids):
                 self.assertIn(f"valve {i}", fabric.get(mid).content)
@@ -75,12 +75,12 @@ class TestMigrateKeys(MigrationCase):
         """The point of the migration: a stolen .db is not enough."""
         _cli("--db", self.db, "migrate-keys", self.keys)
         with self.assertRaises(KeyUnavailable):
-            Amberlog(self.db)
+            MemoryFabric(self.db)
 
     def test_an_erased_memory_stays_erased(self) -> None:
         _cli("--db", self.db, "migrate-keys", self.keys)
         self.assertFalse(os.path.exists(os.path.join(self.keys, f"{self.erased}.key")))
-        fabric = Amberlog(self.db, key_provider=DirectoryKeyProvider(self.keys))
+        fabric = MemoryFabric(self.db, key_provider=DirectoryKeyProvider(self.keys))
         try:
             self.assertNotIn("to be erased", fabric.get(self.erased).content)
         finally:
@@ -88,7 +88,7 @@ class TestMigrateKeys(MigrationCase):
 
     def test_erasure_still_works_afterwards(self) -> None:
         _cli("--db", self.db, "migrate-keys", self.keys)
-        fabric = Amberlog(self.db, key_provider=DirectoryKeyProvider(self.keys))
+        fabric = MemoryFabric(self.db, key_provider=DirectoryKeyProvider(self.keys))
         try:
             self.assertTrue(fabric.erase_content(self.ids[0], reason="r", actor="op"))
             self.assertFalse(os.path.exists(os.path.join(self.keys, f"{self.ids[0]}.key")))
@@ -97,7 +97,7 @@ class TestMigrateKeys(MigrationCase):
 
     def test_the_environment_variable_supplies_the_directory(self) -> None:
         _cli("--db", self.db, "migrate-keys", self.keys)
-        result = _cli("--db", self.db, "overview", env={"AMBERLOG_KEYS": self.keys})
+        result = _cli("--db", self.db, "overview", env={"MEMORY_FABRIC_KEYS": self.keys})
         self.assertEqual(result.returncode, 0, result.stderr)
 
     def test_key_files_are_owner_only(self) -> None:
@@ -121,7 +121,7 @@ class TestItRefusesToDoHarm(MigrationCase):
         _cli("--db", self.db, "migrate-keys", self.keys)
         result = _cli("--db", self.db, "--keys", self.keys, "migrate-keys", self.keys)
         self.assertNotEqual(result.returncode, 0)
-        fabric = Amberlog(self.db, key_provider=DirectoryKeyProvider(self.keys))
+        fabric = MemoryFabric(self.db, key_provider=DirectoryKeyProvider(self.keys))
         fabric.close()
 
 

@@ -30,20 +30,20 @@ import time
 from pathlib import Path
 from typing import Any, Sequence
 
-from amberlog import Amberlog
-from amberlog.actions import ActionGate, ActionPolicy, ToolRule
-from amberlog.incident import reconstruct
-from amberlog.justification import JustificationKind, justification_context
+from memory_fabric import MemoryFabric
+from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
+from memory_fabric.incident import reconstruct
+from memory_fabric.justification import JustificationKind, justification_context
 
 WRITERS = ("ana", "ben", "cho", "dev", "mallory")
 NOUNS = ("pump", "valve", "crane", "hoist", "winch", "tug", "genset", "loader")
 
 
-def build(seed: int, withdraw: str | None = None) -> tuple[Amberlog, dict[str, Any]]:
+def build(seed: int, withdraw: str | None = None) -> tuple[MemoryFabric, dict[str, Any]]:
     """One incident. With `withdraw`, that memory (by label) is quarantined
     immediately before the action."""
     rng = random.Random(seed)
-    fabric = Amberlog(auto_activate=True, seed=seed)
+    fabric = MemoryFabric(auto_activate=True, seed=seed)
     label: dict[str, str] = {}
     order: list[str] = []
 
@@ -91,7 +91,7 @@ def build(seed: int, withdraw: str | None = None) -> tuple[Amberlog, dict[str, A
     return fabric, {"label": label, "evidence": evidence, "allowed": decision.allowed}
 
 
-def ancestors(fabric: Amberlog, ids: Sequence[str]) -> set[str]:
+def ancestors(fabric: MemoryFabric, ids: Sequence[str]) -> set[str]:
     out: set[str] = set()
     frontier = list(ids)
     while frontier:

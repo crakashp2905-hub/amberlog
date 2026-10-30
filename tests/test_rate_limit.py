@@ -12,13 +12,13 @@ import urllib.error
 import urllib.request
 from unittest import mock
 
-from amberlog import Amberlog
-from amberlog import agent_api
-from amberlog.agent_api import (AgentApi, RateLimit, RateLimiter, _ApiError,
+from memory_fabric import MemoryFabric
+from memory_fabric import agent_api
+from memory_fabric.agent_api import (AgentApi, RateLimit, RateLimiter, _ApiError,
                                      build_agent_server, encode_credential, load_agents,
                                      register_all)
-from amberlog.sdk import agent, operator
-from amberlog.service import MemoryService
+from memory_fabric.sdk import agent, operator
+from memory_fabric.service import MemoryService
 
 KEY_A, KEY_B = "aa" * 32, "bb" * 32
 
@@ -68,7 +68,7 @@ class ApiCase(unittest.TestCase):
         path = os.path.join(tmp.name, "agents")
         with open(path, "w") as fh:
             fh.write(f"ag_a:tn_acme:{KEY_A}\nag_b:tn_acme:{KEY_B}\n")
-        self.fabric = Amberlog(":memory:")
+        self.fabric = MemoryFabric(":memory:")
         self.addCleanup(self.fabric.close)
         self.mid = agent(self.fabric, "ag_seed", "tn_acme").remember(
             "E01 at coastal sites: swap the pilot cable.")

@@ -4,18 +4,18 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog.governance.firewall import (
+from memory_fabric.governance.firewall import (
     Firewall,
     FirewallRequest,
     strictest,
 )
-from amberlog.governance.retention import (
+from memory_fabric.governance.retention import (
     RetentionPolicy,
     expected_value,
     should_keep_for_rarity,
 )
-from amberlog.governance.sensitive import SensitiveDataDetector, shannon_entropy
-from amberlog.model import (
+from memory_fabric.governance.sensitive import SensitiveDataDetector, shannon_entropy
+from memory_fabric.model import (
     FirewallDecision,
     LifecycleState,
     Memory,

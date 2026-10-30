@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.events import EventType
-from amberlog.objective import MemoryObjective, Rule
-from amberlog.objective_v2 import Constraint, MemoryObjectiveV2, ObjectiveLog, from_v1
+from memory_fabric import MemoryFabric
+from memory_fabric.events import EventType
+from memory_fabric.objective import MemoryObjective, Rule
+from memory_fabric.objective_v2 import Constraint, MemoryObjectiveV2, ObjectiveLog, from_v1
 
 
 def site(value: str) -> Rule:
@@ -18,7 +18,7 @@ class Fixture(unittest.TestCase):
     def setUp(self) -> None:
         # The vendor note contradicts an established fact, so the default
         # ingest hold would keep it a candidate; these tests rank it.
-        self.f = Amberlog(":memory:", auto_activate=True, hold_suspicious=False)
+        self.f = MemoryFabric(":memory:", auto_activate=True, hold_suspicious=False)
         self.addCleanup(self.f.close)
         r = self.f.remember
         self.north = r("tech", "Pump P1 purge time at North is 30 s.", context={"site": "north"},

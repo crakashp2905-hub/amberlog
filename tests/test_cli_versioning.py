@@ -9,8 +9,8 @@ import os
 import tempfile
 import unittest
 
-from amberlog import Amberlog
-from amberlog.cli import main
+from memory_fabric import MemoryFabric
+from memory_fabric.cli import main
 
 
 class Commands(unittest.TestCase):
@@ -18,7 +18,7 @@ class Commands(unittest.TestCase):
         self.tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(self.tmp.cleanup)
         self.db = os.path.join(self.tmp.name, "store.db")
-        f = Amberlog(self.db, auto_activate=True)
+        f = MemoryFabric(self.db, auto_activate=True)
         self.p1 = f.remember("ann", "Pump P1 runs at 4 bar.", scope="team")
         f.remember("ann", "Pump P1 seal is not leaking.", scope="team")
         f.close()
@@ -43,7 +43,7 @@ class Commands(unittest.TestCase):
                 "--key", "k1")
         self.assertEqual(self.cli(*args)[0], 0)
         self.assertEqual(self.cli(*args)[0], 0)  # a retry replays
-        f = Amberlog(self.db)
+        f = MemoryFabric(self.db)
         self.assertEqual((f.get(self.p1).content, f.get(self.p1).version),
                          ("Pump P1 runs at 5 bar.", 2))
         f.close()
@@ -86,7 +86,7 @@ class DecayCommands(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory(ignore_cleanup_errors=True)
         self.addCleanup(tmp.cleanup)
         db = os.path.join(tmp.name, "s.db")
-        f = Amberlog(db, auto_activate=True)
+        f = MemoryFabric(db, auto_activate=True)
         for i in range(24):
             f.remember("ann", f"Pump P{i} runs at {i + 10} bar.", scope="team")
         f.close()

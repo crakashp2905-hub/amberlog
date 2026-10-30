@@ -5,8 +5,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 
 ## [Unreleased]
 
-### Changed: Amberlog namespace
-- Product, package, Python import, CLI, MCP setup and environment prefix now use Amberlog. The public store class is `Amberlog`; retired import/command aliases are intentionally absent under the owner's complete-rename decision.
+### Changed: Memory Fabric namespace
+- Product, package, Python import, CLI, MCP setup and environment prefix now use Memory Fabric. The public store class is `Memory Fabric`; retired import/command aliases are intentionally absent under the owner's complete-rename decision.
 - Existing events, schema version and cryptographic key-derivation/associated-data bytes remain unchanged. Historical text was terminology-normalized; original evidence commits remain in Git and numerical outcomes were not improved by renaming.
 - Package publishing is manual and gated on name clearance, account setup, exact-commit validation and human approval. No upload, tag or remote rename is part of this change.
 
@@ -36,7 +36,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - Experimental `knowledge_compiler.compile_markdown` and `import-docs --format markdown`
   compile heading-based source sections through the existing governed importer.
   Explicit document identity and revision are required; review remains the default.
-- Amberlog 2 masterplan, implementation status and local performance baseline.
+- Memory Fabric 2 masterplan, implementation status and local performance baseline.
 
 ### Fixed: document revision tenant boundary
 - Importing a document without an explicit tenant now compares only the default
@@ -61,7 +61,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **The directive screen flags far less ordinary conversation**: 0.62% â†’ 0.08% of LongMemEval turns, with third-party injection recall unchanged (20/60, 0/56 benign) and the held-out set unchanged (10/12, 0/16). Forms that tell the answerer what to say now need a planted value to follow.
 
 ### Added: make it easy to see, understand and trust
-- **`amberlog tour`**: the whole idea in sixty seconds, in a terminal, with nothing written or downloaded. The README now opens with it.
+- **`memory-fabric tour`**: the whole idea in sixty seconds, in a terminal, with nothing written or downloaded. The README now opens with it.
 - **Plain-language reasons** (`reasons.py`): every refusal code the gate, verifier, limits and enforcer can return has a sentence and a fix; a blocked action names the memory, who withdrew it, when and why. MCP and the agent API return them as `explanation`.
 - **Trust badge on recall**: each recalled memory carries its source, independent sources (not agent count), age and corrections (`trust` in MCP and the agent API).
 - **Control Center**: the story of each fact (made, shared, recalled, acted on, corrected, blocked), "what would change if this were wrong?", a **Replay** tab that steps through a store's history, and plain-language explanations on every action. Secret values stay masked in all of them.
@@ -87,11 +87,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **Answerability** (`answerability.py`): a verdict on the evidence (answerable, conflicting, insufficient, undetermined), separate from retrieval scores. `RetrievalResult.answerability()`; the agent API's `recall` returns it. Evaluated with real models (A1, A1-h): an instructed model already abstains perfectly on this world, so the verdict ships as a reported signal and an optional gate.
 - **Retrieval profiles** (`retrieve(profile=..., method=...)`): `precise`, `conversational`, `semantic`, `multi_hop` and `audit`, each citing its measurement, plus a per-call ranking method.
 - **Strict freshness** (`freshness.py`, `ToolRule(require_fresh=True)`): imported evidence needs a signed, unexpired lease from its origin, so no protected action relies on a withdrawal at an offline peer for more than one lease lifetime.
-- **`amberlog anchor`**: checkpoint anchoring in one command to `dir:`, `git:` or `https://` targets, with `--verify`.
-- **Signed action receipts** (`action_receipt.py`, `mf-action-receipt/1`): Ed25519, verifiable with the public key alone, and carrying hashes, never content. `amberlog receipt-verify`.
+- **`memory-fabric anchor`**: checkpoint anchoring in one command to `dir:`, `git:` or `https://` targets, with `--verify`.
+- **Signed action receipts** (`action_receipt.py`, `mf-action-receipt/1`): Ed25519, verifiable with the public key alone, and carrying hashes, never content. `memory-fabric receipt-verify`.
 - **Decision dependence** (`dependence.py`): which recorded decisions depended on a corrected memory, by counterfactual through the product's own verifier.
 - **Consensus by independent source** (`consensus.py`): repetition is not corroboration, and artificial consensus is flagged.
-- **Memory Control Center** (dashboard): a guided start page, agent actions with their evidence then and now, a "would retrieval show this?" trace, decision dependence and known limitations. `amberlog sandbox` seeds a store with deliberately wrong memories and opens it in the dashboard.
+- **Memory Control Center** (dashboard): a guided start page, agent actions with their evidence then and now, a "would retrieval show this?" trace, decision dependence and known limitations. `memory-fabric sandbox` seeds a store with deliberately wrong memories and opens it in the dashboard.
 - **Tenant isolation patterns** (DEPLOYMENT.md), **PostgreSQL failover runbook** (OPERATIONS Â§4b), and the team review flow (validate *and* share).
 
 ### Added: staging run, real-model summaries, related work, review kits
@@ -134,7 +134,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - **`doctor --webhook URL`**: a JSON alert POSTed when the store is not sound (`--webhook-on warn` for warnings too). Before this, `doctor` had no alerting path.
 ### Added: governed decay view (OptMem-inspired compression)
 
-- `amberlog/decay.py` (experimental): a bounded session-start view with
+- `memory-fabric/decay.py` (experimental): a bounded session-start view with
   recent memories whole and older ones in summaries that coarsen with age over
   a binary tree of fixed log positions; `zoom` back down to the records;
   summaries written by the agent on request ("nap"), stored as derived
@@ -168,7 +168,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/). Versions track t
 - Revising a fact, or withdrawing it with basis `contradicted`, now contests
   other usable notes in the tenant that state the same claim with the old
   value (`validation.restatements`). They are withheld from retrieval and
-  stay visible for review; nothing is deleted. `Amberlog(...,
+  stay visible for review; nothing is deleted. `MemoryFabric(...,
   contest_restatements=False)` turns it off.
 - GME matrix v2 (pre-registered, fresh seeds): stale leakage halved; the
   remainder is withdrawals recorded without a basis. Compression saves 5-19%
@@ -257,10 +257,10 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   first run found two untested guards, now covered: a summariser dropping an
   undisputed value, and an ungranted agent holding its own valid certificate.
 
-### Changed (internal): Amberlog split into a core and seven services
+### Changed (internal): Memory Fabric split into a core and seven services
 
 - `fabric.py` was one 3,722-line module with a 3,400-line class. It is now a
-  182-line facade composing `amberlog/_fabric/`: `FabricCore` (identity,
+  182-line facade composing `memory-fabric/_fabric/`: `FabricCore` (identity,
   log, refresh, transactions, replay) and services for writes, retrieval,
   lifecycle, federation, sharing, sealing and access. Methods moved
   verbatim; no behaviour changed.
@@ -291,10 +291,10 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   checkpoints, kept off the store's disk, catch an edited event with a
   recomputed chain; `checkpoint --verify` reads the manager's JSONL file
   (`tests/test_checkpoint_rewrite.py`).
-- **Production cryptography profile**: `AMBERLOG_CRYPTO_PROFILE=production`
+- **Production cryptography profile**: `MEMORY_FABRIC_CRYPTO_PROFILE=production`
   writes only AES-256-GCM from the maintained `cryptography` library and
   refuses to open without it; the Docker image installs it and defaults to
-  it; extra `amberlog[crypto]`; `doctor` reports the profile.
+  it; extra `memory-fabric[crypto]`; `doctor` reports the profile.
   `docs/CRYPTOGRAPHY.md` sets out every decision for independent review.
 - `docs/SECURITY_REVIEW.md`: F15â€“F17 recorded; every open item now carries
   current status and a review-by date.
@@ -318,8 +318,8 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   recipient's firewall and import here. A networked import is always a
   **candidate**, recorded as `peer:<sending store>`, and idempotent. `offer`
   is now `prepare_offer` + `accept_offer`, shared by both paths.
-- **CLI:** `amberlog federate` serves the federation endpoints and runs
-  the manager; `amberlog offer <id> --to <store>` shares; a global
+- **CLI:** `memory-fabric federate` serves the federation endpoints and runs
+  the manager; `memory-fabric offer <id> --to <store>` shares; a global
   `--share-policy {value,reviewed}` (default `value`, unchanged) lets a
   validated memory leave a store that has no outcome evidence yet.
 - **Fixed: forwarded retractions were refused over HTTP.** A recipient
@@ -357,7 +357,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - **Defaults:** a suspicious write is held as a candidate
   (`hold_suspicious=True`), the action gate refuses suspicious evidence
   (`ToolRule.refuse_suspicious=True`, code `evidence_suspicious`), and
-  recall marks it `implausible`. New command: `amberlog suspicious`.
+  recall marks it `implausible`. New command: `memory-fabric suspicious`.
 - **Federation key rotation with an overlap window**: `Peer.accepted` and
   `previous_keys` in the peers file. The recipient verifies with the key the
   signature names, if current or still accepted; a retired key is refused.
@@ -380,7 +380,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   relative link (698) and that every doc is indexed; check the generated
   references are current, every CLI option has help (68 were missing), and
   every reason code is documented.
-- `amberlog --version`. Package metadata: keywords, classifiers and
+- `memory-fabric --version`. Package metadata: keywords, classifiers and
   documentation, changelog, issue and security URLs.
 - **Security reporting** is by private email to the maintainer: GitHub's
   private reporting is not available on a private repository.
@@ -434,7 +434,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   config beside the snapshot and writes a manifest of hashes, the event count
   and the chain head. **`restore`** refuses a backup that does not match its
   manifest, never overwrites, and checks the replayed chain head.
-- **Structured logs**: `--log-format json` / `AMBERLOG_LOG_FORMAT=json`;
+- **Structured logs**: `--log-format json` / `MEMORY_FABRIC_LOG_FORMAT=json`;
   the manager logs each cycle and each task failure with ids and codes.
 - **Quickstart and reference agent**: `docs/QUICKSTART.md`,
   `examples/quickstart.py` and `examples/reference_agent.py`, each run by a
@@ -480,7 +480,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   `elevated`) and kind (`instruction` / `observation` / `derived_claim`) are
   bound to its origin. They are inherited through summaries, derivations,
   recognised copies and federation, where the origin's verdict travels as a
-  floor. Sources are kept apart from summarisers. `Amberlog.elevate`
+  floor. Sources are kept apart from summarisers. `Memory Fabric.elevate`
   lifts soft reasons only, per version, by an approver who is not the author.
   Outcomes never confer authority. The roadmap's test (inject â†’ summarise â†’
   tool copy â†’ share) is `tests/test_authority.py`.
@@ -515,7 +515,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 
 ### Added: the background memory manager (schema 0.12.0)
 
-- **`amberlog/manager.py`: the store maintains itself.**
+- **`memory-fabric/manager.py`: the store maintains itself.**
   - **Tasks:** every interval it delivers owed retractions to peer stores,
     applies the retention policy, scans for the auditor's triggers, finds
     contradicting memories, records an integrity checkpoint (off-host with
@@ -526,13 +526,13 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
     across processes, with takeover when the holder stops.
   - **Audit:** every cycle is a `MaintenanceRan` event.
   - **Startup:** it starts automatically with `serve`, `agent-api` and
-    `mcp`, and runs alone with `amberlog maintain`. `--status` shows
+    `mcp`, and runs alone with `memory-fabric maintain`. `--status` shows
     the last cycle and what needs a person.
   - **No terminal step by default:** retention *deletions* need
     `--retention-delete`, contradictions are queued and never resolved, and
     nothing is validated or released.
 - **Retraction delivery now has a configuration path:** `--peers` or
-  `AMBERLOG_PEERS` (a JSON peer list). Before, nothing in the CLI
+  `MEMORY_FABRIC_PEERS` (a JSON peer list). Before, nothing in the CLI
   delivered retractions to other stores.
 - `doctor` reports a manager that has stopped.
 - `sweep_retention(actions=)` limits which retention actions are applied.
@@ -551,7 +551,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - `derive(auto_activate=)`, as `remember` has.
 - **Contradiction surfacing** (`conflicts.py`, G4b, under test): notes that give different values for the same claim, by different authors (imports resolve to the original author), are placed together and flagged, instead of lexical ranking deciding which the agent sees first.
 - **In the RC as well:** `trust.py` and `exposure.TransferGatePolicy` (S4),
-  `independence.py` (S2), `receipts.py` (S5), `Amberlog.supersede_copies` (S1),
+  `independence.py` (S2), `receipts.py` (S5), `Memory Fabric.supersede_copies` (S1),
   `ActionGate.execute` (S6). See the release note.
 
 ### Changed â€” breaking
@@ -562,7 +562,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   validated private memory, restricted ones included, was returned to every
   agent in its tenant although the specification defines scope as visibility
   ([security review](docs/SECURITY_REVIEW.md) F10). **Upgrading a store:**
-  `amberlog --db store.db share --all-private-active --actor <you>`
+  `memory-fabric --db store.db share --all-private-active --actor <you>`
   restores the previous effective visibility through the firewall, and
   restricted memories are refused and listed.
 - **Promotion to `team` no longer needs value evidence.** The value rule now
@@ -587,7 +587,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
   a tenant. Attaching an agent (`read`) lets it read the members even when
   private; `write`, `approve` and `retract` let an authenticated agent add to,
   validate and withdraw a collection's members without the operator role. Every
-  change is an event naming its actor. `amberlog collection ...`.
+  change is an event naming its actor. `memory-fabric collection ...`.
 - A review queue (`review`), safe correction with a preview that is the outcome
   (`correct`), reach on every memory page, and four status labels.
 - `share` and `agent-api-revoke` commands; `list --agent`.
@@ -625,19 +625,19 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 - **`conceal_cross_tenant`**: opt-in, makes a cross-tenant refusal identical to a missing id.
 - **Benchmarks**: [P5](research/results/p5-poisonworld.md) (ten-agent poisoning, pre-registered), [P12](research/results/p12-load.md) (latency at 1/10/50/100 agents).
 - **Threat-mapped security regression suite** (`tests/test_security_regression.py`), **threat model** (`docs/SAFETY_AND_SECURITY.md`), **test plan** (`docs/SECURITY_TEST_PLAN.md`) and **implementation status** (`docs/IMPLEMENTATION_STATUS.md`).
-- **MCP server** â€” `amberlog --db store.db mcp --agent <id>` serves one store to one agent over stdio, so any MCP-capable client can use it. Standard library only. Built on `AgentClient`, so it exposes `recall`, `fetch`, `verify` and `remember` and nothing else: no unenforced read, no scope argument, and deliberately no `record_outcome`, because the model on the pipe is the agent being scored. Exposure tokens stay server-side; the model names memories by id and cannot forge one. Checked against the official MCP Python SDK client as well as its own tests.
+- **MCP server** â€” `memory-fabric --db store.db mcp --agent <id>` serves one store to one agent over stdio, so any MCP-capable client can use it. Standard library only. Built on `AgentClient`, so it exposes `recall`, `fetch`, `verify` and `remember` and nothing else: no unenforced read, no scope argument, and deliberately no `record_outcome`, because the model on the pipe is the agent being scored. Exposure tokens stay server-side; the model names memories by id and cannot forge one. Checked against the official MCP Python SDK client as well as its own tests.
 - **Release workflow** (`.github/workflows/release.yml`) on `v*` tags: version agreement check, full tests and fault matrix, GitHub release with wheel and sdist, container image to GHCR. PyPI publishing is wired but **off** until the repository variable `PYPI_PUBLISH` is set, because the former distribution name was occupied. This historical blocker does not establish the availability of the new target name.
 
 - **Live Claude over MCP** (`experiments/live_claude_mcp.py`): Sonnet 5.5 and Opus 5.5, 20 trials; every run recalled and verified, and a retraction issued from another process mid-session was refused 10/10 with no model recommending the withdrawn fix. [Result](research/results/live-claude-mcp.md)
 - **`mcp --trusted-local`** for a single user's local assistant: the agent's clean writes become active without review, marked `activation: trusted-local` in provenance; the sensitive-data and injection screens still apply.
 - **Prompt-injection screen at ingest** (`governance/injection.py`): instruction overrides, chat-template role tokens and prompt-exfiltration requests are quarantined, on write and again at share time; persona overrides warn. Positive and near-miss negative per pattern.
 - **Obfuscation-aware secret screening**: variant scans undo invisible and full-width characters, look-alike letters, spaced key groups, URL encoding and base64/hex wrappers, plus a `password_in_prose` pattern. Red team: **0/13 â†’ 12/13** caught; 0 near-miss false positives.
-- **`migrate-keys`**: moves an existing store's content keys out of the database, verified by a full replay before anything is cleared. `--keys` defaults to `$AMBERLOG_KEYS`.
+- **`migrate-keys`**: moves an existing store's content keys out of the database, verified by a full replay before anything is cleared. `--keys` defaults to `$MEMORY_FABRIC_KEYS`.
 - **Container keys on their own volume by default** (`/keys`), with an entrypoint that keeps older in-database-key stores running and tells the operator how to migrate.
 - **Dashboard operators**: `serve --operators-file` gives each operator their own token, and an access log records who looked at what, including refused requests, outside the event log.
 - **Authenticated agent API** (`agent-api`, `agent-api-issue`): recall, fetch, verify and remember over HTTP for agents in other processes or machines, verified per request from signed, expiring credentials. Refuses plain HTTP off loopback, browser requests and oversized bodies.
 - **`erase` and `erasure-scope`** commands, and an erasure-request runbook in `docs/OPERATIONS.md`.
-- **Optional PostgreSQL backend** (`amberlog[postgres]`, `--db postgresql://...`) for writers on several machines. Same modules and SQL through a compatibility layer; append-only triggers in the database; writers serialised on a table lock so `seq` stays gapless and the chain ordered. Storage-touching tests run against it in CI.
+- **Optional PostgreSQL backend** (`memory-fabric[postgres]`, `--db postgresql://...`) for writers on several machines. Same modules and SQL through a compatibility layer; append-only triggers in the database; writers serialised on a table lock so `seq` stays gapless and the chain ordered. Storage-touching tests run against it in CI.
 - **Release supply chain**: SPDX SBOMs for distributions and image; Sigstore build-provenance and SBOM attestations where GitHub allows them (public repository or Enterprise).
 - **macOS** added to the CI test matrix.
 
@@ -658,7 +658,7 @@ Blueprint Phases 0, 2 and 3. Additive: six event types (SPEC.md 0.13.0); a
 ### Fixed
 - **CI was red on `main` for seven pushes.** The real-embedder benchmark arms raised when no Ollama embedder was reachable, which is always true in CI; they are now skipped and reported as skipped, as their docstring promised. Asking for one by name still raises.
 - **A copy of withdrawn evidence read as justified.** Copy recognition (0.8.0) contested it; `JustificationGraph.recompute` called it a root observation with nothing to lose. `faultsim`'s `cycle_terminates` caught the disagreement. `recompute` now checks the copy component first.
-- **`amberlog.__version__` said 0.7.0** while the wheel said 0.8.0. A test now keeps them in step.
+- **`memory_fabric.__version__` said 0.7.0** while the wheel said 0.8.0. A test now keeps them in step.
 - **A running fabric did not see other processes' writes.** An operator's CLI quarantine did not reach an already-running MCP server, app or dashboard until restart; verify kept reporting the withdrawn memory usable. Measured live before the fix: refused 0/3. Every serving, enforcing and writing entry point now catches up on the log (`refresh()`), at ~5.5 Âµs when nothing changed.
 - **`backup` crashed on every store with external keys** â€” the custody SECURITY.md recommends â€” because its verification replay used the in-database key provider.
 - **SECURITY.md contradicted itself** on whether content encryption is authenticated and whether credentials can be revoked; docs/AUDIT.md still listed action-time re-checking as missing.
@@ -685,7 +685,7 @@ A withdrawal records its `basis`; each store gets an opaque `store_id`; origin r
 ## [0.2.0] â€” 2026-10-07
 
 ### Added
-- **Packaging.** Installable wheel, a `amberlog` console script, and the dashboard bundled as package data. CI checks the wheel actually contains it, because a missing static file only fails in front of a user.
+- **Packaging.** Installable wheel, a `memory-fabric` console script, and the dashboard bundled as package data. CI checks the wheel actually contains it, because a missing static file only fails in front of a user.
 - **Duplicate suppression.** `remember` returns the existing memory and emits `MemoryDuplicateSuppressed` when an agent rewrites content it already wrote *in the same episode*, compared after normalising whitespace and case. Scoped to one episode deliberately: the same claim on two occasions is two observations, and that genuinely is more evidence.
 - **Token accounting on every model call.** AGENTS.md requires that LLM calls go through one wrapper logging model, prompt hash and token counts, and the Ollama client was logging none of it. It now keeps a ledger. The prompt is hashed rather than stored, because a prompt contains memory content and may contain exactly what the governance layer exists to keep out of secondary surfaces. Cost stays in tokens: multiplying by a made-up price would be a number without a run behind it.
 - **Ollama adapter** â€” local models and real embeddings (`OllamaEmbedder`), with no new dependency since Ollama speaks HTTP over `urllib`. This replaces the hashed bag-of-words placeholder wherever a model is available.
@@ -695,7 +695,7 @@ A withdrawal records its `basis`; each store gets an opaque `store_id`; origin r
 - **Schema version reporting.** `overview` names the installed schema version and every version that wrote into the log, and warns when the log is newer than the build reading it. A projection silently skips events it does not recognise, which is the right behaviour and a terrible failure mode to hit without being told. Versions compare numerically, because `0.10.0` sorts below `0.2.0` as a string.
 - **Container image.** A wheel on `python:3.13-slim`, non-root, with the store on a volume because the event log is the source of truth. CI builds it and checks the server answers on the published port and refuses unauthenticated requests.
 - **`propagate_retraction`** â€” a retraction reaches the stores a memory travelled to. PRIOR_ART.md identifies this as the claim that survives the novelty downgrade: none of the four adjacent papers carries provenance across a federation boundary, so none can do it. It existed as hand-written experiment code, which meant the product did not actually have it. It quarantines rather than deletes, because an importer may have built on the memory and its descendants need to become *contested* rather than vanish; it leaves alone an import the recipient had already withdrawn, because the recipient having independently found the problem is the evidence that matters when deciding whether to trust that sender again; and it matches on provenance method as well as origin, because a memory derived locally from an import inherits the parent's origin record and looked like a second copy of it â€” a bug that quarantined the recipient's own conclusion directly instead of contesting it. The origin can say its observation was wrong; only the recipient can say what follows for the reasoning built on top.
-- **`amberlog backup`** â€” a consistent snapshot of the event log while the store is live, which then **replays the copy** and fails if its event count does not match the source. The log is the source of truth, so a project that says so should not outsource the one operation that protects it to the `sqlite3` CLI; and `cp` is wrong here, because WAL mode means a mid-write copy is a database plus an uncommitted write-ahead log whose restore depends on timing. The replay check matters because a truncated backup opens perfectly well.
+- **`memory-fabric backup`** â€” a consistent snapshot of the event log while the store is live, which then **replays the copy** and fails if its event count does not match the source. The log is the source of truth, so a project that says so should not outsource the one operation that protects it to the `sqlite3` CLI; and `cp` is wrong here, because WAL mode means a mid-write copy is a database plus an uncommitted write-ahead log whose restore depends on timing. The replay check matters because a truncated backup opens perfectly well.
 - **[DEPLOYMENT.md](DEPLOYMENT.md)** â€” backup and restore, serving behind something, measured capacity, upgrades, what to watch, and a plain list of what this is not ready for: one writer, one token with no identity, no encryption at rest, and value-ranked exposure not recommended on current evidence.
 - **Secret scanner** (`tools/scan_secrets.py`) pointing the project's own detector at its own repository, wired into CI.
 - [VERSIONING.md](VERSIONING.md) â€” the guarantee is on the event log, not the Python API, because a renamed argument costs a minute and an unreplayable log costs the data.

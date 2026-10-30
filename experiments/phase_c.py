@@ -47,11 +47,11 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Sequence
 
-from amberlog import EpsilonGreedyPolicy, LifecycleState, Amberlog
-from amberlog.adapters.context import build_context
-from amberlog.adapters.ollama import OllamaClient, OllamaEmbedder, OllamaError
-from amberlog.cli import configure_output
-from amberlog.federation import imported_from, offer
+from memory_fabric import EpsilonGreedyPolicy, LifecycleState, MemoryFabric
+from memory_fabric.adapters.context import build_context
+from memory_fabric.adapters.ollama import OllamaClient, OllamaEmbedder, OllamaError
+from memory_fabric.cli import configure_output
+from memory_fabric.federation import imported_from, offer
 
 from . import depotworld as W
 from . import stats
@@ -299,7 +299,7 @@ def run_arm(
     rng = random.Random(seed * 1000 + 7)
     bandit = RecipientBandit(rng) if arm in LEARNING else None
     stores = {
-        agent: Amberlog(
+        agent: MemoryFabric(
             ":memory:", seed=seed, embedder=embedder, estimator="amortized",
             exposure_policy=EpsilonGreedyPolicy(epsilon=0.2, rank_by="value"),
             firewall=federating_firewall(),

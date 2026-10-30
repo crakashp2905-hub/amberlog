@@ -6,9 +6,9 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import Amberlog
-from amberlog.governance.erasure import DirectoryKeyProvider
-from amberlog.tenancy import TenantRouter
+from memory_fabric import MemoryFabric
+from memory_fabric.governance.erasure import DirectoryKeyProvider
+from memory_fabric.tenancy import TenantRouter
 
 
 class Router(unittest.TestCase):
@@ -30,7 +30,7 @@ class Router(unittest.TestCase):
         self.router.view("globex", "gus").remember("x", scope="team")
         self.router.close()
         try:
-            wrong = Amberlog(str(self.root / "acme" / "store.db"),
+            wrong = MemoryFabric(str(self.root / "acme" / "store.db"),
                                  key_provider=DirectoryKeyProvider(str(self.root / "globex" / "keys")))
         except Exception:  # noqa: BLE001 - refusing to open is the strongest outcome
             return

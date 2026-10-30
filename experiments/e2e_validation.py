@@ -28,7 +28,7 @@ from typing import Any, Callable
 
 ROOT = Path(__file__).resolve().parent.parent
 PY = sys.executable
-CLI = [PY, "-m", "amberlog"]
+CLI = [PY, "-m", "memory_fabric"]
 WORKER = [PY, str(ROOT / "tests" / "crashworker.py")]
 KEY_A, KEY_G = "aa" * 32, "cc" * 32
 
@@ -77,12 +77,12 @@ def wait_for(port: int, seconds: float = 20.0) -> bool:
 
 def scenario_action_time_and_tenancy(tmp: Path) -> None:
     """A server process, a client over HTTP, and a CLI process that retracts."""
-    from amberlog import Amberlog
-    from amberlog.actions import ActionGate, ActionPolicy, ToolRule
+    from memory_fabric import MemoryFabric
+    from memory_fabric.actions import ActionGate, ActionPolicy, ToolRule
 
     print("E1 action-time checks and tenancy across processes")
     store = tmp / "e1.db"
-    seed = Amberlog(store, auto_activate=True)
+    seed = MemoryFabric(store, auto_activate=True)
     fact = seed.remember("ag_seed", "Valve 7 on the coastal line is upstream of pump 3.",
                          tenant_id="tn_acme", scope="team")
     seed.close()
@@ -114,7 +114,7 @@ def scenario_action_time_and_tenancy(tmp: Path) -> None:
 
         # A client handle opened now, with a certificate issued now: stale once
         # the CLI process below retracts.
-        client = Amberlog(store)
+        client = MemoryFabric(store)
         gate = ActionGate(client, ActionPolicy(tools={"open_valve": ToolRule("open_valve")},
                                                grants={"ag_a": frozenset({"open_valve"})}))
         cert = client.certify("open-valve-7", [fact], "ag_a", tenant_id="tn_acme")
@@ -143,20 +143,20 @@ def scenario_action_time_and_tenancy(tmp: Path) -> None:
 
 def scenario_crash_recovery(tmp: Path) -> None:
     """A child process killed with os._exit at two points of a retraction."""
-    from amberlog import LifecycleState, Amberlog
-    from amberlog.dispatcher import Dispatcher
-    from amberlog.transport import InProcessTransport
+    from memory_fabric import LifecycleState, MemoryFabric
+    from memory_fabric.dispatcher import Dispatcher
+    from memory_fabric.transport import InProcessTransport
 
     print("E2 crash during retraction, then recovery")
     origin, recipient = tmp / "origin.db", tmp / "recipient.db"
     run(WORKER + ["seed", str(origin)])
     imported = run(WORKER + ["share", str(origin), str(recipient)]).stdout.strip()
-    r = Amberlog(recipient)
+    r = MemoryFabric(recipient)
     recipient_id = r.store_id
     r.close()
 
     mid_crash = run(WORKER + ["crash_mid_retraction_transaction", str(origin), recipient_id])
-    o = Amberlog(origin)
+    o = MemoryFabric(origin)
     memory_id = next(iter(o.state.memories))
     check("E2", "killed inside the retraction transaction: nothing survives",
           mid_crash.returncode == 70 and o.get(memory_id).lifecycle_state is LifecycleState.ACTIVE
@@ -164,13 +164,13 @@ def scenario_crash_recovery(tmp: Path) -> None:
     o.close()
 
     after_commit = run(WORKER + ["crash_after_retraction_commit", str(origin), recipient_id])
-    o = Amberlog(origin)
+    o = MemoryFabric(origin)
     owed = o.outbox.pending()
     check("E2", "killed after commit: withdrawn locally and the delivery is still owed",
           after_commit.returncode == 70
           and o.get(memory_id).lifecycle_state is LifecycleState.QUARANTINED and len(owed) == 1,
           f"exit {after_commit.returncode}, {len(owed)} owed")
-    r = Amberlog(recipient)
+    r = MemoryFabric(recipient)
     check("E2", "the recipient has not seen it yet",
           r.get(imported).lifecycle_state is LifecycleState.ACTIVE)
     report = Dispatcher(o, InProcessTransport({recipient_id: r})).drain()
@@ -186,11 +186,11 @@ def scenario_crash_recovery(tmp: Path) -> None:
 
 
 def scenario_backup_restore(tmp: Path) -> None:
-    from amberlog import LifecycleState, Amberlog
+    from memory_fabric import LifecycleState, MemoryFabric
 
     print("E3 backup and restore")
     store, copy = tmp / "b.db", tmp / "b-copy.db"
-    f = Amberlog(store, auto_activate=True)
+    f = MemoryFabric(store, auto_activate=True)
     keep = f.remember("ag", "Hoist 6 is rated 2 tonnes.", scope="team")
     gone = f.remember("ag", "Hoist 6 is rated 3 tonnes.", scope="team")
     f.quarantine(gone, reason="wrong", basis="contradicted")
@@ -198,12 +198,12 @@ def scenario_backup_restore(tmp: Path) -> None:
     f.close()
     done = run(CLI + ["--db", str(store), "backup", str(copy)])
     check("E3", "backup command succeeds", done.returncode == 0, done.stderr.strip()[-120:])
-    c = Amberlog(copy)
+    c = MemoryFabric(copy)
     check("E3", "restored copy has the same memories and states",
           c.get(keep).lifecycle_state is LifecycleState.ACTIVE
           and c.get(gone).lifecycle_state is LifecycleState.QUARANTINED)
     check("E3", "restored copy keeps the store identity",
-          c.store_id == Amberlog(store).store_id)
+          c.store_id == MemoryFabric(store).store_id)
     check("E3", "restored copy verifies against the original's checkpoint",
           c.log.chain.verify_against(checkpoint).ok)
     doctor = run(CLI + ["--db", str(copy), "--json", "doctor"])

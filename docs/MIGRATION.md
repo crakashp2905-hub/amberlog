@@ -2,7 +2,7 @@
 
 Upgrades run on open, are idempotent, and need no command, with **one
 exception, 0.10.0**. Read the row for every version you cross. Take a backup
-first (`amberlog --db <store> backup <file>`): it is the only way back
+first (`memory-fabric --db <store> backup <file>`): it is the only way back
 past a schema version ([OPERATIONS.md §5](OPERATIONS.md#5-rollback)). The
 whole path is drilled in CI against the last release
 (`experiments/rollback_drill.py`).
@@ -17,7 +17,7 @@ whole path is drilled in CI against the last release
 | 0.7.0 | bitemporal validity | nothing: absent means open-ended |
 | 0.8.0 | copy recognition | nothing |
 | 0.9.0 | action gating (`ActionGated`) | nothing |
-| **0.10.0** | **scope is enforced on reads**; collections | **Decide once.** To keep the old visibility (every active memory readable by its tenant), run `amberlog --db <store> share --all-private-active --actor <you>`. Restricted memories are refused and listed rather than widened. Skip it if per-agent privacy is what you want |
+| **0.10.0** | **scope is enforced on reads**; collections | **Decide once.** To keep the old visibility (every active memory readable by its tenant), run `memory-fabric --db <store> share --all-private-active --actor <you>`. Restricted memories are refused and listed rather than widened. Skip it if per-agent privacy is what you want |
 | 0.11.0 | the action fence (`ActionExecuted`); exposure records; the import provenance chain | nothing. Imports made earlier have no chain and fall back to their immediate origin. `Acknowledgement.state_revision` now counts the origin's own retractions (wire format unchanged) |
 | 0.12.0 | the background memory manager (`ManagerLease`, `MaintenanceRan`) | Nothing is required. Servers now **start the manager**: pass `--no-maintain` to keep maintenance manual. Give it `--peers` to deliver retractions, and `--checkpoint-dir` to keep checkpoints off-host. Retention deletions need `--retention-delete`. Protected tools now refuse evidence below `unverified` origin-bound authority (tool outputs, imports, instructions, anything descending from a withdrawn memory) unless it is elevated: set `ToolRule(min_authority="untrusted")` to restore the 0.11.0 behaviour |
 
@@ -34,14 +34,14 @@ whole path is drilled in CI against the last release
 ## Moving in from another memory system
 
 ```bash
-amberlog --db store.db import export.jsonl --source mem0 --agent importer
+memory-fabric --db store.db import export.jsonl --source mem0 --agent importer
 ```
 
 - **Accepted formats:** a JSON list or JSONL of Mem0 records, LangChain
   documents, or plain `{"content": …}` records.
 - **Every record lands as a private candidate waiting for review**, with its
   origin recorded. Nothing imported is trusted until someone approves it:
-  `amberlog --db store.db review`.
+  `memory-fabric --db store.db review`.
 - **The ingest screens (secrets, prompt injection) run on every record.**
   Flagged records are quarantined, not imported silently.
 

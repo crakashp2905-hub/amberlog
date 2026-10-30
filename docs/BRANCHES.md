@@ -14,8 +14,8 @@ either has been merged into it or is kept deliberately as a record.
 | `wip/local-fabric-on-postgres` | The archive plus one parked WIP commit (Fabric on Postgres through a sqlite3-dialect adapter) | **archive**, never merged |
 
 **Why the two archives are not merged.** They hold the local line's
-*alternative* implementations: its own MCP server (`amberlog/mcp/`), a
-storage layer (`amberlog/storage/`) and a Postgres event log. The
+*alternative* implementations: its own MCP server (`memory-fabric/mcp/`), a
+storage layer (`memory-fabric/storage/`) and a Postgres event log. The
 integration (PR #5) decided that the remote implementations win, which are
 `adapters/mcp.py` and `pgcompat.py`, and that only measured wins are ported.
 Merging the archives would bring back two parallel implementations of the

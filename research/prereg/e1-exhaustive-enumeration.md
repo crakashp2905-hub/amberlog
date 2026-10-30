@@ -1,6 +1,6 @@
 # Pre-registration — E1: exhaustive "which of them all?" queries — typed filter vs search (INT-03)
 
-**Registered 2026-10-28**, before `benchmarks/enumeration.py` was run once. `amberlog/typed_query.py`
+**Registered 2026-10-28**, before `benchmarks/enumeration.py` was run once. `memory-fabric/typed_query.py`
 was written the same day; its code is fixed at the commit that adds this file.
 
 ## 1. Question

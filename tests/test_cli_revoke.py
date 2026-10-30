@@ -19,11 +19,11 @@ import unittest
 import urllib.error
 import urllib.request
 
-from amberlog import Amberlog
-from amberlog.agent_api import (AgentApi, build_agent_server, encode_credential,
+from memory_fabric import MemoryFabric
+from memory_fabric.agent_api import (AgentApi, build_agent_server, encode_credential,
                                      load_agents, register_all)
-from amberlog.cli import main
-from amberlog.service import MemoryService
+from memory_fabric.cli import main
+from memory_fabric.service import MemoryService
 
 
 class RevokeFromTheCommandLine(unittest.TestCase):
@@ -34,7 +34,7 @@ class RevokeFromTheCommandLine(unittest.TestCase):
         self.agents = os.path.join(self.tmp.name, "agents")
         with open(self.agents, "w", encoding="utf-8") as fh:
             fh.write(f"ag_a:tn_default:{'aa' * 32}\nag_b:tn_default:{'bb' * 32}\n")
-        self.fabric = Amberlog(self.db)
+        self.fabric = MemoryFabric(self.db)
         self.service = MemoryService(fabric=self.fabric)
         register_all(self.service, load_agents(self.agents))
         self.server = build_agent_server(AgentApi(self.service), port=0)
@@ -86,7 +86,7 @@ class RevokeFromTheCommandLine(unittest.TestCase):
         self.assertEqual((self.status(a1), self.status(a2), self.status(b)), (401, 401, 200))
 
     def test_what_an_agent_wrote_can_be_listed(self) -> None:
-        from amberlog.sdk import agent
+        from memory_fabric.sdk import agent
 
         mine = agent(self.fabric, "ag_a", "tn_default").remember("valve 7 sticks when cold")
         agent(self.fabric, "ag_b", "tn_default").remember("pump 3 needs a new seal")

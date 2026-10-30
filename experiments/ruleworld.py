@@ -22,8 +22,8 @@ import random
 from dataclasses import dataclass, field
 from typing import Iterable, Mapping, Sequence
 
-from amberlog import Amberlog, MemoryType
-from amberlog.model import Memory
+from memory_fabric import MemoryFabric, MemoryType
+from memory_fabric.model import Memory
 
 CLAIM = "claim"
 DISTRACTOR = "distractor"
@@ -194,7 +194,7 @@ class SeededMemory:
 
 
 def seed_memories(
-    fabric: Amberlog, world: RuleWorld, rng: random.Random
+    fabric: MemoryFabric, world: RuleWorld, rng: random.Random
 ) -> list[SeededMemory]:
     """Populate the store with correct claims, wrong claims and distractors.
 

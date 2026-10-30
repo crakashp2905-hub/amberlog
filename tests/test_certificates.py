@@ -18,18 +18,18 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from amberlog import LifecycleState, Amberlog
-from amberlog import certificates as C
-from amberlog.actions import (
+from memory_fabric import LifecycleState, MemoryFabric
+from memory_fabric import certificates as C
+from memory_fabric.actions import (
     ActionGate,
     ActionPolicy,
     Approval,
     ToolRule,
 )
-from amberlog.certificates import CertificateVerifier, EvidenceCertificate
-from amberlog.identity import ROLE_AGENT, ROLE_OPERATOR
-from amberlog.justification import JustificationKind, justification_context
-from amberlog.service import MemoryService
+from memory_fabric.certificates import CertificateVerifier, EvidenceCertificate
+from memory_fabric.identity import ROLE_AGENT, ROLE_OPERATOR
+from memory_fabric.justification import JustificationKind, justification_context
+from memory_fabric.service import MemoryService
 
 
 class Fixture(unittest.TestCase):
@@ -37,7 +37,7 @@ class Fixture(unittest.TestCase):
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         self.path = Path(tmp.name) / "store.db"
-        self.fabric = Amberlog(self.path)
+        self.fabric = MemoryFabric(self.path)
         self.addCleanup(self.fabric.close)
         self.a = self.observe("ag1", "Tug A overheated at 40C in July.")
         self.b = self.observe("ag2", "Tug B overheated at 41C in August.")
@@ -110,7 +110,7 @@ class TestVerifier(Fixture):
         self.assertIn(C.WRONG_AGENT,
                       self.fabric.verify_certificate(cert, "someone-else").reason_codes)
         self.assertIn(C.WRONG_TENANT, self.verify(cert, tenant_id="tn_x").reason_codes)
-        other = Amberlog(":memory:")
+        other = MemoryFabric(":memory:")
         self.addCleanup(other.close)
         self.assertIn(C.WRONG_STORE,
                       other.verify_certificate(cert, "ag3").reason_codes)
@@ -386,7 +386,7 @@ class TestToolPermission(Fixture):
     def test_the_audit_event_replays(self) -> None:
         self.gate.authorize("open_valve", "ag3", self.certify(self.a))
         self.fabric.close()
-        reopened = Amberlog(self.path)
+        reopened = MemoryFabric(self.path)
         self.addCleanup(reopened.close)
         self.assertIs(reopened.get(self.a).lifecycle_state, LifecycleState.ACTIVE)
         self.assertTrue(reopened.log.chain.verify(list(reopened.log.read())).ok)
@@ -398,7 +398,7 @@ class TestRevokedPermission(unittest.TestCase):
     def setUp(self) -> None:
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
-        self.service = MemoryService(Amberlog(Path(tmp.name) / "s.db"))
+        self.service = MemoryService(MemoryFabric(Path(tmp.name) / "s.db"))
         self.addCleanup(self.service.close)
         self.service.register_agent("ag3", key=b"k3", tenant_id="tn_a")
         self.service.register_agent("bob", key=b"kb", tenant_id="tn_b")
@@ -453,10 +453,10 @@ class TestCrossProcess(unittest.TestCase):
         tmp = TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         path = Path(tmp.name) / "s.db"
-        writer = Amberlog(path, auto_activate=True)
+        writer = MemoryFabric(path, auto_activate=True)
         self.addCleanup(writer.close)
         fact = writer.remember("ag1", "Valve 7 is upstream of pump 3.", scope="team")
-        server = Amberlog(path)  # another process, in effect
+        server = MemoryFabric(path)  # another process, in effect
         self.addCleanup(server.close)
         gate = ActionGate(server, _policy())
         cert = server.certify("c", [fact], "ag3")

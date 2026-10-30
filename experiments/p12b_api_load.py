@@ -3,7 +3,7 @@
 P12 measured agents as separate processes, each opening the store, and found
 throughput collapses (214 → 4 ops/s from 1 to 100 agents). Its recommendation
 was to serve many agents from one process, but that was not measured. This
-measures it. One `amberlog agent-api` server runs in its own process. N
+measures it. One `memory_fabric agent-api` server runs in its own process. N
 agents, each with its own credential, are client threads in another process.
 They wait at a barrier, then each runs the same mix over HTTP:
 
@@ -42,7 +42,7 @@ from typing import Any
 from experiments.p12_load import SEED_MEMORIES, _pct
 
 ROOT = Path(__file__).resolve().parent.parent
-CLI = [sys.executable, "-m", "amberlog"]
+CLI = [sys.executable, "-m", "memory_fabric"]
 AGENT_COUNTS = (1, 10, 50, 100)
 OPS_PER_AGENT = 20
 TOPICS = ("pump", "valve", "hoist", "compressor", "conveyor", "generator")
@@ -95,11 +95,11 @@ def agent_loop(port: int, bearer: str, seed: int, barrier: threading.Barrier,
 
 
 def run_one(agents: int) -> dict[str, Any]:
-    from amberlog import Amberlog
+    from memory_fabric import MemoryFabric
 
     with tempfile.TemporaryDirectory() as tmp:
         db = os.path.join(tmp, "load.db")
-        seed = Amberlog(db, auto_activate=True)
+        seed = MemoryFabric(db, auto_activate=True)
         rng = random.Random(0)
         for i in range(SEED_MEMORIES):
             topic = rng.choice(TOPICS)

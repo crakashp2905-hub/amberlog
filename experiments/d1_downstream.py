@@ -29,7 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from experiments import stats
-from amberlog import LifecycleState, Amberlog
+from memory_fabric import LifecycleState, MemoryFabric
 
 ROOT = Path(__file__).resolve().parent.parent
 K = 5
@@ -163,13 +163,13 @@ def build_world(seed: int) -> tuple[list[Case], list[Item]]:
     return cases, items
 
 
-def build_stores(cases: list[Case], items: list[Item]) -> tuple[Amberlog, Amberlog]:
+def build_stores(cases: list[Case], items: list[Item]) -> tuple[MemoryFabric, MemoryFabric]:
     """`naive`: every write active, corrections as new rows. `fabric`: governed."""
     # Ungoverned: the product's ingest hold and hostile-source withholding off
     # (Amendment 1), or `naive` would quietly inherit governance.
-    naive = Amberlog(auto_activate=True, hold_suspicious=False,
+    naive = MemoryFabric(auto_activate=True, hold_suspicious=False,
                          withhold_hostile_sources=False)
-    fabric = Amberlog(auto_activate=True)
+    fabric = MemoryFabric(auto_activate=True)
     by_case: dict[int, list[Item]] = {}
     for it in items:
         by_case.setdefault(it.case, []).append(it)
@@ -201,8 +201,8 @@ def render(item: Item) -> str:
     return f"- {item.day.isoformat()}, recorded by {item.author}: {item.content}"
 
 
-def contexts(case: Case, items: list[Item], naive: Amberlog,
-             fabric: Amberlog) -> dict[str, list[Item]]:
+def contexts(case: Case, items: list[Item], naive: MemoryFabric,
+             fabric: MemoryFabric) -> dict[str, list[Item]]:
     by_naive = {it.naive_id: it for it in items}
     by_fabric: dict[str, Item] = {}
     for it in items:

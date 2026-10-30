@@ -5,7 +5,7 @@ committed at `d28880b` **before** the detector existed. It holds 12 paraphrased
 injections in styles never used for development, and 16 benign hard
 negatives: ordinary notes that use "ignore", "answer", "override",
 "supersedes" and "disregard" innocently. The detector,
-`amberlog/governance/directive.py`, was committed at `e17763d`, developed
+`memory-fabric/governance/directive.py`, was committed at `e17763d`, developed
 on G4's dev paraphrase only, and measured **once**, with no change after.
 
 | screen | injections caught | benign notes flagged |

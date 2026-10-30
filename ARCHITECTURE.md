@@ -15,7 +15,7 @@
               └───────────────────────────┬─────────────────────────────┘
                                           │ SDK
 ┌─────────────────────────────────────────▼─────────────────────────────────────┐
-│ Amberlog (facade)                                                          │
+│ Memory Fabric (facade)                                                          │
 │                                                                                │
 │  core/            intelligence/              governance/         federation/   │
 │  ├ MemoryStore    ├ ExposurePolicy           ├ Firewall          ├ Scopes (v0) │
@@ -56,14 +56,14 @@ Settled: SQLite with stdlib only, so a run is a single reproducible file and the
 ## 5. Agents
 
 - **Scripted agent** (built, `experiments/ruleworld.py`): follows the top-ranked matching claim with probability `q`, else guesses. Its success probability is a closed form, which is what makes exact ground truth possible. ~15k episodes/minute.
-- **LLM agent** (built, `amberlog/adapters/claude.py`): for confirming that effects survive realistic noise. Not yet run against the live API.
+- **LLM agent** (built, `memory-fabric/adapters/claude.py`): for confirming that effects survive realistic noise. Not yet run against the live API.
 
 ## 6. Repository layout
 
 As built at P1. One flat package, with `governance/` as the only subpackage, because it is the layer most likely to be extended or replaced per deployment:
 
 ```text
-amberlog/
+memory-fabric/
 ├── ids.py           ULID generation
 ├── model.py         Memory, ValueEstimate, MemoryStats, enums
 ├── events.py        event types and constructors (SPEC section 4)
@@ -74,13 +74,13 @@ amberlog/
 ├── exposure.py      exposure policies and propensity logging
 ├── estimators.py    naive baseline + propensity-corrected IPS
 ├── explain.py       "why does the system remember this?"
-├── fabric.py        the Amberlog facade: composes _fabric/ (see below)
-├── _fabric/         Amberlog's internals, one module per service (not public)
+├── fabric.py        the Memory Fabric facade: composes _fabric/ (see below)
+├── _fabric/         Memory Fabric's internals, one module per service (not public)
 ├── session.py       AgentSession: capability-scoped writes
 ├── federation.py    offering a memory across a store boundary
 ├── cli.py           command line interface
 ├── demo.py          seeder for a deliberately messy store
-├── __main__.py      python -m amberlog
+├── __main__.py      python -m memory_fabric
 ├── adapters/
 │   ├── context.py   memories -> prompt text, with injection defences
 │   ├── claude.py    Claude API adapter (optional `anthropic` dependency)
@@ -103,8 +103,8 @@ research/            review, hypotheses, pre-registrations, results, decisions
 tests/
 ```
 
-**`Amberlog` is a facade over a core and seven services** (2026-10-20).
-It was one 3,400-line class; it is now `class Amberlog(FederationMixin,
+**`Memory Fabric` is a facade over a core and seven services** (2026-10-20).
+It was one 3,400-line class; it is now `class MemoryFabric(FederationMixin,
 SealingMixin, RetrievalMixin, LifecycleMixin, SharingMixin, AccessMixin,
 WritesMixin, FabricCore)` in a 200-line `fabric.py`:
 
@@ -128,7 +128,7 @@ reads projections. `tests/test_fabric_structure.py` holds the public API to
 the one recorded before the split, keeps the declarations matched to their
 implementations, and fails if a module grows past 1,200 lines.
 
-**The embedder is now real, where a model is available.** `OllamaEmbedder` implements the same `Embedder` protocol as the hashing placeholder and plugs in through `Amberlog(embedder=...)`. The placeholder matches whole tokens, so `symptom_3` never reaches `symptom 3`; every retrieval-quality number measured before P1–P7 was measured against a deliberately weak stand-in, and the live runs are the first to use real semantics. It caches aggressively — an embed call costs ~1.2s, and the fabric re-embeds on every `add` and every `search`.
+**The embedder is now real, where a model is available.** `OllamaEmbedder` implements the same `Embedder` protocol as the hashing placeholder and plugs in through `MemoryFabric(embedder=...)`. The placeholder matches whole tokens, so `symptom_3` never reaches `symptom 3`; every retrieval-quality number measured before P1–P7 was measured against a deliberately weak stand-in, and the live runs are the first to use real semantics. It caches aggressively — an embed call costs ~1.2s, and the fabric re-embeds on every `add` and every `search`.
 
 **The core has no dependencies; adapters may.** `adapters/claude.py` imports `anthropic` lazily, inside the function that needs a client, so installing this package never drags in an SDK the caller does not use and the rest of the suite runs without it.
 

@@ -17,13 +17,13 @@ import unittest
 import urllib.error
 import urllib.request
 
-from amberlog import Amberlog
-from amberlog.agent_api import (
+from memory_fabric import MemoryFabric
+from memory_fabric.agent_api import (
     AgentApi, ConfigurationError, build_agent_server, check_bind,
     decode_credential, encode_credential, load_agents, register_all,
 )
-from amberlog.service import MemoryService
-from amberlog.sdk import agent, operator
+from memory_fabric.service import MemoryService
+from memory_fabric.sdk import agent, operator
 
 KEY_A = "aa" * 32
 KEY_B = "bb" * 32
@@ -38,7 +38,7 @@ class ApiCase(unittest.TestCase):
         with open(self.agents_file, "w") as fh:
             fh.write(f"# agents\nag_a:tn_acme:{KEY_A}\nag_b:tn_acme:{KEY_B}\n"
                      f"ag_other:tn_globex:{KEY_C}\n")
-        self.fabric = Amberlog(":memory:")
+        self.fabric = MemoryFabric(":memory:")
         writer = agent(self.fabric, "ag_seed", "tn_acme")
         self.mid = writer.remember("E01 at coastal sites: swap the pilot cable.")
         operator(self.fabric, "op").validate(self.mid)
@@ -187,7 +187,7 @@ class TestCli(unittest.TestCase):
             with open(agents, "w") as fh:
                 fh.write(f"ag_a:tn_default:{KEY_A}\n")
             done = subprocess.run(
-                [sys.executable, "-m", "amberlog", "--db", db, "--create",
+                [sys.executable, "-m", "memory_fabric", "--db", db, "--create",
                  "agent-api-issue", "--agents-file", agents, "--agent", "ag_a"],
                 capture_output=True, text=True, timeout=60)
             self.assertEqual(done.returncode, 0, done.stderr)

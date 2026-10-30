@@ -57,7 +57,7 @@ rest on it.
 | `local` | Each agent sees only its own writes |
 | `shared` | One store. Majority value over the top-k, latest write breaks ties. No lifecycle, no screen, no gate |
 | `provenance_blanket` | Simple governance: `shared`, plus provenance and graph traversal. On detection, withdraws everything the agent wrote **and everything derived from it**. Counts sources by writer. No screen, no gate |
-| `fabric` | Amberlog: ingest screens, kill switch with selective reassessment, copy-aware source roots, certificate re-verified at action time, action gate with a grant table |
+| `fabric` | Memory Fabric: ingest screens, kill switch with selective reassessment, copy-aware source roots, certificate re-verified at action time, action gate with a grant table |
 | `fabric_blanket` | `fabric` with the verifier in blanket mode. Ablation of selective reassessment |
 | `oracle` | Knows the true value and acts on it when the pool holds valid evidence for it. Same k, same grant table, same plan-to-act delay. The **diagnostic ceiling**, never deployable |
 | `abstain` | Never acts. The degenerate arm (AGENTS.md 8c), reported every run |

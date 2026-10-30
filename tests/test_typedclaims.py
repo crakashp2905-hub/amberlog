@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.typedclaims import TypedClaimChecker, contradicts, proposition
+from memory_fabric import MemoryFabric
+from memory_fabric.typedclaims import TypedClaimChecker, contradicts, proposition
 
 
 class Contradicts(unittest.TestCase):
@@ -35,7 +35,7 @@ class Contradicts(unittest.TestCase):
 
 class Checker(unittest.TestCase):
     def test_holds_a_contradiction_by_another_author_and_lets_the_rest_through(self) -> None:
-        f = Amberlog(":memory:", auto_activate=True, claim_checker=TypedClaimChecker())
+        f = MemoryFabric(":memory:", auto_activate=True, claim_checker=TypedClaimChecker())
         self.addCleanup(f.close)
         f.remember("inspector", "The east wing is safe to enter.", scope="team")
         for i in range(3):
@@ -47,7 +47,7 @@ class Checker(unittest.TestCase):
 
     def test_an_author_restating_itself_is_not_checked_against_itself(self) -> None:
         checker = TypedClaimChecker()
-        f = Amberlog(":memory:", auto_activate=True)
+        f = MemoryFabric(":memory:", auto_activate=True)
         self.addCleanup(f.close)
         f.remember("ann", "The east wing is safe to enter.", scope="team")
         self.assertIsNone(checker.check(f, "ann", "The east wing is not safe to enter.", "default"))
@@ -59,7 +59,7 @@ if __name__ == "__main__":  # pragma: no cover
 
 class PresetDefault(unittest.TestCase):
     def test_personal_and_team_check_typed_claims_regulated_does_not(self) -> None:
-        from amberlog.presets import store_settings
+        from memory_fabric.presets import store_settings
 
         for mode in ("personal", "team"):
             self.assertIsInstance(store_settings(mode)["claim_checker"], TypedClaimChecker)

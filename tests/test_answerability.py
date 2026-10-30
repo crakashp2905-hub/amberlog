@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import unittest
 
-from amberlog import Amberlog
-from amberlog.answerability import (ANSWERABLE, CONFLICTING, INSUFFICIENT, UNDETERMINED,
+from memory_fabric import MemoryFabric
+from memory_fabric.answerability import (ANSWERABLE, CONFLICTING, INSUFFICIENT, UNDETERMINED,
                                          assess, covers)
 
 
@@ -29,7 +29,7 @@ class Covers(unittest.TestCase):
 
 class Verdicts(unittest.TestCase):
     def setUp(self) -> None:
-        self.f = Amberlog(auto_activate=True, hold_suspicious=False)
+        self.f = MemoryFabric(auto_activate=True, hold_suspicious=False)
         self.addCleanup(self.f.close)
         self.f.remember("ag_a", "Compressor K-31: the relief pressure is 14 bar.", scope="team")
         self.f.remember("ag_a", "Compressor K-13: the relief pressure is 22 bar.", scope="team")

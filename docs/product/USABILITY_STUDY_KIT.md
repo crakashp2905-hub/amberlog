@@ -1,6 +1,6 @@
 # Usability study kit (blueprint §11.2 #12, gap G9)
 
-Ready to run with 5–8 developers who have not worked on Amberlog. The
+Ready to run with 5–8 developers who have not worked on Memory Fabric. The
 sessions themselves need people; everything else is here. Nothing in this kit
 collects personal data beyond a participant code.
 
@@ -14,7 +14,7 @@ anyone who has read this repository's code.
 
 ```bash
 python -m venv mf-study && mf-study/Scripts/activate   # or bin/activate
-pip install amberlog        # or the wheel from the release bundle
+pip install memory-fabric        # or the wheel from the release bundle
 ```
 
 A fresh terminal, the README open in a browser, nothing else. No

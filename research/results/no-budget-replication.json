@@ -1,0 +1,41 @@
+{
+  "commit": "8e9a52079259b4f48f739af18d27e8b9a5aa214f",
+  "decision": "INCONCLUSIVE",
+  "execution_status": "PASS",
+  "scope": "internal reproduction, not an independent assessment or release approval",
+  "raw_manifest": "research/results/no-budget-replication/manifest.json",
+  "raw_manifest_sha256": "9718689b6947898b14d35318157bcda36f9231ed7221f33fb647319d879698f8",
+  "independence": "NOT_ESTABLISHED",
+  "physical_hosts": "NOT_ESTABLISHED",
+  "steps": [
+    {
+      "name": "branding",
+      "exit_code": 0
+    },
+    {
+      "name": "secret-scan",
+      "exit_code": 0
+    },
+    {
+      "name": "regressions",
+      "exit_code": 0
+    },
+    {
+      "name": "three-agent",
+      "exit_code": 0
+    },
+    {
+      "name": "conformance",
+      "exit_code": 0
+    },
+    {
+      "name": "network-processes",
+      "exit_code": 0
+    },
+    {
+      "name": "rollback",
+      "exit_code": 0
+    }
+  ],
+  "paid_model_calls": 0
+}

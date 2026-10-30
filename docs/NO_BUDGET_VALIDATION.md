@@ -77,3 +77,14 @@ change the owner's hold on outreach. See
 [GitHub's configuration guidance](https://docs.github.com/en/code-security/how-tos/report-and-fix-vulnerabilities/configure-vulnerability-reporting/configure-for-a-repository).
 
 Publication approvals remain false. No release is qualified by this document.
+
+## Recorded execution
+
+The [local-model result](../research/results/no-budget-local-model.md) records
+five frozen cases and measured tokens, including false blocking. The
+[replication summary](../research/results/no-budget-replication.json) and
+[raw manifest](../research/results/no-budget-replication/manifest.json) preserve
+the full-profile rerun: branding, credential scan, regressions, five-seed
+outcome comparison, conformance, network recovery and rollback. All recorded
+steps passed; outside independence, actual pilots and physical separation remain
+NOT_ESTABLISHED or NOT_RUN. No outside person was contacted.

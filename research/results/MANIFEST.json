@@ -1,14 +1,14 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 114,
+ "results": 115,
  "missing_field_counts": {
   "git_sha": 34,
-  "prereg": 40,
-  "dataset_digest": 112,
-  "model_id": 81,
-  "prompt_hash": 114,
-  "seed": 48,
-  "cost": 93,
+  "prereg": 41,
+  "dataset_digest": 113,
+  "model_id": 82,
+  "prompt_hash": 115,
+  "seed": 49,
+  "cost": 94,
   "verdict": 72
  },
  "rows": [
@@ -1466,6 +1466,23 @@
     "seconds": 50.21834530017804
    },
    "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "no-budget-replication",
+   "file": "research/results/no-budget-replication.json",
+   "file_sha256": "98a314403c88cb985475a99e290e2299b9d2b4904d2199f730d5976ec71fa632",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": null,
+   "git_sha": "8e9a52079259b4f48f739af18d27e8b9a5aa214f",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": null,
+   "config": null,
+   "cost": null,
+   "verdict": "INCONCLUSIVE",
    "parsable": true
   },
   {

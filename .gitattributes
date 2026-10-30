@@ -4,3 +4,8 @@
 * text=auto eol=lf
 *.png binary
 *.jpg binary
+
+# Frozen evidence hashes cover exact bytes, including native line endings.
+research/results/no-budget-local-model.json -text
+research/results/no-budget-replication.json -text
+research/results/no-budget-replication/** -text

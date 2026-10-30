@@ -1,0 +1,116 @@
+{
+  "source_commit": "8e9a52079259b4f48f739af18d27e8b9a5aa214f",
+  "tracked_tree_clean": true,
+  "python": "3.13.5",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "profile": "full",
+  "steps": [
+    {
+      "name": "branding",
+      "command": [
+        "python",
+        "tools/check_branding.py"
+      ],
+      "exit_code": 0,
+      "elapsed_s": 0.534
+    },
+    {
+      "name": "secret-scan",
+      "command": [
+        "python",
+        "tools/scan_secrets.py"
+      ],
+      "exit_code": 0,
+      "elapsed_s": 75.038
+    },
+    {
+      "name": "regressions",
+      "command": [
+        "python",
+        "-m",
+        "unittest",
+        "tests.test_three_agent",
+        "tests.test_gov_conformance",
+        "tests.test_chains",
+        "tests.test_security_regression",
+        "tests.test_no_budget_rehearsal"
+      ],
+      "exit_code": 0,
+      "elapsed_s": 3.669
+    },
+    {
+      "name": "three-agent",
+      "command": [
+        "python",
+        "-m",
+        "benchmarks.three_agent",
+        "--out",
+        "{OUTPUT}\\three-agent.json"
+      ],
+      "exit_code": 0,
+      "elapsed_s": 1.728
+    },
+    {
+      "name": "conformance",
+      "command": [
+        "python",
+        "tools/conformance_audit.py",
+        "--out",
+        "{OUTPUT}\\conformance.json"
+      ],
+      "exit_code": 0,
+      "elapsed_s": 10.132
+    },
+    {
+      "name": "network-processes",
+      "command": [
+        "python",
+        "-m",
+        "experiments.multihost",
+        "--latency-ms",
+        "50",
+        "--out",
+        "{OUTPUT}\\network-processes.json"
+      ],
+      "exit_code": 0,
+      "elapsed_s": 12.787
+    },
+    {
+      "name": "rollback",
+      "command": [
+        "python",
+        "-m",
+        "experiments.rollback_drill",
+        "--old-ref",
+        "v0.11.0"
+      ],
+      "exit_code": 0,
+      "elapsed_s": 14.038
+    }
+  ],
+  "command_path_substitution": {
+    "{OUTPUT}": "bundle output directory"
+  },
+  "independence": "NOT_ESTABLISHED",
+  "external_review": "NOT_RUN",
+  "physical_hosts": "NOT_ESTABLISHED",
+  "customer_pilots": "NOT_RUN",
+  "release_decision": "INCONCLUSIVE",
+  "paid_model_calls": 0,
+  "scope": "reproduction execution only; no automatic external acceptance",
+  "frozen_reference_sha256": "7f6e32fa2b97d156671b6706ee5287983aeb10a4921e2f21b11570ed053b0e14",
+  "deterministic_outcomes_match": true,
+  "execution_status": "PASS",
+  "files": {
+    "branding.log": "49eea466ba056be1b57873539cbeee54cb05178e70d6787fa42f636b03d4e794",
+    "conformance.json": "7f14f30018d3efba22be6398658210eb984208e96e79ddd032e54bf96193f221",
+    "conformance.log": "388139a073bf563d5f06b4c32360da12d01efdc0effacd713af0c32957ca76cb",
+    "network-processes.json": "c054c3a00065d26841b99f15dc4562a1f4b926931e8936ed5213e93b3e1eb12e",
+    "network-processes.log": "d85d9389a0f08cb622cbeb43e2f339d9e792e1511949a9cf23b59792a5d31d9b",
+    "regressions.log": "9e636eb4a6b468bba0c8c568c077f61bd25b4950d82b416b3a42efd351a29ef1",
+    "rollback.log": "52153432245ef552b4b89e63bd552b90068d8e3dec18012853fc50780a853fb1",
+    "secret-scan.log": "25061a3fc9cffd72afc6b45b75c627bca682db42914da62fbf2741d6134ab57d",
+    "three-agent.json": "45050d2e1b58f74bc55ae93008b781edf1ad3d5dcbfbf76cb5bf23c90ca9d28b",
+    "three-agent.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+  }
+}

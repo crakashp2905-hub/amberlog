@@ -542,7 +542,7 @@ class Handler(BaseHTTPRequestHandler):
         extra = {}
         if outcome.status == HTTPStatus.UNAUTHORIZED:
             # Tells a curl user what to send; a browser ignores it for Bearer.
-            extra["WWW-Authenticate"] = 'Bearer realm="memory_fabric"'
+            extra["WWW-Authenticate"] = 'Bearer realm="memory-fabric"'
         self._send_json({"error": outcome.message}, outcome.status, body, extra_headers=extra)
 
     def _send_redirect(self, outcome: AuthOutcome, body: bool) -> None:

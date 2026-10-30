@@ -52,7 +52,7 @@ jobs:
               "tests excluded": not any(n.startswith("tests/") for n in names),
               # PEP 561. Without it the type hints ship and no consuming type
               # checker reads them.
-              "py.typed marker": "memory-fabric/py.typed" in names,
+              "py.typed marker": "memory_fabric/py.typed" in names,
               "licence recorded": any("LICENSE" in n for n in names),
           }
           for name, ok in checks.items():
@@ -89,7 +89,7 @@ jobs:
       - name: Installed-wheel public types are consumed and checked
         run: |
           python -m pip install "mypy==2.1.0"
-          python tools/check_typed_consumer.py dist/memory-fabric-*.whl
+          python tools/check_typed_consumer.py dist/memory_fabric-*.whl
 
   docker:
     # The image is a wheel on a slim base and nothing else, so the thing worth

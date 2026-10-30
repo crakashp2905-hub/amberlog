@@ -19,7 +19,7 @@ detail), they share at least two, and their polarities differ. That last
 containment rule is what keeps "the **west** wing is not safe" from being
 held against "the **east** wing is safe": each has a word the other lacks.
 
-    from memory_fabric import MemoryFabric
+    from memory-fabric import MemoryFabric
     from memory_fabric.typedclaims import TypedClaimChecker
     fabric = MemoryFabric("store.db", claim_checker=TypedClaimChecker())
 

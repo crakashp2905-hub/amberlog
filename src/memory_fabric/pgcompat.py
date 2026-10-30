@@ -1,6 +1,6 @@
 """PostgreSQL behind the slice of the `sqlite3` API this package uses.
 
-Optional: needs `pip install "memory_fabric[postgres]"` (psycopg 3). The core
+Optional: needs `pip install "memory-fabric[postgres]"` (psycopg 3). The core
 stays dependency-free; nothing imports this unless a store is opened with a
 `postgresql://` URL.
 
@@ -165,7 +165,7 @@ class PgConnection:
     def __init__(self, url: str, busy_timeout_ms: int = 5_000) -> None:
         if psycopg is None:
             raise RuntimeError(
-                "a postgresql:// store needs psycopg: pip install 'memory_fabric[postgres]'")
+                "a postgresql:// store needs psycopg: pip install 'memory-fabric[postgres]'")
         self.url = url
         self._lock = threading.RLock()
         # A bounded connect. Without it the OS's TCP retry schedule decides how

@@ -212,7 +212,7 @@ class TestAttention(unittest.TestCase):
         """The gate is that a reader can act unaided, which means each finding
         arrives with the command that addresses it."""
         for item in report.attention(self.fabric):
-            self.assertTrue(item.action.startswith("memory_fabric "))
+            self.assertTrue(item.action.startswith("memory-fabric "))
             self.assertTrue(item.title)
             self.assertTrue(item.detail)
 

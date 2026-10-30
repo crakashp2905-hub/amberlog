@@ -1,4 +1,4 @@
-"""`memory_fabric connect <tool>`: the exact setup for each agent tool.
+"""`memory-fabric connect <tool>`: the exact setup for each agent tool.
 
 Every MCP client wants the same server described in a slightly different
 file, key and format. This knows them, so a user names their tool and gets
@@ -66,7 +66,7 @@ TARGETS: dict[str, Target] = {t.name: t for t in (
            key="context_servers"),
     Target("codex", "OpenAI Codex CLI", "toml", lambda: _home(".codex", "config.toml")),
     Target("continue", "Continue", "yaml",
-           lambda: Path(".continue") / "mcpServers" / "memory_fabric.yaml"),
+           lambda: Path(".continue") / "mcpServers" / "memory-fabric.yaml"),
     Target("http", "Any language, over HTTP", "text", lambda: None),
     Target("python", "Python frameworks (LangGraph, OpenAI Agents SDK, CrewAI, AutoGen, ...)",
            "text", lambda: None),
@@ -84,8 +84,8 @@ def server_args(db: str, agent: str, keys: str | None, trusted_local: bool) -> l
 
 
 def command() -> str:
-    found = shutil.which("memory_fabric")
-    return found or "memory_fabric"
+    found = shutil.which("memory-fabric")
+    return found or "memory-fabric"
 
 
 def snippet(target: str, db: str, agent: str, keys: str | None = None,
@@ -101,26 +101,26 @@ def snippet(target: str, db: str, agent: str, keys: str | None = None,
         entry = {"type": "stdio", "command": cmd, "args": args}
     path = t.path()
     if t.kind == "command":
-        text = "claude mcp add memory_fabric -- " + " ".join(shlex.quote(a) for a in [cmd, *args])
+        text = "claude mcp add memory-fabric -- " + " ".join(shlex.quote(a) for a in [cmd, *args])
     elif t.kind == "json":
-        text = json.dumps({t.key: {"memory_fabric": entry}}, indent=2)
+        text = json.dumps({t.key: {"memory-fabric": entry}}, indent=2)
     elif t.kind == "toml":
-        text = ("[mcp_servers.memory_fabric]\n"
+        text = ("[mcp_servers.memory-fabric]\n"
                 f"command = {json.dumps(cmd)}\nargs = {json.dumps(args)}\n")
     elif t.kind == "yaml":
         text = ("name: Memory Fabric\nversion: 0.0.1\nschema: v1\nmcpServers:\n"
-                "  - name: memory_fabric\n"
+                "  - name: memory-fabric\n"
                 f"    command: {json.dumps(cmd)}\n    args: {json.dumps(args)}\n")
     elif t.name == "http":
-        text = (f"memory_fabric --db {shlex.quote(os.path.abspath(db))} agent-api "
+        text = (f"memory-fabric --db {shlex.quote(os.path.abspath(db))} agent-api "
                 f"--agents-file agents.txt          # once; 127.0.0.1:8766\n"
-                f"memory_fabric --db {shlex.quote(os.path.abspath(db))} agent-api-issue "
+                f"memory-fabric --db {shlex.quote(os.path.abspath(db))} agent-api-issue "
                 f"--agents-file agents.txt --agent {agent}\n"
                 "curl -s -X POST http://127.0.0.1:8766/v1/recall \\\n"
                 "  -H \"Authorization: Bearer $MF_CREDENTIAL\" -d '{\"query\": \"...\"}'\n"
                 "# endpoints: /v1/recall /v1/fetch /v1/verify /v1/remember\n")
     else:
-        text = ("from memory_fabric import MemoryFabric\n"
+        text = ("from memory-fabric import MemoryFabric\n"
                 "from memory_fabric.integrations.tools import FabricTools\n"
                 "from memory_fabric.sdk import agent\n\n"
                 f"fabric = MemoryFabric({os.path.abspath(db)!r})\n"
@@ -147,11 +147,11 @@ def write(target: str, db: str, agent: str, keys: str | None = None,
         data = json.loads(existing) if existing.strip() else {}
         if not isinstance(data, dict):
             raise ValueError(f"{path} is not a JSON object; not changing it")
-        data.setdefault(s["key"], {})["memory_fabric"] = s["entry"]
+        data.setdefault(s["key"], {})["memory-fabric"] = s["entry"]
         path.write_text(json.dumps(data, indent=2) + "\n", encoding="utf-8")
     elif s["kind"] == "toml":
-        if "[mcp_servers.memory_fabric]" in existing:
-            raise ValueError(f"{path} already has [mcp_servers.memory_fabric]; edit it by hand")
+        if "[mcp_servers.memory-fabric]" in existing:
+            raise ValueError(f"{path} already has [mcp_servers.memory-fabric]; edit it by hand")
         path.write_text(existing.rstrip() + ("\n\n" if existing.strip() else "") + s["text"],
                         encoding="utf-8")
     else:

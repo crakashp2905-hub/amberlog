@@ -5,14 +5,14 @@ is the weakest arm on every real corpus measured (SciFact: 0.315 nDCG@10
 against lexical's 0.621). A trained embedder fused with lexical scores 0.726
 there. This module makes the trained path one line:
 
-    from memory_fabric import MemoryFabric
+    from memory-fabric import MemoryFabric
     from memory_fabric.retrievers import best_available
 
     fabric = MemoryFabric("memory.db", **best_available())
 
 `best_available()` returns the configuration that won the registered
 comparison (`research/prereg/r3-best-retriever.md`), when its dependency is
-installed (`pip install "memory_fabric[retrieval]"`), and the measured best
+installed (`pip install "memory-fabric[retrieval]"`), and the measured best
 zero-dependency configuration (`lexical`) otherwise. It never downloads
 anything silently: the model is fetched the first time it is used, into
 `cache_dir`, and the call says so on stderr.
@@ -213,7 +213,7 @@ class _BatchEmbedder:
 
 
 def _missing(package: str, extra: str = "retrieval") -> ImportError:
-    return ImportError(f"{package} is not installed: pip install \"memory_fabric[{extra}]\" "
+    return ImportError(f"{package} is not installed: pip install \"memory-fabric[{extra}]\" "
                        f"(or pip install {package})")
 
 
@@ -251,7 +251,7 @@ class FastEmbedEmbedder(_BatchEmbedder):
             from fastembed import TextEmbedding
         except ImportError as exc:
             raise _missing("fastembed") from exc
-        print(f"memory_fabric: loading embedding model {model} (downloaded on first use)",
+        print(f"memory-fabric: loading embedding model {model} (downloaded on first use)",
               file=sys.stderr)
         self._model = TextEmbedding(model_name=model, cache_dir=cache_dir, threads=threads)
 
@@ -349,7 +349,7 @@ class CrossEncoderReranker:
             from fastembed.rerank.cross_encoder import TextCrossEncoder
         except ImportError as exc:
             raise _missing("fastembed") from exc
-        print(f"memory_fabric: loading reranker {model} (downloaded on first use)",
+        print(f"memory-fabric: loading reranker {model} (downloaded on first use)",
               file=sys.stderr)
         self._model = TextCrossEncoder(model_name=model, cache_dir=cache_dir)
 

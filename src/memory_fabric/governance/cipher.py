@@ -13,7 +13,7 @@ docstring justified this by saying "the append-only log and the event digests
 provide [integrity]".
 
 The append-only triggers do raise the bar — a tamper needs file write access to
-drop `events_no_update` first, and `memory_fabric doctor` now checks for that.
+drop `events_no_update` first, and `memory-fabric doctor` now checks for that.
 But **there are no event digests.** The log has `seq`, `event_id`, `ts`,
 `type`, `agent_id`, `episode_id`, `schema_version` and `payload`, and nothing
 chains or signs them. The justification named a mechanism that does not exist,
@@ -357,7 +357,7 @@ def require_profile() -> None:
             raise IntegrityError(
                 "the production cryptography profile needs AES-GCM from the maintained "
                 f"`cryptography` library, which is {reason} here. Install it "
-                "(pip install \"memory_fabric[crypto]\") or choose the compatible profile.")
+                "(pip install \"memory-fabric[crypto]\") or choose the compatible profile.")
 
 
 def default_suite() -> CipherSuite:
@@ -369,7 +369,7 @@ def default_suite() -> CipherSuite:
     encryption rather than a warning it will not read.
 
     Falling back is never silent when the library is installed but broken:
-    `aead_status` warns once and `memory_fabric doctor` names the reason.
+    `aead_status` warns once and `memory-fabric doctor` names the reason.
     """
     if profile() == "production":
         require_profile()

@@ -68,7 +68,7 @@ class AuditExport(unittest.TestCase):
     def test_every_kind_is_there_with_actors(self) -> None:
         manifest = export_audit(self.fabric, self.path)
         rows = self.lines()
-        self.assertEqual(rows[0]["export"], "memory_fabric audit")
+        self.assertEqual(rows[0]["export"], "memory-fabric audit")
         self.assertEqual(set(manifest["counts"]), {"decisions", "changes", "access", "deletions"})
         erased = [r for r in rows[1:-1] if r.get("type") == "ContentErased"]
         self.assertEqual(erased[0]["actor"], "dpo")

@@ -55,12 +55,12 @@ def center(fabric: "MemoryFabric", stale_days: int = 90, now_ms: int | None = No
             if idle > stale_days * DAY_MS:
                 stale.append({"memory_id": memory.id, "idle_days": idle // DAY_MS,
                               "ever_shown": seen is not None,
-                              "command": f"memory_fabric --db <store> forget {memory.id} "
+                              "command": f"memory-fabric --db <store> forget {memory.id} "
                                          f"--reason stale --actor <you>"})
         elif memory.lifecycle_state is LifecycleState.CANDIDATE \
                 and age > policy.unused_candidate_days * DAY_MS:
             waiting.append({"memory_id": memory.id, "waiting_days": age // DAY_MS,
-                            "command": "memory_fabric --db <store> review"})
+                            "command": "memory-fabric --db <store> review"})
 
     readable_secrets, rescreened = [], []
     for memory in state.memories.values():
@@ -71,14 +71,14 @@ def center(fabric: "MemoryFabric", stale_days: int = 90, now_ms: int | None = No
                 and basis == WithdrawalBasis.SENSITIVE_DATA.value:
             readable_secrets.append({
                 "memory_id": memory.id,
-                "command": f"memory_fabric --db <store> erase {memory.id} "
+                "command": f"memory-fabric --db <store> erase {memory.id} "
                            f"--reason 'leaked credential' --actor <you>"})
         elif memory.lifecycle_state in (LifecycleState.ACTIVE, LifecycleState.CANDIDATE):
             ruling = fabric.firewall.screen_ingest(memory.content)
             if ruling.decision is FirewallDecision.QUARANTINE:
                 rescreened.append({
                     "memory_id": memory.id, "finding": "; ".join(ruling.reasons),
-                    "command": f"memory_fabric --db <store> quarantine {memory.id} "
+                    "command": f"memory-fabric --db <store> quarantine {memory.id} "
                                f"--reason 'current screens flag it' --actor <you>"})
 
     erasures = []
@@ -96,7 +96,7 @@ def center(fabric: "MemoryFabric", stale_days: int = 90, now_ms: int | None = No
         propagation.append({"memory_id": memory_id, "stores": stores,
                             "confirmed": sorted(reached & set(stores)),
                             "outstanding": sorted(set(stores) - reached),
-                            "command": f"memory_fabric --db <store> correct {memory_id} --status"})
+                            "command": f"memory-fabric --db <store> correct {memory_id} --status"})
 
     return {
         "rules": {"deprecated_grace_days": policy.deprecated_grace_days,

@@ -41,7 +41,7 @@ from ._fabric.common import FabricError, NotFound, PolicyViolation, RetrievalRes
 
 
 class MemoryFabric(FederationMixin, SealingMixin, RetrievalMixin, LifecycleMixin, SharingMixin, AccessMixin, WritesMixin, FabricCore):
-    """Single-process memory_fabric with a governed write and share path."""
+    """Single-process memory-fabric with a governed write and share path."""
 
     def for_tenant(self, tenant_id: str, agent_id: str) -> "TenantView":
         """A handle that can only see and write one tenant's memories.

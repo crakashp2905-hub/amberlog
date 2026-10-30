@@ -17,7 +17,7 @@ summaries) takes a model **you** choose, named by one string:
     claude-cli:sonnet                  the `claude` command line, already signed in
 
 Keys are read from environment variables at call time (`ANTHROPIC_API_KEY`,
-`OPENAI_API_KEY`, ...; `memory_fabric models` lists which are set). They are
+`OPENAI_API_KEY`, ...; `memory-fabric models` lists which are set). They are
 never stored, logged or written to the event log.
 
 **One wrapper, logged** (AGENTS.md: model, prompt hash, token counts and cost

@@ -411,7 +411,7 @@ def build_agent_server(api: AgentApi, host: str = "127.0.0.1", port: int = 8766,
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             if status == HTTPStatus.UNAUTHORIZED:
-                self.send_header("WWW-Authenticate", 'Bearer realm="memory_fabric-agents"')
+                self.send_header("WWW-Authenticate", 'Bearer realm="memory-fabric-agents"')
             if retry_after is not None:
                 self.send_header("Retry-After", str(max(1, math.ceil(retry_after))))
             self.end_headers()

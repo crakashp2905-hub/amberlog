@@ -31,7 +31,7 @@ from http.cookies import CookieError, SimpleCookie
 from typing import Iterable
 from urllib.parse import parse_qs, urlparse
 
-COOKIE_NAME = "memory_fabric_session"
+COOKIE_NAME = "memory-fabric_session"
 TOKEN_PARAM = "token"
 ENV_TOKEN = "MEMORY_FABRIC_TOKEN"
 

@@ -9,7 +9,7 @@ the federation handler claimed an unauthenticated request was refused before
 parsing. Both sentences were written before the mechanism they named.
 
 The append-only triggers do real work — a tamper needs file write access to
-drop `events_no_update` first, and `memory_fabric doctor` reports a missing
+drop `events_no_update` first, and `memory-fabric doctor` reports a missing
 trigger. But a trigger is a *guard*, not evidence: once dropped, edited and
 recreated, nothing in the log disagrees with the edit. Content ciphertext is
 now authenticated (`governance/cipher.py`), which covers a memory's text. It

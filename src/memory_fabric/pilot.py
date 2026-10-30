@@ -1,4 +1,4 @@
-"""`memory_fabric pilot-report`: what a pilot showed, from the store's own log.
+"""`memory-fabric pilot-report`: what a pilot showed, from the store's own log.
 
 A team piloting MemoryFabric with their real agents can send back this
 report instead of their data. It holds counts, durations and pseudonymous

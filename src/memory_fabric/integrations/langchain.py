@@ -47,7 +47,7 @@ def fabric_retriever(client: AgentClient, k: int = 5, include_contested: bool = 
                 docs.append(Document(page_content=usable.content, metadata={
                     "memory_id": usable.memory_id, "version": usable.version,
                     "type": usable.type, "warnings": list(usable.warnings),
-                    "source": "memory_fabric"}))
+                    "source": "memory-fabric"}))
             return docs
 
         def verify(self, memory_id: str) -> bool:

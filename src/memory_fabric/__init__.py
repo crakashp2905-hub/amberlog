@@ -4,7 +4,7 @@ Product-first P1 (see ROADMAP.md). The governance path is complete; causal
 credit ships two estimators, with the doubly-robust, paired-replay and amortized
 ones due at P4.
 
-    from memory_fabric import MemoryFabric
+    from memory-fabric import MemoryFabric
 
     fabric = MemoryFabric("memory.db")
     ep  = fabric.start_episode("agent-a", task_id="onboard-42", context={"team": "sales"})

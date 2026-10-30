@@ -272,7 +272,7 @@ class FabricCore:
 
         Found by a shipped example doing exactly this: building a fresh store
         and replaying another's events into it. That is not a backup. Use
-        `memory_fabric backup`, which copies the file and therefore the
+        `memory-fabric backup`, which copies the file and therefore the
         identity.
         """
         identities: list[str] = []
@@ -286,7 +286,7 @@ class FabricCore:
                 f"({', '.join(identities)}), which happens when one store's "
                 "events are replayed into another. Content sealed by one store "
                 "cannot be read under another's identity, so there is no "
-                "correct choice here. Copy the file with `memory_fabric "
+                "correct choice here. Copy the file with `memory-fabric "
                 "backup` instead of replaying events."
             )
         return identities[0] if identities else None

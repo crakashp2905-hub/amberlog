@@ -1,6 +1,6 @@
 """Structured logs: one JSON object per line, ids and codes only.
 
-    memory_fabric --log-format json serve ...      # or MEMORY_FABRIC_LOG_FORMAT=json
+    memory-fabric --log-format json serve ...      # or MEMORY_FABRIC_LOG_FORMAT=json
 
 Every record has `ts`, `level`, `logger` and `msg`. Fields passed through
 `extra={"fields": {...}}` are merged in, so a log pipeline can filter on

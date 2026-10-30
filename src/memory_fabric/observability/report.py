@@ -518,9 +518,9 @@ def attention(fabric: "MemoryFabric") -> list[AttentionItem]:
                     ),
                     detail=detail,
                     action=(
-                        f"memory_fabric release {memory.id} --actor you"
+                        f"memory-fabric release {memory.id} --actor you"
                         if weak
-                        else f"memory_fabric show {memory.id}"
+                        else f"memory-fabric show {memory.id}"
                     ),
                     memory_id=memory.id,
                 )
@@ -534,7 +534,7 @@ def attention(fabric: "MemoryFabric") -> list[AttentionItem]:
                         title=f"Contested by disagreement ({memory.hypothesis_set})",
                         detail=f"{short}\nA conflicting memory exists. Resolve it with evidence, "
                         "not by picking a side.",
-                        action=f"memory_fabric lineage {memory.id}",
+                        action=f"memory-fabric lineage {memory.id}",
                         memory_id=memory.id,
                     )
                 )
@@ -546,7 +546,7 @@ def attention(fabric: "MemoryFabric") -> list[AttentionItem]:
                         title="Justification retracted",
                         detail=f"{short}\nAn ancestor was quarantined, so this no longer rests on "
                         "anything. Re-check it against whatever replaced its source.",
-                        action=f"memory_fabric lineage {memory.id} --direction ancestors",
+                        action=f"memory-fabric lineage {memory.id} --direction ancestors",
                         memory_id=memory.id,
                     )
                 )
@@ -561,7 +561,7 @@ def attention(fabric: "MemoryFabric") -> list[AttentionItem]:
                     kind="restricted_shared",
                     title="Restricted memory outside private scope",
                     detail=f"{short}\nThis should not have left private scope.",
-                    action=f"memory_fabric audit {memory.id}",
+                    action=f"memory-fabric audit {memory.id}",
                     memory_id=memory.id,
                 )
             )
@@ -576,7 +576,7 @@ def attention(fabric: "MemoryFabric") -> list[AttentionItem]:
                     title=f"Unresolved disagreement: {hset.id}",
                     detail=f"{len(members)} competing memories, none deleted. "
                     "Design an experiment rather than choosing a winner.",
-                    action=f"memory_fabric show {members[0]}",
+                    action=f"memory-fabric show {members[0]}",
                     memory_id=members[0],
                 )
             )
@@ -588,7 +588,7 @@ def attention(fabric: "MemoryFabric") -> list[AttentionItem]:
                 kind=f"retention_{decision['action']}",
                 title=f"Retention would {decision['action']} this memory",
                 detail=decision["reason"],
-                action="memory_fabric retention --apply",
+                action="memory-fabric retention --apply",
                 memory_id=decision["memory_id"],
             )
         )

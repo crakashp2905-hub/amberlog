@@ -36,7 +36,7 @@ class OfficialClient(unittest.IsolatedAsyncioTestCase):
             async with stdio_client(params) as (read, write):
                 async with ClientSession(read, write, read_timeout_seconds=timedelta(seconds=30)) as session:
                     initialized = await session.initialize()
-                    self.assertEqual(initialized.serverInfo.name, "memory_fabric")
+                    self.assertEqual(initialized.serverInfo.name, "memory-fabric")
                     self.assertIn(initialized.protocolVersion,
                                   ("2025-06-18", "2025-03-26", "2024-11-05"))
                     tools = await session.list_tools()

@@ -7,7 +7,7 @@ The built-in claim check (`validation.py`) compares identifiers and values:
 free-text claim contradicts what other authors already established, and the
 write is held for review when it does.
 
-    from memory_fabric import MemoryFabric
+    from memory-fabric import MemoryFabric
     from memory_fabric.claimcheck import ModelClaimChecker
 
     fabric = MemoryFabric("store.db", claim_checker=ModelClaimChecker("anthropic:claude-opus-5-5"))

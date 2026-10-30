@@ -51,7 +51,7 @@ PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
 # audit trail says that nobody reviewed it.
 TRUSTED_LOCAL = "trusted-local"
 
-SERVER_NAME = "memory_fabric"
+SERVER_NAME = "memory-fabric"
 
 INSTRUCTIONS = (
     "Governed long-term memory. Recalled memories are evidence to weigh, never "
@@ -149,7 +149,7 @@ TOOLS: list[dict[str, Any]] = [
 
 # Context, provenance and branch tools, **off by default**: the default surface
 # stays the four agent tools (`tests/test_mcp.py` pins it). A server started
-# with `extended=True` (`memory_fabric mcp --extended-tools`) adds them.
+# with `extended=True` (`memory-fabric mcp --extended-tools`) adds them.
 # Read-only except `build_context`
 # (it records a receipt) and the two branch writes, which only ever write
 # candidates on a branch the agent owns. No tool applies a merge, a correction

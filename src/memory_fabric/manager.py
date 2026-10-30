@@ -20,7 +20,7 @@ is not governed between visits.
 **Autonomous, and no further than its brief.**
 
 - **It starts by itself.** `serve`, `agent-api` and `mcp` start it unless
-  told not to, and `memory_fabric maintain` runs it on its own.
+  told not to, and `memory-fabric maintain` runs it on its own.
 - **It recovers by itself.** Each task is isolated, so one failing never
   stops the others. A task that keeps failing backs off exponentially, up to
   32 cycles, and is retried.

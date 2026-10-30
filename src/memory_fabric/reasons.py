@@ -48,7 +48,7 @@ REASONS: dict[str, tuple[str, str]] = {
     "refused": ("Refused: the gate did not allow this action.", "See the other reasons listed."),
     "retry_required": ("The store was busy; nothing ran.", "Retry the same call."),
     "state_unavailable": ("The store could not be read, so nothing was allowed.",
-                          "Check the store with `memory_fabric doctor`, then retry."),
+                          "Check the store with `memory-fabric doctor`, then retry."),
     "policy_changed": ("The tool policy changed between approval and action.",
                        "Authorise again under the current policy."),
     # Who is asking
@@ -105,7 +105,7 @@ REASONS: dict[str, tuple[str, str]] = {
     "evidence_not_usable": ("Blocked: a memory this action relies on may not be used by this agent.",
                             "Use evidence the agent can see."),
     "evidence_suspicious": ("Blocked: a memory this action relies on failed the claim check and is held for review.",
-                            "Have someone review it (`memory_fabric suspicious`)."),
+                            "Have someone review it (`memory-fabric suspicious`)."),
     "evidence_provisional": ("Blocked: a memory this action relies on is provisional (new source, or it revised a validated fact).",
                              "Validate it, or rely on established evidence."),
     "evidence_not_fresh": ("Blocked: imported evidence has no current freshness lease from its origin.",

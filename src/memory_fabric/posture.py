@@ -12,7 +12,7 @@ receipts as JSON lines, **without content**: a memory's text never leaves in
 an export, only ids, versions, actors and reasons. The last line is a
 checkpoint of the hash chain at the head the export was taken from, so a
 reviewer holding it can check later that the log still agrees
-(`memory_fabric checkpoint --verify`).
+(`memory-fabric checkpoint --verify`).
 """
 
 from __future__ import annotations
@@ -151,7 +151,7 @@ def export_audit(fabric: "MemoryFabric", path: str | Path,
     counts: dict[str, int] = {}
     for event in rows:
         counts[kind_of[event.type]] = counts.get(kind_of[event.type], 0) + 1
-    manifest = {"export": "memory_fabric audit", "store_id": fabric.store_id,
+    manifest = {"export": "memory-fabric audit", "store_id": fabric.store_id,
                 "kinds": wanted, "since_seq": since_seq, "events": len(rows), "counts": counts,
                 "content": "excluded"}
     with open(path, "w", encoding="utf-8") as fh:

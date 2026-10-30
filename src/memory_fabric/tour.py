@@ -1,4 +1,4 @@
-"""`memory_fabric tour`: the whole idea in about sixty seconds, in a terminal.
+"""`memory-fabric tour`: the whole idea in about sixty seconds, in a terminal.
 
 One fact, four agents, one correction. An inspector records a pump setting;
 a planner builds on it; an operator is allowed to act on it; the setting
@@ -7,7 +7,7 @@ plain words, and the fact's story is told from the log.
 
 Everything runs in an in-memory store: nothing is written to disk, nothing
 is downloaded, and no model is called. `pause` slows it to reading speed;
-`memory_fabric tour --fast` prints it at once.
+`memory-fabric tour --fast` prints it at once.
 """
 
 from __future__ import annotations
@@ -95,7 +95,7 @@ def run(out: TextIO | None = None, pause: float = 0.8, color: bool | None = None
         say(c(BOLD, "That is the product:") + " every memory knows where it came from, a "
             "correction reaches everything built on it, and nothing acts on evidence that no "
             "longer holds.", 0.5)
-        say(c(DIM, "Next: `memory_fabric sandbox` to explore a store like this in the dashboard."), 0)
+        say(c(DIM, "Next: `memory-fabric sandbox` to explore a store like this in the dashboard."), 0)
         return {"first_allowed": first.allowed, "second_allowed": second.allowed,
                 "recall_after": after, "plan_state": f.lifecycle_of(plan).value,
                 "steps": [s["kind"] for s in story["steps"]]}

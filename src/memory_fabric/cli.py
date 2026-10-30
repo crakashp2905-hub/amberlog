@@ -352,8 +352,8 @@ def cmd_anchor(fabric: MemoryFabric, args: argparse.Namespace) -> int:
                     handle.write(line + "\n")
                 if target.startswith("git:"):
                     for cmd in (["add", name],
-                                ["-c", "user.name=memory_fabric", "-c",
-                                 "user.email=anchor@memory_fabric.invalid", "commit", "-q",
+                                ["-c", "user.name=memory-fabric", "-c",
+                                 "user.email=anchor@memory-fabric.invalid", "commit", "-q",
                                  "-m", f"anchor {fabric.store_id} seq {record.get('seq')}"]):
                         subprocess.run(["git", "-C", str(folder), *cmd], check=True,
                                        capture_output=True)
@@ -663,7 +663,7 @@ def cmd_retention(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 def cmd_release(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     fabric.release(args.id, actor=args.actor, reason=args.reason)
     print(f"{args.id} released to candidate. Validate it to make it retrievable:")
-    print(f"  {C.DIM}$ memory_fabric validate {args.id} --actor {args.actor}{C.RESET}")
+    print(f"  {C.DIM}$ memory-fabric validate {args.id} --actor {args.actor}{C.RESET}")
     return 0
 
 
@@ -789,7 +789,7 @@ def cmd_serve(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         # filename.
         from .pgcompat import is_postgres_url
 
-        access_log = ("memory_fabric.access.jsonl" if is_postgres_url(args.db)
+        access_log = ("memory-fabric.access.jsonl" if is_postgres_url(args.db)
                       else f"{args.db}.access.jsonl")
     if access_log == "-":
         access_log = None
@@ -817,7 +817,7 @@ def cmd_mcp(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 
     client = agent(fabric, args.agent, args.tenant)
     print(
-        f"memory_fabric MCP server: agent {args.agent}, tenant {args.tenant}, "
+        f"memory-fabric MCP server: agent {args.agent}, tenant {args.tenant}, "
         f"store {_shown(args.db)}",
         file=sys.stderr,
     )
@@ -908,7 +908,7 @@ def cmd_agent_api(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         host = host.decode()
     print(f"Memory Fabric agent API on http://{host}:{port}/v1/  (store {_shown(args.db)})")
     print("  POST /v1/recall | fetch | verify | remember   with  Authorization: Bearer <credential>")
-    print(f"  Issue a credential:  memory_fabric --db {_shown(args.db)} agent-api-issue "
+    print(f"  Issue a credential:  memory-fabric --db {_shown(args.db)} agent-api-issue "
           f"--agents-file {args.agents_file} --agent <id>")
     try:
         manager = _start_manager(fabric, args)
@@ -1034,7 +1034,7 @@ def cmd_incident(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         for c in found:
             print(f"  {c['memory_id']}  {'; '.join(c['why'])}")
         if found:
-            print(f"\n{C.DIM}Assess one: memory_fabric --db {db} incident <id>{C.RESET}")
+            print(f"\n{C.DIM}Assess one: memory-fabric --db {db} incident <id>{C.RESET}")
         return 0
     if args.id not in fabric.state.memories:
         print(f"{C.RED}no memory {args.id}{C.RESET}", file=sys.stderr)
@@ -1064,7 +1064,7 @@ def cmd_incident(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         if result["review_next"]:
             print(f"Same author's other active memories, review next: "
                   f"{', '.join(result['review_next'])}")
-        print(f"{C.DIM}Record it: memory_fabric --db {db} incident {args.id} --record incident.md{C.RESET}")
+        print(f"{C.DIM}Record it: memory-fabric --db {db} incident {args.id} --record incident.md{C.RESET}")
         return 0
     if args.record:
         data = response.record(fabric, args.id)
@@ -1090,7 +1090,7 @@ def cmd_incident(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     for act in a["actions_using_it"]:
         print(f"  action seq {act['seq']}: {act['tool']} by {act['agent']}, "
               f"{'allowed' if act['allowed'] else 'refused'}; necessary source: {act['necessary_source']}")
-    print(f"\n{C.DIM}Contain: memory_fabric --db {db} incident {args.id} --contain "
+    print(f"\n{C.DIM}Contain: memory-fabric --db {db} incident {args.id} --contain "
           f"--reason WHY --actor YOU{C.RESET}")
     return 0
 
@@ -1228,7 +1228,7 @@ def cmd_import(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     for line in report.skipped[:20]:
         print(f"  {C.DIM}skipped {line}{C.RESET}")
     print(f"{C.DIM}Nothing imported is retrievable until reviewed: "
-          f"memory_fabric --db {_shown(args.db)} review{C.RESET}")
+          f"memory-fabric --db {_shown(args.db)} review{C.RESET}")
     return 0
 
 
@@ -1356,7 +1356,7 @@ def cmd_correct(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             return 4
         owed = ", ".join(result["owed_to"]) or "no other store"
         print(f"withdrawn: {args.id}; retraction owed to {owed}")
-        print(f"{C.DIM}Follow it: memory_fabric --db {_shown(args.db)} correct {args.id} --status{C.RESET}")
+        print(f"{C.DIM}Follow it: memory-fabric --db {_shown(args.db)} correct {args.id} --status{C.RESET}")
         return 0
     try:
         p = correction.preview(fabric, args.id)
@@ -1374,7 +1374,7 @@ def cmd_correct(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     stores = ", ".join(s["store_id"] for s in p.stores)
     print(f"  owe stores     {stores or 'none'}")
     print(f"  preview        {p.digest[:16]}")
-    print(f"\n{C.DIM}Apply: memory_fabric --db {_shown(args.db)} correct {args.id} --apply "
+    print(f"\n{C.DIM}Apply: memory-fabric --db {_shown(args.db)} correct {args.id} --apply "
           f"--reason WHY --actor YOU --preview {p.digest[:16]}{C.RESET}")
     return 0
 
@@ -1484,7 +1484,7 @@ def cmd_merge(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             for w in ch.warnings:
                 print(f"  {'':<18} {C.YELLOW}{w}{C.RESET}")
         print(f"\n  preview {preview.digest[:16]}")
-        print(f"{C.DIM}Apply: memory_fabric --db {_shown(args.db)} merge apply {args.name} "
+        print(f"{C.DIM}Apply: memory-fabric --db {_shown(args.db)} merge apply {args.name} "
               f"--actor YOU --preview {preview.digest} --key ONE-TIME-KEY{C.RESET}")
         return 0
     except (BranchError, KeyError, ValueError) as exc:
@@ -1627,7 +1627,7 @@ def cmd_review(fabric: MemoryFabric, args: argparse.Namespace) -> int:
             return 0
         table(["ID", "KIND", "AUTHOR", "CONTENT"],
               [[i.memory_id[:10], i.kind, i.author, i.content] for i in items])
-        print(f"\n{C.DIM}Decide with: memory_fabric --db {_shown(args.db)} review <id> --actor <you> "
+        print(f"\n{C.DIM}Decide with: memory-fabric --db {_shown(args.db)} review <id> --actor <you> "
               f"--approve | --limit | --correct TEXT | --reject --reason WHY{C.RESET}")
         return 0
     if decision is None:
@@ -1895,7 +1895,7 @@ def _backup_custody(fabric: MemoryFabric, args: argparse.Namespace, target: Path
             if f.is_file():
                 files[str(f.relative_to(target.parent)).replace("\\", "/")] = _sha256(f)
     head_seq, head = fabric.log.chain.head()
-    manifest = {"format": "memory_fabric-backup-v1", "store_id": fabric.store_id,
+    manifest = {"format": "memory-fabric-backup-v1", "store_id": fabric.store_id,
                 "events": events, "chain_head": {"seq": head_seq, "digest": head},
                 "schema_version": SCHEMA_VERSION, "files": files}
     target.with_name(target.name + ".manifest.json").write_text(
@@ -1982,7 +1982,7 @@ def cmd_connect(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     if args.list or not args.tool:
         heading("Connect an agent")
         table(["tool", "what"], [[t.name, t.title] for t in TARGETS.values()])
-        print("\n  memory_fabric --db <store> connect <tool> --agent <id> [--write]")
+        print("\n  memory-fabric --db <store> connect <tool> --agent <id> [--write]")
         return 0
     if args.tool not in TARGETS:
         print(f"unknown tool {args.tool!r}; one of: {', '.join(TARGETS)}", file=sys.stderr)
@@ -1995,7 +1995,7 @@ def cmd_connect(fabric: MemoryFabric, args: argparse.Namespace) -> int:
         except ValueError as exc:
             print(str(exc), file=sys.stderr)
             return 2
-        print(f"{TARGETS[args.tool].title}: added memory_fabric to {path} (agent {agent}). "
+        print(f"{TARGETS[args.tool].title}: added memory-fabric to {path} (agent {agent}). "
               "Restart the tool to load it.")
         return 0
     s = snippet(args.tool, args.db, agent, keys, args.trusted_local)
@@ -2034,7 +2034,7 @@ def cmd_models(fabric: MemoryFabric, args: argparse.Namespace) -> int:
           [[r["provider"], "yes" if r["ready"] else "-", r["needs"]] for r in configured()])
     print("\n  Pick one: export MEMORY_FABRIC_MODEL=anthropic:claude-opus-5-5  "
           "(or openai:..., ollama:..., compat:<model>@<url>)")
-    print("  Check it: memory_fabric models --test anthropic:claude-opus-5-5")
+    print("  Check it: memory-fabric models --test anthropic:claude-opus-5-5")
     return 0
 
 
@@ -2079,8 +2079,8 @@ def cmd_demo(fabric: MemoryFabric, args: argparse.Namespace) -> int:
     summary = seed(fabric)
     print(f"Seeded {summary['memories']} memories and {summary['episodes']} episodes "
           f"into {fabric.log.path}")
-    print(f"\nTry:\n  {C.DIM}$ memory_fabric --db {fabric.log.path} attention{C.RESET}")
-    print(f"  {C.DIM}$ memory_fabric --db {fabric.log.path} serve{C.RESET}")
+    print(f"\nTry:\n  {C.DIM}$ memory-fabric --db {fabric.log.path} attention{C.RESET}")
+    print(f"  {C.DIM}$ memory-fabric --db {fabric.log.path} serve{C.RESET}")
     return 0
 
 
@@ -2139,7 +2139,7 @@ def _check_append_only(fabric: MemoryFabric) -> Finding:
             "append-only enforcement",
             f"missing trigger(s): {', '.join(sorted(missing))}. The event log can "
             "be rewritten, so nothing derived from it can be trusted.",
-            "Restore from a verified backup: memory_fabric --db <path> backup <out>",
+            "Restore from a verified backup: memory-fabric --db <path> backup <out>",
         )
     # Prove it rather than asserting it. Cheap, and the only form of this check
     # that distinguishes "triggers present" from "triggers working".
@@ -2221,7 +2221,7 @@ def _check_schema(fabric: MemoryFabric) -> Finding:
             "fail", "schema version",
             f"written by {', '.join(newer)}, this install is {SCHEMA_VERSION}. "
             "Events it does not understand are being skipped silently.",
-            "Upgrade: pip install -U memory_fabric",
+            "Upgrade: pip install -U memory-fabric",
         )
     older = [v for v in written if v != SCHEMA_VERSION]
     if older:
@@ -2292,7 +2292,7 @@ def _check_weak_withdrawals(fabric: MemoryFabric) -> Finding:
     return Finding(
         "warn", "withdrawal evidence",
         f"{len(weak)} memory/ies withdrawn on co-occurrence or no stated basis",
-        f"memory_fabric --db {fabric.log.path} attention",
+        f"memory-fabric --db {fabric.log.path} attention",
     )
 
 
@@ -2567,16 +2567,16 @@ def _check_manager(fabric: MemoryFabric) -> Finding:
     if run is None:
         return Finding("ok", "background manager",
                        "never run on this store: maintenance is manual. `serve`, `agent-api` and "
-                       "`mcp` start it; so does `memory_fabric maintain`")
+                       "`mcp` start it; so does `memory-fabric maintain`")
     age_s = max(0.0, (fabric.now() - int(run["ts"])) / 1000)
     failed = [t for t, r in (run.get("tasks") or {}).items() if isinstance(r, dict) and "error" in r]
     if age_s > 3600:
         return Finding("warn", "background manager",
                        f"last cycle {age_s / 60:.0f} min ago by {run.get('holder')}: it has stopped",
-                       "start `memory_fabric maintain`, or a server, for this store")
+                       "start `memory-fabric maintain`, or a server, for this store")
     if failed:
         return Finding("warn", "background manager", f"last cycle failed: {', '.join(failed)}",
-                       "see `memory_fabric maintain --status`")
+                       "see `memory-fabric maintain --status`")
     return Finding("ok", "background manager", f"last cycle {age_s:.0f} s ago by {run.get('holder')}")
 
 
@@ -2613,13 +2613,13 @@ def _doctor_alert(fabric: MemoryFabric, args: argparse.Namespace,
     if not due:
         return
     body = json.dumps({
-        "source": "memory_fabric doctor",
+        "source": "memory-fabric doctor",
         "store": str(fabric.log.path),
         "store_id": fabric.store_id,
         "sound": not failures,
         "severity": "fail" if failures else "warn",
         "findings": [f.to_json() for f in failures + warnings],
-        "text": (f"memory_fabric: store {fabric.store_id} is "
+        "text": (f"memory-fabric: store {fabric.store_id} is "
                  + (f"NOT SOUND ({len(failures)} failing)" if failures
                     else f"sound with {len(warnings)} warning(s)")
                  + ": " + ", ".join(f.name for f in failures + warnings)),
@@ -2705,12 +2705,12 @@ def cmd_doctor(fabric: MemoryFabric, args: argparse.Namespace) -> int:
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="memory_fabric",
+        prog="memory-fabric",
         description="Inspect a Memory Fabric store. Read-only unless a command says otherwise.",
     )
     parser.add_argument(
         "--version", action="version",
-        version=f"memory_fabric {__import__('memory_fabric').__version__} "
+        version=f"memory-fabric {__import__('memory_fabric').__version__} "
                 f"(schema {SCHEMA_VERSION})")
     parser.add_argument(
         "--db", default="memory.db", help="path to the store (default: memory.db)"
@@ -3350,15 +3350,15 @@ def cmd_init(args: argparse.Namespace) -> int:
     (root / "mode").write_text(args.mode + "\n", encoding="utf-8")
     print(f"  mode        {args.mode}   {C.DIM}(memory_fabric.presets: open_store(path, {args.mode!r})){C.RESET}")
     print("\nConnect an MCP client (Claude Code, Claude Desktop, an IDE) with:")
-    print(json.dumps({"mcpServers": {"memory_fabric": {
-        "command": "memory_fabric",
+    print(json.dumps({"mcpServers": {"memory-fabric": {
+        "command": "memory-fabric",
         "args": ["--db", db_s, "--keys", keys_s, "mcp", "--agent", args.agent,
                  *mcp_flags(args.mode)]}}}, indent=2))
     print("\nNext:")
-    print(f"  memory_fabric --db {db_s} --keys {keys_s} review      # what agents wrote, waiting for you")
-    print(f"  memory_fabric --db {db_s} --keys {keys_s} serve       # the dashboard")
-    print(f"  memory_fabric --db {db_s} --keys {keys_s} connect --list   # set up another agent tool")
-    print(f"  memory_fabric --db {db_s} --keys {keys_s} agent-api --agents-file {agents}")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} review      # what agents wrote, waiting for you")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} serve       # the dashboard")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} connect --list   # set up another agent tool")
+    print(f"  memory-fabric --db {db_s} --keys {keys_s} agent-api --agents-file {agents}")
     print()
     return main(["--db", db_s, "--keys", keys_s, "doctor"])
 
@@ -3400,7 +3400,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(
             f"{C.RED}no store at {_shown(args.db)}{C.RESET}\n"
             f"{C.DIM}Check the path, or pass --create to start an empty one. "
-            f"To populate a demo store: memory_fabric --db {_shown(args.db)} demo{C.RESET}",
+            f"To populate a demo store: memory-fabric --db {_shown(args.db)} demo{C.RESET}",
             file=sys.stderr,
         )
         return 2

@@ -43,7 +43,7 @@ class Migration(unittest.TestCase):
         done = subprocess.run([sys.executable, "-m", "memory_fabric", "--help"],
                               capture_output=True, text=True, cwd=ROOT)
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn("memory_fabric", done.stdout)
+        self.assertIn("memory-fabric", done.stdout)
         self.assertIn("MEMORY_FABRIC_", done.stdout)
 
     def test_pre_migration_content_vectors_still_authenticate(self):

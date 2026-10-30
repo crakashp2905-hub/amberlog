@@ -75,7 +75,7 @@ def queue(fabric: "MemoryFabric", tenant: str | None = None) -> list[ReviewItem]
             kind, reason = "screened", "quarantined by an ingest screen; approving needs --override-screen"
         else:
             continue
-        base = f"memory_fabric --db <store> review {memory.id} --actor <you>"
+        base = f"memory-fabric --db <store> review {memory.id} --actor <you>"
         commands = {
             "approve": f"{base} --approve" + (" --override-screen" if kind == "screened" else ""),
             "limit": f"{base} --limit",

@@ -34,14 +34,15 @@ remain checkable.
 
 Verified on 30 October 2026: this repository is public and `main` has
 server-side branch protection. All 31 job contexts from its last successful
-main CI run and the new official MCP-client context are required, bound to the GitHub Actions app. Branches must be current
+main CI run, official MCP-client and framework contract contexts are required, bound to the GitHub Actions app. Branches must be current
 with `main`, administrators are included, force pushes and deletion are
 blocked, and review conversations must be resolved. Pull requests are required;
 the approving-review count is zero because no independent reviewer has been
 assigned. This does not satisfy the independent security-review gate.
 
-The official MCP-client check passed candidate CI and is now required (32
-contexts total). Release and package workflows separately require
+The official MCP-client check passed candidate CI. The new LangGraph/Agents
+SDK contract context is also required (33 contexts total); its two no-cost
+local contracts pass and its candidate CI must pass before merging. Release and package workflows separately require
 name clearance, release approval and an approved exact source SHA. Those
 approval variables remain unset or false; branch protection is not permission
 to publish.

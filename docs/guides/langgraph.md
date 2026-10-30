@@ -69,3 +69,20 @@ and the model reads why.
 
 `amberlog.integrations.langchain.fabric_retriever(agent(fabric, "rag"))`
 is a LangChain retriever: same eligibility, same exposure log.
+
+## Reproduce the graph contract
+
+Install `langgraph==1.2.11` in a development environment, then run
+`python -m unittest tests.test_framework_contracts.LangGraphContract -v`.
+The test compiles and invokes a real `StateGraph` with recall, correction and
+action nodes. It verifies a positive execution control, excludes foreign-tenant
+content and blocks execution when the correction node withdraws evidence.
+The retrieval node uses the shipped LangChain retriever; no hosted model is
+called. This does not qualify a model-driven ReAct workflow or a customer pilot.
+
+A graph edge does not preserve evidence freshness. Re-verify in the action node;
+use `ActionGate.execute` for protected external effects and follow the
+[failure policies](../FAILURE_POLICIES.md). The test's recorded in-process effect
+is not a demonstration of an external service transaction.
+
+Reference: [official graph API](https://docs.langchain.com/oss/python/langgraph/graph-api).

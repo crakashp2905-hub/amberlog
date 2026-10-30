@@ -75,7 +75,7 @@ and execution. This is a proposed buyer/use case, not validated demand.
 | R05.03 | Implement secure GitHub OIDC Trusted Publishing | PARTIAL | `.github/workflows/publish-pypi.yml`, `docs/PYPI_PUBLISHING.md`. GitHub environments/reviewers/tag policies verified on 30 October; index-side publishers unverified and approval flags false. |
 | R05.04 | Provide first-class Python SDK with type hints | IMPLEMENTED | `tools/check_typed_consumer.py`, `docs/SDK_CONTRACTS_0.14.md`. Positive/negative typed consumer and clean import-origin checks added; qualification results recorded separately. |
 | R05.05 | Test MCP interoperability using an official client | IMPLEMENTED | `tests/test_mcp_official.py`. Official SDK 1.26.0 negotiates and checks isolation/late withdrawal locally. This is not a model-backed workflow. |
-| R05.06 | Validate LangGraph and OpenAI Agents SDK integration | PARTIAL | `docs/LOCAL_AGENT_AUDIT.md`. Existing optional adapters do not establish real LangGraph and OpenAI Agents SDK workflows. |
+| R05.06 | Validate LangGraph and OpenAI Agents SDK integration | IMPLEMENTED | `tests/test_framework_contracts.py`, `docs/guides/openai-agents.md`, `docs/guides/langgraph.md`. Real graph and SDK Runner contracts pass locally with positive/refusal/correction controls and deterministic local model output; no live-model or pilot claim. Dedicated CI added. |
 | R05.07 | Provide consistent CLI, HTTP and SDK semantics | PARTIAL | `tests/test_lifecycle_through_mcp.py`, `tests/test_agent_api.py`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R05.08 | Ship an interactive 60-second demonstration | PARTIAL | `src/amberlog/tour.py`, `tests/test_first_run.py`. Interactive demo exists; external new-user onboarding observation is still required. |
 | R05.09 | Legacy import aliases during migration | EXCLUDED | `docs/MIGRATING_TO_AMBERLOG.md`. Intentionally excluded: retain the complete rename and data compatibility; avoid shadowing an unrelated distribution. |
@@ -98,7 +98,7 @@ and execution. This is a proposed buyer/use case, not validated demand.
 |---|---|---|---|
 | R07.01 | Organize canonical code under src/amberlog | IMPLEMENTED | `pyproject.toml`, `MANIFEST.in`. Implementation moved to src/amberlog; import identity and schema remain unchanged. |
 | R07.02 | Keep tests, experiments and datasets out of the production wheel | IMPLEMENTED | `tools/fresh_machine.py`, `.github/workflows/ci.yml`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
-| R07.03 | Run unit, integration, security and contract tests in CI | PARTIAL | `.github/workflows/ci.yml`. Main protection verified: 32 required CI contexts including the passing official MCP check, strict updates, administrators included, no force pushes/deletion; independent review remains separate. |
+| R07.03 | Run unit, integration, security and contract tests in CI | PARTIAL | `.github/workflows/ci.yml`. Main protection verified: 33 required CI contexts including official MCP and framework contracts, strict updates, administrators included, no force pushes/deletion; independent review remains separate. |
 | R07.04 | Test supported Python and operating-system matrix | IMPLEMENTED | `.github/workflows/ci.yml`. Existing focused evidence; run outputs and limits remain separate from a universal correctness guarantee. |
 | R07.05 | Run static analysis, type checks and dependency scanning | PARTIAL | `tools/check.py`, `pyproject.toml`. Existing repository evidence is narrower than the full acceptance condition; qualification and remaining scope must stay explicit. |
 | R07.06 | Generate SBOM and artifact provenance attestations | PARTIAL | `tools/release_bundle.py`, `.github/workflows/release.yml`. SBOM generation exists; release attestations need an actual approved release. |
@@ -181,3 +181,9 @@ retraction/reconnect drill passed. A fresh candidate CI run is required. The
 first candidate already passed package, official MCP, Docker, adapter-contract,
 rollback, mutation and isolated-install checks. These focused results do not
 approve a release or complete every PARTIAL row.
+
+Framework follow-up: two additional contracts passed locally against LangGraph
+1.2.11 and OpenAI Agents SDK 0.24.0. HTTP sends are forbidden in the SDK test,
+and tracing is disabled. The candidate suite now collects 2,238 tests. The
+preceding candidate `0bde205` passed all 32 CI jobs; the framework follow-up
+requires its own exact-head CI result.

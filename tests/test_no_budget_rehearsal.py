@@ -15,7 +15,7 @@ class LocalRehearsal(unittest.TestCase):
     def test_loopback_only(self):
         self.assertEqual(local_endpoint("http://127.0.0.1:11439/"), "http://127.0.0.1:11439")
         for endpoint in ("https://api.example.com", "http://192.0.2.1", "http://user@localhost",
-                         "http://localhost/path", "http://localhost?token=anything"):
+                         "http://localhost/path", "http://localhost?extra=value"):
             with self.subTest(endpoint=endpoint), self.assertRaises(ValueError):
                 local_endpoint(endpoint)
 

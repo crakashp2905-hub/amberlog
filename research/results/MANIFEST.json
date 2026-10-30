@@ -1,15 +1,15 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 113,
+ "results": 114,
  "missing_field_counts": {
   "git_sha": 34,
-  "prereg": 39,
-  "dataset_digest": 111,
+  "prereg": 40,
+  "dataset_digest": 112,
   "model_id": 81,
-  "prompt_hash": 113,
+  "prompt_hash": 114,
   "seed": 48,
   "cost": 93,
-  "verdict": 71
+  "verdict": 72
  },
  "rows": [
   {
@@ -1436,6 +1436,35 @@
    "seed": null,
    "config": null,
    "cost": null,
+   "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "no-budget-local-model",
+   "file": "research/results/no-budget-local-model.json",
+   "file_sha256": "e035f37f3447e7efd9e2ab62a4b195f7fd883f84f573750a282ca1b8d4e41056",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": null,
+   "git_sha": "ecb3f6bde072e1a09ef2b221504e6113cffe0119",
+   "git_sha_source": "md",
+   "dataset_digest": null,
+   "model_id": "qwen2.5:1.5b",
+   "prompt_hash": null,
+   "seed": [
+    601,
+    607,
+    613,
+    617,
+    619
+   ],
+   "config": null,
+   "cost": {
+    "calls": 20.0,
+    "prompt_tokens": 2010.0,
+    "completion_tokens": 180.0,
+    "tokens": 2190.0,
+    "seconds": 50.21834530017804
+   },
    "verdict": null,
    "parsable": true
   },

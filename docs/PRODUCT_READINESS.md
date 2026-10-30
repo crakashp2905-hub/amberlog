@@ -187,3 +187,11 @@ Framework follow-up: two additional contracts passed locally against LangGraph
 and tracing is disabled. The candidate suite now collects 2,238 tests. The
 preceding candidate `0bde205` passed all 32 CI jobs; the framework follow-up
 requires its own exact-head CI result.
+
+Zero-budget follow-up: private vulnerability reporting was enabled and read
+back on 30 October. Public outreach is on hold at the owner's request. The
+frozen local-model rehearsal completed five synthetic cases using cached
+weights, with measured model tokens and zero API spending. It remains internal
+synthetic evidence, not an external review or pilot; see
+[zero-budget validation](NO_BUDGET_VALIDATION.md). Existing external gates remain
+open. No index ownership, physical separation or legal clearance is claimed.

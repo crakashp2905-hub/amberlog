@@ -32,6 +32,8 @@ def main() -> int:
     out.mkdir(parents=True, exist_ok=True)
     py = sys.executable
     steps = [
+        ("branding", [py, "tools/check_branding.py"]),
+        ("secret-scan", [py, "tools/scan_secrets.py"]),
         ("regressions", [py, "-m", "unittest", "tests.test_three_agent", "tests.test_gov_conformance",
                          "tests.test_chains", "tests.test_security_regression", "tests.test_no_budget_rehearsal"]),
         ("three-agent", [py, "-m", "benchmarks.three_agent", "--out", str(out / "three-agent.json")]),
@@ -46,6 +48,7 @@ def main() -> int:
     manifest = {"source_commit": git("rev-parse", "HEAD"), "tracked_tree_clean": True,
                 "python": platform.python_version(), "platform": platform.platform(),
                 "profile": "quick" if args.quick else "full", "steps": [],
+                "command_path_substitution": {"{OUTPUT}": "bundle output directory"},
                 "independence": "NOT_ESTABLISHED", "external_review": "NOT_RUN",
                 "physical_hosts": "NOT_ESTABLISHED", "customer_pilots": "NOT_RUN",
                 "release_decision": "INCONCLUSIVE", "paid_model_calls": 0,
@@ -59,7 +62,7 @@ def main() -> int:
         except subprocess.TimeoutExpired:
             code, log = 124, "Timed out after 900 seconds; no passing result inferred.\n"
         (out / f"{name}.log").write_text(log, encoding="utf-8")
-        manifest["steps"].append({"name": name, "command": ["python", *command[1:]],
+        manifest["steps"].append({"name": name, "command": ["python", *(part.replace(str(out), "{OUTPUT}") for part in command[1:])],
                                   "exit_code": code, "elapsed_s": round(time.perf_counter() - started, 3)})
         print(f"{name}: {'PASS' if code == 0 else 'FAIL'}", flush=True)
     # Compare deterministic outcome counts, not platform-dependent timing.

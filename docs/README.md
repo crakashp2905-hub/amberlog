@@ -68,6 +68,8 @@ Every document in the repository, by what you are trying to do.
 | [HARDENING_STATUS.md](HARDENING_STATUS.md) | The owner's hardening lists, item by item, with evidence |
 | [SAFETY_ROADMAP_COVERAGE.md](SAFETY_ROADMAP_COVERAGE.md) | The AI-safety roadmap, item by item |
 | [SECURITY_REVIEW.md](SECURITY_REVIEW.md) | The internal security review and its findings |
+| [DECISION_MODELS_AND_UTCP.md](DECISION_MODELS_AND_UTCP.md) | Typed decisions, System 1 escalation, UTCP, and governed Code Mode |
+| [DEVELOPMENT_ROADMAP_2026Q4.md](DEVELOPMENT_ROADMAP_2026Q4.md) | Evidence ledger for the 2026-10-31 development and research roadmap |
 | [SECURITY_TEST_PLAN.md](SECURITY_TEST_PLAN.md) | How security properties are tested |
 | [INDEPENDENT_EVALUATION.md](INDEPENDENT_EVALUATION.md) | What an independent reviewer would need, and what has not happened |
 | [INVARIANTS.md](INVARIANTS.md) | Each integrity invariant and the test that holds it |

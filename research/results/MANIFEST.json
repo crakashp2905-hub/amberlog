@@ -1,15 +1,15 @@
 {
  "generated_by": "tools/results_manifest.py",
- "results": 114,
+ "results": 115,
  "missing_field_counts": {
   "git_sha": 34,
   "prereg": 39,
-  "dataset_digest": 111,
-  "model_id": 81,
-  "prompt_hash": 114,
-  "seed": 48,
-  "cost": 93,
-  "verdict": 72
+  "dataset_digest": 112,
+  "model_id": 82,
+  "prompt_hash": 115,
+  "seed": 49,
+  "cost": 94,
+  "verdict": 73
  },
  "rows": [
   {
@@ -846,6 +846,23 @@
     4,
     5
    ],
+   "config": null,
+   "cost": null,
+   "verdict": null,
+   "parsable": true
+  },
+  {
+   "experiment_id": "grand-50-agent-suite-v1",
+   "file": "research/results/grand-50-agent-suite-v1.json",
+   "file_sha256": "3fc05793e8e9da991dd2c9a797a496683e3141a4f33ad61d6065b05992d435d8",
+   "file_sha256_basis": "UTF-8 file bytes with LF line endings",
+   "prereg": "research/prereg/grand-50-agent-suite-v1.md",
+   "git_sha": "d4fd174ac9056865c8b73abd857fa681daa6a0d7",
+   "git_sha_source": "json",
+   "dataset_digest": null,
+   "model_id": null,
+   "prompt_hash": null,
+   "seed": null,
    "config": null,
    "cost": null,
    "verdict": null,

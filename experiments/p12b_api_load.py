@@ -104,7 +104,7 @@ def run_one(agents: int) -> dict[str, Any]:
         for i in range(SEED_MEMORIES):
             topic = rng.choice(TOPICS)
             seed.remember("ag_seed", f"{topic} unit {i} at site {i % 17}: the {topic} seal "
-                                     f"was replaced on visit {i}")
+                                     f"was replaced on visit {i}", scope="team")
         seed.close()
         agents_file = os.path.join(tmp, "agents")
         with open(agents_file, "w") as fh:
@@ -152,9 +152,16 @@ def run_one(agents: int) -> dict[str, Any]:
         if status != 200:
             errors[f"{op}:{status}"] = errors.get(f"{op}:{status}", 0) + 1
     ok = sum(1 for r in records if r[2] == 200)
+    operation_counts = {
+        name: sum(1 for op, _, _ in records if op == name)
+        for name in ("remember", "recall", "fetch+verify")
+    }
+    if agents > 1 and any(count == 0 for count in operation_counts.values()):
+        raise RuntimeError(f"load mix was not exercised: {operation_counts}")
     return {
         "agents": agents, "ops": len(records), "ok": ok, "wall_s": wall,
         "ops_per_s": ok / wall if wall else 0.0, "errors": errors,
+        "operation_counts": operation_counts,
         "latency_ms": {name: {"p50": _pct(lat(op), 0.5), "p95": _pct(lat(op), 0.95),
                               "p99": _pct(lat(op), 0.99)}
                        for name, op in (("all", None), ("remember", "remember"),
